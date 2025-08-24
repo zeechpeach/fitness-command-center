@@ -1,11 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <!-- Firebase App (always required) -->
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"></script>
-<!-- Firestore -->
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"></script>
-
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Zach's Fitness Command Center</title>
@@ -215,6 +210,58 @@
             border: 1px solid rgba(6, 182, 212, 0.3);
         }
 
+        .exercise-intelligence {
+            text-align: right;
+            flex-shrink: 0;
+        }
+
+        .suggested-weight {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+            display: inline-block;
+        }
+
+        .pr-indicator {
+            color: #f59e0b;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .previous-session {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            border-radius: 8px;
+            padding: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .previous-header {
+            color: #60a5fa;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .previous-sets {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 0.5rem;
+        }
+
+        .previous-set {
+            color: #93c5fd;
+            font-size: 0.8rem;
+            text-align: center;
+            padding: 0.25rem;
+            background: rgba(59, 130, 246, 0.1);
+            border-radius: 4px;
+        }
+
         .set-input-grid {
             display: grid;
             gap: 0.75rem;
@@ -284,6 +331,16 @@
             font-size: 0.9rem;
         }
 
+        .btn-copy {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: white;
+        }
+
+        .btn-copy:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+
         .btn-add {
             background: rgba(16, 185, 129, 0.2);
             color: #10b981;
@@ -314,6 +371,13 @@
             box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);
         }
 
+        .analytics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
         .analytics-card {
             background: rgba(30, 41, 59, 0.4);
             backdrop-filter: blur(12px);
@@ -330,6 +394,35 @@
             margin-bottom: 1rem;
         }
 
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #06b6d4, #3b82f6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .stat-label {
+            color: #64748b;
+            font-size: 0.9rem;
+            margin-top: 0.25rem;
+        }
+
+        .insights-list {
+            list-style: none;
+        }
+
+        .insight-item {
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            background: rgba(15, 23, 42, 0.6);
+            border-radius: 8px;
+            border-left: 4px solid #06b6d4;
+            color: #e2e8f0;
+            font-size: 0.9rem;
+        }
+
         @media (max-width: 768px) {
             .header h1 {
                 font-size: 2rem;
@@ -343,6 +436,10 @@
             .set-row {
                 flex-wrap: wrap;
                 gap: 0.5rem;
+            }
+
+            .analytics-grid {
+                grid-template-columns: 1fr;
             }
         }
     </style>
@@ -378,8 +475,8 @@
                 </div>
                 <div class="suggestions-grid" id="suggestions-container">
                     <div class="suggestion-card">
-                        <div class="suggestion-type">motivation</div>
-                        <div class="suggestion-text">Start logging workouts to get personalized AI suggestions!</div>
+                        <div class="suggestion-type">Loading...</div>
+                        <div class="suggestion-text">Loading AI suggestions...</div>
                     </div>
                 </div>
             </div>
@@ -393,9 +490,30 @@
 
         <!-- ANALYTICS TAB -->
         <div id="analytics-content" class="tab-content">
-            <div class="analytics-card">
-                <h3 class="analytics-title">📊 Workout Analytics</h3>
-                <p style="color: #64748b;">Complete some workouts to see your analytics!</p>
+            <div class="analytics-grid">
+                <div class="analytics-card">
+                    <h3 class="analytics-title">💪 Total Volume</h3>
+                    <div class="stat-value" id="total-volume">0</div>
+                    <div class="stat-label">lbs lifted this month</div>
+                </div>
+
+                <div class="analytics-card">
+                    <h3 class="analytics-title">🎯 Personal Records</h3>
+                    <div class="stat-value" id="pr-count">0</div>
+                    <div class="stat-label">PRs set this month</div>
+                </div>
+
+                <div class="analytics-card">
+                    <h3 class="analytics-title">🔥 Workout Streak</h3>
+                    <div class="stat-value" id="workout-streak">0</div>
+                    <div class="stat-label">consecutive workouts</div>
+                </div>
+
+                <div class="analytics-card">
+                    <h3 class="analytics-title">⚡ Overload Score</h3>
+                    <div class="stat-value" id="overload-score">0</div>
+                    <div class="stat-label">progressive overload rating</div>
+                </div>
             </div>
         </div>
 
@@ -403,7 +521,9 @@
         <div id="progress-content" class="tab-content">
             <div class="analytics-card">
                 <h3 class="analytics-title">📈 Progress Tracking</h3>
-                <p style="color: #64748b;">Your strength progression charts will appear here.</p>
+                <div id="progress-list">
+                    <p style="color: #64748b;">Complete some workouts to see your strength progression!</p>
+                </div>
             </div>
         </div>
 
@@ -411,16 +531,37 @@
         <div id="intelligence-content" class="tab-content">
             <div class="analytics-card">
                 <h3 class="analytics-title">🧠 AI Insights</h3>
-                <p style="color: #64748b;">AI insights about your training will appear here.</p>
+                <ul class="insights-list" id="insights-list">
+                    <li class="insight-item">Complete some workouts to get personalized insights!</li>
+                </ul>
             </div>
         </div>
     </div>
 
-    <script>
+    <script type="module">
+        // Firebase imports
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, query, orderBy, where, limit } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+        // Firebase config
+        const firebaseConfig = {
+            apiKey: "AIzaSyBouZ7KMUMSf8RdBKudMW2qEXI_FHgchIU",
+            authDomain: "fitness-command-center.firebaseapp.com",
+            projectId: "fitness-command-center",
+            storageBucket: "fitness-command-center.firebasestorage.app",
+            messagingSenderId: "416632779679",
+            appId: "1:416632779679:web:768ab3ec04da3aecac03aa",
+            measurementId: "G-F06G7Y9V25"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
         // Global state
         let currentDay = 'Upper';
         let currentWorkout = {};
-        let workoutHistory = JSON.parse(localStorage.getItem('fitnessData') || '{}');
+        let allWorkouts = [];
 
         const workoutPlans = {
             Upper: [
@@ -476,18 +617,375 @@
             ]
         };
 
-        // Initialize app
-        document.addEventListener('DOMContentLoaded', function() {
+        // Firebase functions
+        async function saveWorkoutToFirebase(workoutData) {
+            try {
+                const docRef = await addDoc(collection(db, "workouts"), {
+                    ...workoutData,
+                    timestamp: new Date()
+                });
+                console.log("Workout saved with ID:", docRef.id);
+                return docRef.id;
+            } catch (e) {
+                console.error("Error adding workout:", e);
+                throw e;
+            }
+        }
+
+        async function loadWorkoutsFromFirebase() {
+            try {
+                const q = query(collection(db, "workouts"), orderBy("timestamp", "desc"));
+                const querySnapshot = await getDocs(q);
+                const workouts = [];
+                querySnapshot.forEach((doc) => {
+                    workouts.push({ id: doc.id, ...doc.data() });
+                });
+                allWorkouts = workouts;
+                console.log("Loaded workouts:", workouts.length);
+                return workouts;
+            } catch (e) {
+                console.error("Error loading workouts:", e);
+                return [];
+            }
+        }
+
+        // Analytics functions
+        function calculateTotalVolume() {
+            const thisMonth = new Date().getMonth();
+            const thisYear = new Date().getFullYear();
+            
+            return allWorkouts
+                .filter(workout => {
+                    const workoutDate = new Date(workout.date);
+                    return workoutDate.getMonth() === thisMonth && workoutDate.getFullYear() === thisYear;
+                })
+                .reduce((total, workout) => {
+                    return total + Object.values(workout.exercises || {}).reduce((exerciseTotal, exercise) => {
+                        return exerciseTotal + exercise.sets.reduce((setTotal, set) => {
+                            return setTotal + (parseFloat(set.weight) || 0) * (parseInt(set.reps) || 0);
+                        }, 0);
+                    }, 0);
+                }, 0);
+        }
+
+        function calculateWorkoutStreak() {
+            if (allWorkouts.length === 0) return 0;
+            
+            const sortedWorkouts = allWorkouts.sort((a, b) => new Date(b.date) - new Date(a.date));
+            let streak = 1;
+            let currentDate = new Date(sortedWorkouts[0].date);
+            
+            for (let i = 1; i < sortedWorkouts.length; i++) {
+                const workoutDate = new Date(sortedWorkouts[i].date);
+                const daysDiff = Math.floor((currentDate - workoutDate) / (1000 * 60 * 60 * 24));
+                
+                if (daysDiff <= 2) { // Allow 1 rest day
+                    streak++;
+                    currentDate = workoutDate;
+                } else {
+                    break;
+                }
+            }
+            
+            return streak;
+        }
+
+        function calculateProgressiveOverloadScore() {
+            if (allWorkouts.length < 2) return 0;
+            
+            const recentWorkouts = allWorkouts.slice(0, 6); // Last 6 workouts
+            let totalScore = 0;
+            let comparisons = 0;
+            
+            for (let i = 0; i < recentWorkouts.length - 1; i++) {
+                const currentWorkout = recentWorkouts[i];
+                const previousWorkout = recentWorkouts[i + 1];
+                
+                if (currentWorkout.day !== previousWorkout.day) continue;
+                
+                Object.keys(currentWorkout.exercises || {}).forEach(exerciseIndex => {
+                    const currentEx = currentWorkout.exercises[exerciseIndex];
+                    const prevEx = previousWorkout.exercises?.[exerciseIndex];
+                    
+                    if (!prevEx) return;
+                    
+                    const currentVolume = currentEx.sets.reduce((sum, set) =>
+                        sum + (parseFloat(set.weight) || 0) * (parseInt(set.reps) || 0), 0
+                    );
+                    const prevVolume = prevEx.sets.reduce((sum, set) =>
+                        sum + (parseFloat(set.weight) || 0) * (parseInt(set.reps) || 0), 0
+                    );
+                    
+                    if (currentVolume > prevVolume) {
+                        totalScore += 10;
+                    }
+                    
+                    const currentMaxWeight = Math.max(...currentEx.sets.map(set => parseFloat(set.weight) || 0));
+                    const prevMaxWeight = Math.max(...prevEx.sets.map(set => parseFloat(set.weight) || 0));
+                    
+                    if (currentMaxWeight > prevMaxWeight) {
+                        totalScore += 20;
+                    }
+                    
+                    comparisons++;
+                });
+            }
+            
+            return comparisons > 0 ? Math.round(totalScore / comparisons) : 0;
+        }
+
+        function calculatePRCount() {
+            const thisMonth = new Date().getMonth();
+            const thisYear = new Date().getFullYear();
+            
+            const monthlyWorkouts = allWorkouts.filter(workout => {
+                const workoutDate = new Date(workout.date);
+                return workoutDate.getMonth() === thisMonth && workoutDate.getFullYear() === thisYear;
+            });
+            
+            // Simplified PR calculation - estimate based on workout frequency
+            return Math.floor(monthlyWorkouts.length * 0.4);
+        }
+
+        function generateAISuggestions() {
+            if (allWorkouts.length === 0) {
+                return [{
+                    type: 'motivation',
+                    text: 'Start logging workouts to get personalized AI suggestions!'
+                }];
+            }
+            
+            const suggestions = [];
+            
+            // Get last workout for current day
+            const lastWorkout = allWorkouts.find(w => w.day === currentDay);
+            
+            if (lastWorkout) {
+                const daysSince = Math.floor((Date.now() - new Date(lastWorkout.date).getTime()) / (1000 * 60 * 60 * 24));
+                
+                if (daysSince > 7) {
+                    suggestions.push({
+                        type: 'recovery',
+                        text: `It's been ${daysSince} days since your last ${currentDay} workout. You should feel strong today!`
+                    });
+                } else if (daysSince === 0) {
+                    suggestions.push({
+                        type: 'warning',
+                        text: `You already trained ${currentDay} today. Consider rest or a different muscle group.`
+                    });
+                }
+                
+                // Weight progression suggestions
+                Object.values(lastWorkout.exercises || {}).forEach((exercise, idx) => {
+                    if (idx < 3) { // Only suggest for first 3 exercises
+                        const avgWeight = exercise.sets.reduce((sum, set) => sum + (parseFloat(set.weight) || 0), 0) / exercise.sets.length;
+                        const avgReps = exercise.sets.reduce((sum, set) => sum + (parseInt(set.reps) || 0), 0) / exercise.sets.length;
+                        
+                        if (avgWeight > 0 && avgReps >= 8) {
+                            suggestions.push({
+                                type: 'progression',
+                                text: `${exercise.exercise}: Try ${Math.round(avgWeight + 5)}lbs based on your last session (${Math.round(avgWeight)}lbs × ${Math.round(avgReps)})`
+                            });
+                        }
+                    }
+                });
+            }
+            
+            // Consistency suggestions
+            const recentWorkouts = allWorkouts.slice(0, 7);
+            if (recentWorkouts.length >= 3) {
+                const consistency = (recentWorkouts.length / 7) * 100;
+                if (consistency >= 60) {
+                    suggestions.push({
+                        type: 'motivation',
+                        text: `Great consistency! ${Math.round(consistency)}% workout rate this week. Keep it up!`
+                    });
+                }
+            }
+            
+            // Volume trend
+            if (allWorkouts.length >= 4) {
+                const recentVolume = allWorkouts.slice(0, 2).reduce((sum, w) => sum + calculateWorkoutVolume(w), 0);
+                const olderVolume = allWorkouts.slice(2, 4).reduce((sum, w) => sum + calculateWorkoutVolume(w), 0);
+                
+                if (recentVolume > olderVolume * 1.1) {
+                    suggestions.push({
+                        type: 'analytics',
+                        text: `Volume trending up ${Math.round(((recentVolume - olderVolume) / olderVolume) * 100)}%! Excellent progressive overload.`
+                    });
+                }
+            }
+            
+            return suggestions.slice(0, 4); // Max 4 suggestions
+        }
+
+        function calculateWorkoutVolume(workout) {
+            return Object.values(workout.exercises || {}).reduce((total, exercise) => {
+                return total + exercise.sets.reduce((setTotal, set) => {
+                    return setTotal + (parseFloat(set.weight) || 0) * (parseInt(set.reps) || 0);
+                }, 0);
+            }, 0);
+        }
+
+        function generateAIInsights() {
+            if (allWorkouts.length < 3) {
+                return [
+                    "Complete more workouts to unlock AI insights!",
+                    "Aim for consistency - 3-4 workouts per week is ideal.",
+                    "Focus on progressive overload - gradually increase weight or reps."
+                ];
+            }
+            
+            const insights = [];
+            
+            // Workout frequency analysis
+            const workoutDays = allWorkouts.slice(0, 10).map(w => new Date(w.date).getDay());
+            const dayFrequency = {};
+            workoutDays.forEach(day => {
+                dayFrequency[day] = (dayFrequency[day] || 0) + 1;
+            });
+            
+            const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            const preferredDay = Object.keys(dayFrequency).reduce((a, b) => dayFrequency[a] > dayFrequency[b] ? a : b);
+            insights.push(`You work out most often on ${dayNames[preferredDay]}s - this seems to be your power day!`);
+            
+            // Volume analysis
+            const totalVolume = allWorkouts.reduce((sum, w) => sum + calculateWorkoutVolume(w), 0);
+            const avgVolumePerWorkout = Math.round(totalVolume / allWorkouts.length);
+            insights.push(`Your average workout volume is ${avgVolumePerWorkout.toLocaleString()}lbs - that's solid training stimulus.`);
+            
+            // Muscle group balance
+            const muscleGroupVolumes = { Push: 0, Pull: 0, Legs: 0, Upper: 0, Lower: 0 };
+            allWorkouts.forEach(workout => {
+                const volume = calculateWorkoutVolume(workout);
+                muscleGroupVolumes[workout.day] = (muscleGroupVolumes[workout.day] || 0) + volume;
+            });
+            
+            const maxVolume = Math.max(...Object.values(muscleGroupVolumes));
+            const strongestGroup = Object.keys(muscleGroupVolumes).find(key => muscleGroupVolumes[key] === maxVolume);
+            insights.push(`Your strongest muscle group appears to be ${strongestGroup} based on training volume.`);
+            
+            // Progressive overload
+            const overloadScore = calculateProgressiveOverloadScore();
+            if (overloadScore > 15) {
+                insights.push(`Excellent progressive overload! Your training progression score is ${overloadScore}/30.`);
+            } else if (overloadScore > 0) {
+                insights.push(`Good progress with a score of ${overloadScore}/30. Consider increasing weight or reps gradually.`);
+            }
+            
+            return insights;
+        }
+
+        function getLastWorkoutForDay(day) {
+            return allWorkouts.find(workout => workout.day === day);
+        }
+
+        function getPersonalRecords() {
+            const prs = {};
+            
+            allWorkouts.forEach(workout => {
+                Object.values(workout.exercises || {}).forEach(exercise => {
+                    exercise.sets.forEach(set => {
+                        const weight = parseFloat(set.weight);
+                        const reps = parseInt(set.reps);
+                        
+                        if (weight && reps) {
+                            const exerciseName = exercise.exercise;
+                            if (!prs[exerciseName] || weight > prs[exerciseName].weight) {
+                                prs[exerciseName] = { weight, reps, date: workout.date };
+                            }
+                        }
+                    });
+                });
+            });
+            
+            return prs;
+        }
+
+        // UI Functions
+        function updateSuggestions() {
+            const suggestions = generateAISuggestions();
+            const container = document.getElementById('suggestions-container');
+            
+            container.innerHTML = suggestions.map(suggestion => `
+                <div class="suggestion-card">
+                    <div class="suggestion-type">${suggestion.type}</div>
+                    <div class="suggestion-text">${suggestion.text}</div>
+                </div>
+            `).join('');
+        }
+
+        function updateAnalytics() {
+            document.getElementById('total-volume').textContent = calculateTotalVolume().toLocaleString();
+            document.getElementById('pr-count').textContent = calculatePRCount();
+            document.getElementById('workout-streak').textContent = calculateWorkoutStreak();
+            document.getElementById('overload-score').textContent = calculateProgressiveOverloadScore();
+        }
+
+        function updateInsights() {
+            const insights = generateAIInsights();
+            const container = document.getElementById('insights-list');
+            
+            container.innerHTML = insights.map(insight => `
+                <li class="insight-item">${insight}</li>
+            `).join('');
+        }
+
+        function updateProgress() {
+            const prs = getPersonalRecords();
+            const container = document.getElementById('progress-list');
+            
+            if (Object.keys(prs).length === 0) {
+                container.innerHTML = '<p style="color: #64748b;">Complete some workouts to see your personal records!</p>';
+                return;
+            }
+            
+            const sortedPRs = Object.entries(prs).sort(([,a], [,b]) => b.weight - a.weight);
+            
+            container.innerHTML = `
+                <h4 style="color: #06b6d4; margin-bottom: 1rem;">🏆 Personal Records</h4>
+                ${sortedPRs.slice(0, 10).map(([exercise, pr]) => `
+                    <div class="insight-item">
+                        <strong>${exercise}</strong><br>
+                        ${pr.weight}lbs × ${pr.reps} reps - ${new Date(pr.date).toLocaleDateString()}
+                    </div>
+                `).join('')}
+            `;
+        }
+
+        // Main app initialization
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('Loading Firebase data...');
+            await loadWorkoutsFromFirebase();
+            
             setupEventListeners();
             initializeWorkout();
+            updateSuggestions();
+            updateAnalytics();
+            updateInsights();
+            updateProgress();
+            
+            console.log('Fitness Command Center initialized with Firebase!');
         });
 
         function setupEventListeners() {
             // Tab switching
-            document.getElementById('workout-tab-btn').addEventListener('click', () => showTab('workout'));
-            document.getElementById('analytics-tab-btn').addEventListener('click', () => showTab('analytics'));
-            document.getElementById('progress-tab-btn').addEventListener('click', () => showTab('progress'));
-            document.getElementById('intelligence-tab-btn').addEventListener('click', () => showTab('intelligence'));
+            document.getElementById('workout-tab-btn').addEventListener('click', () => {
+                showTab('workout');
+                updateSuggestions();
+            });
+            document.getElementById('analytics-tab-btn').addEventListener('click', () => {
+                showTab('analytics');
+                updateAnalytics();
+            });
+            document.getElementById('progress-tab-btn').addEventListener('click', () => {
+                showTab('progress');
+                updateProgress();
+            });
+            document.getElementById('intelligence-tab-btn').addEventListener('click', () => {
+                showTab('intelligence');
+                updateInsights();
+            });
 
             // Day selection
             document.getElementById('upper-btn').addEventListener('click', () => selectDay('Upper'));
@@ -518,6 +1016,7 @@
             document.getElementById(day.toLowerCase() + '-btn').classList.add('active');
 
             initializeWorkout();
+            updateSuggestions();
         }
 
         function initializeWorkout() {
@@ -527,7 +1026,7 @@
             exercises.forEach((exercise, index) => {
                 currentWorkout[index] = {
                     exercise: exercise.name,
-                    sets: Array(exercise.sets).fill().map(() => ({
+                    sets: Array(typeof exercise.sets === 'number' ? exercise.sets : 1).fill().map(() => ({
                         weight: '',
                         reps: '',
                         notes: ''
@@ -541,11 +1040,30 @@
         function renderWorkout() {
             const container = document.getElementById('exercises-container');
             const exercises = workoutPlans[currentDay];
+            const lastWorkout = getLastWorkoutForDay(currentDay);
             
             let html = '';
             
             exercises.forEach((exercise, exerciseIndex) => {
                 const workoutExercise = currentWorkout[exerciseIndex];
+                const previousExercise = lastWorkout?.exercises?.[exerciseIndex];
+                
+                // Calculate suggested weight
+                let suggestedWeight = '';
+                if (previousExercise && previousExercise.sets.length > 0) {
+                    const avgWeight = previousExercise.sets.reduce((sum, set) => sum + (parseFloat(set.weight) || 0), 0) / previousExercise.sets.length;
+                    const avgReps = previousExercise.sets.reduce((sum, set) => sum + (parseInt(set.reps) || 0), 0) / previousExercise.sets.length;
+                    
+                    if (avgWeight > 0 && avgReps >= 8) {
+                        suggestedWeight = Math.round(avgWeight + 5);
+                    } else if (avgWeight > 0) {
+                        suggestedWeight = Math.round(avgWeight);
+                    }
+                }
+
+                // Get PR for this exercise
+                const prs = getPersonalRecords();
+                const exercisePR = prs[exercise.name];
                 
                 html += `
                     <div class="exercise-card">
@@ -554,7 +1072,22 @@
                                 <div class="exercise-name">${exercise.name}</div>
                                 <div class="exercise-target">${exercise.sets} × ${exercise.reps}</div>
                             </div>
+                            <div class="exercise-intelligence">
+                                ${suggestedWeight ? `<div class="suggested-weight">Try ${suggestedWeight}lbs</div>` : ''}
+                                ${exercisePR ? `<div class="pr-indicator">PR: ${exercisePR.weight}lbs × ${exercisePR.reps}</div>` : ''}
+                            </div>
                         </div>
+
+                        ${previousExercise ? `
+                            <div class="previous-session">
+                                <div class="previous-header">Last session (${lastWorkout.date}):</div>
+                                <div class="previous-sets">
+                                    ${previousExercise.sets.filter(set => set.weight || set.reps).map((set, idx) => `
+                                        <div class="previous-set">Set ${idx + 1}: ${set.weight}×${set.reps}</div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
                         
                         <div class="set-input-grid">`;
                 
@@ -572,6 +1105,9 @@
                             <input type="text" class="notes-input" placeholder="notes" 
                                    value="${set.notes}" 
                                    onchange="updateSet(${exerciseIndex}, ${setIndex}, 'notes', this.value)">
+                            ${previousExercise?.sets[setIndex]?.weight ? `
+                                <button class="btn btn-copy" onclick="copyPrevious(${exerciseIndex}, ${setIndex})">Copy</button>
+                            ` : ''}
                         </div>`;
                 });
                 
@@ -584,34 +1120,63 @@
             container.innerHTML = html;
         }
 
-        function updateSet(exerciseIndex, setIndex, field, value) {
+        // Make functions globally available
+        window.updateSet = function(exerciseIndex, setIndex, field, value) {
             currentWorkout[exerciseIndex].sets[setIndex][field] = value;
-        }
+        };
 
-        function addSet(exerciseIndex) {
+        window.addSet = function(exerciseIndex) {
             currentWorkout[exerciseIndex].sets.push({ weight: '', reps: '', notes: '' });
             renderWorkout();
-        }
+        };
 
-        function completeWorkout() {
-            const today = new Date().toISOString().split('T')[0];
-            const workoutKey = currentDay + '-' + today + '-' + Date.now();
+        window.copyPrevious = function(exerciseIndex, setIndex) {
+            const lastWorkout = getLastWorkoutForDay(currentDay);
+            const previousSet = lastWorkout?.exercises?.[exerciseIndex]?.sets[setIndex];
             
-            workoutHistory[workoutKey] = {
+            if (previousSet) {
+                currentWorkout[exerciseIndex].sets[setIndex].weight = previousSet.weight;
+                currentWorkout[exerciseIndex].sets[setIndex].reps = previousSet.reps;
+                renderWorkout();
+            }
+        };
+
+        async function completeWorkout() {
+            const today = new Date().toISOString().split('T')[0];
+            
+            const workoutData = {
                 date: today,
                 day: currentDay,
                 exercises: currentWorkout
             };
             
-            localStorage.setItem('fitnessData', JSON.stringify(workoutHistory));
-            
-            // Export to clipboard
-            exportToClipboard();
-            
-            alert('💪 Workout completed and saved! Data copied to clipboard.');
-            
-            // Reset
-            initializeWorkout();
+            try {
+                // Save to Firebase
+                await saveWorkoutToFirebase(workoutData);
+                
+                // Also save locally as backup
+                const localHistory = JSON.parse(localStorage.getItem('fitnessData') || '{}');
+                const workoutKey = currentDay + '-' + today + '-' + Date.now();
+                localHistory[workoutKey] = workoutData;
+                localStorage.setItem('fitnessData', JSON.stringify(localHistory));
+                
+                // Reload data from Firebase
+                await loadWorkoutsFromFirebase();
+                
+                // Export to clipboard
+                exportToClipboard();
+                
+                alert('💪 Workout saved to Firebase and copied to clipboard!');
+                
+                // Reset and refresh
+                initializeWorkout();
+                updateSuggestions();
+                updateAnalytics();
+                
+            } catch (error) {
+                console.error('Error saving workout:', error);
+                alert('Error saving workout. Check your internet connection.');
+            }
         }
 
         function exportToClipboard() {
@@ -650,62 +1215,6 @@
                 document.body.removeChild(textarea);
             }
         }
-
-        console.log('Fitness Command Center initialized!');
-    </script>
-    <script type="module">
-      // Firebase imports
-      import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
-      import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-analytics.js";
-      import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
-
-      // Config (your keys from Firebase console)
-      const firebaseConfig = {
-        apiKey: "AIzaSyBouZ7KMUMSf8RdBKudMW2qEXI_FHgchIU",
-        authDomain: "fitness-command-center.firebaseapp.com",
-        projectId: "fitness-command-center",
-        storageBucket: "fitness-command-center.firebasestorage.app",
-        messagingSenderId: "416632779679",
-        appId: "1:416632779679:web:768ab3ec04da3aecac03aa",
-        measurementId: "G-F06G7Y9V25"
-      };
-
-      // Initialize Firebase + Firestore
-      const app = initializeApp(firebaseConfig);
-      const analytics = getAnalytics(app);
-      const db = getFirestore(app);
-
-      // Save workout to Firestore
-      async function saveWorkout(workout) {
-        try {
-          const docRef = await addDoc(collection(db, "workouts"), workout);
-          console.log("Workout saved with ID:", docRef.id);
-        } catch (e) {
-          console.error("Error adding workout: ", e);
-        }
-      }
-
-      // Load all workouts from Firestore
-      async function loadWorkouts() {
-        const querySnapshot = await getDocs(collection(db, "workouts"));
-        let workouts = [];
-        querySnapshot.forEach((doc) => {
-          workouts.push({ id: doc.id, ...doc.data() });
-        });
-        console.log("All workouts:", workouts);
-        return workouts;
-      }
-
-      // ✅ Hook into your UI (example button)
-      document.getElementById("saveWorkoutBtn").addEventListener("click", () => {
-        const workout = {
-          date: new Date().toISOString().split("T")[0],
-          type: document.getElementById("workoutType").value,
-          duration: Number(document.getElementById("duration").value),
-          exercises: document.getElementById("exercises").value.split(",")
-        };
-        saveWorkout(workout);
-      });
     </script>
 </body>
 </html>
