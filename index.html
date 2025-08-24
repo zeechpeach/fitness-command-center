@@ -519,11 +519,11 @@
 </div>
 
 <div class="workout-controls" style="display: flex; gap: 1rem; margin-bottom: 1.5rem; align-items: center; flex-wrap: wrap;">
+    <button class="btn" id="log-past-workout-btn" style="background: rgba(168, 85, 247, 0.2); color: #a855f7; border: 1px solid rgba(168, 85, 247, 0.3);">📅 Log Past Workout</button>
     <div style="display: flex; align-items: center; gap: 0.5rem;">
-        <label style="color: #94a3b8; font-size: 0.9rem;">Workout Date:</label>
+        <label style="color: #94a3b8; font-size: 0.9rem;">Date:</label>
         <input type="date" id="workout-date-input" style="padding: 0.5rem; background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(71, 85, 105, 0.5); border-radius: 6px; color: white;">
     </div>
-    <button class="btn" id="log-past-workout-btn" style="background: rgba(168, 85, 247, 0.2); color: #a855f7; border: 1px solid rgba(168, 85, 247, 0.3);">📅 Log Past Workout</button>
 </div>
 
             <div class="intelligence-panel">
@@ -1054,17 +1054,21 @@
 
             // Complete workout
             document.getElementById('complete-workout-btn').addEventListener('click', completeWorkout);
-            // Date input handling
+           // Initialize date input to today
+const today = new Date().toISOString().split('T')[0];
+document.getElementById('workout-date-input').value = today;
+
+// Date input handling
 document.getElementById('workout-date-input').addEventListener('change', setWorkoutDate);
 document.getElementById('log-past-workout-btn').addEventListener('click', () => {
     const dateInput = document.getElementById('workout-date-input');
-    dateInput.value = new Date().toISOString().split('T')[0]; // Set to today by default
-    setWorkoutDate();
+    if (dateInput.style.display === 'none' || !dateInput.style.display) {
+        dateInput.style.display = 'block';
+        dateInput.focus();
+    }
 });
 
-// Initialize date input to today
-document.getElementById('workout-date-input').value = new Date().toISOString().split('T')[0];
-        }
+setWorkoutDate(); // Initialize the button text
 
         function showTab(tabName) {
             // Hide all tab contents
@@ -1239,9 +1243,10 @@ if (isStretch) {
 window.setWorkoutDate = function() {
     const dateInput = document.getElementById('workout-date-input');
     const logBtn = document.getElementById('log-past-workout-btn');
+    const today = new Date().toISOString().split('T')[0];
     
-    if (dateInput.value) {
-        logBtn.textContent = '📅 Logging for ' + new Date(dateInput.value).toLocaleDateString();
+    if (dateInput.value && dateInput.value !== today) {
+        logBtn.textContent = '📅 For ' + new Date(dateInput.value + 'T00:00:00').toLocaleDateString();
         logBtn.style.background = 'rgba(16, 185, 129, 0.2)';
         logBtn.style.color = '#10b981';
     } else {
@@ -1249,11 +1254,12 @@ window.setWorkoutDate = function() {
         logBtn.style.background = 'rgba(168, 85, 247, 0.2)';
         logBtn.style.color = '#a855f7';
     }
-};;
+};
 
         async function completeWorkout() {
-            const dateInput = document.getElementById('workout-date-input');
-const selectedDate = dateInput.value || new Date().toISOString().split('T')[0];
+            // Date input handling document.getElementById('workout-date-input').addEventListener('change', setWorkoutDate); document.getElementById('log-past-workout-btn').addEventListener('click', () => {     const dateInput = document.getElementById('workout-date-input');     dateInput.value = new Date().toISOString().split('T')[0]; // Set to today by default     setWorkoutDate(); });
+const today = new Date().toISOString().split('T')[0];
+const selectedDate = dateInput.value && dateInput.value !== today ? dateInput.value : today;
             
             const workoutData = {
     date: selectedDate,
