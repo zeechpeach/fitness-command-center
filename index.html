@@ -1082,15 +1082,17 @@
             const exercises = workoutPlans[currentDay];
 
             exercises.forEach((exercise, index) => {
-                currentWorkout[index] = {
-                    exercise: exercise.name,
-                    sets: Array(typeof exercise.sets === 'number' ? exercise.sets : 1).fill().map(() => ({
-                        weight: '',
-                        reps: '',
-                        notes: ''
-                    }))
-                };
-            });
+                const isStretch = exercise.name.toLowerCase().includes('stretch');
+currentWorkout[index] = {
+    exercise: exercise.name,
+    sets: isStretch ? 
+        [{ completed: false }] : 
+        Array(typeof exercise.sets === 'number' ? exercise.sets : 1).fill().map(() => ({
+            weight: '',
+            reps: '',
+            notes: ''
+        }))
+};
 
             renderWorkout();
         }
