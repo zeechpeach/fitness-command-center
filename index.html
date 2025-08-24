@@ -1219,7 +1219,25 @@ if (isStretch) {
                 currentWorkout[exerciseIndex].sets[setIndex].reps = previousSet.reps;
                 renderWorkout();
             }
-        };
+        }
+            window.updateStretch = function(exerciseIndex, completed) {
+    currentWorkout[exerciseIndex].sets[0] = { completed: completed };
+};
+
+window.setWorkoutDate = function() {
+    const dateInput = document.getElementById('workout-date-input');
+    const logBtn = document.getElementById('log-past-workout-btn');
+    
+    if (dateInput.value) {
+        logBtn.textContent = '📅 Logging for ' + new Date(dateInput.value).toLocaleDateString();
+        logBtn.style.background = 'rgba(16, 185, 129, 0.2)';
+        logBtn.style.color = '#10b981';
+    } else {
+        logBtn.textContent = '📅 Log Past Workout';
+        logBtn.style.background = 'rgba(168, 85, 247, 0.2)';
+        logBtn.style.color = '#a855f7';
+    }
+};;
 
         async function completeWorkout() {
             const today = new Date().toISOString().split('T')[0];
