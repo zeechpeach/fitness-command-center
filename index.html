@@ -1252,13 +1252,14 @@ window.setWorkoutDate = function() {
 };;
 
         async function completeWorkout() {
-            const today = new Date().toISOString().split('T')[0];
+            const dateInput = document.getElementById('workout-date-input');
+const selectedDate = dateInput.value || new Date().toISOString().split('T')[0];
             
             const workoutData = {
-                date: today,
-                day: currentDay,
-                exercises: currentWorkout
-            };
+    date: selectedDate,
+    day: currentDay,
+    exercises: currentWorkout
+};
             
             try {
                 // Save to Firebase
