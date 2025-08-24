@@ -1054,6 +1054,16 @@
 
             // Complete workout
             document.getElementById('complete-workout-btn').addEventListener('click', completeWorkout);
+            // Date input handling
+document.getElementById('workout-date-input').addEventListener('change', setWorkoutDate);
+document.getElementById('log-past-workout-btn').addEventListener('click', () => {
+    const dateInput = document.getElementById('workout-date-input');
+    dateInput.value = new Date().toISOString().split('T')[0]; // Set to today by default
+    setWorkoutDate();
+});
+
+// Initialize date input to today
+document.getElementById('workout-date-input').value = new Date().toISOString().split('T')[0];
         }
 
         function showTab(tabName) {
