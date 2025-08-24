@@ -1147,27 +1147,49 @@
                             </div>
                         ` : ''}
                         
-                        <div class="set-input-grid">`;
-                
-                workoutExercise.sets.forEach((set, setIndex) => {
-                    html += `
-                        <div class="set-row">
-                            <div class="set-number">${setIndex + 1}</div>
-                            <input type="number" class="weight-input" placeholder="lbs" 
-                                   value="${set.weight}" 
-                                   onchange="updateSet(${exerciseIndex}, ${setIndex}, 'weight', this.value)">
-                            <span style="color: #64748b;">×</span>
-                            <input type="number" class="reps-input" placeholder="reps" 
-                                   value="${set.reps}" 
-                                   onchange="updateSet(${exerciseIndex}, ${setIndex}, 'reps', this.value)">
-                            <input type="text" class="notes-input" placeholder="notes" 
-                                   value="${set.notes}" 
-                                   onchange="updateSet(${exerciseIndex}, ${setIndex}, 'notes', this.value)">
-                            ${previousExercise?.sets[setIndex]?.weight ? `
-                                <button class="btn btn-copy" onclick="copyPrevious(${exerciseIndex}, ${setIndex})">Copy</button>
-                            ` : ''}
-                        </div>`;
-                });
+                        // Check if this is a stretch exercise
+const isStretch = exercise.name.toLowerCase().includes('stretch');
+
+if (isStretch) {
+    html += `
+        <div class="stretch-row">
+            <div class="stretch-info">
+                <div class="set-number">✓</div>
+                <div class="stretch-label">${exercise.name}</div>
+            </div>
+            <input type="checkbox" class="stretch-checkbox" 
+                   ${workoutExercise.sets[0]?.completed ? 'checked' : ''}
+                   onchange="updateStretch(${exerciseIndex}, this.checked)">
+        </div>
+    `;
+} else {
+    html += `<div class="set-input-grid">`;
+    
+    workoutExercise.sets.forEach((set, setIndex) => {
+        html += `
+            <div class="set-row">
+                <div class="set-number">${setIndex + 1}</div>
+                <input type="number" class="weight-input" placeholder="lbs" 
+                       value="${set.weight}" 
+                       onchange="updateSet(${exerciseIndex}, ${setIndex}, 'weight', this.value)">
+                <span style="color: #64748b;">×</span>
+                <input type="number" class="reps-input" placeholder="reps" 
+                       value="${set.reps}" 
+                       onchange="updateSet(${exerciseIndex}, ${setIndex}, 'reps', this.value)">
+                <input type="text" class="notes-input" placeholder="notes" 
+                       value="${set.notes}" 
+                       onchange="updateSet(${exerciseIndex}, ${setIndex}, 'notes', this.value)">
+                ${previousExercise?.sets[setIndex]?.weight ? `
+                    <button class="btn btn-copy" onclick="copyPrevious(${exerciseIndex}, ${setIndex})">Copy</button>
+                ` : ''}
+            </div>`;
+    });
+    
+    html += `
+            </div>
+            <button class="btn btn-add" onclick="addSet(${exerciseIndex})" style="margin-top: 0.75rem;">+ Add Set</button>
+        `;
+});
                 
                 html += `
                         </div>
