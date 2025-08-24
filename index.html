@@ -1,6 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!-- Firebase App (always required) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"></script>
+<!-- Firestore -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"></script>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Zach's Fitness Command Center</title>
@@ -647,6 +652,60 @@
         }
 
         console.log('Fitness Command Center initialized!');
+    </script>
+    <script type="module">
+      // Firebase imports
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+      import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-analytics.js";
+      import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+
+      // Config (your keys from Firebase console)
+      const firebaseConfig = {
+        apiKey: "AIzaSyBouZ7KMUMSf8RdBKudMW2qEXI_FHgchIU",
+        authDomain: "fitness-command-center.firebaseapp.com",
+        projectId: "fitness-command-center",
+        storageBucket: "fitness-command-center.firebasestorage.app",
+        messagingSenderId: "416632779679",
+        appId: "1:416632779679:web:768ab3ec04da3aecac03aa",
+        measurementId: "G-F06G7Y9V25"
+      };
+
+      // Initialize Firebase + Firestore
+      const app = initializeApp(firebaseConfig);
+      const analytics = getAnalytics(app);
+      const db = getFirestore(app);
+
+      // Save workout to Firestore
+      async function saveWorkout(workout) {
+        try {
+          const docRef = await addDoc(collection(db, "workouts"), workout);
+          console.log("Workout saved with ID:", docRef.id);
+        } catch (e) {
+          console.error("Error adding workout: ", e);
+        }
+      }
+
+      // Load all workouts from Firestore
+      async function loadWorkouts() {
+        const querySnapshot = await getDocs(collection(db, "workouts"));
+        let workouts = [];
+        querySnapshot.forEach((doc) => {
+          workouts.push({ id: doc.id, ...doc.data() });
+        });
+        console.log("All workouts:", workouts);
+        return workouts;
+      }
+
+      // ✅ Hook into your UI (example button)
+      document.getElementById("saveWorkoutBtn").addEventListener("click", () => {
+        const workout = {
+          date: new Date().toISOString().split("T")[0],
+          type: document.getElementById("workoutType").value,
+          duration: Number(document.getElementById("duration").value),
+          exercises: document.getElementById("exercises").value.split(",")
+        };
+        saveWorkout(workout);
+      });
     </script>
 </body>
 </html>
