@@ -423,6 +423,57 @@
             font-size: 0.9rem;
         }
 
+        .stretch-checkbox {
+            width: 1.25rem;
+            height: 1.25rem;
+            background: rgba(30, 41, 59, 0.8);
+            border: 2px solid rgba(71, 85, 105, 0.5);
+            border-radius: 4px;
+            cursor: pointer;
+            appearance: none;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .stretch-checkbox:checked {
+            background: linear-gradient(135deg, #10b981, #059669);
+            border-color: #10b981;
+        }
+
+        .stretch-checkbox:checked::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        .stretch-row {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            background: rgba(15, 23, 42, 0.6);
+            padding: 0.75rem;
+            border-radius: 8px;
+            border: 1px solid rgba(71, 85, 105, 0.3);
+            justify-content: space-between;
+        }
+
+        .stretch-info {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex: 1;
+        }
+
+        .stretch-label {
+            color: #e2e8f0;
+            font-size: 0.9rem;
+        }
+
         @media (max-width: 768px) {
             .header h1 {
                 font-size: 2rem;
@@ -442,56 +493,6 @@
                 grid-template-columns: 1fr;
             }
         }
-        .stretch-checkbox {
-    width: 1.25rem;
-    height: 1.25rem;
-    background: rgba(30, 41, 59, 0.8);
-    border: 2px solid rgba(71, 85, 105, 0.5);
-    border-radius: 4px;
-    cursor: pointer;
-    appearance: none;
-    position: relative;
-    transition: all 0.3s ease;
-}
-
-.stretch-checkbox:checked {
-    background: linear-gradient(135deg, #10b981, #059669);
-    border-color: #10b981;
-}
-
-.stretch-checkbox:checked::after {
-    content: '✓';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    color: white;
-    font-weight: bold;
-    font-size: 0.9rem;
-}
-
-.stretch-row {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    background: rgba(15, 23, 42, 0.6);
-    padding: 0.75rem;
-    border-radius: 8px;
-    border: 1px solid rgba(71, 85, 105, 0.3);
-    justify-content: space-between;
-}
-
-.stretch-info {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    flex: 1;
-}
-
-.stretch-label {
-    color: #e2e8f0;
-    font-size: 0.9rem;
-}
     </style>
 </head>
 <body>
@@ -511,20 +512,20 @@
         <!-- WORKOUT TAB -->
         <div id="workout-content" class="tab-content active">
             <div class="workout-day-selector">
-    <button class="day-btn active" id="upper-btn">Upper</button>
-    <button class="day-btn" id="lower-btn">Lower</button>
-    <button class="day-btn" id="push-btn">Push</button>
-    <button class="day-btn" id="pull-btn">Pull</button>
-    <button class="day-btn" id="legs-btn">Legs</button>
-</div>
+                <button class="day-btn active" id="upper-btn">Upper</button>
+                <button class="day-btn" id="lower-btn">Lower</button>
+                <button class="day-btn" id="push-btn">Push</button>
+                <button class="day-btn" id="pull-btn">Pull</button>
+                <button class="day-btn" id="legs-btn">Legs</button>
+            </div>
 
-<div class="workout-controls" style="display: flex; gap: 1rem; margin-bottom: 1.5rem; align-items: center; flex-wrap: wrap;">
-    <button class="btn" id="log-past-workout-btn" style="background: rgba(168, 85, 247, 0.2); color: #a855f7; border: 1px solid rgba(168, 85, 247, 0.3);">📅 Log Past Workout</button>
-    <div style="display: flex; align-items: center; gap: 0.5rem;">
-        <label style="color: #94a3b8; font-size: 0.9rem;">Date:</label>
-        <input type="date" id="workout-date-input" style="padding: 0.5rem; background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(71, 85, 105, 0.5); border-radius: 6px; color: white;">
-    </div>
-</div>
+            <div class="workout-controls" style="display: flex; gap: 1rem; margin-bottom: 1.5rem; align-items: center; flex-wrap: wrap;">
+                <button class="btn" id="log-past-workout-btn" style="background: rgba(168, 85, 247, 0.2); color: #a855f7; border: 1px solid rgba(168, 85, 247, 0.3);">📅 Log Past Workout</button>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <label style="color: #94a3b8; font-size: 0.9rem;">Date:</label>
+                    <input type="date" id="workout-date-input" style="padding: 0.5rem; background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(71, 85, 105, 0.5); border-radius: 6px; color: white;">
+                </div>
+            </div>
 
             <div class="intelligence-panel">
                 <div class="intelligence-header">
@@ -1054,21 +1055,23 @@
 
             // Complete workout
             document.getElementById('complete-workout-btn').addEventListener('click', completeWorkout);
-           // Initialize date input to today
-const today = new Date().toISOString().split('T')[0];
-document.getElementById('workout-date-input').value = today;
+            
+            // Initialize date input to today
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('workout-date-input').value = today;
 
-// Date input handling
-document.getElementById('workout-date-input').addEventListener('change', setWorkoutDate);
-document.getElementById('log-past-workout-btn').addEventListener('click', () => {
-    const dateInput = document.getElementById('workout-date-input');
-    if (dateInput.style.display === 'none' || !dateInput.style.display) {
-        dateInput.style.display = 'block';
-        dateInput.focus();
-    }
-});
+            // Date input handling
+            document.getElementById('workout-date-input').addEventListener('change', setWorkoutDate);
+            document.getElementById('log-past-workout-btn').addEventListener('click', () => {
+                const dateInput = document.getElementById('workout-date-input');
+                if (dateInput.style.display === 'none' || !dateInput.style.display) {
+                    dateInput.style.display = 'block';
+                    dateInput.focus();
+                }
+            });
 
-setWorkoutDate(); // Initialize the button text
+            setWorkoutDate(); // Initialize the button text
+        }
 
         function showTab(tabName) {
             // Hide all tab contents
@@ -1097,16 +1100,17 @@ setWorkoutDate(); // Initialize the button text
 
             exercises.forEach((exercise, index) => {
                 const isStretch = exercise.name.toLowerCase().includes('stretch');
-currentWorkout[index] = {
-    exercise: exercise.name,
-    sets: isStretch ? 
-        [{ completed: false }] : 
-        Array(typeof exercise.sets === 'number' ? exercise.sets : 1).fill().map(() => ({
-            weight: '',
-            reps: '',
-            notes: ''
-        }))
-};
+                currentWorkout[index] = {
+                    exercise: exercise.name,
+                    sets: isStretch ? 
+                        [{ completed: false }] : 
+                        Array(typeof exercise.sets === 'number' ? exercise.sets : 1).fill().map(() => ({
+                            weight: '',
+                            reps: '',
+                            notes: ''
+                        }))
+                };
+            });
 
             renderWorkout();
         }
@@ -1122,9 +1126,12 @@ currentWorkout[index] = {
                 const workoutExercise = currentWorkout[exerciseIndex];
                 const previousExercise = lastWorkout?.exercises?.[exerciseIndex];
                 
-                // Calculate suggested weight
+                // Check if this is a stretch exercise
+                const isStretch = exercise.name.toLowerCase().includes('stretch');
+                
+                // Calculate suggested weight (only for non-stretch exercises)
                 let suggestedWeight = '';
-                if (previousExercise && previousExercise.sets.length > 0) {
+                if (!isStretch && previousExercise && previousExercise.sets.length > 0) {
                     const avgWeight = previousExercise.sets.reduce((sum, set) => sum + (parseFloat(set.weight) || 0), 0) / previousExercise.sets.length;
                     const avgReps = previousExercise.sets.reduce((sum, set) => sum + (parseInt(set.reps) || 0), 0) / previousExercise.sets.length;
                     
@@ -1135,9 +1142,9 @@ currentWorkout[index] = {
                     }
                 }
 
-                // Get PR for this exercise
+                // Get PR for this exercise (only for non-stretch exercises)
                 const prs = getPersonalRecords();
-                const exercisePR = prs[exercise.name];
+                const exercisePR = !isStretch ? prs[exercise.name] : null;
                 
                 html += `
                     <div class="exercise-card">
@@ -1152,7 +1159,7 @@ currentWorkout[index] = {
                             </div>
                         </div>
 
-                        ${previousExercise ? `
+                        ${previousExercise && !isStretch ? `
                             <div class="previous-session">
                                 <div class="previous-header">Last session (${lastWorkout.date}):</div>
                                 <div class="previous-sets">
@@ -1161,56 +1168,50 @@ currentWorkout[index] = {
                                     `).join('')}
                                 </div>
                             </div>
-                        ` : ''}
-                        
-                        // Check if this is a stretch exercise
-const isStretch = exercise.name.toLowerCase().includes('stretch');
+                        ` : ''}`;
 
-if (isStretch) {
-    html += `
-        <div class="stretch-row">
-            <div class="stretch-info">
-                <div class="set-number">✓</div>
-                <div class="stretch-label">${exercise.name}</div>
-            </div>
-            <input type="checkbox" class="stretch-checkbox" 
-                   ${workoutExercise.sets[0]?.completed ? 'checked' : ''}
-                   onchange="updateStretch(${exerciseIndex}, this.checked)">
-        </div>
-    `;
-} else {
-    html += `<div class="set-input-grid">`;
-    
-    workoutExercise.sets.forEach((set, setIndex) => {
-        html += `
-            <div class="set-row">
-                <div class="set-number">${setIndex + 1}</div>
-                <input type="number" class="weight-input" placeholder="lbs" 
-                       value="${set.weight}" 
-                       onchange="updateSet(${exerciseIndex}, ${setIndex}, 'weight', this.value)">
-                <span style="color: #64748b;">×</span>
-                <input type="number" class="reps-input" placeholder="reps" 
-                       value="${set.reps}" 
-                       onchange="updateSet(${exerciseIndex}, ${setIndex}, 'reps', this.value)">
-                <input type="text" class="notes-input" placeholder="notes" 
-                       value="${set.notes}" 
-                       onchange="updateSet(${exerciseIndex}, ${setIndex}, 'notes', this.value)">
-                ${previousExercise?.sets[setIndex]?.weight ? `
-                    <button class="btn btn-copy" onclick="copyPrevious(${exerciseIndex}, ${setIndex})">Copy</button>
-                ` : ''}
-            </div>`;
-    });
-    
-    html += `
-            </div>
-            <button class="btn btn-add" onclick="addSet(${exerciseIndex})" style="margin-top: 0.75rem;">+ Add Set</button>
-        `;
-});
-                
-                html += `
+                if (isStretch) {
+                    html += `
+                        <div class="stretch-row">
+                            <div class="stretch-info">
+                                <div class="set-number">✓</div>
+                                <div class="stretch-label">${exercise.name}</div>
+                            </div>
+                            <input type="checkbox" class="stretch-checkbox" 
+                                   ${workoutExercise.sets[0]?.completed ? 'checked' : ''}
+                                   onchange="updateStretch(${exerciseIndex}, this.checked)">
                         </div>
-                        <button class="btn btn-add" onclick="addSet(${exerciseIndex})" style="margin-top: 0.75rem;">+ Add Set</button>
-                    </div>`;
+                    `;
+                } else {
+                    html += `<div class="set-input-grid">`;
+                    
+                    workoutExercise.sets.forEach((set, setIndex) => {
+                        html += `
+                            <div class="set-row">
+                                <div class="set-number">${setIndex + 1}</div>
+                                <input type="number" class="weight-input" placeholder="lbs" 
+                                       value="${set.weight}" 
+                                       onchange="updateSet(${exerciseIndex}, ${setIndex}, 'weight', this.value)">
+                                <span style="color: #64748b;">×</span>
+                                <input type="number" class="reps-input" placeholder="reps" 
+                                       value="${set.reps}" 
+                                       onchange="updateSet(${exerciseIndex}, ${setIndex}, 'reps', this.value)">
+                                <input type="text" class="notes-input" placeholder="notes" 
+                                       value="${set.notes}" 
+                                       onchange="updateSet(${exerciseIndex}, ${setIndex}, 'notes', this.value)">
+                                ${previousExercise?.sets[setIndex]?.weight ? `
+                                    <button class="btn btn-copy" onclick="copyPrevious(${exerciseIndex}, ${setIndex})">Copy</button>
+                                ` : ''}
+                            </div>`;
+                    });
+                    
+                    html += `
+                            </div>
+                            <button class="btn btn-add" onclick="addSet(${exerciseIndex})" style="margin-top: 0.75rem;">+ Add Set</button>
+                        `;
+                }
+                
+                html += `</div>`;
             });
             
             container.innerHTML = html;
@@ -1235,37 +1236,38 @@ if (isStretch) {
                 currentWorkout[exerciseIndex].sets[setIndex].reps = previousSet.reps;
                 renderWorkout();
             }
-        }
-            window.updateStretch = function(exerciseIndex, completed) {
-    currentWorkout[exerciseIndex].sets[0] = { completed: completed };
-};
+        };
 
-window.setWorkoutDate = function() {
-    const dateInput = document.getElementById('workout-date-input');
-    const logBtn = document.getElementById('log-past-workout-btn');
-    const today = new Date().toISOString().split('T')[0];
-    
-    if (dateInput.value && dateInput.value !== today) {
-        logBtn.textContent = '📅 For ' + new Date(dateInput.value + 'T00:00:00').toLocaleDateString();
-        logBtn.style.background = 'rgba(16, 185, 129, 0.2)';
-        logBtn.style.color = '#10b981';
-    } else {
-        logBtn.textContent = '📅 Log Past Workout';
-        logBtn.style.background = 'rgba(168, 85, 247, 0.2)';
-        logBtn.style.color = '#a855f7';
-    }
-};
+        window.updateStretch = function(exerciseIndex, completed) {
+            currentWorkout[exerciseIndex].sets[0] = { completed: completed };
+        };
+
+        window.setWorkoutDate = function() {
+            const dateInput = document.getElementById('workout-date-input');
+            const logBtn = document.getElementById('log-past-workout-btn');
+            const today = new Date().toISOString().split('T')[0];
+            
+            if (dateInput.value && dateInput.value !== today) {
+                logBtn.textContent = '📅 For ' + new Date(dateInput.value + 'T00:00:00').toLocaleDateString();
+                logBtn.style.background = 'rgba(16, 185, 129, 0.2)';
+                logBtn.style.color = '#10b981';
+            } else {
+                logBtn.textContent = '📅 Log Past Workout';
+                logBtn.style.background = 'rgba(168, 85, 247, 0.2)';
+                logBtn.style.color = '#a855f7';
+            }
+        };
 
         async function completeWorkout() {
-            // Date input handling document.getElementById('workout-date-input').addEventListener('change', setWorkoutDate); document.getElementById('log-past-workout-btn').addEventListener('click', () => {     const dateInput = document.getElementById('workout-date-input');     dateInput.value = new Date().toISOString().split('T')[0]; // Set to today by default     setWorkoutDate(); });
-const today = new Date().toISOString().split('T')[0];
-const selectedDate = dateInput.value && dateInput.value !== today ? dateInput.value : today;
+            const dateInput = document.getElementById('workout-date-input');
+            const today = new Date().toISOString().split('T')[0];
+            const selectedDate = dateInput.value && dateInput.value !== today ? dateInput.value : today;
             
             const workoutData = {
-    date: selectedDate,
-    day: currentDay,
-    exercises: currentWorkout
-};
+                date: selectedDate,
+                day: currentDay,
+                exercises: currentWorkout
+            };
             
             try {
                 // Save to Firebase
@@ -1273,7 +1275,7 @@ const selectedDate = dateInput.value && dateInput.value !== today ? dateInput.va
                 
                 // Also save locally as backup
                 const localHistory = JSON.parse(localStorage.getItem('fitnessData') || '{}');
-                const workoutKey = currentDay + '-' + today + '-' + Date.now();
+                const workoutKey = currentDay + '-' + selectedDate + '-' + Date.now();
                 localHistory[workoutKey] = workoutData;
                 localStorage.setItem('fitnessData', JSON.stringify(localHistory));
                 
@@ -1297,20 +1299,24 @@ const selectedDate = dateInput.value && dateInput.value !== today ? dateInput.va
         }
 
         function exportToClipboard() {
-            const today = new Date().toLocaleDateString('en-US', {
+            const dateInput = document.getElementById('workout-date-input');
+            const workoutDate = dateInput.value ? new Date(dateInput.value) : new Date();
+            const dateString = workoutDate.toLocaleDateString('en-US', {
                 weekday: 'short',
                 month: 'short', 
                 day: 'numeric'
             });
             
-            let exportText = '🏋️‍♂️ ' + currentDay + ' | ' + today + '\n';
+            let exportText = '🏋️‍♂️ ' + currentDay + ' | ' + dateString + '\n';
             exportText += '=========================\n\n';
             
             Object.values(currentWorkout).forEach(exercise => {
                 exportText += exercise.exercise + '\n';
                 
                 exercise.sets.forEach((set, index) => {
-                    if (set.weight || set.reps) {
+                    if (set.completed) {
+                        exportText += '  ✓ Completed\n';
+                    } else if (set.weight || set.reps) {
                         exportText += '  ' + set.weight + 'lbs × ' + set.reps;
                         if (set.notes) exportText += ' (' + set.notes + ')';
                         exportText += '\n';
