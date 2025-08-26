@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Zach's Fitness Command Center</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -2111,26 +2112,27 @@
         }
 
         function initializeWorkout() {
-            currentWorkout = {};
-            const exercises = workoutPlans[currentDay];
+    currentWorkout = {};
+    const exercises = workoutPlans[currentDay];
 
-            exercises.forEach((exercise, index) => {
-                const isStretch = exercise.name.toLowerCase().includes('stretch');
-                currentWorkout[index] = {
-                    exercise: exercise.name,
-                    sets: isStretch ? 
-                        [{ completed: false }] : 
-                        Array(typeof exercise.sets === 'number' ? exercise.sets : 1).fill().map(() => ({
-                            weight: '',
-                            reps: '',
-                            notes: ''
-                        }))
-                };
-            });
+    exercises.forEach((exercise, index) => {
+        const isStretch = exercise.name.toLowerCase().includes('stretch');
+        const isRest = currentDay === 'Rest';
+        
+        currentWorkout[index] = {
+            exercise: exercise.name,
+            sets: (isStretch || isRest) ? 
+                [{ completed: false }] : 
+                Array(typeof exercise.sets === 'number' ? exercise.sets : 1).fill().map(() => ({
+                    weight: '',
+                    reps: '',
+                    notes: ''
+                }))
+        };
+    });
 
-            renderWorkout();
-        }
-
+    renderWorkout();
+}
         function renderWorkout() {
             const container = document.getElementById('exercises-container');
             const exercises = workoutPlans[currentDay];
