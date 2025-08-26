@@ -2204,10 +2204,8 @@
                         ` : ''}`;
 
                 // Check if this is a stretch exercise or rest day
-            const isStretch = exercise.name.toLowerCase().includes('stretch');
-            const isRest = currentDay === 'Rest';
-
-            if (isStretch || isRest) {
+                
+              if (isStretch || isRest) {
                 const label = isRest ? 'Rest Day Complete' : exercise.name;
                 html += `
                     <div class="stretch-row">
