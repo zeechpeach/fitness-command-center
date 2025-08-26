@@ -640,9 +640,12 @@
             <div class="workout-day-selector">
                 <button class="day-btn active" id="upper-btn">Upper</button>
                 <button class="day-btn" id="lower-btn">Lower</button>
+                <button class="day-btn" id="rest-btn">Rest</button>
                 <button class="day-btn" id="push-btn">Push</button>
                 <button class="day-btn" id="pull-btn">Pull</button>
                 <button class="day-btn" id="legs-btn">Legs</button>
+                <button class="day-btn" id="rest-btn">Rest</button>
+
             </div>
 
             <div class="workout-controls" style="display: flex; gap: 1rem; margin-bottom: 1.5rem; align-items: center; flex-wrap: wrap;">
@@ -862,58 +865,61 @@
         let charts = {};
 
         const workoutPlans = {
-            Upper: [
-                { name: 'Incline Dumbbell Press', sets: 3, reps: 8 },
-                { name: 'Seated Cable Fly', sets: 2, reps: 10 },
-                { name: 'Weighted Pull-Ups', sets: 3, reps: 6 },
-                { name: 'High Cable Lateral Raise', sets: 2, reps: 10 },
-                { name: 'Deficit Pendlay Row', sets: 2, reps: 8 },
-                { name: 'Cable Tricep Extension', sets: 2, reps: 10 },
-                { name: 'Bayesian Cable Bicep Curl', sets: 2, reps: 10 }
-            ],
-            Lower: [
-                { name: 'Lying Leg Curls', sets: 2, reps: '8+partial to failure' },
-                { name: 'Barbell Squat', sets: 3, reps: 8 },
-                { name: 'Romanian Deadlift', sets: 3, reps: 8 },
-                { name: 'Leg Extension', sets: 2, reps: 10 },
-                { name: 'Hip Abduction', sets: 2, reps: 10 },
-                { name: 'Standing Calf Raise', sets: 3, reps: 10 }
-            ],
-            Push: [
-                { name: 'Barbell Bench Press', sets: 1, reps: '3-5 with warmup ladder (15, 5, 3, 2, 1)' },
-                { name: 'Dumbbell Larsen Press', sets: 2, reps: '10 (75% of bench press weight)' },
-                { name: 'Standing Arnold Press', sets: 3, reps: '8-10' },
-                { name: 'Cable Press-Around (Superset)', sets: 2, reps: '12-15' },
-                { name: 'Pec Stretch (Superset)', sets: 2, reps: '30 seconds' },
-                { name: 'Cross-Body Cable Y-Raise', sets: 3, reps: '12-15' },
-                { name: 'Squeeze-Only Pressdown (Superset)', sets: 3, reps: 8 },
-                { name: 'Overhead Extension - Stretch Position (Superset)', sets: 3, reps: 8 },
-                { name: 'Cross-Body Triceps Extension', sets: 2, reps: '10-12' }
-            ],
-            Pull: [
-                { name: 'Lat Pulldown', sets: '4 feeder sets + 1-2 sets to failure + 1 dropset', reps: 'Varies' },
-                { name: 'Machine Row/T-Bar Row/DB Helms Row', sets: 3, reps: '10-12' },
-                { name: 'Bottom Half DB Lat Pullovers (Superset)', sets: 2, reps: '10-12' },
-                { name: 'Static Lat Stretching (Superset)', sets: 2, reps: '30 seconds' },
-                { name: 'Omni Directional Face Pulls', sets: 3, reps: '12-15' },
-                { name: 'EZ Bar Bicep Curl', sets: 3, reps: '6-8' },
-                { name: 'Bottom-Half DB Preacher Curl', sets: 2, reps: '10-12' } 
-            ],
-            Legs: [
-                { name: 'Squats - Warmup 20%', sets: 1, reps: 10 },
-                { name: 'Squats - Warmup 35%', sets: 1, reps: 5 },
-                { name: 'Squats - Warmup 55%', sets: 1, reps: 3 },
-                { name: 'Squats - Warmup 70%', sets: 1, reps: 2 },
-                { name: 'Squats - Warmup 80%', sets: 1, reps: 1 },
-                { name: 'Squats - 85-90%', sets: 1, reps: '2-4' },
-                { name: 'Paused Squats (75% of working weight)', sets: 2, reps: 5 },
-                { name: 'Romanian Deadlift', sets: 3, reps: '8-10' },
-                { name: 'Walking Lunges', sets: 2, reps: '10 per leg' },
-                { name: 'Seated Leg Curl', sets: 3, reps: '10-12' },
-                { name: 'Leg Press Toe Press', sets: 4, reps: '10-12' },
-                { name: 'Decline Plate Crunch', sets: 3, reps: '10-12' },
-            ]
-        };
+    Upper: [
+        { name: 'Incline Dumbbell Press', sets: 3, reps: 8 },
+        { name: 'Seated Cable Fly', sets: 2, reps: 10 },
+        { name: 'Weighted Pull-Ups', sets: 3, reps: 6 },
+        { name: 'High Cable Lateral Raise', sets: 2, reps: 10 },
+        { name: 'Deficit Pendlay Row', sets: 2, reps: 8 },
+        { name: 'Cable Tricep Extension', sets: 2, reps: 10 },
+        { name: 'Bayesian Cable Bicep Curl', sets: 2, reps: 10 }
+    ],
+    Lower: [
+        { name: 'Lying Leg Curls', sets: 2, reps: '8+partial to failure' },
+        { name: 'Barbell Squat', sets: 3, reps: 8 },
+        { name: 'Romanian Deadlift', sets: 3, reps: 8 },
+        { name: 'Leg Extension', sets: 2, reps: 10 },
+        { name: 'Hip Abduction', sets: 2, reps: 10 },
+        { name: 'Standing Calf Raise', sets: 3, reps: 10 }
+    ],
+    Rest: [
+        { name: 'Rest Day Recovery', sets: 1, reps: 'Complete' }
+    ],
+    Push: [
+        { name: 'Barbell Bench Press', sets: 1, reps: '3-5 with warmup ladder (15, 5, 3, 2, 1)' },
+        { name: 'Dumbbell Larsen Press', sets: 2, reps: '10 (75% of bench press weight)' },
+        { name: 'Standing Arnold Press', sets: 3, reps: '8-10' },
+        { name: 'Cable Press-Around (Superset)', sets: 2, reps: '12-15' },
+        { name: 'Pec Stretch (Superset)', sets: 2, reps: '30 seconds' },
+        { name: 'Cross-Body Cable Y-Raise', sets: 3, reps: '12-15' },
+        { name: 'Squeeze-Only Pressdown (Superset)', sets: 3, reps: 8 },
+        { name: 'Overhead Extension - Stretch Position (Superset)', sets: 3, reps: 8 },
+        { name: 'Cross-Body Triceps Extension', sets: 2, reps: '10-12' }
+    ],
+    Pull: [
+        { name: 'Lat Pulldown', sets: '4 feeder sets + 1-2 sets to failure + 1 dropset', reps: 'Varies' },
+        { name: 'Machine Row/T-Bar Row/DB Helms Row', sets: 3, reps: '10-12' },
+        { name: 'Bottom Half DB Lat Pullovers (Superset)', sets: 2, reps: '10-12' },
+        { name: 'Static Lat Stretching (Superset)', sets: 2, reps: '30 seconds' },
+        { name: 'Omni Directional Face Pulls', sets: 3, reps: '12-15' },
+        { name: 'EZ Bar Bicep Curl', sets: 3, reps: '6-8' },
+        { name: 'Bottom-Half DB Preacher Curl', sets: 2, reps: '10-12' } 
+    ],
+    Legs: [
+        { name: 'Squats - Warmup 20%', sets: 1, reps: 10 },
+        { name: 'Squats - Warmup 35%', sets: 1, reps: 5 },
+        { name: 'Squats - Warmup 55%', sets: 1, reps: 3 },
+        { name: 'Squats - Warmup 70%', sets: 1, reps: 2 },
+        { name: 'Squats - Warmup 80%', sets: 1, reps: 1 },
+        { name: 'Squats - 85-90%', sets: 1, reps: '2-4' },
+        { name: 'Paused Squats (75% of working weight)', sets: 2, reps: 5 },
+        { name: 'Romanian Deadlift', sets: 3, reps: '8-10' },
+        { name: 'Walking Lunges', sets: 2, reps: '10 per leg' },
+        { name: 'Seated Leg Curl', sets: 3, reps: '10-12' },
+        { name: 'Leg Press Toe Press', sets: 4, reps: '10-12' },
+        { name: 'Decline Plate Crunch', sets: 3, reps: '10-12' },
+    ]
+};
 
         // Firebase functions
         async function saveWorkoutToFirebase(workoutData) {
@@ -966,27 +972,28 @@
                 }, 0);
         }
 
-        function calculateWorkoutStreak() {
-            if (allWorkouts.length === 0) return 0;
-            
-            const sortedWorkouts = allWorkouts.sort((a, b) => new Date(b.date) - new Date(a.date));
-            let streak = 1;
-            let currentDate = new Date(sortedWorkouts[0].date);
-            
-            for (let i = 1; i < sortedWorkouts.length; i++) {
-                const workoutDate = new Date(sortedWorkouts[i].date);
-                const daysDiff = Math.floor((currentDate - workoutDate) / (1000 * 60 * 60 * 24));
-                
-                if (daysDiff <= 2) {
-                    streak++;
-                    currentDate = workoutDate;
-                } else {
-                    break;
-                }
-            }
-            
-            return streak;
+       function calculateWorkoutStreak() {
+    if (allWorkouts.length === 0) return 0;
+    
+    const sortedWorkouts = allWorkouts.sort((a, b) => new Date(b.date) - new Date(a.date));
+    let streak = 1;
+    let currentDate = new Date(sortedWorkouts[0].date);
+    
+    for (let i = 1; i < sortedWorkouts.length; i++) {
+        const workoutDate = new Date(sortedWorkouts[i].date);
+        const daysDiff = Math.floor((currentDate - workoutDate) / (1000 * 60 * 60 * 24));
+        
+        // Allow 1-2 day gaps (normal rest days in training program)
+        if (daysDiff <= 2) {
+            streak++;
+            currentDate = workoutDate;
+        } else {
+            break;
         }
+    }
+    
+    return streak;
+}
         function calculateEnhancedOverloadScore() {
             if (allWorkouts.length < 2) return { overall: 0, breakdown: {} };
             
@@ -2028,8 +2035,10 @@
             });
 
             // Day selection
+           // Day selection
             document.getElementById('upper-btn').addEventListener('click', () => selectDay('Upper'));
             document.getElementById('lower-btn').addEventListener('click', () => selectDay('Lower'));
+            document.getElementById('rest-btn').addEventListener('click', () => selectDay('Rest'));
             document.getElementById('push-btn').addEventListener('click', () => selectDay('Push'));
             document.getElementById('pull-btn').addEventListener('click', () => selectDay('Pull'));
             document.getElementById('legs-btn').addEventListener('click', () => selectDay('Legs'));
@@ -2135,10 +2144,7 @@
             exercises.forEach((exercise, exerciseIndex) => {
                 const workoutExercise = currentWorkout[exerciseIndex];
                 const previousExercise = lastWorkout?.exercises?.[exerciseIndex];
-                
-                // Check if this is a stretch exercise
-                const isStretch = exercise.name.toLowerCase().includes('stretch');
-                
+                                
                 // Calculate suggested weight and get progression info
                 let suggestedWeight = '';
                 let progressionInfo = '';
@@ -2197,19 +2203,24 @@
                             </div>
                         ` : ''}`;
 
-                if (isStretch) {
-                    html += `
-                        <div class="stretch-row">
-                            <div class="stretch-info">
-                                <div class="set-number">✓</div>
-                                <div class="stretch-label">${exercise.name}</div>
-                            </div>
-                            <input type="checkbox" class="stretch-checkbox" 
-                                   ${workoutExercise.sets[0]?.completed ? 'checked' : ''}
-                                   onchange="updateStretch(${exerciseIndex}, this.checked)">
+                // Check if this is a stretch exercise or rest day
+            const isStretch = exercise.name.toLowerCase().includes('stretch');
+            const isRest = currentDay === 'Rest';
+
+            if (isStretch || isRest) {
+                const label = isRest ? 'Rest Day Complete' : exercise.name;
+                html += `
+                    <div class="stretch-row">
+                        <div class="stretch-info">
+                            <div class="set-number">✓</div>
+                            <div class="stretch-label">${label}</div>
                         </div>
-                    `;
-                } else {
+                        <input type="checkbox" class="stretch-checkbox" 
+                            ${workoutExercise.sets[0]?.completed ? 'checked' : ''}
+                            onchange="updateStretch(${exerciseIndex}, this.checked)">
+                    </div>
+                `;
+            } else {
                     html += `<div class="set-input-grid">`;
                     
                     workoutExercise.sets.forEach((set, setIndex) => {
