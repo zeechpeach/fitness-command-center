@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Zach's Fitness Command Center</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -232,6 +233,13 @@
             font-weight: 500;
         }
 
+        .progression-indicator {
+            color: #10b981;
+            font-size: 0.8rem;
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+        }
+
         .previous-session {
             background: rgba(59, 130, 246, 0.1);
             border: 1px solid rgba(59, 130, 246, 0.2);
@@ -260,6 +268,55 @@
             padding: 0.25rem;
             background: rgba(59, 130, 246, 0.1);
             border-radius: 4px;
+        }
+
+        .intensity-inputs {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(71, 85, 105, 0.3);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .intensity-row {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .intensity-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .intensity-label {
+            color: #e2e8f0;
+            font-weight: 500;
+            min-width: 80px;
+        }
+
+        .intensity-scale {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .intensity-btn {
+            width: 2rem;
+            height: 2rem;
+            border: 1px solid rgba(71, 85, 105, 0.5);
+            background: rgba(30, 41, 59, 0.8);
+            color: #94a3b8;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .intensity-btn.active {
+            background: linear-gradient(135deg, #3b82f6, #06b6d4);
+            color: white;
+            border-color: transparent;
         }
 
         .set-input-grid {
@@ -409,6 +466,49 @@
             margin-top: 0.25rem;
         }
 
+        .overload-breakdown {
+            display: grid;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .overload-component {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem;
+            background: rgba(15, 23, 42, 0.6);
+            border-radius: 6px;
+        }
+
+        .component-bar {
+            flex: 1;
+            height: 4px;
+            background: rgba(71, 85, 105, 0.3);
+            border-radius: 2px;
+            margin: 0 0.75rem;
+            overflow: hidden;
+        }
+
+        .component-fill {
+            height: 100%;
+            border-radius: 2px;
+            transition: width 0.3s ease;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-top: 1rem;
+        }
+
+        .chart-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
         .insights-list {
             list-style: none;
         }
@@ -421,6 +521,16 @@
             border-left: 4px solid #06b6d4;
             color: #e2e8f0;
             font-size: 0.9rem;
+        }
+
+        .plateau-alert {
+            border-left-color: #f59e0b;
+            background: rgba(245, 158, 11, 0.1);
+        }
+
+        .progression-highlight {
+            border-left-color: #10b981;
+            background: rgba(16, 185, 129, 0.1);
         }
 
         .stretch-checkbox {
@@ -474,6 +584,12 @@
             font-size: 0.9rem;
         }
 
+        .exercise-progress-indicator {
+            font-size: 0.75rem;
+            color: #10b981;
+            margin-bottom: 0.25rem;
+        }
+
         @media (max-width: 768px) {
             .header h1 {
                 font-size: 2rem;
@@ -491,6 +607,16 @@
 
             .analytics-grid {
                 grid-template-columns: 1fr;
+            }
+
+            .chart-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .intensity-row {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
             }
         }
     </style>
@@ -527,6 +653,32 @@
                 </div>
             </div>
 
+            <div class="intensity-inputs">
+                <h4 style="color: #06b6d4; margin-bottom: 1rem;">How are you feeling?</h4>
+                <div class="intensity-row">
+                    <span class="intensity-label">Energy:</span>
+                    <div class="intensity-scale" id="energy-scale">
+                        <button class="intensity-btn" data-value="1">1</button>
+                        <button class="intensity-btn" data-value="2">2</button>
+                        <button class="intensity-btn" data-value="3">3</button>
+                        <button class="intensity-btn" data-value="4">4</button>
+                        <button class="intensity-btn" data-value="5">5</button>
+                    </div>
+                    <span style="color: #64748b; font-size: 0.8rem;">Dragging → Energetic</span>
+                </div>
+                <div class="intensity-row">
+                    <span class="intensity-label">Motivation:</span>
+                    <div class="intensity-scale" id="motivation-scale">
+                        <button class="intensity-btn" data-value="1">1</button>
+                        <button class="intensity-btn" data-value="2">2</button>
+                        <button class="intensity-btn" data-value="3">3</button>
+                        <button class="intensity-btn" data-value="4">4</button>
+                        <button class="intensity-btn" data-value="5">5</button>
+                    </div>
+                    <span style="color: #64748b; font-size: 0.8rem;">Forced → Eager</span>
+                </div>
+            </div>
+
             <div class="intelligence-panel">
                 <div class="intelligence-header">
                     <div class="ai-icon">AI</div>
@@ -542,6 +694,32 @@
 
             <div id="exercises-container">
                 <!-- Exercises will be populated here -->
+            </div>
+
+            <div class="intensity-inputs">
+                <h4 style="color: #06b6d4; margin-bottom: 1rem;">How did the workout go?</h4>
+                <div class="intensity-row">
+                    <span class="intensity-label">Fatigue:</span>
+                    <div class="intensity-scale" id="fatigue-scale">
+                        <button class="intensity-btn" data-value="1">1</button>
+                        <button class="intensity-btn" data-value="2">2</button>
+                        <button class="intensity-btn" data-value="3">3</button>
+                        <button class="intensity-btn" data-value="4">4</button>
+                        <button class="intensity-btn" data-value="5">5</button>
+                    </div>
+                    <span style="color: #64748b; font-size: 0.8rem;">Exhausted → Energized</span>
+                </div>
+                <div class="intensity-row">
+                    <span class="intensity-label">Satisfaction:</span>
+                    <div class="intensity-scale" id="satisfaction-scale">
+                        <button class="intensity-btn" data-value="1">1</button>
+                        <button class="intensity-btn" data-value="2">2</button>
+                        <button class="intensity-btn" data-value="3">3</button>
+                        <button class="intensity-btn" data-value="4">4</button>
+                        <button class="intensity-btn" data-value="5">5</button>
+                    </div>
+                    <span style="color: #64748b; font-size: 0.8rem;">Poor → Crushed it</span>
+                </div>
             </div>
 
             <button class="btn-complete" id="complete-workout-btn">Complete Session</button>
@@ -571,7 +749,54 @@
                 <div class="analytics-card">
                     <h3 class="analytics-title">⚡ Overload Score</h3>
                     <div class="stat-value" id="overload-score">0</div>
-                    <div class="stat-label">progressive overload rating</div>
+                    <div class="stat-label">strength progression rating</div>
+                    <div class="overload-breakdown" id="overload-breakdown">
+                        <!-- Breakdown will be populated here -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="chart-grid">
+                <div class="analytics-card">
+                    <h3 class="analytics-title">📈 Volume Trends</h3>
+                    <div class="chart-container">
+                        <canvas id="volume-chart"></canvas>
+                    </div>
+                </div>
+
+                <div class="analytics-card">
+                    <h3 class="analytics-title">💪 Strength Progression</h3>
+                    <div class="chart-container">
+                        <canvas id="strength-chart"></canvas>
+                    </div>
+                </div>
+
+                <div class="analytics-card">
+                    <h3 class="analytics-title">🎯 Muscle Group Balance</h3>
+                    <div class="chart-container">
+                        <canvas id="balance-chart"></canvas>
+                    </div>
+                </div>
+
+                <div class="analytics-card">
+                    <h3 class="analytics-title">🏋️ Top Exercises</h3>
+                    <div class="chart-container">
+                        <canvas id="exercise-chart"></canvas>
+                    </div>
+                </div>
+
+                <div class="analytics-card">
+                    <h3 class="analytics-title">📊 Rep Range Analysis</h3>
+                    <div class="chart-container">
+                        <canvas id="rep-range-chart"></canvas>
+                    </div>
+                </div>
+
+                <div class="analytics-card">
+                    <h3 class="analytics-title">🏆 PR Timeline</h3>
+                    <div class="chart-container">
+                        <canvas id="pr-timeline-chart"></canvas>
+                    </div>
                 </div>
             </div>
         </div>
@@ -579,13 +804,22 @@
         <!-- PROGRESS TAB -->
         <div id="progress-content" class="tab-content">
             <div class="analytics-card">
-                <h3 class="analytics-title">📈 Progress Tracking</h3>
+                <h3 class="analytics-title">📈 Exercise Progression</h3>
+                <div id="exercise-progress-list">
+                    <p style="color: #64748b;">Complete some workouts to see your detailed progression!</p>
+                </div>
+            </div>
+
+            <div class="analytics-card">
+                <h3 class="analytics-title">🏆 Personal Records</h3>
                 <div id="progress-list">
                     <p style="color: #64748b;">Complete some workouts to see your strength progression!</p>
                 </div>
             </div>
         </div>
 
+        <!-- INTELLIGENCE TAB -->
+        <div id="intelligence-content" class
         <!-- INTELLIGENCE TAB -->
         <div id="intelligence-content" class="tab-content">
             <div class="analytics-card">
@@ -621,6 +855,11 @@
         let currentDay = 'Upper';
         let currentWorkout = {};
         let allWorkouts = [];
+        let workoutIntensity = {
+            preWorkout: { energy: null, motivation: null },
+            postWorkout: { fatigue: null, satisfaction: null }
+        };
+        let charts = {};
 
         const workoutPlans = {
             Upper: [
@@ -648,7 +887,7 @@
                 { name: 'Pec Stretch (Superset)', sets: 2, reps: '30 seconds' },
                 { name: 'Cross-Body Cable Y-Raise', sets: 3, reps: '12-15' },
                 { name: 'Squeeze-Only Pressdown (Superset)', sets: 3, reps: 8 },
-                { name: 'Overhead Extension Lengthened-Position (Superset)', sets: 3, reps: 8 },
+                { name: 'Overhead Extension - Stretch Position (Superset)', sets: 3, reps: 8 },
                 { name: 'Cross-Body Triceps Extension', sets: 2, reps: '10-12' }
             ],
             Pull: [
@@ -693,7 +932,7 @@
 
         async function loadWorkoutsFromFirebase() {
             try {
-                const q = query(collection(db, "workouts"), orderBy("timestamp", "desc"));
+                const q = query(collection(db, "workouts"), orderBy("timestamp", "desc"), limit(50));
                 const querySnapshot = await getDocs(q);
                 const workouts = [];
                 querySnapshot.forEach((doc) => {
@@ -708,7 +947,7 @@
             }
         }
 
-        // Analytics functions
+        // Enhanced Analytics Functions
         function calculateTotalVolume() {
             const thisMonth = new Date().getMonth();
             const thisYear = new Date().getFullYear();
@@ -738,7 +977,7 @@
                 const workoutDate = new Date(sortedWorkouts[i].date);
                 const daysDiff = Math.floor((currentDate - workoutDate) / (1000 * 60 * 60 * 24));
                 
-                if (daysDiff <= 2) { // Allow 1 rest day
+                if (daysDiff <= 2) {
                     streak++;
                     currentDate = workoutDate;
                 } else {
@@ -748,49 +987,117 @@
             
             return streak;
         }
-
-        function calculateProgressiveOverloadScore() {
-            if (allWorkouts.length < 2) return 0;
+        function calculateEnhancedOverloadScore() {
+            if (allWorkouts.length < 2) return { overall: 0, breakdown: {} };
             
-            const recentWorkouts = allWorkouts.slice(0, 6); // Last 6 workouts
-            let totalScore = 0;
-            let comparisons = 0;
+            const recentWorkouts = allWorkouts.slice(0, 8);
+            let scores = {
+                volumeProgression: 0,
+                intensityProgression: 0,
+                workCapacity: 0,
+                consistency: 0
+            };
             
-            for (let i = 0; i < recentWorkouts.length - 1; i++) {
-                const currentWorkout = recentWorkouts[i];
-                const previousWorkout = recentWorkouts[i + 1];
+            // Group workouts by day type for comparison
+            const workoutsByDay = {};
+            recentWorkouts.forEach(workout => {
+                if (!workoutsByDay[workout.day]) workoutsByDay[workout.day] = [];
+                workoutsByDay[workout.day].push(workout);
+            });
+            
+            let totalComparisons = 0;
+            let validComparisons = 0;
+            
+            // Analyze progression for each workout type
+            Object.keys(workoutsByDay).forEach(dayType => {
+                const dayWorkouts = workoutsByDay[dayType].sort((a, b) => new Date(b.date) - new Date(a.date));
                 
-                if (currentWorkout.day !== previousWorkout.day) continue;
-                
-                Object.keys(currentWorkout.exercises || {}).forEach(exerciseIndex => {
-                    const currentEx = currentWorkout.exercises[exerciseIndex];
-                    const prevEx = previousWorkout.exercises?.[exerciseIndex];
+                for (let i = 0; i < dayWorkouts.length - 1; i++) {
+                    const current = dayWorkouts[i];
+                    const previous = dayWorkouts[i + 1];
                     
-                    if (!prevEx) return;
-                    
-                    const currentVolume = currentEx.sets.reduce((sum, set) =>
-                        sum + (parseFloat(set.weight) || 0) * (parseInt(set.reps) || 0), 0
-                    );
-                    const prevVolume = prevEx.sets.reduce((sum, set) =>
-                        sum + (parseFloat(set.weight) || 0) * (parseInt(set.reps) || 0), 0
-                    );
-                    
-                    if (currentVolume > prevVolume) {
-                        totalScore += 10;
-                    }
-                    
-                    const currentMaxWeight = Math.max(...currentEx.sets.map(set => parseFloat(set.weight) || 0));
-                    const prevMaxWeight = Math.max(...prevEx.sets.map(set => parseFloat(set.weight) || 0));
-                    
-                    if (currentMaxWeight > prevMaxWeight) {
-                        totalScore += 20;
-                    }
-                    
-                    comparisons++;
-                });
-            }
+                    Object.keys(current.exercises || {}).forEach(exerciseIndex => {
+                        const currentEx = current.exercises[exerciseIndex];
+                        const prevEx = previous.exercises?.[exerciseIndex];
+                        
+                        if (!prevEx || !currentEx) return;
+                        
+                        totalComparisons++;
+                        
+                        // Skip stretch exercises for strength analysis
+                        if (currentEx.exercise.toLowerCase().includes('stretch')) return;
+                        
+                        // Volume progression (weight x reps)
+                        const currentVolume = currentEx.sets.reduce((sum, set) =>
+                            sum + (parseFloat(set.weight) || 0) * (parseInt(set.reps) || 0), 0
+                        );
+                        const prevVolume = prevEx.sets.reduce((sum, set) =>
+                            sum + (parseFloat(set.weight) || 0) * (parseInt(set.reps) || 0), 0
+                        );
+                        
+                        if (currentVolume > prevVolume) scores.volumeProgression += 15;
+                        
+                        // Intensity progression (max weight)
+                        const currentMaxWeight = Math.max(...currentEx.sets.map(set => parseFloat(set.weight) || 0));
+                        const prevMaxWeight = Math.max(...prevEx.sets.map(set => parseFloat(set.weight) || 0));
+                        
+                        if (currentMaxWeight > prevMaxWeight) {
+                            scores.intensityProgression += 20;
+                            validComparisons++;
+                        }
+                        
+                        // Same weight, more reps
+                        const currentMaxReps = Math.max(...currentEx.sets.map(set => parseInt(set.reps) || 0));
+                        const prevMaxReps = Math.max(...prevEx.sets.map(set => parseInt(set.reps) || 0));
+                        
+                        if (currentMaxWeight === prevMaxWeight && currentMaxReps > prevMaxReps) {
+                            scores.volumeProgression += 12;
+                            validComparisons++;
+                        }
+                        
+                        // Work capacity (total sets)
+                        if (currentEx.sets.length > prevEx.sets.length) {
+                            scores.workCapacity += 8;
+                        }
+                    });
+                }
+            });
             
-            return comparisons > 0 ? Math.round(totalScore / comparisons) : 0;
+            // Consistency bonus
+            const recentDays = 14;
+            const expectedWorkouts = Math.floor(recentDays / 2.5); // ~3-4 per week
+            const actualWorkouts = allWorkouts.filter(w => {
+                const workoutDate = new Date(w.date);
+                const daysAgo = Math.floor((Date.now() - workoutDate.getTime()) / (1000 * 60 * 60 * 24));
+                return daysAgo <= recentDays;
+            }).length;
+            
+            scores.consistency = Math.min(100, (actualWorkouts / expectedWorkouts) * 100);
+            
+            // Normalize scores
+            const maxComparisons = Math.max(totalComparisons, 1);
+            scores.volumeProgression = Math.min(100, (scores.volumeProgression / maxComparisons) * 3);
+            scores.intensityProgression = Math.min(100, (scores.intensityProgression / maxComparisons) * 2.5);
+            scores.workCapacity = Math.min(100, (scores.workCapacity / maxComparisons) * 4);
+            
+            // Calculate overall score with weights
+            const overall = Math.round(
+                scores.volumeProgression * 0.30 +
+                scores.intensityProgression * 0.25 +
+                scores.workCapacity * 0.20 +
+                scores.consistency * 0.15 +
+                (validComparisons > 0 ? 10 : 0) // Recency bonus
+            );
+            
+            return {
+                overall: Math.min(100, overall),
+                breakdown: {
+                    'Volume Progression': Math.round(scores.volumeProgression),
+                    'Intensity Progression': Math.round(scores.intensityProgression),
+                    'Work Capacity': Math.round(scores.workCapacity),
+                    'Consistency': Math.round(scores.consistency)
+                }
+            };
         }
 
         function calculatePRCount() {
@@ -802,11 +1109,121 @@
                 return workoutDate.getMonth() === thisMonth && workoutDate.getFullYear() === thisYear;
             });
             
-            // Simplified PR calculation - estimate based on workout frequency
-            return Math.floor(monthlyWorkouts.length * 0.4);
+            let prCount = 0;
+            const exercisePRs = {};
+            
+            // Track PRs by finding new max weights in current month
+            allWorkouts.forEach(workout => {
+                Object.values(workout.exercises || {}).forEach(exercise => {
+                    exercise.sets.forEach(set => {
+                        const weight = parseFloat(set.weight);
+                        const reps = parseInt(set.reps);
+                        
+                        if (weight && reps) {
+                            const exerciseName = exercise.exercise;
+                            const workoutDate = new Date(workout.date);
+                            
+                            if (!exercisePRs[exerciseName]) {
+                                exercisePRs[exerciseName] = { weight: 0, date: null };
+                            }
+                            
+                            if (weight > exercisePRs[exerciseName].weight) {
+                                // Check if this PR was set this month
+                                if (workoutDate.getMonth() === thisMonth && workoutDate.getFullYear() === thisYear) {
+                                    if (exercisePRs[exerciseName].date === null || workoutDate > exercisePRs[exerciseName].date) {
+                                        prCount++;
+                                    }
+                                }
+                                exercisePRs[exerciseName] = { weight, date: workoutDate };
+                            }
+                        }
+                    });
+                });
+            });
+            
+            return prCount;
         }
 
-        function generateAISuggestions() {
+        function detectPlateaus() {
+            const plateaus = [];
+            const workoutsByDay = {};
+            
+            // Group recent workouts by day
+            allWorkouts.slice(0, 12).forEach(workout => {
+                if (!workoutsByDay[workout.day]) workoutsByDay[workout.day] = [];
+                workoutsByDay[workout.day].push(workout);
+            });
+            
+            // Check each exercise for plateaus
+            Object.keys(workoutsByDay).forEach(dayType => {
+                const dayWorkouts = workoutsByDay[dayType].sort((a, b) => new Date(b.date) - new Date(a.date));
+                
+                if (dayWorkouts.length < 3) return;
+                
+                const exerciseMap = {};
+                
+                // Track exercise progression
+                dayWorkouts.forEach(workout => {
+                    Object.values(workout.exercises || {}).forEach(exercise => {
+                        if (exercise.exercise.toLowerCase().includes('stretch')) return;
+                        
+                        if (!exerciseMap[exercise.exercise]) {
+                            exerciseMap[exercise.exercise] = [];
+                        }
+                        
+                        const maxWeight = Math.max(...exercise.sets.map(set => parseFloat(set.weight) || 0));
+                        const maxReps = Math.max(...exercise.sets.map(set => parseInt(set.reps) || 0));
+                        const totalVolume = exercise.sets.reduce((sum, set) => 
+                            sum + (parseFloat(set.weight) || 0) * (parseInt(set.reps) || 0), 0);
+                        
+                        exerciseMap[exercise.exercise].push({
+                            date: workout.date,
+                            maxWeight,
+                            maxReps,
+                            totalVolume
+                        });
+                    });
+                });
+                
+                // Detect plateaus
+                Object.keys(exerciseMap).forEach(exerciseName => {
+                    const progression = exerciseMap[exerciseName].slice(0, 3);
+                    
+                    if (progression.length < 3) return;
+                    
+                    // Check if weight hasn't increased in 3 sessions
+                    const weights = progression.map(p => p.maxWeight);
+                    const hasWeightProgression = weights.some((w, i) => i > 0 && w > weights[i-1]);
+                    
+                    // Check if volume is declining
+                    const volumes = progression.map(p => p.totalVolume);
+                    const hasVolumeDecline = volumes.length >= 2 && volumes[0] < volumes[1];
+                    
+                    if (!hasWeightProgression || hasVolumeDecline) {
+                        plateaus.push({
+                            exercise: exerciseName,
+                            sessions: progression.length,
+                            lastWeight: weights[0],
+                            suggestion: generatePlateauSuggestion(exerciseName, progression)
+                        });
+                    }
+                });
+            });
+            
+            return plateaus;
+        }
+
+        function generatePlateauSuggestion(exerciseName, progression) {
+            const isCompound = ['squat', 'bench', 'deadlift', 'press'].some(compound => 
+                exerciseName.toLowerCase().includes(compound));
+            
+            if (isCompound) {
+                return `Try micro-loading (+2.5lbs) or add pause reps at 90% weight`;
+            } else {
+                return `Consider adding 1 set or trying drop sets for volume progression`;
+            }
+        }
+        function generateAdvancedSuggestions() {
             if (allWorkouts.length === 0) {
                 return [{
                     type: 'motivation',
@@ -815,6 +1232,17 @@
             }
             
             const suggestions = [];
+            
+            // Get plateaus
+            const plateaus = detectPlateaus();
+            
+            // Plateau alerts
+            plateaus.slice(0, 2).forEach(plateau => {
+                suggestions.push({
+                    type: 'plateau',
+                    text: `${plateau.exercise} has plateaued for ${plateau.sessions} sessions. ${plateau.suggestion}`
+                });
+            });
             
             // Get last workout for current day
             const lastWorkout = allWorkouts.find(w => w.day === currentDay);
@@ -834,17 +1262,28 @@
                     });
                 }
                 
-                // Weight progression suggestions
+                // Smart progression suggestions
                 Object.values(lastWorkout.exercises || {}).forEach((exercise, idx) => {
-                    if (idx < 3) { // Only suggest for first 3 exercises
-                        const avgWeight = exercise.sets.reduce((sum, set) => sum + (parseFloat(set.weight) || 0), 0) / exercise.sets.length;
-                        const avgReps = exercise.sets.reduce((sum, set) => sum + (parseInt(set.reps) || 0), 0) / exercise.sets.length;
+                    if (idx < 2 && !exercise.exercise.toLowerCase().includes('stretch')) {
+                        const maxWeight = Math.max(...exercise.sets.map(set => parseFloat(set.weight) || 0));
+                        const completedReps = exercise.sets.map(set => parseInt(set.reps) || 0);
+                        const avgReps = completedReps.reduce((a, b) => a + b, 0) / completedReps.length;
                         
-                        if (avgWeight > 0 && avgReps >= 8) {
-                            suggestions.push({
-                                type: 'progression',
-                                text: `${exercise.exercise}: Try ${Math.round(avgWeight + 5)}lbs based on your last session (${Math.round(avgWeight)}lbs × ${Math.round(avgReps)})`
-                            });
+                        if (maxWeight > 0) {
+                            // If consistently hitting high reps, suggest weight increase
+                            if (avgReps >= 10 && completedReps.every(r => r >= 8)) {
+                                suggestions.push({
+                                    type: 'progression',
+                                    text: `${exercise.exercise}: Strong performance (${maxWeight}lbs × ${Math.round(avgReps)}). Try ${maxWeight + 5}lbs next time!`
+                                });
+                            }
+                            // If struggling with reps, suggest technique focus
+                            else if (avgReps < 6 && maxWeight > 0) {
+                                suggestions.push({
+                                    type: 'technique',
+                                    text: `${exercise.exercise}: Focus on form at ${maxWeight - 5}lbs or add more warm-up sets`
+                                });
+                            }
                         }
                     }
                 });
@@ -857,25 +1296,47 @@
                 if (consistency >= 60) {
                     suggestions.push({
                         type: 'motivation',
-                        text: `Great consistency! ${Math.round(consistency)}% workout rate this week. Keep it up!`
+                        text: `Excellent consistency! ${Math.round(consistency)}% workout rate this week.`
                     });
                 }
+            } else if (recentWorkouts.length === 1) {
+                suggestions.push({
+                    type: 'consistency',
+                    text: 'Great job getting back to training! Aim for 3-4 sessions this week.'
+                });
             }
             
-            // Volume trend
-            if (allWorkouts.length >= 4) {
-                const recentVolume = allWorkouts.slice(0, 2).reduce((sum, w) => sum + calculateWorkoutVolume(w), 0);
-                const olderVolume = allWorkouts.slice(2, 4).reduce((sum, w) => sum + calculateWorkoutVolume(w), 0);
+            // Volume balance suggestions
+            const muscleGroupVolumes = calculateMuscleGroupVolumes();
+            const maxVolume = Math.max(...Object.values(muscleGroupVolumes));
+            const minVolume = Math.min(...Object.values(muscleGroupVolumes));
+            
+            if (maxVolume > 0 && minVolume < maxVolume * 0.6) {
+                const undertrainedGroup = Object.keys(muscleGroupVolumes).find(group => 
+                    muscleGroupVolumes[group] === minVolume);
+                suggestions.push({
+                    type: 'balance',
+                    text: `Consider adding more ${undertrainedGroup} volume for better muscle balance`
+                });
+            }
+            
+            return suggestions.slice(0, 4);
+        }
+
+        function calculateMuscleGroupVolumes() {
+            const volumes = { Push: 0, Pull: 0, Legs: 0, Upper: 0, Lower: 0 };
+            
+            allWorkouts.slice(0, 8).forEach(workout => {
+                const workoutVolume = Object.values(workout.exercises || {}).reduce((total, exercise) => {
+                    return total + exercise.sets.reduce((setTotal, set) => {
+                        return setTotal + (parseFloat(set.weight) || 0) * (parseInt(set.reps) || 0);
+                    }, 0);
+                }, 0);
                 
-                if (recentVolume > olderVolume * 1.1) {
-                    suggestions.push({
-                        type: 'analytics',
-                        text: `Volume trending up ${Math.round(((recentVolume - olderVolume) / olderVolume) * 100)}%! Excellent progressive overload.`
-                    });
-                }
-            }
+                volumes[workout.day] = (volumes[workout.day] || 0) + workoutVolume;
+            });
             
-            return suggestions.slice(0, 4); // Max 4 suggestions
+            return volumes;
         }
 
         function calculateWorkoutVolume(workout) {
@@ -904,32 +1365,56 @@
                 dayFrequency[day] = (dayFrequency[day] || 0) + 1;
             });
             
-            const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-            const preferredDay = Object.keys(dayFrequency).reduce((a, b) => dayFrequency[a] > dayFrequency[b] ? a : b);
-            insights.push(`You work out most often on ${dayNames[preferredDay]}s - this seems to be your power day!`);
+            if (Object.keys(dayFrequency).length > 0) {
+                const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                const preferredDay = Object.keys(dayFrequency).reduce((a, b) => dayFrequency[a] > dayFrequency[b] ? a : b);
+                insights.push(`You train most often on ${dayNames[preferredDay]}s - this seems to be your power day!`);
+            }
             
             // Volume analysis
             const totalVolume = allWorkouts.reduce((sum, w) => sum + calculateWorkoutVolume(w), 0);
             const avgVolumePerWorkout = Math.round(totalVolume / allWorkouts.length);
-            insights.push(`Your average workout volume is ${avgVolumePerWorkout.toLocaleString()}lbs - that's solid training stimulus.`);
+            insights.push(`Your average workout volume is ${avgVolumePerWorkout.toLocaleString()}lbs - solid training stimulus.`);
             
-            // Muscle group balance
-            const muscleGroupVolumes = { Push: 0, Pull: 0, Legs: 0, Upper: 0, Lower: 0 };
+            // Strength progression insights
+            const overloadData = calculateEnhancedOverloadScore();
+            if (overloadData.overall > 70) {
+                insights.push(`Outstanding strength progression! Your overload score of ${overloadData.overall}/100 indicates excellent training adaptation.`);
+            } else if (overloadData.overall > 40) {
+                insights.push(`Good progress with an overload score of ${overloadData.overall}/100. Consider focusing on weak points.`);
+            } else if (overloadData.overall > 0) {
+                insights.push(`Room for improvement with overload score of ${overloadData.overall}/100. Focus on progressive overload principles.`);
+            }
+            
+            // Exercise-specific insights
+            const exerciseVolumes = {};
             allWorkouts.forEach(workout => {
-                const volume = calculateWorkoutVolume(workout);
-                muscleGroupVolumes[workout.day] = (muscleGroupVolumes[workout.day] || 0) + volume;
+                Object.values(workout.exercises || {}).forEach(exercise => {
+                    if (!exercise.exercise.toLowerCase().includes('stretch')) {
+                        const volume = exercise.sets.reduce((sum, set) => 
+                            sum + (parseFloat(set.weight) || 0) * (parseInt(set.reps) || 0), 0);
+                        exerciseVolumes[exercise.exercise] = (exerciseVolumes[exercise.exercise] || 0) + volume;
+                    }
+                });
             });
             
-            const maxVolume = Math.max(...Object.values(muscleGroupVolumes));
-            const strongestGroup = Object.keys(muscleGroupVolumes).find(key => muscleGroupVolumes[key] === maxVolume);
-            insights.push(`Your strongest muscle group appears to be ${strongestGroup} based on training volume.`);
+            const topExercise = Object.keys(exerciseVolumes).reduce((a, b) => 
+                exerciseVolumes[a] > exerciseVolumes[b] ? a : b, '');
+                
+            if (topExercise) {
+                insights.push(`${topExercise} is your highest volume exercise with ${exerciseVolumes[topExercise].toLocaleString()}lbs total.`);
+            }
             
-            // Progressive overload
-            const overloadScore = calculateProgressiveOverloadScore();
-            if (overloadScore > 15) {
-                insights.push(`Excellent progressive overload! Your training progression score is ${overloadScore}/30.`);
-            } else if (overloadScore > 0) {
-                insights.push(`Good progress with a score of ${overloadScore}/30. Consider increasing weight or reps gradually.`);
+            // Intensity correlation insights
+            const intensityWorkouts = allWorkouts.filter(w => w.intensity);
+            if (intensityWorkouts.length >= 3) {
+                const highEnergyWorkouts = intensityWorkouts.filter(w => w.intensity.energy >= 4);
+                const avgVolumeHighEnergy = highEnergyWorkouts.reduce((sum, w) => sum + calculateWorkoutVolume(w), 0) / highEnergyWorkouts.length;
+                const avgVolumeAll = intensityWorkouts.reduce((sum, w) => sum + calculateWorkoutVolume(w), 0) / intensityWorkouts.length;
+                
+                if (avgVolumeHighEnergy > avgVolumeAll * 1.15) {
+                    insights.push(`You perform ${Math.round(((avgVolumeHighEnergy - avgVolumeAll) / avgVolumeAll) * 100)}% better on high-energy days. Prioritize sleep and nutrition!`);
+                }
             }
             
             return insights;
@@ -939,11 +1424,13 @@
             return allWorkouts.find(workout => workout.day === day);
         }
 
-        function getPersonalRecords() {
+       function getPersonalRecords() {
             const prs = {};
             
             allWorkouts.forEach(workout => {
                 Object.values(workout.exercises || {}).forEach(exercise => {
+                    if (exercise.exercise.toLowerCase().includes('stretch')) return;
+                    
                     exercise.sets.forEach(set => {
                         const weight = parseFloat(set.weight);
                         const reps = parseInt(set.reps);
@@ -961,9 +1448,436 @@
             return prs;
         }
 
+        function getExerciseProgression() {
+            const progression = {};
+            
+            // Group workouts by exercise
+            allWorkouts.forEach(workout => {
+                Object.values(workout.exercises || {}).forEach(exercise => {
+                    if (exercise.exercise.toLowerCase().includes('stretch')) return;
+                    
+                    if (!progression[exercise.exercise]) {
+                        progression[exercise.exercise] = [];
+                    }
+                    
+                    const maxWeight = Math.max(...exercise.sets.map(set => parseFloat(set.weight) || 0));
+                    const maxReps = Math.max(...exercise.sets.map(set => parseInt(set.reps) || 0));
+                    const totalVolume = exercise.sets.reduce((sum, set) => 
+                        sum + (parseFloat(set.weight) || 0) * (parseInt(set.reps) || 0), 0);
+                    
+                    progression[exercise.exercise].push({
+                        date: workout.date,
+                        maxWeight,
+                        maxReps,
+                        totalVolume,
+                        rawSets: exercise.sets
+                    });
+                });
+            });
+            
+            // Sort by date and analyze progression
+            const progressionSummary = {};
+            Object.keys(progression).forEach(exerciseName => {
+                const sessions = progression[exerciseName].sort((a, b) => new Date(b.date) - new Date(a.date));
+                
+                if (sessions.length >= 2) {
+                    const latest = sessions[0];
+                    const previous = sessions[1];
+                    
+                    let progressionText = '';
+                    let progressionType = 'none';
+                    
+                    if (latest.maxWeight > previous.maxWeight) {
+                        progressionText = `${previous.maxWeight}lbs → ${latest.maxWeight}lbs (+${latest.maxWeight - previous.maxWeight}lbs)`;
+                        progressionType = 'strength';
+                    } else if (latest.maxWeight === previous.maxWeight && latest.maxReps > previous.maxReps) {
+                        progressionText = `${latest.maxWeight}lbs: ${previous.maxReps} → ${latest.maxReps} reps (+${latest.maxReps - previous.maxReps})`;
+                        progressionType = 'volume';
+                    } else if (latest.totalVolume > previous.totalVolume) {
+                        progressionText = `Volume: ${previous.totalVolume} → ${latest.totalVolume} lbs (+${Math.round(((latest.totalVolume - previous.totalVolume) / previous.totalVolume) * 100)}%)`;
+                        progressionType = 'total_volume';
+                    } else {
+                        progressionText = `${latest.maxWeight}lbs × ${latest.maxReps} (maintaining)`;
+                        progressionType = 'maintaining';
+                    }
+                    
+                    const daysSince = Math.floor((new Date() - new Date(latest.date)) / (1000 * 60 * 60 * 24));
+                    
+                    progressionSummary[exerciseName] = {
+                        progression: progressionText,
+                        type: progressionType,
+                        daysSince,
+                        sessions: sessions.length
+                    };
+                }
+            });
+            
+            return progressionSummary;
+        }
+
+        // Chart Functions
+        function createVolumeChart() {
+            const ctx = document.getElementById('volume-chart');
+            if (!ctx) return;
+            
+            if (charts.volume) charts.volume.destroy();
+            
+            // Get last 12 weeks of data
+            const weeklyData = {};
+            const today = new Date();
+            
+            for (let i = 11; i >= 0; i--) {
+                const weekStart = new Date(today.getTime() - (i * 7 * 24 * 60 * 60 * 1000));
+                const weekKey = weekStart.toISOString().split('T')[0];
+                weeklyData[weekKey] = { Push: 0, Pull: 0, Upper: 0, Lower: 0, Legs: 0 };
+            }
+            
+            allWorkouts.forEach(workout => {
+                const workoutDate = new Date(workout.date);
+                const weekStart = new Date(workoutDate.getTime() - (workoutDate.getDay() * 24 * 60 * 60 * 1000));
+                const weekKey = weekStart.toISOString().split('T')[0];
+                
+                if (weeklyData[weekKey]) {
+                    const volume = calculateWorkoutVolume(workout);
+                    weeklyData[weekKey][workout.day] += volume;
+                }
+            });
+            
+            const labels = Object.keys(weeklyData).map(date => new Date(date).toLocaleDateString());
+            const datasets = [
+                {
+                    label: 'Push',
+                    data: Object.values(weeklyData).map(week => week.Push),
+                    borderColor: '#ef4444',
+                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                    tension: 0.4
+                },
+                {
+                    label: 'Pull',
+                    data: Object.values(weeklyData).map(week => week.Pull),
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    tension: 0.4
+                },
+                {
+                    label: 'Upper',
+                    data: Object.values(weeklyData).map(week => week.Upper),
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    tension: 0.4
+                },
+                {
+                    label: 'Lower',
+                    data: Object.values(weeklyData).map(week => week.Lower),
+                    borderColor: '#f59e0b',
+                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                    tension: 0.4
+                },
+                {
+                    label: 'Legs',
+                    data: Object.values(weeklyData).map(week => week.Legs),
+                    borderColor: '#8b5cf6',
+                    backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                    tension: 0.4
+                }
+            ];
+            
+            charts.volume = new Chart(ctx, {
+                type: 'line',
+                data: { labels, datasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top' }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'Volume (lbs)' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createStrengthChart() {
+            const ctx = document.getElementById('strength-chart');
+            if (!ctx) return;
+            
+            if (charts.strength) charts.strength.destroy();
+            
+            // Track key compound movements
+            const keyExercises = ['Barbell Bench Press', 'Barbell Squat', 'Romanian Deadlift', 'Weighted Pull-Ups'];
+            const datasets = [];
+            
+            keyExercises.forEach((exerciseName, index) => {
+                const exerciseData = [];
+                const exerciseWorkouts = allWorkouts.filter(workout =>
+                    Object.values(workout.exercises || {}).some(ex => ex.exercise === exerciseName)
+                ).slice(0, 10).reverse();
+                
+                exerciseWorkouts.forEach(workout => {
+                    const exercise = Object.values(workout.exercises || {}).find(ex => ex.exercise === exerciseName);
+                    if (exercise) {
+                        const maxWeight = Math.max(...exercise.sets.map(set => parseFloat(set.weight) || 0));
+                        if (maxWeight > 0) {
+                            exerciseData.push({
+                                x: workout.date,
+                                y: maxWeight
+                            });
+                        }
+                    }
+                });
+                
+                if (exerciseData.length > 0) {
+                    const colors = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b'];
+                    datasets.push({
+                        label: exerciseName,
+                        data: exerciseData,
+                        borderColor: colors[index],
+                        backgroundColor: colors[index],
+                        tension: 0.4
+                    });
+                }
+            });
+            
+            charts.strength = new Chart(ctx, {
+                type: 'line',
+                data: { datasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top' }
+                    },
+                    scales: {
+                        x: {
+                            type: 'time',
+                            time: { unit: 'day' }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'Max Weight (lbs)' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createBalanceChart() {
+            const ctx = document.getElementById('balance-chart');
+            if (!ctx) return;
+            
+            if (charts.balance) charts.balance.destroy();
+            
+            const muscleGroupVolumes = calculateMuscleGroupVolumes();
+            const labels = Object.keys(muscleGroupVolumes);
+            const data = Object.values(muscleGroupVolumes);
+            
+            charts.balance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels,
+                    datasets: [{
+                        data,
+                        backgroundColor: [
+                            '#ef4444',
+                            '#3b82f6',
+                            '#10b981',
+                            '#f59e0b',
+                            '#8b5cf6'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'right' }
+                    }
+                }
+            });
+        }
+
+        function createExerciseChart() {
+            const ctx = document.getElementById('exercise-chart');
+            if (!ctx) return;
+            
+            if (charts.exercise) charts.exercise.destroy();
+            
+            const exerciseVolumes = {};
+            allWorkouts.slice(0, 8).forEach(workout => {
+                Object.values(workout.exercises || {}).forEach(exercise => {
+                    if (!exercise.exercise.toLowerCase().includes('stretch')) {
+                        const volume = exercise.sets.reduce((sum, set) => 
+                            sum + (parseFloat(set.weight) || 0) * (parseInt(set.reps) || 0), 0);
+                        exerciseVolumes[exercise.exercise] = (exerciseVolumes[exercise.exercise] || 0) + volume;
+                    }
+                });
+            });
+            
+            const sortedExercises = Object.entries(exerciseVolumes)
+                .sort(([,a], [,b]) => b - a)
+                .slice(0, 10);
+            
+            charts.exercise = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: sortedExercises.map(([name]) => name.length > 20 ? name.substring(0, 17) + '...' : name),
+                    datasets: [{
+                        label: 'Volume (lbs)',
+                        data: sortedExercises.map(([,volume]) => volume),
+                        backgroundColor: '#06b6d4'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'Volume (lbs)' }
+                        }
+                    }
+                }
+            });
+        }
+        function createRepRangeChart() {
+            const ctx = document.getElementById('rep-range-chart');
+            if (!ctx) return;
+            
+            if (charts.repRange) charts.repRange.destroy();
+            
+            const repRanges = {
+                'Heavy (1-5)': 0,
+                'Strength (6-8)': 0,
+                'Hypertrophy (9-12)': 0,
+                'Endurance (13+)': 0
+            };
+            
+            allWorkouts.slice(0, 8).forEach(workout => {
+                Object.values(workout.exercises || {}).forEach(exercise => {
+                    if (!exercise.exercise.toLowerCase().includes('stretch')) {
+                        exercise.sets.forEach(set => {
+                            const reps = parseInt(set.reps) || 0;
+                            const weight = parseFloat(set.weight) || 0;
+                            const volume = weight * reps;
+                            
+                            if (reps <= 5) repRanges['Heavy (1-5)'] += volume;
+                            else if (reps <= 8) repRanges['Strength (6-8)'] += volume;
+                            else if (reps <= 12) repRanges['Hypertrophy (9-12)'] += volume;
+                            else repRanges['Endurance (13+)'] += volume;
+                        });
+                    }
+                });
+            });
+            
+            charts.repRange = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(repRanges),
+                    datasets: [{
+                        label: 'Volume (lbs)',
+                        data: Object.values(repRanges),
+                        backgroundColor: ['#dc2626', '#ea580c', '#ca8a04', '#16a34a']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'Volume (lbs)' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createPRTimelineChart() {
+            const ctx = document.getElementById('pr-timeline-chart');
+            if (!ctx) return;
+            
+            if (charts.prTimeline) charts.prTimeline.destroy();
+            
+            const prs = [];
+            const exercisePRHistory = {};
+            
+            // Build PR history
+            allWorkouts.slice().reverse().forEach(workout => {
+                Object.values(workout.exercises || {}).forEach(exercise => {
+                    if (!exercise.exercise.toLowerCase().includes('stretch')) {
+                        const maxWeight = Math.max(...exercise.sets.map(set => parseFloat(set.weight) || 0));
+                        
+                        if (maxWeight > 0) {
+                            const exerciseName = exercise.exercise;
+                            const currentPR = exercisePRHistory[exerciseName] || 0;
+                            
+                            if (maxWeight > currentPR) {
+                                prs.push({
+                                    x: workout.date,
+                                    y: maxWeight,
+                                    exercise: exerciseName
+                                });
+                                exercisePRHistory[exerciseName] = maxWeight;
+                            }
+                        }
+                    }
+                });
+            });
+            
+            // Group PRs by exercise for different colors
+            const exerciseColors = {};
+            const uniqueExercises = [...new Set(prs.map(pr => pr.exercise))];
+            const colors = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6'];
+            
+            uniqueExercises.forEach((exercise, index) => {
+                exerciseColors[exercise] = colors[index % colors.length];
+            });
+            
+            const datasets = uniqueExercises.slice(0, 5).map(exercise => ({
+                label: exercise,
+                data: prs.filter(pr => pr.exercise === exercise),
+                backgroundColor: exerciseColors[exercise],
+                borderColor: exerciseColors[exercise],
+                pointRadius: 6
+            }));
+            
+            charts.prTimeline = new Chart(ctx, {
+                type: 'scatter',
+                data: { datasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top' }
+                    },
+                    scales: {
+                        x: {
+                            type: 'time',
+                            time: { unit: 'day' }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'Weight (lbs)' }
+                        }
+                    }
+                }
+            });
+        }
+
         // UI Functions
         function updateSuggestions() {
-            const suggestions = generateAISuggestions();
+            const suggestions = generateAdvancedSuggestions();
             const container = document.getElementById('suggestions-container');
             
             container.innerHTML = suggestions.map(suggestion => `
@@ -978,53 +1892,120 @@
             document.getElementById('total-volume').textContent = calculateTotalVolume().toLocaleString();
             document.getElementById('pr-count').textContent = calculatePRCount();
             document.getElementById('workout-streak').textContent = calculateWorkoutStreak();
-            document.getElementById('overload-score').textContent = calculateProgressiveOverloadScore();
+            
+            const overloadData = calculateEnhancedOverloadScore();
+            document.getElementById('overload-score').textContent = overloadData.overall;
+            
+            // Update overload breakdown
+            const breakdownContainer = document.getElementById('overload-breakdown');
+            breakdownContainer.innerHTML = Object.entries(overloadData.breakdown).map(([component, score]) => `
+                <div class="overload-component">
+                    <span style="color: #e2e8f0; font-size: 0.8rem;">${component}</span>
+                    <div class="component-bar">
+                        <div class="component-fill" style="width: ${score}%; background: linear-gradient(135deg, #06b6d4, #3b82f6);"></div>
+                    </div>
+                    <span style="color: #06b6d4; font-size: 0.8rem; font-weight: 600;">${score}</span>
+                </div>
+            `).join('');
+            
+            // Update charts
+            createVolumeChart();
+            createStrengthChart();
+            createBalanceChart();
+            createExerciseChart();
+            createRepRangeChart();
+            createPRTimelineChart();
         }
 
         function updateInsights() {
             const insights = generateAIInsights();
+            const plateaus = detectPlateaus();
             const container = document.getElementById('insights-list');
             
-            container.innerHTML = insights.map(insight => `
-                <li class="insight-item">${insight}</li>
-            `).join('');
+            let html = '';
+            
+            // Add plateau alerts first
+            plateaus.slice(0, 2).forEach(plateau => {
+                html += `<li class="insight-item plateau-alert">⚠️ ${plateau.exercise} plateaued for ${plateau.sessions} sessions. ${plateau.suggestion}</li>`;
+            });
+            
+            // Add regular insights
+            insights.forEach(insight => {
+                const isProgression = insight.includes('Outstanding') || insight.includes('excellent');
+                const className = isProgression ? 'progression-highlight' : '';
+                html += `<li class="insight-item ${className}">${insight}</li>`;
+            });
+            
+            container.innerHTML = html || '<li class="insight-item">Complete more workouts to get personalized insights!</li>';
         }
 
         function updateProgress() {
             const prs = getPersonalRecords();
-            const container = document.getElementById('progress-list');
+            const progression = getExerciseProgression();
+            const prContainer = document.getElementById('progress-list');
+            const progressionContainer = document.getElementById('exercise-progress-list');
             
+            // Update PRs
             if (Object.keys(prs).length === 0) {
-                container.innerHTML = '<p style="color: #64748b;">Complete some workouts to see your personal records!</p>';
-                return;
-            }
-            
-            const sortedPRs = Object.entries(prs).sort(([,a], [,b]) => b.weight - a.weight);
-            
-            container.innerHTML = `
-                <h4 style="color: #06b6d4; margin-bottom: 1rem;">🏆 Personal Records</h4>
-                ${sortedPRs.slice(0, 10).map(([exercise, pr]) => `
+                prContainer.innerHTML = '<p style="color: #64748b;">Complete some workouts to see your personal records!</p>';
+            } else {
+                const sortedPRs = Object.entries(prs).sort(([,a], [,b]) => b.weight - a.weight);
+                
+                prContainer.innerHTML = sortedPRs.slice(0, 10).map(([exercise, pr]) => `
                     <div class="insight-item">
                         <strong>${exercise}</strong><br>
                         ${pr.weight}lbs × ${pr.reps} reps - ${new Date(pr.date).toLocaleDateString()}
                     </div>
-                `).join('')}
-            `;
+                `).join('');
+            }
+            
+            // Update exercise progression
+            if (Object.keys(progression).length === 0) {
+                progressionContainer.innerHTML = '<p style="color: #64748b;">Complete some workouts to see your detailed progression!</p>';
+            } else {
+                const sortedProgression = Object.entries(progression).sort(([,a], [,b]) => {
+                    const typeOrder = { strength: 4, volume: 3, total_volume: 2, maintaining: 1 };
+                    return typeOrder[b.type] - typeOrder[a.type];
+                });
+                
+                progressionContainer.innerHTML = sortedProgression.slice(0, 15).map(([exercise, data]) => {
+                    const typeColors = {
+                        strength: '#10b981',
+                        volume: '#3b82f6', 
+                        total_volume: '#f59e0b',
+                        maintaining: '#64748b'
+                    };
+                    
+                    return `
+                        <div class="insight-item" style="border-left-color: ${typeColors[data.type]};">
+                            <strong>${exercise}</strong><br>
+                            ${data.progression}<br>
+                            <span style="color: #94a3b8; font-size: 0.75rem;">
+                                ${data.daysSince} days ago • ${data.sessions} sessions tracked
+                            </span>
+                        </div>
+                    `;
+                }).join('');
+            }
         }
-
         // Main app initialization
         document.addEventListener('DOMContentLoaded', async function() {
-            console.log('Loading Firebase data...');
-            await loadWorkoutsFromFirebase();
+            console.log('Initializing Fitness Command Center...');
             
+            // Set up UI immediately
             setupEventListeners();
             initializeWorkout();
+            
+            // Load data in background
+            await loadWorkoutsFromFirebase();
+            
+            // Update with real data
             updateSuggestions();
             updateAnalytics();
             updateInsights();
             updateProgress();
             
-            console.log('Fitness Command Center initialized with Firebase!');
+            console.log('Fitness Command Center loaded successfully!');
         });
 
         function setupEventListeners() {
@@ -1070,7 +2051,35 @@
                 }
             });
 
+            // Intensity inputs
+            setupIntensityInputs();
+
             setWorkoutDate(); // Initialize the button text
+        }
+
+        function setupIntensityInputs() {
+            ['energy', 'motivation', 'fatigue', 'satisfaction'].forEach(type => {
+                const scale = document.getElementById(`${type}-scale`);
+                if (scale) {
+                    scale.addEventListener('click', (e) => {
+                        if (e.target.classList.contains('intensity-btn')) {
+                            // Remove active class from siblings
+                            scale.querySelectorAll('.intensity-btn').forEach(btn => btn.classList.remove('active'));
+                            
+                            // Add active class to clicked button
+                            e.target.classList.add('active');
+                            
+                            // Update workout intensity
+                            const value = parseInt(e.target.dataset.value);
+                            if (['energy', 'motivation'].includes(type)) {
+                                workoutIntensity.preWorkout[type] = value;
+                            } else {
+                                workoutIntensity.postWorkout[type] = value;
+                            }
+                        }
+                    });
+                }
+            });
         }
 
         function showTab(tabName) {
@@ -1119,6 +2128,7 @@
             const container = document.getElementById('exercises-container');
             const exercises = workoutPlans[currentDay];
             const lastWorkout = getLastWorkoutForDay(currentDay);
+            const exerciseProgression = getExerciseProgression();
             
             let html = '';
             
@@ -1129,29 +2139,46 @@
                 // Check if this is a stretch exercise
                 const isStretch = exercise.name.toLowerCase().includes('stretch');
                 
-                // Calculate suggested weight (only for non-stretch exercises)
+                // Calculate suggested weight and get progression info
                 let suggestedWeight = '';
+                let progressionInfo = '';
+                
                 if (!isStretch && previousExercise && previousExercise.sets.length > 0) {
-                    const avgWeight = previousExercise.sets.reduce((sum, set) => sum + (parseFloat(set.weight) || 0), 0) / previousExercise.sets.length;
-                    const avgReps = previousExercise.sets.reduce((sum, set) => sum + (parseInt(set.reps) || 0), 0) / previousExercise.sets.length;
-                    
-                    if (avgWeight > 0 && avgReps >= 8) {
-                        suggestedWeight = Math.round(avgWeight + 5);
-                    } else if (avgWeight > 0) {
-                        suggestedWeight = Math.round(avgWeight);
+                    const prevSets = previousExercise.sets.filter(set => set.weight && set.reps);
+                    if (prevSets.length > 0) {
+                        const avgWeight = prevSets.reduce((sum, set) => sum + parseFloat(set.weight), 0) / prevSets.length;
+                        const avgReps = prevSets.reduce((sum, set) => sum + parseInt(set.reps), 0) / prevSets.length;
+                        
+                        if (avgReps >= 10) {
+                            suggestedWeight = Math.round(avgWeight + 5);
+                        } else if (avgReps >= 8) {
+                            suggestedWeight = Math.round(avgWeight + 2.5);
+                        } else {
+                            suggestedWeight = Math.round(avgWeight);
+                        }
+                    }
+                }
+                
+                // Get progression information
+                if (!isStretch && exerciseProgression[exercise.name]) {
+                    const prog = exerciseProgression[exercise.name];
+                    if (prog.type === 'strength') {
+                        progressionInfo = `+${prog.progression.split('(+')[1]?.split(')')[0] || 'improved'}`;
+                    } else if (prog.type === 'volume') {
+                        progressionInfo = `+${prog.progression.split('(+')[1]?.split(')')[0] || 'reps'}`;
                     }
                 }
 
-                // Get PR for this exercise (only for non-stretch exercises)
+                // Get PR for this exercise
                 const prs = getPersonalRecords();
                 const exercisePR = !isStretch ? prs[exercise.name] : null;
-                
                 html += `
                     <div class="exercise-card">
                         <div class="exercise-header">
                             <div>
                                 <div class="exercise-name">${exercise.name}</div>
                                 <div class="exercise-target">${exercise.sets} × ${exercise.reps}</div>
+                                ${progressionInfo ? `<div class="exercise-progress-indicator">${progressionInfo} last session</div>` : ''}
                             </div>
                             <div class="exercise-intelligence">
                                 ${suggestedWeight ? `<div class="suggested-weight">Try ${suggestedWeight}lbs</div>` : ''}
@@ -1161,7 +2188,7 @@
 
                         ${previousExercise && !isStretch ? `
                             <div class="previous-session">
-                                <div class="previous-header">Last session (${lastWorkout.date}):</div>
+                                <div class="previous-header">Last session (${new Date(lastWorkout.date).toLocaleDateString()}):</div>
                                 <div class="previous-sets">
                                     ${previousExercise.sets.filter(set => set.weight || set.reps).map((set, idx) => `
                                         <div class="previous-set">Set ${idx + 1}: ${set.weight}×${set.reps}</div>
@@ -1266,7 +2293,13 @@
             const workoutData = {
                 date: selectedDate,
                 day: currentDay,
-                exercises: currentWorkout
+                exercises: currentWorkout,
+                intensity: {
+                    energy: workoutIntensity.preWorkout.energy,
+                    motivation: workoutIntensity.preWorkout.motivation,
+                    fatigue: workoutIntensity.postWorkout.fatigue,
+                    satisfaction: workoutIntensity.postWorkout.satisfaction
+                }
             };
             
             try {
@@ -1286,6 +2319,15 @@
                 exportToClipboard();
                 
                 alert('💪 Workout saved to Firebase and copied to clipboard!');
+                
+                // Reset intensity inputs
+                workoutIntensity = {
+                    preWorkout: { energy: null, motivation: null },
+                    postWorkout: { fatigue: null, satisfaction: null }
+                };
+                
+                // Clear active intensity buttons
+                document.querySelectorAll('.intensity-btn').forEach(btn => btn.classList.remove('active'));
                 
                 // Reset and refresh
                 initializeWorkout();
@@ -1308,7 +2350,17 @@
             });
             
             let exportText = '🏋️‍♂️ ' + currentDay + ' | ' + dateString + '\n';
-            exportText += '=========================\n\n';
+            exportText += '=========================\n';
+            
+            // Add intensity ratings if available
+            if (workoutIntensity.preWorkout.energy || workoutIntensity.postWorkout.satisfaction) {
+                exportText += '\n📊 Session Intensity:\n';
+                if (workoutIntensity.preWorkout.energy) exportText += `Energy: ${workoutIntensity.preWorkout.energy}/5 `;
+                if (workoutIntensity.preWorkout.motivation) exportText += `| Motivation: ${workoutIntensity.preWorkout.motivation}/5\n`;
+                if (workoutIntensity.postWorkout.fatigue) exportText += `Fatigue: ${workoutIntensity.postWorkout.fatigue}/5 `;
+                if (workoutIntensity.postWorkout.satisfaction) exportText += `| Satisfaction: ${workoutIntensity.postWorkout.satisfaction}/5\n`;
+                exportText += '\n';
+            }
             
             Object.values(currentWorkout).forEach(exercise => {
                 exportText += exercise.exercise + '\n';
