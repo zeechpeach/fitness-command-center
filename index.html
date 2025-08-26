@@ -183,7 +183,12 @@
             border: 1px solid rgba(71, 85, 105, 0.3);
             border-radius: 16px;
             padding: 1.5rem;
-            margin-bottom: 1.5rem;
+            margin-bottom: 1.75rem;
+            /* Improved containment */
+            overflow: hidden;
+            box-sizing: border-box;
+            /* Better visual separation */
+            position: relative;
         }
 
         .exercise-header {
@@ -242,33 +247,59 @@
         }
 
         .previous-session {
-            background: rgba(59, 130, 246, 0.1);
-            border: 1px solid rgba(59, 130, 246, 0.2);
-            border-radius: 8px;
-            padding: 0.75rem;
-            margin-bottom: 1rem;
+            background: rgba(59, 130, 246, 0.08);
+            border: 1px solid rgba(59, 130, 246, 0.15);
+            border-radius: 10px;
+            padding: 1rem;
+            margin-bottom: 1.25rem;
+            /* Improved containment */
+            overflow: hidden;
+            box-sizing: border-box;
+            /* Better visual separation */
+            border-left: 3px solid rgba(59, 130, 246, 0.4);
+            /* Subtle shadow for depth */
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
 
         .previous-header {
             color: #60a5fa;
-            font-size: 0.8rem;
+            font-size: 0.85rem;
             font-weight: 600;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.75rem;
+            /* Better visual hierarchy */
+            letter-spacing: 0.025em;
+            text-transform: uppercase;
+            opacity: 0.9;
         }
 
         .previous-sets {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-            gap: 0.5rem;
+            grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+            gap: 0.6rem;
+            /* Ensure proper containment */
+            max-width: 100%;
+            overflow: hidden;
         }
 
         .previous-set {
             color: #93c5fd;
             font-size: 0.8rem;
             text-align: center;
-            padding: 0.25rem;
-            background: rgba(59, 130, 246, 0.1);
-            border-radius: 4px;
+            padding: 0.4rem 0.5rem;
+            background: rgba(59, 130, 246, 0.12);
+            border-radius: 6px;
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            font-weight: 500;
+            /* Improved text display */
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            /* Subtle hover effect for better interactivity */
+            transition: background-color 0.2s ease;
+        }
+
+        .previous-set:hover {
+            background: rgba(59, 130, 246, 0.18);
         }
 
         .intensity-inputs {
@@ -323,6 +354,8 @@
         .set-input-grid {
             display: grid;
             gap: 0.75rem;
+            /* Better containment and spacing */
+            margin-top: 0.5rem;
         }
 
         .set-row {
@@ -333,6 +366,9 @@
             padding: 0.75rem;
             border-radius: 8px;
             border: 1px solid rgba(71, 85, 105, 0.3);
+            /* Improved containment */
+            box-sizing: border-box;
+            overflow: hidden;
         }
 
         .set-number {
@@ -619,6 +655,27 @@
                 align-items: flex-start;
                 gap: 0.5rem;
             }
+
+            /* Improved mobile layout for previous sessions */
+            .previous-sets {
+                grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+                gap: 0.4rem;
+            }
+
+            .previous-set {
+                font-size: 0.75rem;
+                padding: 0.3rem 0.4rem;
+            }
+
+            .exercise-card {
+                padding: 1.25rem;
+                margin-bottom: 1.5rem;
+            }
+
+            .previous-session {
+                padding: 0.875rem;
+                margin-bottom: 1rem;
+            }
         }
     </style>
 </head>
@@ -831,10 +888,10 @@
         </div>
     </div>
 
-    <script>
-        // Firebase imports - commented out for offline development
-        // import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-        // import { getFirestore, collection, addDoc, getDocs, query, orderBy, where, limit } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    <script type="module">
+        // Firebase imports
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, query, orderBy, where, limit } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
         // Firebase config
         const firebaseConfig = {
@@ -847,9 +904,9 @@
             measurementId: "G-F06G7Y9V25"
         };
 
-        // Initialize Firebase - commented out for offline development
-        // const app = initializeApp(firebaseConfig);
-        // const db = getFirestore(app);
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
 
         // Global state
         let currentDay = 'Upper';
@@ -918,102 +975,36 @@
             ]
         };
 
-        // Firebase functions - commented out for offline development
+        // Firebase functions
         async function saveWorkoutToFirebase(workoutData) {
-            // try {
-            //     const docRef = await addDoc(collection(db, "workouts"), {
-            //         ...workoutData,
-            //         timestamp: new Date()
-            //     });
-            //     console.log("Workout saved with ID:", docRef.id);
-            //     return docRef.id;
-            // } catch (e) {
-            //     console.error("Error adding workout:", e);
-            //     throw e;
-            // }
-            console.log("Firebase disabled - workout not saved:", workoutData);
-            return "offline-id";
+            try {
+                const docRef = await addDoc(collection(db, "workouts"), {
+                    ...workoutData,
+                    timestamp: new Date()
+                });
+                console.log("Workout saved with ID:", docRef.id);
+                return docRef.id;
+            } catch (e) {
+                console.error("Error adding workout:", e);
+                throw e;
+            }
         }
 
         async function loadWorkoutsFromFirebase() {
-            // try {
-            //     const q = query(collection(db, "workouts"), orderBy("timestamp", "desc"), limit(50));
-            //     const querySnapshot = await getDocs(q);
-            //     const workouts = [];
-            //     querySnapshot.forEach((doc) => {
-            //         workouts.push({ id: doc.id, ...doc.data() });
-            //     });
-            //     allWorkouts = workouts;
-            //     console.log("Loaded workouts:", workouts.length);
-            //     return workouts;
-            // } catch (e) {
-            //     console.error("Error loading workouts:", e);
-            //     return [];
-            // }
-            
-            // Load some sample data for testing layout
-            allWorkouts = [
-                {
-                    id: "sample1",
-                    day: "Upper",
-                    date: "2025-08-23", // Recent date to show previous sessions
-                    exercises: {
-                        0: {
-                            exercise: "Incline Dumbbell Press",
-                            sets: [
-                                { weight: "45", reps: "8" },
-                                { weight: "45", reps: "7" },
-                                { weight: "45", reps: "6" }
-                            ]
-                        },
-                        1: {
-                            exercise: "Seated Cable Fly",
-                            sets: [
-                                { weight: "25", reps: "10" },
-                                { weight: "25", reps: "9" }
-                            ]
-                        },
-                        2: {
-                            exercise: "Weighted Pull-Ups",
-                            sets: [
-                                { weight: "10", reps: "6" },
-                                { weight: "10", reps: "5" },
-                                { weight: "10", reps: "4" }
-                            ]
-                        },
-                        3: {
-                            exercise: "High Cable Lateral Raise",
-                            sets: [
-                                { weight: "15", reps: "10" },
-                                { weight: "15", reps: "8" }
-                            ]
-                        },
-                        4: {
-                            exercise: "Deficit Pendlay Row",
-                            sets: [
-                                { weight: "95", reps: "8" },
-                                { weight: "95", reps: "7" }
-                            ]
-                        },
-                        5: {
-                            exercise: "Cable Tricep Extension",
-                            sets: [
-                                { weight: "40", reps: "10" },
-                                { weight: "40", reps: "9" }
-                            ]
-                        },
-                        6: {
-                            exercise: "Bayesian Cable Bicep Curl",
-                            sets: [
-                                { weight: "20", reps: "10" },
-                                { weight: "20", reps: "8" }
-                            ]
-                        }
-                    }
-                }
-            ];
-            console.log("Loaded sample workouts for testing");
-            return allWorkouts;
+            try {
+                const q = query(collection(db, "workouts"), orderBy("timestamp", "desc"), limit(50));
+                const querySnapshot = await getDocs(q);
+                const workouts = [];
+                querySnapshot.forEach((doc) => {
+                    workouts.push({ id: doc.id, ...doc.data() });
+                });
+                allWorkouts = workouts;
+                console.log("Loaded workouts:", workouts.length);
+                return workouts;
+            } catch (e) {
+                console.error("Error loading workouts:", e);
+                return [];
+            }
         }
         // Enhanced Analytics Functions
         function calculateTotalVolume() {
