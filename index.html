@@ -814,14 +814,12 @@
 
             <div class="analytics-card">
                 <h3 class="analytics-title">🏆 Personal Records</h3>
-                <div id="progress-list">
+                <div id="<div id="progress-list">
                     <p style="color: #64748b;">Complete some workouts to see your strength progression!</p>
                 </div>
             </div>
         </div>
 
-        <!-- INTELLIGENCE TAB -->
-        <div id="intelligence-content" class
         <!-- INTELLIGENCE TAB -->
         <div id="intelligence-content" class="tab-content">
             <div class="analytics-card">
@@ -864,61 +862,61 @@
         let charts = {};
 
         const workoutPlans = {
-    Upper: [
-        { name: 'Incline Dumbbell Press', sets: 3, reps: 8 },
-        { name: 'Seated Cable Fly', sets: 2, reps: 10 },
-        { name: 'Weighted Pull-Ups', sets: 3, reps: 6 },
-        { name: 'High Cable Lateral Raise', sets: 2, reps: 10 },
-        { name: 'Deficit Pendlay Row', sets: 2, reps: 8 },
-        { name: 'Cable Tricep Extension', sets: 2, reps: 10 },
-        { name: 'Bayesian Cable Bicep Curl', sets: 2, reps: 10 }
-    ],
-    Lower: [
-        { name: 'Lying Leg Curls', sets: 2, reps: '8+partial to failure' },
-        { name: 'Barbell Squat', sets: 3, reps: 8 },
-        { name: 'Romanian Deadlift', sets: 3, reps: 8 },
-        { name: 'Leg Extension', sets: 2, reps: 10 },
-        { name: 'Hip Abduction', sets: 2, reps: 10 },
-        { name: 'Standing Calf Raise', sets: 3, reps: 10 }
-    ],
-    Rest: [
-        { name: 'Rest Day Recovery', sets: 1, reps: 'Complete' }
-    ],
-    Push: [
-        { name: 'Barbell Bench Press', sets: 1, reps: '3-5 with warmup ladder (15, 5, 3, 2, 1)' },
-        { name: 'Dumbbell Larsen Press', sets: 2, reps: '10 (75% of bench press weight)' },
-        { name: 'Standing Arnold Press', sets: 3, reps: '8-10' },
-        { name: 'Cable Press-Around (Superset)', sets: 2, reps: '12-15' },
-        { name: 'Pec Stretch (Superset)', sets: 2, reps: '30 seconds' },
-        { name: 'Cross-Body Cable Y-Raise', sets: 3, reps: '12-15' },
-        { name: 'Squeeze-Only Pressdown (Superset)', sets: 3, reps: 8 },
-        { name: 'Overhead Extension - Stretch Position (Superset)', sets: 3, reps: 8 },
-        { name: 'Cross-Body Triceps Extension', sets: 2, reps: '10-12' }
-    ],
-    Pull: [
-        { name: 'Lat Pulldown', sets: '4 feeder sets + 1-2 sets to failure + 1 dropset', reps: 'Varies' },
-        { name: 'Machine Row/T-Bar Row/DB Helms Row', sets: 3, reps: '10-12' },
-        { name: 'Bottom Half DB Lat Pullovers (Superset)', sets: 2, reps: '10-12' },
-        { name: 'Static Lat Stretching (Superset)', sets: 2, reps: '30 seconds' },
-        { name: 'Omni Directional Face Pulls', sets: 3, reps: '12-15' },
-        { name: 'EZ Bar Bicep Curl', sets: 3, reps: '6-8' },
-        { name: 'Bottom-Half DB Preacher Curl', sets: 2, reps: '10-12' } 
-    ],
-    Legs: [
-        { name: 'Squats - Warmup 20%', sets: 1, reps: 10 },
-        { name: 'Squats - Warmup 35%', sets: 1, reps: 5 },
-        { name: 'Squats - Warmup 55%', sets: 1, reps: 3 },
-        { name: 'Squats - Warmup 70%', sets: 1, reps: 2 },
-        { name: 'Squats - Warmup 80%', sets: 1, reps: 1 },
-        { name: 'Squats - 85-90%', sets: 1, reps: '2-4' },
-        { name: 'Paused Squats (75% of working weight)', sets: 2, reps: 5 },
-        { name: 'Romanian Deadlift', sets: 3, reps: '8-10' },
-        { name: 'Walking Lunges', sets: 2, reps: '10 per leg' },
-        { name: 'Seated Leg Curl', sets: 3, reps: '10-12' },
-        { name: 'Leg Press Toe Press', sets: 4, reps: '10-12' },
-        { name: 'Decline Plate Crunch', sets: 3, reps: '10-12' },
-    ]
-};
+            Upper: [
+                { name: 'Incline Dumbbell Press', sets: 3, reps: 8 },
+                { name: 'Seated Cable Fly', sets: 2, reps: 10 },
+                { name: 'Weighted Pull-Ups', sets: 3, reps: 6 },
+                { name: 'High Cable Lateral Raise', sets: 2, reps: 10 },
+                { name: 'Deficit Pendlay Row', sets: 2, reps: 8 },
+                { name: 'Cable Tricep Extension', sets: 2, reps: 10 },
+                { name: 'Bayesian Cable Bicep Curl', sets: 2, reps: 10 }
+            ],
+            Lower: [
+                { name: 'Lying Leg Curls', sets: 2, reps: '8+partial to failure' },
+                { name: 'Barbell Squat', sets: 3, reps: 8 },
+                { name: 'Romanian Deadlift', sets: 3, reps: 8 },
+                { name: 'Leg Extension', sets: 2, reps: 10 },
+                { name: 'Hip Abduction', sets: 2, reps: 10 },
+                { name: 'Standing Calf Raise', sets: 3, reps: 10 }
+            ],
+            Rest: [
+                { name: 'Rest Day Recovery', sets: 1, reps: 'Complete' }
+            ],
+            Push: [
+                { name: 'Barbell Bench Press', sets: 1, reps: '3-5 with warmup ladder (15, 5, 3, 2, 1)' },
+                { name: 'Dumbbell Larsen Press', sets: 2, reps: '10 (75% of bench press weight)' },
+                { name: 'Standing Arnold Press', sets: 3, reps: '8-10' },
+                { name: 'Cable Press-Around (Superset)', sets: 2, reps: '12-15' },
+                { name: 'Pec Stretch (Superset)', sets: 2, reps: '30 seconds' },
+                { name: 'Cross-Body Cable Y-Raise', sets: 3, reps: '12-15' },
+                { name: 'Squeeze-Only Pressdown (Superset)', sets: 3, reps: 8 },
+                { name: 'Overhead Extension - Stretch Position (Superset)', sets: 3, reps: 8 },
+                { name: 'Cross-Body Triceps Extension', sets: 2, reps: '10-12' }
+            ],
+            Pull: [
+                { name: 'Lat Pulldown', sets: '4 feeder sets + 1-2 sets to failure + 1 dropset', reps: 'Varies' },
+                { name: 'Machine Row/T-Bar Row/DB Helms Row', sets: 3, reps: '10-12' },
+                { name: 'Bottom Half DB Lat Pullovers (Superset)', sets: 2, reps: '10-12' },
+                { name: 'Static Lat Stretching (Superset)', sets: 2, reps: '30 seconds' },
+                { name: 'Omni Directional Face Pulls', sets: 3, reps: '12-15' },
+                { name: 'EZ Bar Bicep Curl', sets: 3, reps: '6-8' },
+                { name: 'Bottom-Half DB Preacher Curl', sets: 2, reps: '10-12' } 
+            ],
+            Legs: [
+                { name: 'Squats - Warmup 20%', sets: 1, reps: 10 },
+                { name: 'Squats - Warmup 35%', sets: 1, reps: 5 },
+                { name: 'Squats - Warmup 55%', sets: 1, reps: 3 },
+                { name: 'Squats - Warmup 70%', sets: 1, reps: 2 },
+                { name: 'Squats - Warmup 80%', sets: 1, reps: 1 },
+                { name: 'Squats - 85-90%', sets: 1, reps: '2-4' },
+                { name: 'Paused Squats (75% of working weight)', sets: 2, reps: 5 },
+                { name: 'Romanian Deadlift', sets: 3, reps: '8-10' },
+                { name: 'Walking Lunges', sets: 2, reps: '10 per leg' },
+                { name: 'Seated Leg Curl', sets: 3, reps: '10-12' },
+                { name: 'Leg Press Toe Press', sets: 4, reps: '10-12' },
+                { name: 'Decline Plate Crunch', sets: 3, reps: '10-12' },
+            ]
+        };
 
         // Firebase functions
         async function saveWorkoutToFirebase(workoutData) {
@@ -951,7 +949,6 @@
                 return [];
             }
         }
-
         // Enhanced Analytics Functions
         function calculateTotalVolume() {
             const thisMonth = new Date().getMonth();
@@ -971,28 +968,29 @@
                 }, 0);
         }
 
-       function calculateWorkoutStreak() {
-    if (allWorkouts.length === 0) return 0;
-    
-    const sortedWorkouts = allWorkouts.sort((a, b) => new Date(b.date) - new Date(a.date));
-    let streak = 1;
-    let currentDate = new Date(sortedWorkouts[0].date);
-    
-    for (let i = 1; i < sortedWorkouts.length; i++) {
-        const workoutDate = new Date(sortedWorkouts[i].date);
-        const daysDiff = Math.floor((currentDate - workoutDate) / (1000 * 60 * 60 * 24));
-        
-        // Allow 1-2 day gaps (normal rest days in training program)
-        if (daysDiff <= 2) {
-            streak++;
-            currentDate = workoutDate;
-        } else {
-            break;
+        function calculateWorkoutStreak() {
+            if (allWorkouts.length === 0) return 0;
+            
+            const sortedWorkouts = allWorkouts.sort((a, b) => new Date(b.date) - new Date(a.date));
+            let streak = 1;
+            let currentDate = new Date(sortedWorkouts[0].date);
+            
+            for (let i = 1; i < sortedWorkouts.length; i++) {
+                const workoutDate = new Date(sortedWorkouts[i].date);
+                const daysDiff = Math.floor((currentDate - workoutDate) / (1000 * 60 * 60 * 24));
+                
+                // Allow 1-2 day gaps (normal rest days in training program)
+                if (daysDiff <= 2) {
+                    streak++;
+                    currentDate = workoutDate;
+                } else {
+                    break;
+                }
+            }
+            
+            return streak;
         }
-    }
-    
-    return streak;
-}
+
         function calculateEnhancedOverloadScore() {
             if (allWorkouts.length < 2) return { overall: 0, breakdown: {} };
             
@@ -1030,8 +1028,8 @@
                         
                         totalComparisons++;
                         
-                        // Skip stretch exercises for strength analysis
-                        if (currentEx.exercise.toLowerCase().includes('stretch')) return;
+                        // Skip stretch exercises and rest days for strength analysis
+                        if (currentEx.exercise.toLowerCase().includes('stretch') || current.day === 'Rest') return;
                         
                         // Volume progression (weight x reps)
                         const currentVolume = currentEx.sets.reduce((sum, set) =>
@@ -1171,7 +1169,7 @@
                 // Track exercise progression
                 dayWorkouts.forEach(workout => {
                     Object.values(workout.exercises || {}).forEach(exercise => {
-                        if (exercise.exercise.toLowerCase().includes('stretch')) return;
+                        if (exercise.exercise.toLowerCase().includes('stretch') || workout.day === 'Rest') return;
                         
                         if (!exerciseMap[exercise.exercise]) {
                             exerciseMap[exercise.exercise] = [];
@@ -1270,7 +1268,7 @@
                 
                 // Smart progression suggestions
                 Object.values(lastWorkout.exercises || {}).forEach((exercise, idx) => {
-                    if (idx < 2 && !exercise.exercise.toLowerCase().includes('stretch')) {
+                    if (idx < 2 && !exercise.exercise.toLowerCase().includes('stretch') && lastWorkout.day !== 'Rest') {
                         const maxWeight = Math.max(...exercise.sets.map(set => parseFloat(set.weight) || 0));
                         const completedReps = exercise.sets.map(set => parseInt(set.reps) || 0);
                         const avgReps = completedReps.reduce((a, b) => a + b, 0) / completedReps.length;
@@ -1312,20 +1310,6 @@
                 });
             }
             
-            // Volume balance suggestions
-            const muscleGroupVolumes = calculateMuscleGroupVolumes();
-            const maxVolume = Math.max(...Object.values(muscleGroupVolumes));
-            const minVolume = Math.min(...Object.values(muscleGroupVolumes));
-            
-            if (maxVolume > 0 && minVolume < maxVolume * 0.6) {
-                const undertrainedGroup = Object.keys(muscleGroupVolumes).find(group => 
-                    muscleGroupVolumes[group] === minVolume);
-                suggestions.push({
-                    type: 'balance',
-                    text: `Consider adding more ${undertrainedGroup} volume for better muscle balance`
-                });
-            }
-            
             return suggestions.slice(0, 4);
         }
 
@@ -1333,6 +1317,8 @@
             const volumes = { Push: 0, Pull: 0, Legs: 0, Upper: 0, Lower: 0 };
             
             allWorkouts.slice(0, 8).forEach(workout => {
+                if (workout.day === 'Rest') return;
+                
                 const workoutVolume = Object.values(workout.exercises || {}).reduce((total, exercise) => {
                     return total + exercise.sets.reduce((setTotal, set) => {
                         return setTotal + (parseFloat(set.weight) || 0) * (parseInt(set.reps) || 0);
@@ -1346,6 +1332,8 @@
         }
 
         function calculateWorkoutVolume(workout) {
+            if (workout.day === 'Rest') return 0;
+            
             return Object.values(workout.exercises || {}).reduce((total, exercise) => {
                 return total + exercise.sets.reduce((setTotal, set) => {
                     return setTotal + (parseFloat(set.weight) || 0) * (parseInt(set.reps) || 0);
@@ -1392,37 +1380,6 @@
                 insights.push(`Room for improvement with overload score of ${overloadData.overall}/100. Focus on progressive overload principles.`);
             }
             
-            // Exercise-specific insights
-            const exerciseVolumes = {};
-            allWorkouts.forEach(workout => {
-                Object.values(workout.exercises || {}).forEach(exercise => {
-                    if (!exercise.exercise.toLowerCase().includes('stretch')) {
-                        const volume = exercise.sets.reduce((sum, set) => 
-                            sum + (parseFloat(set.weight) || 0) * (parseInt(set.reps) || 0), 0);
-                        exerciseVolumes[exercise.exercise] = (exerciseVolumes[exercise.exercise] || 0) + volume;
-                    }
-                });
-            });
-            
-            const topExercise = Object.keys(exerciseVolumes).reduce((a, b) => 
-                exerciseVolumes[a] > exerciseVolumes[b] ? a : b, '');
-                
-            if (topExercise) {
-                insights.push(`${topExercise} is your highest volume exercise with ${exerciseVolumes[topExercise].toLocaleString()}lbs total.`);
-            }
-            
-            // Intensity correlation insights
-            const intensityWorkouts = allWorkouts.filter(w => w.intensity);
-            if (intensityWorkouts.length >= 3) {
-                const highEnergyWorkouts = intensityWorkouts.filter(w => w.intensity.energy >= 4);
-                const avgVolumeHighEnergy = highEnergyWorkouts.reduce((sum, w) => sum + calculateWorkoutVolume(w), 0) / highEnergyWorkouts.length;
-                const avgVolumeAll = intensityWorkouts.reduce((sum, w) => sum + calculateWorkoutVolume(w), 0) / intensityWorkouts.length;
-                
-                if (avgVolumeHighEnergy > avgVolumeAll * 1.15) {
-                    insights.push(`You perform ${Math.round(((avgVolumeHighEnergy - avgVolumeAll) / avgVolumeAll) * 100)}% better on high-energy days. Prioritize sleep and nutrition!`);
-                }
-            }
-            
             return insights;
         }
 
@@ -1430,10 +1387,12 @@
             return allWorkouts.find(workout => workout.day === day);
         }
 
-       function getPersonalRecords() {
+        function getPersonalRecords() {
             const prs = {};
             
             allWorkouts.forEach(workout => {
+                if (workout.day === 'Rest') return;
+                
                 Object.values(workout.exercises || {}).forEach(exercise => {
                     if (exercise.exercise.toLowerCase().includes('stretch')) return;
                     
@@ -1459,6 +1418,8 @@
             
             // Group workouts by exercise
             allWorkouts.forEach(workout => {
+                if (workout.day === 'Rest') return;
+                
                 Object.values(workout.exercises || {}).forEach(exercise => {
                     if (exercise.exercise.toLowerCase().includes('stretch')) return;
                     
@@ -1539,6 +1500,8 @@
             }
             
             allWorkouts.forEach(workout => {
+                if (workout.day === 'Rest') return;
+                
                 const workoutDate = new Date(workout.date);
                 const weekStart = new Date(workoutDate.getTime() - (workoutDate.getDay() * 24 * 60 * 60 * 1000));
                 const weekKey = weekStart.toISOString().split('T')[0];
@@ -1620,7 +1583,7 @@
             keyExercises.forEach((exerciseName, index) => {
                 const exerciseData = [];
                 const exerciseWorkouts = allWorkouts.filter(workout =>
-                    Object.values(workout.exercises || {}).some(ex => ex.exercise === exerciseName)
+                    workout.day !== 'Rest' && Object.values(workout.exercises || {}).some(ex => ex.exercise === exerciseName)
                 ).slice(0, 10).reverse();
                 
                 exerciseWorkouts.forEach(workout => {
@@ -1714,6 +1677,8 @@
             
             const exerciseVolumes = {};
             allWorkouts.slice(0, 8).forEach(workout => {
+                if (workout.day === 'Rest') return;
+                
                 Object.values(workout.exercises || {}).forEach(exercise => {
                     if (!exercise.exercise.toLowerCase().includes('stretch')) {
                         const volume = exercise.sets.reduce((sum, set) => 
@@ -1753,6 +1718,7 @@
                 }
             });
         }
+
         function createRepRangeChart() {
             const ctx = document.getElementById('rep-range-chart');
             if (!ctx) return;
@@ -1767,6 +1733,8 @@
             };
             
             allWorkouts.slice(0, 8).forEach(workout => {
+                if (workout.day === 'Rest') return;
+                
                 Object.values(workout.exercises || {}).forEach(exercise => {
                     if (!exercise.exercise.toLowerCase().includes('stretch')) {
                         exercise.sets.forEach(set => {
@@ -1820,6 +1788,8 @@
             
             // Build PR history
             allWorkouts.slice().reverse().forEach(workout => {
+                if (workout.day === 'Rest') return;
+                
                 Object.values(workout.exercises || {}).forEach(exercise => {
                     if (!exercise.exercise.toLowerCase().includes('stretch')) {
                         const maxWeight = Math.max(...exercise.sets.map(set => parseFloat(set.weight) || 0));
@@ -1880,7 +1850,6 @@
                 }
             });
         }
-
         // UI Functions
         function updateSuggestions() {
             const suggestions = generateAdvancedSuggestions();
@@ -1994,6 +1963,7 @@
                 }).join('');
             }
         }
+
         // Main app initialization
         document.addEventListener('DOMContentLoaded', async function() {
             console.log('Initializing Fitness Command Center...');
@@ -2034,7 +2004,6 @@
             });
 
             // Day selection
-           // Day selection
             document.getElementById('upper-btn').addEventListener('click', () => selectDay('Upper'));
             document.getElementById('lower-btn').addEventListener('click', () => selectDay('Lower'));
             document.getElementById('rest-btn').addEventListener('click', () => selectDay('Rest'));
@@ -2112,27 +2081,27 @@
         }
 
         function initializeWorkout() {
-    currentWorkout = {};
-    const exercises = workoutPlans[currentDay];
+            currentWorkout = {};
+            const exercises = workoutPlans[currentDay];
 
-    exercises.forEach((exercise, index) => {
-        const isStretch = exercise.name.toLowerCase().includes('stretch');
-        const isRest = currentDay === 'Rest';
-        
-        currentWorkout[index] = {
-            exercise: exercise.name,
-            sets: (isStretch || isRest) ? 
-                [{ completed: false }] : 
-                Array(typeof exercise.sets === 'number' ? exercise.sets : 1).fill().map(() => ({
-                    weight: '',
-                    reps: '',
-                    notes: ''
-                }))
-        };
-    });
+            exercises.forEach((exercise, index) => {
+                const isStretch = exercise.name.toLowerCase().includes('stretch');
+                const isRest = currentDay === 'Rest';
+                
+                currentWorkout[index] = {
+                    exercise: exercise.name,
+                    sets: (isStretch || isRest) ? 
+                        [{ completed: false }] : 
+                        Array(typeof exercise.sets === 'number' ? exercise.sets : 1).fill().map(() => ({
+                            weight: '',
+                            reps: '',
+                            notes: ''
+                        }))
+                };
+            });
 
-    renderWorkout();
-}
+            renderWorkout();
+        }
         function renderWorkout() {
             const container = document.getElementById('exercises-container');
             const exercises = workoutPlans[currentDay];
@@ -2144,12 +2113,16 @@
             exercises.forEach((exercise, exerciseIndex) => {
                 const workoutExercise = currentWorkout[exerciseIndex];
                 const previousExercise = lastWorkout?.exercises?.[exerciseIndex];
-                                
+                
+                // Check if this is a stretch exercise or rest day
+                const isStretch = exercise.name.toLowerCase().includes('stretch');
+                const isRest = currentDay === 'Rest';
+                
                 // Calculate suggested weight and get progression info
                 let suggestedWeight = '';
                 let progressionInfo = '';
                 
-                if (!isStretch && previousExercise && previousExercise.sets.length > 0) {
+                if (!isStretch && !isRest && previousExercise && previousExercise.sets.length > 0) {
                     const prevSets = previousExercise.sets.filter(set => set.weight && set.reps);
                     if (prevSets.length > 0) {
                         const avgWeight = prevSets.reduce((sum, set) => sum + parseFloat(set.weight), 0) / prevSets.length;
@@ -2166,7 +2139,7 @@
                 }
                 
                 // Get progression information
-                if (!isStretch && exerciseProgression[exercise.name]) {
+                if (!isStretch && !isRest && exerciseProgression[exercise.name]) {
                     const prog = exerciseProgression[exercise.name];
                     if (prog.type === 'strength') {
                         progressionInfo = `+${prog.progression.split('(+')[1]?.split(')')[0] || 'improved'}`;
@@ -2177,7 +2150,8 @@
 
                 // Get PR for this exercise
                 const prs = getPersonalRecords();
-                const exercisePR = !isStretch ? prs[exercise.name] : null;
+                const exercisePR = (!isStretch && !isRest) ? prs[exercise.name] : null;
+                
                 html += `
                     <div class="exercise-card">
                         <div class="exercise-header">
@@ -2192,33 +2166,32 @@
                             </div>
                         </div>
 
-                        ${previousExercise && !isStretch ? `
+                        ${previousExercise && !isStretch && !isRest ? `
                             <div class="previous-session">
                                 <div class="previous-header">Last session (${new Date(lastWorkout.date).toLocaleDateString()}):</div>
                                 <div class="previous-sets">
                                     ${previousExercise.sets.filter(set => set.weight || set.reps).map((set, idx) => `
-                                        <div class="previous-set">Set ${idx + 1}: ${set.weight}×${set.reps}</div>
+                                        <div class="previous-set">Set ${idx + 1}: ${set.weight}×${set.reps}
+                                            <div class="previous-set">Set ${idx + 1}: ${set.weight}×${set.reps}</div>
                                     `).join('')}
                                 </div>
                             </div>
                         ` : ''}`;
 
-                // Check if this is a stretch exercise or rest day
-                
-              if (isStretch || isRest) {
-                const label = isRest ? 'Rest Day Complete' : exercise.name;
-                html += `
-                    <div class="stretch-row">
-                        <div class="stretch-info">
-                            <div class="set-number">✓</div>
-                            <div class="stretch-label">${label}</div>
+                if (isStretch || isRest) {
+                    const label = isRest ? 'Rest Day Complete' : exercise.name;
+                    html += `
+                        <div class="stretch-row">
+                            <div class="stretch-info">
+                                <div class="set-number">✓</div>
+                                <div class="stretch-label">${label}</div>
+                            </div>
+                            <input type="checkbox" class="stretch-checkbox" 
+                                   ${workoutExercise.sets[0]?.completed ? 'checked' : ''}
+                                   onchange="updateStretch(${exerciseIndex}, this.checked)">
                         </div>
-                        <input type="checkbox" class="stretch-checkbox" 
-                            ${workoutExercise.sets[0]?.completed ? 'checked' : ''}
-                            onchange="updateStretch(${exerciseIndex}, this.checked)">
-                    </div>
-                `;
-            } else {
+                    `;
+                } else {
                     html += `<div class="set-input-grid">`;
                     
                     workoutExercise.sets.forEach((set, setIndex) => {
