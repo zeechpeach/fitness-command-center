@@ -831,10 +831,10 @@
         </div>
     </div>
 
-    <script type="module">
-        // Firebase imports
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, query, orderBy, where, limit } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    <script>
+        // Firebase imports - commented out for offline development
+        // import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+        // import { getFirestore, collection, addDoc, getDocs, query, orderBy, where, limit } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
         // Firebase config
         const firebaseConfig = {
@@ -847,9 +847,9 @@
             measurementId: "G-F06G7Y9V25"
         };
 
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
+        // Initialize Firebase - commented out for offline development
+        // const app = initializeApp(firebaseConfig);
+        // const db = getFirestore(app);
 
         // Global state
         let currentDay = 'Upper';
@@ -918,36 +918,102 @@
             ]
         };
 
-        // Firebase functions
+        // Firebase functions - commented out for offline development
         async function saveWorkoutToFirebase(workoutData) {
-            try {
-                const docRef = await addDoc(collection(db, "workouts"), {
-                    ...workoutData,
-                    timestamp: new Date()
-                });
-                console.log("Workout saved with ID:", docRef.id);
-                return docRef.id;
-            } catch (e) {
-                console.error("Error adding workout:", e);
-                throw e;
-            }
+            // try {
+            //     const docRef = await addDoc(collection(db, "workouts"), {
+            //         ...workoutData,
+            //         timestamp: new Date()
+            //     });
+            //     console.log("Workout saved with ID:", docRef.id);
+            //     return docRef.id;
+            // } catch (e) {
+            //     console.error("Error adding workout:", e);
+            //     throw e;
+            // }
+            console.log("Firebase disabled - workout not saved:", workoutData);
+            return "offline-id";
         }
 
         async function loadWorkoutsFromFirebase() {
-            try {
-                const q = query(collection(db, "workouts"), orderBy("timestamp", "desc"), limit(50));
-                const querySnapshot = await getDocs(q);
-                const workouts = [];
-                querySnapshot.forEach((doc) => {
-                    workouts.push({ id: doc.id, ...doc.data() });
-                });
-                allWorkouts = workouts;
-                console.log("Loaded workouts:", workouts.length);
-                return workouts;
-            } catch (e) {
-                console.error("Error loading workouts:", e);
-                return [];
-            }
+            // try {
+            //     const q = query(collection(db, "workouts"), orderBy("timestamp", "desc"), limit(50));
+            //     const querySnapshot = await getDocs(q);
+            //     const workouts = [];
+            //     querySnapshot.forEach((doc) => {
+            //         workouts.push({ id: doc.id, ...doc.data() });
+            //     });
+            //     allWorkouts = workouts;
+            //     console.log("Loaded workouts:", workouts.length);
+            //     return workouts;
+            // } catch (e) {
+            //     console.error("Error loading workouts:", e);
+            //     return [];
+            // }
+            
+            // Load some sample data for testing layout
+            allWorkouts = [
+                {
+                    id: "sample1",
+                    day: "Upper",
+                    date: "2025-08-23", // Recent date to show previous sessions
+                    exercises: {
+                        0: {
+                            exercise: "Incline Dumbbell Press",
+                            sets: [
+                                { weight: "45", reps: "8" },
+                                { weight: "45", reps: "7" },
+                                { weight: "45", reps: "6" }
+                            ]
+                        },
+                        1: {
+                            exercise: "Seated Cable Fly",
+                            sets: [
+                                { weight: "25", reps: "10" },
+                                { weight: "25", reps: "9" }
+                            ]
+                        },
+                        2: {
+                            exercise: "Weighted Pull-Ups",
+                            sets: [
+                                { weight: "10", reps: "6" },
+                                { weight: "10", reps: "5" },
+                                { weight: "10", reps: "4" }
+                            ]
+                        },
+                        3: {
+                            exercise: "High Cable Lateral Raise",
+                            sets: [
+                                { weight: "15", reps: "10" },
+                                { weight: "15", reps: "8" }
+                            ]
+                        },
+                        4: {
+                            exercise: "Deficit Pendlay Row",
+                            sets: [
+                                { weight: "95", reps: "8" },
+                                { weight: "95", reps: "7" }
+                            ]
+                        },
+                        5: {
+                            exercise: "Cable Tricep Extension",
+                            sets: [
+                                { weight: "40", reps: "10" },
+                                { weight: "40", reps: "9" }
+                            ]
+                        },
+                        6: {
+                            exercise: "Bayesian Cable Bicep Curl",
+                            sets: [
+                                { weight: "20", reps: "10" },
+                                { weight: "20", reps: "8" }
+                            ]
+                        }
+                    }
+                }
+            ];
+            console.log("Loaded sample workouts for testing");
+            return allWorkouts;
         }
         // Enhanced Analytics Functions
         function calculateTotalVolume() {
