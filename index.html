@@ -2171,8 +2171,7 @@
                                 <div class="previous-header">Last session (${new Date(lastWorkout.date).toLocaleDateString()}):</div>
                                 <div class="previous-sets">
                                     ${previousExercise.sets.filter(set => set.weight || set.reps).map((set, idx) => `
-                                        <div class="previous-set">Set ${idx + 1}: ${set.weight}×${set.reps}
-                                            <div class="previous-set">Set ${idx + 1}: ${set.weight}×${set.reps}</div>
+                                        <div class="previous-set">Set ${idx + 1}: ${set.weight}×${set.reps}</div>
                                     `).join('')}
                                 </div>
                             </div>
