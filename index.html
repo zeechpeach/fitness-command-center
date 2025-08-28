@@ -845,12 +845,13 @@
         </div>
     </div>
 
-    <script type="module">
-        // Firebase imports
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, query, orderBy, where, limit } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    <script>
+        // Firebase imports - temporarily commented out to fix blocking issues
+        // import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+        // import { getFirestore, collection, addDoc, getDocs, query, orderBy, where, limit } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-        // Firebase config
+        // Firebase config - temporarily commented out
+        /*
         const firebaseConfig = {
             apiKey: "AIzaSyBouZ7KMUMSf8RdBKudMW2qEXI_FHgchIU",
             authDomain: "fitness-command-center.firebaseapp.com",
@@ -864,6 +865,7 @@
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        */
 
         // Global state
         let currentDay = 'Upper';
@@ -932,15 +934,27 @@
             ]
         };
 
-        // Firebase functions
+        // Storage functions - using localStorage instead of Firebase
         async function saveWorkoutToFirebase(workoutData) {
             try {
-                const docRef = await addDoc(collection(db, "workouts"), {
+                const workoutWithTimestamp = {
                     ...workoutData,
-                    timestamp: new Date()
-                });
-                console.log("Workout saved with ID:", docRef.id);
-                return docRef.id;
+                    timestamp: new Date(),
+                    id: Date.now().toString() // Simple ID generation
+                };
+                
+                // Get existing workouts from localStorage
+                const existingWorkouts = JSON.parse(localStorage.getItem('workouts') || '[]');
+                existingWorkouts.unshift(workoutWithTimestamp);
+                
+                // Keep only the latest 50 workouts
+                if (existingWorkouts.length > 50) {
+                    existingWorkouts.splice(50);
+                }
+                
+                localStorage.setItem('workouts', JSON.stringify(existingWorkouts));
+                console.log("Workout saved with ID:", workoutWithTimestamp.id);
+                return workoutWithTimestamp.id;
             } catch (e) {
                 console.error("Error adding workout:", e);
                 throw e;
@@ -949,12 +963,7 @@
 
         async function loadWorkoutsFromFirebase() {
             try {
-                const q = query(collection(db, "workouts"), orderBy("timestamp", "desc"), limit(50));
-                const querySnapshot = await getDocs(q);
-                const workouts = [];
-                querySnapshot.forEach((doc) => {
-                    workouts.push({ id: doc.id, ...doc.data() });
-                });
+                const workouts = JSON.parse(localStorage.getItem('workouts') || '[]');
                 allWorkouts = workouts;
                 console.log("Loaded workouts:", workouts.length);
                 return workouts;
