@@ -1509,10 +1509,52 @@
         const workoutSchedule = ['Upper', 'Lower', 'Rest', 'Push', 'Pull', 'Legs', 'Rest'];
         
         function getScheduledWorkout(date) {
-            // Start from a known date (e.g., today as day 0 in Upper)
-            const referenceDate = new Date('2024-01-01'); // Monday, Upper day
-            const daysDiff = Math.floor((new Date(date) - referenceDate) / (1000 * 60 * 60 * 24));
-            const scheduleIndex = ((daysDiff % 7) + 7) % 7; // Handle negative numbers
+            const queryDate = new Date(date);
+            const actualWorkout = getWorkoutForDate(date);
+            
+            // If there's an actual workout on this date, return its type
+            if (actualWorkout) {
+                return actualWorkout.day;
+            }
+            
+            // For future dates, project from the most recent completed workout
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            if (queryDate >= today) {
+                // Find the most recent completed workout
+                const sortedWorkouts = allWorkouts
+                    .filter(w => new Date(w.date) < today)
+                    .sort((a, b) => new Date(b.date) - new Date(a.date));
+                
+                if (sortedWorkouts.length > 0) {
+                    const mostRecent = sortedWorkouts[0];
+                    const mostRecentDate = new Date(mostRecent.date);
+                    const mostRecentType = mostRecent.day;
+                    
+                    // Find the index of the most recent workout type in the schedule
+                    const lastIndex = workoutSchedule.indexOf(mostRecentType);
+                    
+                    // Calculate days forward from the most recent workout
+                    const daysDiff = Math.floor((queryDate - mostRecentDate) / (1000 * 60 * 60 * 24));
+                    
+                    // Project forward in the cycle
+                    const scheduleIndex = (lastIndex + daysDiff) % 7;
+                    return workoutSchedule[scheduleIndex];
+                } else {
+                    // No workouts yet, use default schedule from reference date
+                    const referenceDate = new Date('2024-01-01');
+                    const daysDiff = Math.floor((queryDate - referenceDate) / (1000 * 60 * 60 * 24));
+                    const scheduleIndex = ((daysDiff % 7) + 7) % 7;
+                    return workoutSchedule[scheduleIndex];
+                }
+            }
+            
+            // For past dates without an actual workout, return empty or use default schedule
+            // This allows showing "missed" workouts in the calendar
+            const referenceDate = new Date('2024-01-01');
+            const daysDiff = Math.floor((queryDate - referenceDate) / (1000 * 60 * 60 * 24));
+            const scheduleIndex = ((daysDiff % 7) + 7) % 7;
             return workoutSchedule[scheduleIndex];
         }
 
