@@ -498,35 +498,7 @@
             margin-top: 0.25rem;
         }
 
-        .overload-breakdown {
-            display: grid;
-            gap: 0.5rem;
-            margin-top: 1rem;
-        }
 
-        .overload-component {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.5rem;
-            background: rgba(15, 23, 42, 0.6);
-            border-radius: 6px;
-        }
-
-        .component-bar {
-            flex: 1;
-            height: 4px;
-            background: rgba(71, 85, 105, 0.3);
-            border-radius: 2px;
-            margin: 0 0.75rem;
-            overflow: hidden;
-        }
-
-        .component-fill {
-            height: 100%;
-            border-radius: 2px;
-            transition: width 0.3s ease;
-        }
 
         .chart-container {
             position: relative;
@@ -1282,15 +1254,6 @@
                     <div class="stat-value" id="workout-streak">0</div>
                     <div class="stat-label">consecutive workouts</div>
                 </div>
-
-                <div class="analytics-card">
-                    <h3 class="analytics-title">⚡ Overload Score</h3>
-                    <div class="stat-value" id="overload-score">0</div>
-                    <div class="stat-label">strength progression rating</div>
-                    <div class="overload-breakdown" id="overload-breakdown">
-                        <!-- Breakdown will be populated here -->
-                    </div>
-                </div>
             </div>
 
             <div class="chart-grid">
@@ -1349,7 +1312,7 @@
 
             <div class="analytics-card">
                 <h3 class="analytics-title">🏆 Personal Records</h3>
-                <div id="<div id="progress-list">
+                <div id="progress-list">
                     <p style="color: #64748b;">Complete some workouts to see your strength progression!</p>
                 </div>
             </div>
@@ -1546,10 +1509,52 @@
         const workoutSchedule = ['Upper', 'Lower', 'Rest', 'Push', 'Pull', 'Legs', 'Rest'];
         
         function getScheduledWorkout(date) {
-            // Start from a known date (e.g., today as day 0 in Upper)
-            const referenceDate = new Date('2024-01-01'); // Monday, Upper day
-            const daysDiff = Math.floor((new Date(date) - referenceDate) / (1000 * 60 * 60 * 24));
-            const scheduleIndex = ((daysDiff % 7) + 7) % 7; // Handle negative numbers
+            const queryDate = new Date(date);
+            const actualWorkout = getWorkoutForDate(date);
+            
+            // If there's an actual workout on this date, return its type
+            if (actualWorkout) {
+                return actualWorkout.day;
+            }
+            
+            // For future dates, project from the most recent completed workout
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            if (queryDate >= today) {
+                // Find the most recent completed workout
+                const sortedWorkouts = allWorkouts
+                    .filter(w => new Date(w.date) < today)
+                    .sort((a, b) => new Date(b.date) - new Date(a.date));
+                
+                if (sortedWorkouts.length > 0) {
+                    const mostRecent = sortedWorkouts[0];
+                    const mostRecentDate = new Date(mostRecent.date);
+                    const mostRecentType = mostRecent.day;
+                    
+                    // Find the index of the most recent workout type in the schedule
+                    const lastIndex = workoutSchedule.indexOf(mostRecentType);
+                    
+                    // Calculate days forward from the most recent workout
+                    const daysDiff = Math.floor((queryDate - mostRecentDate) / (1000 * 60 * 60 * 24));
+                    
+                    // Project forward in the cycle
+                    const scheduleIndex = (lastIndex + daysDiff) % 7;
+                    return workoutSchedule[scheduleIndex];
+                } else {
+                    // No workouts yet, use default schedule from reference date
+                    const referenceDate = new Date('2024-01-01');
+                    const daysDiff = Math.floor((queryDate - referenceDate) / (1000 * 60 * 60 * 24));
+                    const scheduleIndex = ((daysDiff % 7) + 7) % 7;
+                    return workoutSchedule[scheduleIndex];
+                }
+            }
+            
+            // For past dates without an actual workout, return empty or use default schedule
+            // This allows showing "missed" workouts in the calendar
+            const referenceDate = new Date('2024-01-01');
+            const daysDiff = Math.floor((queryDate - referenceDate) / (1000 * 60 * 60 * 24));
+            const scheduleIndex = ((daysDiff % 7) + 7) % 7;
             return workoutSchedule[scheduleIndex];
         }
 
@@ -1629,119 +1634,6 @@
             }
             
             return streak;
-        }
-
-        function calculateEnhancedOverloadScore() {
-            if (allWorkouts.length < 2) return { overall: 0, breakdown: {} };
-            
-            const recentWorkouts = allWorkouts.slice(0, 8);
-            let scores = {
-                volumeProgression: 0,
-                intensityProgression: 0,
-                workCapacity: 0,
-                consistency: 0
-            };
-            
-            // Group workouts by day type for comparison
-            const workoutsByDay = {};
-            recentWorkouts.forEach(workout => {
-                if (!workoutsByDay[workout.day]) workoutsByDay[workout.day] = [];
-                workoutsByDay[workout.day].push(workout);
-            });
-            
-            let totalComparisons = 0;
-            let validComparisons = 0;
-            
-            // Analyze progression for each workout type
-            Object.keys(workoutsByDay).forEach(dayType => {
-                const dayWorkouts = workoutsByDay[dayType].sort((a, b) => new Date(b.date) - new Date(a.date));
-                
-                for (let i = 0; i < dayWorkouts.length - 1; i++) {
-                    const current = dayWorkouts[i];
-                    const previous = dayWorkouts[i + 1];
-                    
-                    Object.keys(current.exercises || {}).forEach(exerciseIndex => {
-                        const currentEx = current.exercises[exerciseIndex];
-                        const prevEx = previous.exercises?.[exerciseIndex];
-                        
-                        if (!prevEx || !currentEx) return;
-                        
-                        totalComparisons++;
-                        
-                        // Skip stretch exercises and rest days for strength analysis
-                        if (currentEx.exercise.toLowerCase().includes('stretch') || current.day === 'Rest') return;
-                        
-                        // Volume progression (weight x reps)
-                        const currentVolume = currentEx.sets.reduce((sum, set) =>
-                            sum + (parseFloat(set.weight) || 0) * (parseInt(set.reps) || 0), 0
-                        );
-                        const prevVolume = prevEx.sets.reduce((sum, set) =>
-                            sum + (parseFloat(set.weight) || 0) * (parseInt(set.reps) || 0), 0
-                        );
-                        
-                        if (currentVolume > prevVolume) scores.volumeProgression += 15;
-                        
-                        // Intensity progression (max weight)
-                        const currentMaxWeight = Math.max(...currentEx.sets.map(set => parseFloat(set.weight) || 0));
-                        const prevMaxWeight = Math.max(...prevEx.sets.map(set => parseFloat(set.weight) || 0));
-                        
-                        if (currentMaxWeight > prevMaxWeight) {
-                            scores.intensityProgression += 20;
-                            validComparisons++;
-                        }
-                        
-                        // Same weight, more reps
-                        const currentMaxReps = Math.max(...currentEx.sets.map(set => parseInt(set.reps) || 0));
-                        const prevMaxReps = Math.max(...prevEx.sets.map(set => parseInt(set.reps) || 0));
-                        
-                        if (currentMaxWeight === prevMaxWeight && currentMaxReps > prevMaxReps) {
-                            scores.volumeProgression += 12;
-                            validComparisons++;
-                        }
-                        
-                        // Work capacity (total sets)
-                        if (currentEx.sets.length > prevEx.sets.length) {
-                            scores.workCapacity += 8;
-                        }
-                    });
-                }
-            });
-            
-            // Consistency bonus
-            const recentDays = 14;
-            const expectedWorkouts = Math.floor(recentDays / 2.5); // ~3-4 per week
-            const actualWorkouts = allWorkouts.filter(w => {
-                const workoutDate = new Date(w.date);
-                const daysAgo = Math.floor((Date.now() - workoutDate.getTime()) / (1000 * 60 * 60 * 24));
-                return daysAgo <= recentDays;
-            }).length;
-            
-            scores.consistency = Math.min(100, (actualWorkouts / expectedWorkouts) * 100);
-            
-            // Normalize scores
-            const maxComparisons = Math.max(totalComparisons, 1);
-            scores.volumeProgression = Math.min(100, (scores.volumeProgression / maxComparisons) * 3);
-            scores.intensityProgression = Math.min(100, (scores.intensityProgression / maxComparisons) * 2.5);
-            scores.workCapacity = Math.min(100, (scores.workCapacity / maxComparisons) * 4);
-            
-            // Calculate overall score with weights
-            const overall = Math.round(
-                scores.volumeProgression * 0.30 +
-                scores.intensityProgression * 0.25 +
-                scores.workCapacity * 0.20 +
-                scores.consistency * 0.15 +
-                (validComparisons > 0 ? 10 : 0) // Recency bonus
-            );
-            
-            return {
-                overall: Math.min(100, overall),
-                breakdown: {
-                    'Volume Progression': Math.round(scores.volumeProgression),
-                    'Intensity Progression': Math.round(scores.intensityProgression),
-                    'Work Capacity': Math.round(scores.workCapacity),
-                    'Consistency': Math.round(scores.consistency)
-                }
-            };
         }
 
         function calculatePRCount() {
@@ -2009,16 +1901,6 @@
             const totalVolume = allWorkouts.reduce((sum, w) => sum + calculateWorkoutVolume(w), 0);
             const avgVolumePerWorkout = Math.round(totalVolume / allWorkouts.length);
             insights.push(`Your average workout volume is ${avgVolumePerWorkout.toLocaleString()}lbs - solid training stimulus.`);
-            
-            // Strength progression insights
-            const overloadData = calculateEnhancedOverloadScore();
-            if (overloadData.overall > 70) {
-                insights.push(`Outstanding strength progression! Your overload score of ${overloadData.overall}/100 indicates excellent training adaptation.`);
-            } else if (overloadData.overall > 40) {
-                insights.push(`Good progress with an overload score of ${overloadData.overall}/100. Consider focusing on weak points.`);
-            } else if (overloadData.overall > 0) {
-                insights.push(`Room for improvement with overload score of ${overloadData.overall}/100. Focus on progressive overload principles.`);
-            }
             
             return insights;
         }
@@ -2507,21 +2389,6 @@
             document.getElementById('total-volume').textContent = calculateTotalVolume().toLocaleString();
             document.getElementById('pr-count').textContent = calculatePRCount();
             document.getElementById('workout-streak').textContent = calculateWorkoutStreak();
-            
-            const overloadData = calculateEnhancedOverloadScore();
-            document.getElementById('overload-score').textContent = overloadData.overall;
-            
-            // Update overload breakdown
-            const breakdownContainer = document.getElementById('overload-breakdown');
-            breakdownContainer.innerHTML = Object.entries(overloadData.breakdown).map(([component, score]) => `
-                <div class="overload-component">
-                    <span style="color: #e2e8f0; font-size: 0.8rem;">${component}</span>
-                    <div class="component-bar">
-                        <div class="component-fill" style="width: ${score}%; background: linear-gradient(135deg, #06b6d4, #3b82f6);"></div>
-                    </div>
-                    <span style="color: #06b6d4; font-size: 0.8rem; font-weight: 600;">${score}</span>
-                </div>
-            `).join('');
             
             // Update charts
             createVolumeChart();
