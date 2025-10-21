@@ -279,10 +279,27 @@
             padding: 0.5rem 0.75rem;
             border-radius: 6px;
             border: 1px solid rgba(59, 130, 246, 0.15);
-            max-height: 2.5rem;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+            max-height: 4rem;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+        
+        .previous-sets-compact::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .previous-sets-compact::-webkit-scrollbar-track {
+            background: rgba(59, 130, 246, 0.05);
+            border-radius: 3px;
+        }
+        
+        .previous-sets-compact::-webkit-scrollbar-thumb {
+            background: rgba(59, 130, 246, 0.3);
+            border-radius: 3px;
+        }
+        
+        .previous-sets-compact::-webkit-scrollbar-thumb:hover {
+            background: rgba(59, 130, 246, 0.5);
         }
 
         .intensity-inputs {
@@ -605,6 +622,398 @@
             margin-bottom: 0.25rem;
         }
 
+        /* Calendar Styles */
+        .calendar-container {
+            background: rgba(30, 41, 59, 0.4);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(71, 85, 105, 0.3);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .calendar-nav-btn {
+            padding: 0.5rem 1rem;
+            background: rgba(59, 130, 246, 0.2);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 8px;
+            color: #3b82f6;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .calendar-nav-btn:hover {
+            background: rgba(59, 130, 246, 0.3);
+        }
+
+        .calendar-month-year {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: white;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 0.5rem;
+        }
+
+        .calendar-day-header {
+            text-align: center;
+            padding: 0.5rem;
+            color: #64748b;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .calendar-day {
+            aspect-ratio: 1;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(71, 85, 105, 0.3);
+            border-radius: 8px;
+            padding: 0.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .calendar-day:hover {
+            background: rgba(71, 85, 105, 0.5);
+            transform: scale(1.05);
+        }
+
+        .calendar-day.other-month {
+            opacity: 0.3;
+        }
+
+        .calendar-day.today {
+            border-color: #06b6d4;
+            box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.3);
+        }
+
+        .calendar-day.has-workout {
+            background: rgba(16, 185, 129, 0.2);
+            border-color: #10b981;
+        }
+
+        .calendar-day.scheduled {
+            background: rgba(59, 130, 246, 0.1);
+            border-color: rgba(59, 130, 246, 0.3);
+        }
+
+        .calendar-day.missed {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: rgba(239, 68, 68, 0.3);
+        }
+
+        .calendar-day-number {
+            font-size: 1rem;
+            font-weight: 600;
+            color: white;
+            margin-bottom: 0.25rem;
+        }
+
+        .calendar-day-label {
+            font-size: 0.7rem;
+            color: #94a3b8;
+            text-align: center;
+        }
+
+        .calendar-day-label.Upper { color: #10b981; }
+        .calendar-day-label.Lower { color: #f59e0b; }
+        .calendar-day-label.Push { color: #ef4444; }
+        .calendar-day-label.Pull { color: #3b82f6; }
+        .calendar-day-label.Legs { color: #8b5cf6; }
+        .calendar-day-label.Rest { color: #64748b; }
+
+        .adherence-card {
+            background: rgba(30, 41, 59, 0.4);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(71, 85, 105, 0.3);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .adherence-score {
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        .adherence-score-value {
+            font-size: 3rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #10b981, #059669);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .adherence-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .adherence-stat {
+            text-align: center;
+            padding: 1rem;
+            background: rgba(15, 23, 42, 0.6);
+            border-radius: 8px;
+        }
+
+        .adherence-stat-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: white;
+        }
+
+        .adherence-stat-label {
+            font-size: 0.8rem;
+            color: #64748b;
+            margin-top: 0.25rem;
+        }
+
+        .selected-day-workout {
+            background: rgba(30, 41, 59, 0.4);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(71, 85, 105, 0.3);
+            border-radius: 16px;
+            padding: 1.5rem;
+        }
+
+        /* Nutrition Styles */
+        .meal-card {
+            background: rgba(30, 41, 59, 0.4);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(71, 85, 105, 0.3);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .meal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .meal-type {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: white;
+        }
+
+        .meal-time {
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+
+        .food-input-row {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .food-input {
+            flex: 2;
+            min-width: 200px;
+            padding: 0.5rem;
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(71, 85, 105, 0.5);
+            border-radius: 6px;
+            color: white;
+        }
+
+        .food-input:focus {
+            outline: none;
+            border-color: #06b6d4;
+            box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.2);
+        }
+
+        .macro-input {
+            width: 80px;
+            padding: 0.5rem;
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(71, 85, 105, 0.5);
+            border-radius: 6px;
+            color: white;
+            text-align: center;
+        }
+
+        .macro-input:focus {
+            outline: none;
+            border-color: #06b6d4;
+            box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.2);
+        }
+
+        .macro-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 1rem;
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid rgba(71, 85, 105, 0.3);
+        }
+
+        .macro-item {
+            text-align: center;
+        }
+
+        .macro-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: white;
+        }
+
+        .macro-label {
+            font-size: 0.8rem;
+            color: #64748b;
+            margin-top: 0.25rem;
+        }
+
+        /* Body Metrics Styles */
+        .weight-input-card {
+            background: rgba(30, 41, 59, 0.4);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(71, 85, 105, 0.3);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .weight-input-row {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .weight-input-field {
+            flex: 1;
+            padding: 0.75rem;
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(71, 85, 105, 0.5);
+            border-radius: 8px;
+            color: white;
+            font-size: 1.1rem;
+            text-align: center;
+        }
+
+        .weight-input-field:focus {
+            outline: none;
+            border-color: #06b6d4;
+            box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.2);
+        }
+
+        .photo-upload-card {
+            background: rgba(30, 41, 59, 0.4);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(71, 85, 105, 0.3);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .photo-upload-area {
+            border: 2px dashed rgba(71, 85, 105, 0.5);
+            border-radius: 12px;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .photo-upload-area:hover {
+            border-color: #06b6d4;
+            background: rgba(6, 182, 212, 0.05);
+        }
+
+        .photo-gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .photo-item {
+            position: relative;
+            aspect-ratio: 1;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid rgba(71, 85, 105, 0.3);
+        }
+
+        .photo-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .photo-date {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 0.25rem;
+            font-size: 0.7rem;
+            color: white;
+            text-align: center;
+        }
+
+        /* Exercise Substitution Styles */
+        .substitution-tag {
+            display: inline-block;
+            background: rgba(168, 85, 247, 0.2);
+            color: #a855f7;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            margin-left: 0.5rem;
+            border: 1px solid rgba(168, 85, 247, 0.3);
+        }
+
+        .approach-selector {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .approach-btn {
+            padding: 0.25rem 0.75rem;
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(71, 85, 105, 0.5);
+            border-radius: 6px;
+            color: #94a3b8;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.3s ease;
+        }
+
+        .approach-btn.active {
+            background: rgba(168, 85, 247, 0.2);
+            color: #a855f7;
+            border-color: #a855f7;
+        }
+
+        .approach-btn:hover {
+            background: rgba(71, 85, 105, 0.5);
+        }
+
         @media (max-width: 768px) {
             .header h1 {
                 font-size: 2rem;
@@ -645,6 +1054,9 @@
 
         <div class="nav-tabs">
             <div class="nav-tab active" id="workout-tab-btn">🏋️ Workout</div>
+            <div class="nav-tab" id="calendar-tab-btn">📅 Calendar</div>
+            <div class="nav-tab" id="nutrition-tab-btn">🍎 Nutrition</div>
+            <div class="nav-tab" id="body-metrics-tab-btn">⚖️ Body</div>
             <div class="nav-tab" id="analytics-tab-btn">📊 Analytics</div>
             <div class="nav-tab" id="progress-tab-btn">📈 Progress</div>
             <div class="nav-tab" id="intelligence-tab-btn">🧠 Insights</div>
@@ -739,6 +1151,115 @@
             </div>
 
             <button class="btn-complete" id="complete-workout-btn">Complete Session</button>
+        </div>
+
+        <!-- CALENDAR TAB -->
+        <div id="calendar-content" class="tab-content">
+            <div class="adherence-card">
+                <h3 class="analytics-title">📊 Workout Adherence</h3>
+                <div class="adherence-score">
+                    <div class="adherence-score-value" id="adherence-score">0%</div>
+                    <div class="stat-label">Discipline Score</div>
+                </div>
+                <div class="adherence-stats">
+                    <div class="adherence-stat">
+                        <div class="adherence-stat-value" id="workouts-completed">0</div>
+                        <div class="adherence-stat-label">Completed</div>
+                    </div>
+                    <div class="adherence-stat">
+                        <div class="adherence-stat-value" id="workouts-scheduled">0</div>
+                        <div class="adherence-stat-label">Scheduled</div>
+                    </div>
+                    <div class="adherence-stat">
+                        <div class="adherence-stat-value" id="workouts-missed">0</div>
+                        <div class="adherence-stat-label">Missed</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="calendar-container">
+                <div class="calendar-header">
+                    <button class="calendar-nav-btn" id="prev-month-btn">← Previous</button>
+                    <div class="calendar-month-year" id="calendar-month-year">Loading...</div>
+                    <button class="calendar-nav-btn" id="next-month-btn">Next →</button>
+                </div>
+                <div class="calendar-grid" id="calendar-grid">
+                    <!-- Calendar will be rendered here -->
+                </div>
+            </div>
+
+            <div class="selected-day-workout" id="selected-day-workout" style="display: none;">
+                <h3 class="analytics-title" id="selected-day-title">Workout Details</h3>
+                <div id="selected-day-content">
+                    <!-- Selected day workout will be rendered here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- NUTRITION TAB -->
+        <div id="nutrition-content" class="tab-content">
+            <div class="analytics-card">
+                <h3 class="analytics-title">🍎 Daily Nutrition</h3>
+                <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                    <label style="color: #94a3b8; font-size: 0.9rem;">Date:</label>
+                    <input type="date" id="nutrition-date-input" style="padding: 0.5rem; background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(71, 85, 105, 0.5); border-radius: 6px; color: white;">
+                </div>
+                <div class="macro-summary">
+                    <div class="macro-item">
+                        <div class="macro-value" id="total-calories">0</div>
+                        <div class="macro-label">Calories</div>
+                    </div>
+                    <div class="macro-item">
+                        <div class="macro-value" id="total-protein">0g</div>
+                        <div class="macro-label">Protein</div>
+                    </div>
+                    <div class="macro-item">
+                        <div class="macro-value" id="total-carbs">0g</div>
+                        <div class="macro-label">Carbs</div>
+                    </div>
+                    <div class="macro-item">
+                        <div class="macro-value" id="total-fats">0g</div>
+                        <div class="macro-label">Fats</div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="meals-container">
+                <!-- Meals will be rendered here -->
+            </div>
+
+            <button class="btn btn-add" onclick="addMeal()" style="width: 100%; padding: 1rem; font-size: 1rem;">+ Add Meal</button>
+        </div>
+
+        <!-- BODY METRICS TAB -->
+        <div id="body-metrics-content" class="tab-content">
+            <div class="weight-input-card">
+                <h3 class="analytics-title">⚖️ Weight Tracking</h3>
+                <div class="weight-input-row">
+                    <input type="date" id="weight-date-input" class="weight-input-field" style="flex: 0.5;">
+                    <input type="number" id="weight-value-input" class="weight-input-field" placeholder="Weight (lbs)" step="0.1">
+                    <button class="btn btn-complete" onclick="logWeight()" style="margin: 0; padding: 0.75rem 1.5rem;">Log Weight</button>
+                </div>
+            </div>
+
+            <div class="analytics-card">
+                <h3 class="analytics-title">📈 Weight Progress</h3>
+                <div class="chart-container">
+                    <canvas id="weight-chart"></canvas>
+                </div>
+            </div>
+
+            <div class="photo-upload-card">
+                <h3 class="analytics-title">📸 Progress Photos</h3>
+                <div class="photo-upload-area" onclick="document.getElementById('photo-input').click()">
+                    <input type="file" id="photo-input" accept="image/*" style="display: none;" onchange="uploadProgressPhoto(event)">
+                    <div style="font-size: 3rem; margin-bottom: 0.5rem;">📷</div>
+                    <div style="color: #94a3b8;">Click to upload a progress photo</div>
+                </div>
+                <div class="photo-gallery" id="photo-gallery">
+                    <!-- Photos will be rendered here -->
+                </div>
+            </div>
         </div>
 
         <!-- ANALYTICS TAB -->
@@ -874,6 +1395,12 @@
             postWorkout: { fatigue: null, satisfaction: null }
         };
         let charts = {};
+        let currentCalendarDate = new Date();
+        let selectedCalendarDay = null;
+        let nutritionData = [];
+        let currentNutritionDate = new Date().toISOString().split('T')[0];
+        let weightData = [];
+        let photoData = [];
 
         const workoutPlans = {
             Upper: [
@@ -962,6 +1489,105 @@
                 console.error("Error loading workouts:", e);
                 return [];
             }
+        }
+
+        async function loadNutritionData() {
+            try {
+                const q = query(collection(db, "nutrition"), orderBy("date", "desc"), limit(30));
+                const querySnapshot = await getDocs(q);
+                const nutrition = [];
+                querySnapshot.forEach((doc) => {
+                    nutrition.push({ id: doc.id, ...doc.data() });
+                });
+                nutritionData = nutrition;
+                console.log("Loaded nutrition data:", nutrition.length);
+                return nutrition;
+            } catch (e) {
+                console.error("Error loading nutrition:", e);
+                return [];
+            }
+        }
+
+        async function loadWeightData() {
+            try {
+                const q = query(collection(db, "weight"), orderBy("date", "desc"), limit(90));
+                const querySnapshot = await getDocs(q);
+                const weights = [];
+                querySnapshot.forEach((doc) => {
+                    weights.push({ id: doc.id, ...doc.data() });
+                });
+                weightData = weights;
+                console.log("Loaded weight data:", weights.length);
+                return weights;
+            } catch (e) {
+                console.error("Error loading weight:", e);
+                return [];
+            }
+        }
+
+        async function loadPhotoData() {
+            try {
+                const q = query(collection(db, "photos"), orderBy("date", "desc"), limit(50));
+                const querySnapshot = await getDocs(q);
+                const photos = [];
+                querySnapshot.forEach((doc) => {
+                    photos.push({ id: doc.id, ...doc.data() });
+                });
+                photoData = photos;
+                console.log("Loaded photo data:", photos.length);
+                return photos;
+            } catch (e) {
+                console.error("Error loading photos:", e);
+                return [];
+            }
+        }
+
+        // Workout Schedule Cycle: upper/lower/rest/push/pull/legs/rest
+        const workoutSchedule = ['Upper', 'Lower', 'Rest', 'Push', 'Pull', 'Legs', 'Rest'];
+        
+        function getScheduledWorkout(date) {
+            // Start from a known date (e.g., today as day 0 in Upper)
+            const referenceDate = new Date('2024-01-01'); // Monday, Upper day
+            const daysDiff = Math.floor((new Date(date) - referenceDate) / (1000 * 60 * 60 * 24));
+            const scheduleIndex = ((daysDiff % 7) + 7) % 7; // Handle negative numbers
+            return workoutSchedule[scheduleIndex];
+        }
+
+        function getWorkoutForDate(dateString) {
+            return allWorkouts.find(w => w.date === dateString);
+        }
+
+        function calculateAdherence() {
+            const today = new Date();
+            const thirtyDaysAgo = new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000));
+            
+            let scheduled = 0;
+            let completed = 0;
+            let missed = 0;
+            
+            for (let d = new Date(thirtyDaysAgo); d <= today; d.setDate(d.getDate() + 1)) {
+                const dateStr = d.toISOString().split('T')[0];
+                const scheduledWorkout = getScheduledWorkout(dateStr);
+                const actualWorkout = getWorkoutForDate(dateStr);
+                
+                if (scheduledWorkout !== 'Rest') {
+                    scheduled++;
+                    if (actualWorkout) {
+                        completed++;
+                    } else if (d < today) { // Don't count future dates as missed
+                        missed++;
+                    }
+                }
+            }
+            
+            const adherenceScore = scheduled > 0 ? Math.round((completed / scheduled) * 100) : 0;
+            
+            return {
+                score: adherenceScore,
+                completed,
+                scheduled,
+                missed
+            };
         }
         // Enhanced Analytics Functions
         function calculateTotalVolume() {
@@ -1978,6 +2604,359 @@
             }
         }
 
+        // Calendar Functions
+        function renderCalendar() {
+            const year = currentCalendarDate.getFullYear();
+            const month = currentCalendarDate.getMonth();
+            
+            // Update month/year display
+            const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                               'July', 'August', 'September', 'October', 'November', 'December'];
+            document.getElementById('calendar-month-year').textContent = `${monthNames[month]} ${year}`;
+            
+            // Get first and last day of month
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            const daysInMonth = lastDay.getDate();
+            const startingDayOfWeek = firstDay.getDay();
+            
+            // Build calendar grid
+            let html = '';
+            const dayHeaders = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            dayHeaders.forEach(day => {
+                html += `<div class="calendar-day-header">${day}</div>`;
+            });
+            
+            // Add days from previous month
+            const prevMonthLastDay = new Date(year, month, 0).getDate();
+            for (let i = startingDayOfWeek - 1; i >= 0; i--) {
+                const day = prevMonthLastDay - i;
+                html += `<div class="calendar-day other-month">
+                    <div class="calendar-day-number">${day}</div>
+                </div>`;
+            }
+            
+            // Add days of current month
+            const today = new Date().toISOString().split('T')[0];
+            for (let day = 1; day <= daysInMonth; day++) {
+                const date = new Date(year, month, day);
+                const dateStr = date.toISOString().split('T')[0];
+                const scheduledWorkout = getScheduledWorkout(dateStr);
+                const actualWorkout = getWorkoutForDate(dateStr);
+                
+                let classes = ['calendar-day'];
+                if (dateStr === today) classes.push('today');
+                if (actualWorkout) {
+                    classes.push('has-workout');
+                } else if (scheduledWorkout !== 'Rest' && date < new Date()) {
+                    classes.push('missed');
+                } else if (scheduledWorkout !== 'Rest') {
+                    classes.push('scheduled');
+                }
+                
+                html += `<div class="${classes.join(' ')}" onclick="selectCalendarDay('${dateStr}')">
+                    <div class="calendar-day-number">${day}</div>
+                    <div class="calendar-day-label ${scheduledWorkout}">${scheduledWorkout}</div>
+                </div>`;
+            }
+            
+            // Add days from next month
+            const remainingDays = 42 - (startingDayOfWeek + daysInMonth); // 6 weeks * 7 days
+            for (let day = 1; day <= remainingDays; day++) {
+                html += `<div class="calendar-day other-month">
+                    <div class="calendar-day-number">${day}</div>
+                </div>`;
+            }
+            
+            document.getElementById('calendar-grid').innerHTML = html;
+            
+            // Update adherence
+            const adherence = calculateAdherence();
+            document.getElementById('adherence-score').textContent = `${adherence.score}%`;
+            document.getElementById('workouts-completed').textContent = adherence.completed;
+            document.getElementById('workouts-scheduled').textContent = adherence.scheduled;
+            document.getElementById('workouts-missed').textContent = adherence.missed;
+        }
+
+        window.selectCalendarDay = function(dateStr) {
+            selectedCalendarDay = dateStr;
+            const workout = getWorkoutForDate(dateStr);
+            const scheduledWorkout = getScheduledWorkout(dateStr);
+            
+            const container = document.getElementById('selected-day-workout');
+            const content = document.getElementById('selected-day-content');
+            const title = document.getElementById('selected-day-title');
+            
+            if (workout) {
+                title.textContent = `${workout.day} Workout - ${new Date(dateStr).toLocaleDateString()}`;
+                
+                let html = '<div style="display: grid; gap: 1rem;">';
+                
+                // Show intensity if available
+                if (workout.intensity) {
+                    html += '<div style="background: rgba(15, 23, 42, 0.6); padding: 1rem; border-radius: 8px;">';
+                    html += '<h4 style="color: #06b6d4; margin-bottom: 0.5rem;">Session Intensity</h4>';
+                    html += '<div style="display: flex; gap: 1rem; flex-wrap: wrap;">';
+                    if (workout.intensity.energy) html += `<span style="color: #94a3b8;">Energy: ${workout.intensity.energy}/5</span>`;
+                    if (workout.intensity.motivation) html += `<span style="color: #94a3b8;">Motivation: ${workout.intensity.motivation}/5</span>`;
+                    if (workout.intensity.fatigue) html += `<span style="color: #94a3b8;">Fatigue: ${workout.intensity.fatigue}/5</span>`;
+                    if (workout.intensity.satisfaction) html += `<span style="color: #94a3b8;">Satisfaction: ${workout.intensity.satisfaction}/5</span>`;
+                    html += '</div></div>';
+                }
+                
+                // Show exercises
+                Object.values(workout.exercises || {}).forEach(exercise => {
+                    html += '<div style="background: rgba(15, 23, 42, 0.6); padding: 1rem; border-radius: 8px;">';
+                    html += `<h4 style="color: white; margin-bottom: 0.5rem;">${exercise.exercise}</h4>`;
+                    
+                    exercise.sets.forEach((set, idx) => {
+                        if (set.completed) {
+                            html += `<div style="color: #10b981; padding: 0.25rem;">✓ Completed</div>`;
+                        } else if (set.weight || set.reps) {
+                            html += `<div style="color: #93c5fd; padding: 0.25rem;">Set ${idx + 1}: ${set.weight}lbs × ${set.reps} reps`;
+                            if (set.notes) html += ` (${set.notes})`;
+                            html += '</div>';
+                        }
+                    });
+                    
+                    html += '</div>';
+                });
+                
+                html += '</div>';
+                content.innerHTML = html;
+            } else {
+                title.textContent = `${scheduledWorkout} - ${new Date(dateStr).toLocaleDateString()}`;
+                content.innerHTML = `<p style="color: #64748b;">No workout logged for this day. Scheduled: ${scheduledWorkout}</p>`;
+            }
+            
+            container.style.display = 'block';
+        };
+
+        // Nutrition Functions
+        function renderMeals() {
+            const meals = nutritionData.filter(n => n.date === currentNutritionDate);
+            const container = document.getElementById('meals-container');
+            
+            if (meals.length === 0) {
+                container.innerHTML = '';
+                updateNutritionSummary();
+                return;
+            }
+            
+            let html = '';
+            meals.forEach((meal, mealIndex) => {
+                html += `<div class="meal-card">
+                    <div class="meal-header">
+                        <div>
+                            <div class="meal-type">${meal.mealType || 'Meal ' + (mealIndex + 1)}</div>
+                            <div class="meal-time">${meal.time || ''}</div>
+                        </div>
+                        <button class="btn" style="background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3);" onclick="deleteMeal('${meal.id}')">Delete</button>
+                    </div>
+                    <div id="meal-${meal.id}">`;
+                
+                (meal.foods || []).forEach((food, foodIndex) => {
+                    html += `<div class="food-input-row">
+                        <input type="text" class="food-input" value="${food.name}" placeholder="Food name" onchange="updateMealFood('${meal.id}', ${foodIndex}, 'name', this.value)">
+                        <input type="number" class="macro-input" value="${food.protein}" placeholder="P" onchange="updateMealFood('${meal.id}', ${foodIndex}, 'protein', this.value)">
+                        <input type="number" class="macro-input" value="${food.carbs}" placeholder="C" onchange="updateMealFood('${meal.id}', ${foodIndex}, 'carbs', this.value)">
+                        <input type="number" class="macro-input" value="${food.fats}" placeholder="F" onchange="updateMealFood('${meal.id}', ${foodIndex}, 'fats', this.value)">
+                        <input type="number" class="macro-input" value="${food.calories}" placeholder="Cal" onchange="updateMealFood('${meal.id}', ${foodIndex}, 'calories', this.value)">
+                    </div>`;
+                });
+                
+                html += `</div>
+                    <button class="btn btn-add" onclick="addFoodToMeal('${meal.id}')" style="margin-top: 0.5rem;">+ Add Food</button>
+                </div>`;
+            });
+            
+            container.innerHTML = html;
+            updateNutritionSummary();
+        }
+
+        function updateNutritionSummary() {
+            const meals = nutritionData.filter(n => n.date === currentNutritionDate);
+            let totalCalories = 0, totalProtein = 0, totalCarbs = 0, totalFats = 0;
+            
+            meals.forEach(meal => {
+                (meal.foods || []).forEach(food => {
+                    totalCalories += parseFloat(food.calories) || 0;
+                    totalProtein += parseFloat(food.protein) || 0;
+                    totalCarbs += parseFloat(food.carbs) || 0;
+                    totalFats += parseFloat(food.fats) || 0;
+                });
+            });
+            
+            document.getElementById('total-calories').textContent = Math.round(totalCalories);
+            document.getElementById('total-protein').textContent = Math.round(totalProtein) + 'g';
+            document.getElementById('total-carbs').textContent = Math.round(totalCarbs) + 'g';
+            document.getElementById('total-fats').textContent = Math.round(totalFats) + 'g';
+        }
+
+        window.addMeal = async function() {
+            const mealTypes = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
+            const existingMeals = nutritionData.filter(n => n.date === currentNutritionDate);
+            const mealType = mealTypes[existingMeals.length % 4];
+            
+            const mealData = {
+                date: currentNutritionDate,
+                mealType: mealType,
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                foods: []
+            };
+            
+            try {
+                const docRef = await addDoc(collection(db, "nutrition"), mealData);
+                nutritionData.unshift({ id: docRef.id, ...mealData });
+                renderMeals();
+            } catch (e) {
+                console.error("Error adding meal:", e);
+            }
+        };
+
+        window.addFoodToMeal = function(mealId) {
+            const meal = nutritionData.find(m => m.id === mealId);
+            if (!meal.foods) meal.foods = [];
+            meal.foods.push({ name: '', protein: 0, carbs: 0, fats: 0, calories: 0 });
+            renderMeals();
+        };
+
+        window.updateMealFood = function(mealId, foodIndex, field, value) {
+            const meal = nutritionData.find(m => m.id === mealId);
+            if (meal && meal.foods && meal.foods[foodIndex]) {
+                meal.foods[foodIndex][field] = value;
+                updateNutritionSummary();
+                // Auto-save to Firebase (debounced would be better in production)
+                saveMealToFirebase(meal);
+            }
+        };
+
+        async function saveMealToFirebase(meal) {
+            try {
+                const { id, ...mealData } = meal;
+                await addDoc(collection(db, "nutrition"), mealData);
+            } catch (e) {
+                console.error("Error saving meal:", e);
+            }
+        }
+
+        window.deleteMeal = async function(mealId) {
+            if (confirm('Delete this meal?')) {
+                nutritionData = nutritionData.filter(m => m.id !== mealId);
+                renderMeals();
+            }
+        };
+
+        // Weight Functions
+        window.logWeight = async function() {
+            const date = document.getElementById('weight-date-input').value;
+            const weight = parseFloat(document.getElementById('weight-value-input').value);
+            
+            if (!date || !weight) {
+                alert('Please enter both date and weight');
+                return;
+            }
+            
+            const weightData = { date, weight };
+            
+            try {
+                const docRef = await addDoc(collection(db, "weight"), weightData);
+                weightData.id = docRef.id;
+                window.weightData.unshift(weightData);
+                
+                document.getElementById('weight-value-input').value = '';
+                
+                createWeightChart();
+                alert('Weight logged successfully!');
+            } catch (e) {
+                console.error("Error logging weight:", e);
+                alert('Error logging weight');
+            }
+        };
+
+        function createWeightChart() {
+            const ctx = document.getElementById('weight-chart');
+            if (!ctx) return;
+            
+            if (charts.weight) charts.weight.destroy();
+            
+            const sortedWeights = [...weightData].sort((a, b) => new Date(a.date) - new Date(b.date));
+            
+            charts.weight = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: sortedWeights.map(w => new Date(w.date).toLocaleDateString()),
+                    datasets: [{
+                        label: 'Weight (lbs)',
+                        data: sortedWeights.map(w => w.weight),
+                        borderColor: '#06b6d4',
+                        backgroundColor: 'rgba(6, 182, 212, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            title: { display: true, text: 'Weight (lbs)' }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Photo Functions
+        window.uploadProgressPhoto = async function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                const photoData = {
+                    date: new Date().toISOString().split('T')[0],
+                    dataUrl: e.target.result,
+                    timestamp: new Date()
+                };
+                
+                try {
+                    const docRef = await addDoc(collection(db, "photos"), photoData);
+                    window.photoData.unshift({ id: docRef.id, ...photoData });
+                    renderPhotos();
+                    alert('Photo uploaded successfully!');
+                } catch (error) {
+                    console.error("Error uploading photo:", error);
+                    alert('Error uploading photo');
+                }
+            };
+            reader.readAsDataURL(file);
+        };
+
+        function renderPhotos() {
+            const container = document.getElementById('photo-gallery');
+            if (!container) return;
+            
+            if (photoData.length === 0) {
+                container.innerHTML = '<p style="color: #64748b; text-align: center; padding: 2rem;">No progress photos yet. Upload your first one!</p>';
+                return;
+            }
+            
+            let html = '';
+            photoData.forEach(photo => {
+                html += `<div class="photo-item">
+                    <img src="${photo.dataUrl}" alt="Progress photo">
+                    <div class="photo-date">${new Date(photo.date).toLocaleDateString()}</div>
+                </div>`;
+            });
+            
+            container.innerHTML = html;
+        }
+
         // Main app initialization
         document.addEventListener('DOMContentLoaded', async function() {
             console.log('Initializing Fitness Command Center...');
@@ -1987,7 +2966,12 @@
             initializeWorkout();
             
             // Load data in background
-            await loadWorkoutsFromFirebase();
+            await Promise.all([
+                loadWorkoutsFromFirebase(),
+                loadNutritionData(),
+                loadWeightData(),
+                loadPhotoData()
+            ]);
             
             // Update with real data
             updateSuggestions();
@@ -2003,6 +2987,19 @@
             document.getElementById('workout-tab-btn').addEventListener('click', () => {
                 showTab('workout');
                 updateSuggestions();
+            });
+            document.getElementById('calendar-tab-btn').addEventListener('click', () => {
+                showTab('calendar');
+                renderCalendar();
+            });
+            document.getElementById('nutrition-tab-btn').addEventListener('click', () => {
+                showTab('nutrition');
+                renderMeals();
+            });
+            document.getElementById('body-metrics-tab-btn').addEventListener('click', () => {
+                showTab('body-metrics');
+                createWeightChart();
+                renderPhotos();
             });
             document.getElementById('analytics-tab-btn').addEventListener('click', () => {
                 showTab('analytics');
@@ -2046,6 +3043,28 @@
             setupIntensityInputs();
 
             setWorkoutDate(); // Initialize the button text
+            
+            // Calendar navigation
+            document.getElementById('prev-month-btn').addEventListener('click', () => {
+                currentCalendarDate.setMonth(currentCalendarDate.getMonth() - 1);
+                renderCalendar();
+            });
+            document.getElementById('next-month-btn').addEventListener('click', () => {
+                currentCalendarDate.setMonth(currentCalendarDate.getMonth() + 1);
+                renderCalendar();
+            });
+            
+            // Nutrition date input
+            const nutritionDateInput = document.getElementById('nutrition-date-input');
+            nutritionDateInput.value = currentNutritionDate;
+            nutritionDateInput.addEventListener('change', (e) => {
+                currentNutritionDate = e.target.value;
+                renderMeals();
+            });
+            
+            // Weight date input
+            const weightDateInput = document.getElementById('weight-date-input');
+            weightDateInput.value = new Date().toISOString().split('T')[0];
         }
 
         function setupIntensityInputs() {
@@ -2170,9 +3189,21 @@
                     <div class="exercise-card">
                         <div class="exercise-header">
                             <div>
-                                <div class="exercise-name">${exercise.name}</div>
+                                <div class="exercise-name">
+                                    ${exercise.name}
+                                    ${workoutExercise.substitution ? `<span class="substitution-tag">Substitution</span>` : ''}
+                                    ${workoutExercise.approach ? `<span class="substitution-tag">${workoutExercise.approach}</span>` : ''}
+                                </div>
                                 <div class="exercise-target">${exercise.sets} × ${exercise.reps}</div>
                                 ${progressionInfo ? `<div class="exercise-progress-indicator">${progressionInfo} last session</div>` : ''}
+                                ${!isStretch && !isRest ? `
+                                    <div class="approach-selector">
+                                        <button class="approach-btn ${!workoutExercise.approach ? 'active' : ''}" onclick="setExerciseApproach(${exerciseIndex}, null)">Standard</button>
+                                        <button class="approach-btn ${workoutExercise.approach === 'Heavy' ? 'active' : ''}" onclick="setExerciseApproach(${exerciseIndex}, 'Heavy')">Heavy</button>
+                                        <button class="approach-btn ${workoutExercise.approach === 'Form Focus' ? 'active' : ''}" onclick="setExerciseApproach(${exerciseIndex}, 'Form Focus')">Form Focus</button>
+                                        <button class="approach-btn ${workoutExercise.substitution ? 'active' : ''}" onclick="toggleSubstitution(${exerciseIndex})">Alt Exercise</button>
+                                    </div>
+                                ` : ''}
                             </div>
                             <div class="exercise-intelligence">
                                 ${suggestedWeight ? `<div class="suggested-weight">Try ${suggestedWeight}lbs</div>` : ''}
@@ -2260,6 +3291,25 @@
 
         window.updateStretch = function(exerciseIndex, completed) {
             currentWorkout[exerciseIndex].sets[0] = { completed: completed };
+        };
+
+        window.setExerciseApproach = function(exerciseIndex, approach) {
+            currentWorkout[exerciseIndex].approach = approach;
+            renderWorkout();
+        };
+
+        window.toggleSubstitution = function(exerciseIndex) {
+            if (currentWorkout[exerciseIndex].substitution) {
+                delete currentWorkout[exerciseIndex].substitution;
+            } else {
+                const altExercise = prompt('Enter alternative exercise name:');
+                if (altExercise) {
+                    currentWorkout[exerciseIndex].substitution = altExercise;
+                    currentWorkout[exerciseIndex].originalExercise = currentWorkout[exerciseIndex].exercise;
+                    currentWorkout[exerciseIndex].exercise = altExercise;
+                }
+            }
+            renderWorkout();
         };
 
         window.setWorkoutDate = function() {
