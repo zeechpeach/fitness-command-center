@@ -1410,9 +1410,12 @@
         let currentCalendarDate = new Date();
         let selectedCalendarDay = null;
         let nutritionData = [];
+        window.nutritionData = nutritionData;
         let currentNutritionDate = new Date().toISOString().split('T')[0];
         let weightData = [];
+        window.weightData = weightData;
         let photoData = [];
+        window.photoData = photoData;
 
         const workoutPlans = {
             Upper: [
@@ -1512,6 +1515,7 @@
                     nutrition.push({ id: doc.id, ...doc.data() });
                 });
                 nutritionData = nutrition;
+                window.nutritionData = nutrition;
                 console.log("Loaded nutrition data:", nutrition.length);
                 return nutrition;
             } catch (e) {
@@ -1529,6 +1533,7 @@
                     weights.push({ id: doc.id, ...doc.data() });
                 });
                 weightData = weights;
+                window.weightData = weights;
                 console.log("Loaded weight data:", weights.length);
                 return weights;
             } catch (e) {
@@ -1546,6 +1551,7 @@
                     photos.push({ id: doc.id, ...doc.data() });
                 });
                 photoData = photos;
+                window.photoData = photos;
                 console.log("Loaded photo data:", photos.length);
                 return photos;
             } catch (e) {
@@ -2786,6 +2792,12 @@
             try {
                 const docRef = await addDoc(collection(db, "weight"), weightData);
                 weightData.id = docRef.id;
+                
+                // Safety check: Initialize window.weightData if undefined
+                if (!window.weightData) {
+                    window.weightData = [];
+                }
+                
                 window.weightData.unshift(weightData);
                 
                 document.getElementById('weight-value-input').value = '';
@@ -2850,6 +2862,12 @@
                 
                 try {
                     const docRef = await addDoc(collection(db, "photos"), photoData);
+                    
+                    // Safety check: Initialize window.photoData if undefined
+                    if (!window.photoData) {
+                        window.photoData = [];
+                    }
+                    
                     window.photoData.unshift({ id: docRef.id, ...photoData });
                     renderPhotos();
                     alert('Photo uploaded successfully!');
