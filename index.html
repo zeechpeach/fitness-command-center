@@ -2838,23 +2838,37 @@
                     <div id="meal-${meal.id}">`;
                 
                 (meal.foods || []).forEach((food, foodIndex) => {
+                    const quantity = food.quantity || 1;
+                    const displayProtein = ((food.protein || 0) * quantity).toFixed(1);
+                    const displayCarbs = ((food.carbs || 0) * quantity).toFixed(1);
+                    const displayFats = ((food.fats || 0) * quantity).toFixed(1);
+                    const displayCalories = Math.round((food.calories || 0) * quantity);
+                    
                     html += `<div class="food-input-row">
                         <input type="text" class="food-input" value="${food.name}" placeholder="Food name" onchange="updateMealFood('${meal.id}', ${foodIndex}, 'name', this.value)">
                         <div class="macro-input-wrapper">
+                            <label class="macro-input-label">Qty</label>
+                            <input type="number" class="macro-input" value="${quantity}" placeholder="1" step="0.1" min="0.1" onchange="updateMealFood('${meal.id}', ${foodIndex}, 'quantity', this.value)" style="width: 60px;">
+                        </div>
+                        <div class="macro-input-wrapper">
                             <label class="macro-input-label">Protein (g)</label>
-                            <input type="number" class="macro-input" value="${food.protein}" placeholder="0" onchange="updateMealFood('${meal.id}', ${foodIndex}, 'protein', this.value)">
+                            <input type="number" class="macro-input" value="${food.protein || 0}" placeholder="0" step="0.1" onchange="updateMealFood('${meal.id}', ${foodIndex}, 'protein', this.value)">
+                            ${quantity !== 1 ? `<div style="font-size: 0.7rem; color: #64748b; text-align: center;">${displayProtein}g</div>` : ''}
                         </div>
                         <div class="macro-input-wrapper">
                             <label class="macro-input-label">Carbs (g)</label>
-                            <input type="number" class="macro-input" value="${food.carbs}" placeholder="0" onchange="updateMealFood('${meal.id}', ${foodIndex}, 'carbs', this.value)">
+                            <input type="number" class="macro-input" value="${food.carbs || 0}" placeholder="0" step="0.1" onchange="updateMealFood('${meal.id}', ${foodIndex}, 'carbs', this.value)">
+                            ${quantity !== 1 ? `<div style="font-size: 0.7rem; color: #64748b; text-align: center;">${displayCarbs}g</div>` : ''}
                         </div>
                         <div class="macro-input-wrapper">
                             <label class="macro-input-label">Fats (g)</label>
-                            <input type="number" class="macro-input" value="${food.fats}" placeholder="0" onchange="updateMealFood('${meal.id}', ${foodIndex}, 'fats', this.value)">
+                            <input type="number" class="macro-input" value="${food.fats || 0}" placeholder="0" step="0.1" onchange="updateMealFood('${meal.id}', ${foodIndex}, 'fats', this.value)">
+                            ${quantity !== 1 ? `<div style="font-size: 0.7rem; color: #64748b; text-align: center;">${displayFats}g</div>` : ''}
                         </div>
                         <div class="macro-input-wrapper">
                             <label class="macro-input-label">Calories</label>
-                            <input type="number" class="macro-input" value="${food.calories}" placeholder="0" onchange="updateMealFood('${meal.id}', ${foodIndex}, 'calories', this.value)">
+                            <input type="number" class="macro-input" value="${food.calories || 0}" placeholder="0" onchange="updateMealFood('${meal.id}', ${foodIndex}, 'calories', this.value)">
+                            ${quantity !== 1 ? `<div style="font-size: 0.7rem; color: #64748b; text-align: center;">${displayCalories}</div>` : ''}
                         </div>
                         <button class="btn-save-food" onclick="saveFoodToLibrary('${meal.id}', ${foodIndex})" title="Save to library">💾</button>
                     </div>`;
@@ -2875,10 +2889,11 @@
             
             meals.forEach(meal => {
                 (meal.foods || []).forEach(food => {
-                    totalCalories += parseFloat(food.calories) || 0;
-                    totalProtein += parseFloat(food.protein) || 0;
-                    totalCarbs += parseFloat(food.carbs) || 0;
-                    totalFats += parseFloat(food.fats) || 0;
+                    const quantity = food.quantity || 1;
+                    totalCalories += (parseFloat(food.calories) || 0) * quantity;
+                    totalProtein += (parseFloat(food.protein) || 0) * quantity;
+                    totalCarbs += (parseFloat(food.carbs) || 0) * quantity;
+                    totalFats += (parseFloat(food.fats) || 0) * quantity;
                 });
             });
             
@@ -2912,7 +2927,7 @@
         window.addFoodToMeal = function(mealId) {
             const meal = nutritionData.find(m => m.id === mealId);
             if (!meal.foods) meal.foods = [];
-            meal.foods.push({ name: '', protein: 0, carbs: 0, fats: 0, calories: 0 });
+            meal.foods.push({ name: '', protein: 0, carbs: 0, fats: 0, calories: 0, quantity: 1 });
             renderMeals();
         };
 
@@ -3071,30 +3086,62 @@
             const food = savedFoods.find(f => f.id === foodId);
             if (!food) return;
             
-            // Get the most recent meal or create one
-            let meals = nutritionData.filter(n => n.date === currentNutritionDate);
-            let targetMeal;
+            // Prompt for quantity
+            const quantityInput = prompt('How many servings?', '1');
+            if (quantityInput === null) return; // User cancelled
             
-            if (meals.length === 0) {
-                // Create a new meal
-                await addMeal();
-                meals = nutritionData.filter(n => n.date === currentNutritionDate);
-                targetMeal = meals[0];
-            } else {
-                // Use the most recent meal
-                targetMeal = meals[meals.length - 1];
+            const quantity = parseFloat(quantityInput) || 1;
+            if (quantity <= 0) {
+                alert('Please enter a positive quantity');
+                return;
             }
             
-            if (!targetMeal) return;
+            // Determine which meal type to add to based on current time
+            const currentHour = new Date().getHours();
+            let targetMealType;
+            if (currentHour < 11) {
+                targetMealType = 'Breakfast';
+            } else if (currentHour < 15) {
+                targetMealType = 'Lunch';
+            } else if (currentHour < 20) {
+                targetMealType = 'Dinner';
+            } else {
+                targetMealType = 'Snack';
+            }
             
-            // Add food to meal
+            // Find existing meal of this type for today, or create one
+            let meals = nutritionData.filter(n => n.date === currentNutritionDate);
+            let targetMeal = meals.find(m => m.mealType === targetMealType);
+            
+            if (!targetMeal) {
+                // Create a new meal of the appropriate type
+                const mealData = {
+                    date: currentNutritionDate,
+                    mealType: targetMealType,
+                    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                    foods: []
+                };
+                
+                try {
+                    const docRef = await addDoc(collection(db, "nutrition"), mealData);
+                    targetMeal = { id: docRef.id, ...mealData };
+                    nutritionData.unshift(targetMeal);
+                } catch (e) {
+                    console.error("Error creating meal:", e);
+                    alert('Error creating meal');
+                    return;
+                }
+            }
+            
+            // Add food to meal with quantity
             if (!targetMeal.foods) targetMeal.foods = [];
             targetMeal.foods.push({
                 name: food.name,
                 protein: food.protein,
                 carbs: food.carbs,
                 fats: food.fats,
-                calories: food.calories
+                calories: food.calories,
+                quantity: quantity
             });
             
             // Update use count and last used
