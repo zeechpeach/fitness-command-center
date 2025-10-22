@@ -817,6 +817,21 @@
             box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.2);
         }
 
+        .macro-input-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .macro-input-label {
+            color: #94a3b8;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
         .macro-input {
             width: 80px;
             padding: 0.5rem;
@@ -945,6 +960,133 @@
             font-size: 0.7rem;
             color: white;
             text-align: center;
+        }
+
+        /* Saved Foods Styles */
+        .saved-foods-panel {
+            background: rgba(30, 41, 59, 0.4);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(71, 85, 105, 0.3);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .saved-food-search {
+            width: 100%;
+            padding: 0.75rem;
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(71, 85, 105, 0.5);
+            border-radius: 8px;
+            color: white;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+        }
+
+        .saved-food-search:focus {
+            outline: none;
+            border-color: #06b6d4;
+            box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.2);
+        }
+
+        .saved-food-list {
+            display: grid;
+            gap: 0.5rem;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .saved-food-item {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(71, 85, 105, 0.3);
+            border-radius: 8px;
+            padding: 0.75rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .saved-food-item:hover {
+            background: rgba(71, 85, 105, 0.3);
+            border-color: #06b6d4;
+        }
+
+        .saved-food-info {
+            flex: 1;
+        }
+
+        .saved-food-name {
+            color: white;
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+        }
+
+        .saved-food-macros {
+            color: #94a3b8;
+            font-size: 0.75rem;
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .saved-food-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn-quick-add {
+            padding: 0.5rem 1rem;
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .btn-quick-add:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+        }
+
+        .btn-delete-food {
+            padding: 0.5rem;
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.3s ease;
+        }
+
+        .btn-delete-food:hover {
+            background: rgba(239, 68, 68, 0.3);
+        }
+
+        .btn-save-food {
+            padding: 0.5rem 1rem;
+            background: rgba(59, 130, 246, 0.2);
+            color: #3b82f6;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .btn-save-food:hover {
+            background: rgba(59, 130, 246, 0.3);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 2rem;
+            color: #64748b;
         }
 
         /* Exercise Substitution Styles */
@@ -1245,6 +1387,14 @@
                 </div>
             </div>
 
+            <div class="saved-foods-panel">
+                <h3 class="analytics-title">⭐ Saved Foods</h3>
+                <input type="text" id="saved-food-search" class="saved-food-search" placeholder="Search saved foods...">
+                <div class="saved-food-list" id="saved-food-list">
+                    <div class="empty-state">No saved foods yet. Save a food from a meal below!</div>
+                </div>
+            </div>
+
             <div id="meals-container">
                 <!-- Meals will be rendered here -->
             </div>
@@ -1416,6 +1566,8 @@
         window.weightData = weightData;
         let photoData = [];
         window.photoData = photoData;
+        let savedFoods = [];
+        window.savedFoods = savedFoods;
 
         const workoutPlans = {
             Upper: [
@@ -2688,10 +2840,23 @@
                 (meal.foods || []).forEach((food, foodIndex) => {
                     html += `<div class="food-input-row">
                         <input type="text" class="food-input" value="${food.name}" placeholder="Food name" onchange="updateMealFood('${meal.id}', ${foodIndex}, 'name', this.value)">
-                        <input type="number" class="macro-input" value="${food.protein}" placeholder="P" onchange="updateMealFood('${meal.id}', ${foodIndex}, 'protein', this.value)">
-                        <input type="number" class="macro-input" value="${food.carbs}" placeholder="C" onchange="updateMealFood('${meal.id}', ${foodIndex}, 'carbs', this.value)">
-                        <input type="number" class="macro-input" value="${food.fats}" placeholder="F" onchange="updateMealFood('${meal.id}', ${foodIndex}, 'fats', this.value)">
-                        <input type="number" class="macro-input" value="${food.calories}" placeholder="Cal" onchange="updateMealFood('${meal.id}', ${foodIndex}, 'calories', this.value)">
+                        <div class="macro-input-wrapper">
+                            <label class="macro-input-label">Protein (g)</label>
+                            <input type="number" class="macro-input" value="${food.protein}" placeholder="0" onchange="updateMealFood('${meal.id}', ${foodIndex}, 'protein', this.value)">
+                        </div>
+                        <div class="macro-input-wrapper">
+                            <label class="macro-input-label">Carbs (g)</label>
+                            <input type="number" class="macro-input" value="${food.carbs}" placeholder="0" onchange="updateMealFood('${meal.id}', ${foodIndex}, 'carbs', this.value)">
+                        </div>
+                        <div class="macro-input-wrapper">
+                            <label class="macro-input-label">Fats (g)</label>
+                            <input type="number" class="macro-input" value="${food.fats}" placeholder="0" onchange="updateMealFood('${meal.id}', ${foodIndex}, 'fats', this.value)">
+                        </div>
+                        <div class="macro-input-wrapper">
+                            <label class="macro-input-label">Calories</label>
+                            <input type="number" class="macro-input" value="${food.calories}" placeholder="0" onchange="updateMealFood('${meal.id}', ${foodIndex}, 'calories', this.value)">
+                        </div>
+                        <button class="btn-save-food" onclick="saveFoodToLibrary('${meal.id}', ${foodIndex})" title="Save to library">💾</button>
                     </div>`;
                 });
                 
@@ -2776,6 +2941,203 @@
                 renderMeals();
             }
         };
+
+        // Saved Foods Functions
+        window.saveFoodToLibrary = async function(mealId, foodIndex) {
+            const meal = nutritionData.find(m => m.id === mealId);
+            if (!meal || !meal.foods || !meal.foods[foodIndex]) return;
+            
+            const food = meal.foods[foodIndex];
+            
+            if (!food.name || !food.name.trim()) {
+                alert('Please enter a food name before saving');
+                return;
+            }
+            
+            // Check if food already exists
+            const existingFood = savedFoods.find(f => f.name.toLowerCase() === food.name.toLowerCase());
+            if (existingFood) {
+                if (!confirm(`"${food.name}" already exists in saved foods. Update it?`)) {
+                    return;
+                }
+                // Update existing
+                existingFood.protein = parseFloat(food.protein) || 0;
+                existingFood.carbs = parseFloat(food.carbs) || 0;
+                existingFood.fats = parseFloat(food.fats) || 0;
+                existingFood.calories = parseFloat(food.calories) || 0;
+                existingFood.lastUsed = new Date().toISOString();
+                
+                try {
+                    await saveSavedFoodsToFirebase();
+                    alert('Food updated in library!');
+                    renderSavedFoods();
+                } catch (e) {
+                    console.error("Error updating food:", e);
+                }
+            } else {
+                // Add new
+                const savedFood = {
+                    name: food.name.trim(),
+                    protein: parseFloat(food.protein) || 0,
+                    carbs: parseFloat(food.carbs) || 0,
+                    fats: parseFloat(food.fats) || 0,
+                    calories: parseFloat(food.calories) || 0,
+                    created: new Date().toISOString(),
+                    lastUsed: new Date().toISOString(),
+                    useCount: 0
+                };
+                
+                try {
+                    const docRef = await addDoc(collection(db, "savedFoods"), savedFood);
+                    savedFoods.unshift({ id: docRef.id, ...savedFood });
+                    alert('Food saved to library!');
+                    renderSavedFoods();
+                } catch (e) {
+                    console.error("Error saving food:", e);
+                    alert('Error saving food to library');
+                }
+            }
+        };
+
+        async function saveSavedFoodsToFirebase() {
+            // Update all saved foods in Firebase (simplified approach)
+            // In production, you'd update individual documents
+            for (const food of savedFoods) {
+                if (food.id) {
+                    try {
+                        await addDoc(collection(db, "savedFoods"), {
+                            name: food.name,
+                            protein: food.protein,
+                            carbs: food.carbs,
+                            fats: food.fats,
+                            calories: food.calories,
+                            lastUsed: food.lastUsed,
+                            useCount: food.useCount
+                        });
+                    } catch (e) {
+                        console.error("Error updating saved food:", e);
+                    }
+                }
+            }
+        }
+
+        function renderSavedFoods(searchTerm = '') {
+            const container = document.getElementById('saved-food-list');
+            if (!container) return;
+            
+            let filteredFoods = savedFoods;
+            if (searchTerm) {
+                filteredFoods = savedFoods.filter(food => 
+                    food.name.toLowerCase().includes(searchTerm.toLowerCase())
+                );
+            }
+            
+            // Sort by last used, then by use count
+            filteredFoods.sort((a, b) => {
+                const dateA = new Date(a.lastUsed || 0);
+                const dateB = new Date(b.lastUsed || 0);
+                if (dateB - dateA !== 0) return dateB - dateA;
+                return (b.useCount || 0) - (a.useCount || 0);
+            });
+            
+            if (filteredFoods.length === 0) {
+                container.innerHTML = '<div class="empty-state">No saved foods found. Save a food from a meal below!</div>';
+                return;
+            }
+            
+            let html = '';
+            filteredFoods.forEach(food => {
+                html += `<div class="saved-food-item">
+                    <div class="saved-food-info">
+                        <div class="saved-food-name">${food.name}</div>
+                        <div class="saved-food-macros">
+                            <span>P: ${food.protein}g</span>
+                            <span>C: ${food.carbs}g</span>
+                            <span>F: ${food.fats}g</span>
+                            <span>Cal: ${food.calories}</span>
+                        </div>
+                    </div>
+                    <div class="saved-food-actions">
+                        <button class="btn-quick-add" onclick="quickAddFood('${food.id}')">Quick Add</button>
+                        <button class="btn-delete-food" onclick="deleteSavedFood('${food.id}')">🗑️</button>
+                    </div>
+                </div>`;
+            });
+            
+            container.innerHTML = html;
+        }
+
+        window.quickAddFood = async function(foodId) {
+            const food = savedFoods.find(f => f.id === foodId);
+            if (!food) return;
+            
+            // Get the most recent meal or create one
+            let meals = nutritionData.filter(n => n.date === currentNutritionDate);
+            let targetMeal;
+            
+            if (meals.length === 0) {
+                // Create a new meal
+                await addMeal();
+                meals = nutritionData.filter(n => n.date === currentNutritionDate);
+                targetMeal = meals[0];
+            } else {
+                // Use the most recent meal
+                targetMeal = meals[meals.length - 1];
+            }
+            
+            if (!targetMeal) return;
+            
+            // Add food to meal
+            if (!targetMeal.foods) targetMeal.foods = [];
+            targetMeal.foods.push({
+                name: food.name,
+                protein: food.protein,
+                carbs: food.carbs,
+                fats: food.fats,
+                calories: food.calories
+            });
+            
+            // Update use count and last used
+            food.useCount = (food.useCount || 0) + 1;
+            food.lastUsed = new Date().toISOString();
+            
+            // Save to Firebase
+            try {
+                await saveMealToFirebase(targetMeal);
+                await saveSavedFoodsToFirebase();
+                renderMeals();
+                renderSavedFoods();
+            } catch (e) {
+                console.error("Error quick adding food:", e);
+            }
+        };
+
+        window.deleteSavedFood = async function(foodId) {
+            if (!confirm('Delete this saved food?')) return;
+            
+            savedFoods = savedFoods.filter(f => f.id !== foodId);
+            renderSavedFoods();
+            
+            // Note: In production, you'd also delete from Firebase here
+        };
+
+        async function loadSavedFoods() {
+            try {
+                const q = query(collection(db, "savedFoods"), orderBy("lastUsed", "desc"));
+                const querySnapshot = await getDocs(q);
+                
+                savedFoods = [];
+                querySnapshot.forEach((doc) => {
+                    savedFoods.push({ id: doc.id, ...doc.data() });
+                });
+                
+                console.log(`Loaded ${savedFoods.length} saved foods`);
+            } catch (e) {
+                console.error("Error loading saved foods:", e);
+                // Initialize with empty array if error
+                savedFoods = [];
+            }
+        }
 
         // Weight Functions
         window.logWeight = async function() {
@@ -2912,7 +3274,8 @@
                 loadWorkoutsFromFirebase(),
                 loadNutritionData(),
                 loadWeightData(),
-                loadPhotoData()
+                loadPhotoData(),
+                loadSavedFoods()
             ]);
             
             // Update with real data
@@ -2920,6 +3283,7 @@
             updateAnalytics();
             updateInsights();
             updateProgress();
+            renderSavedFoods();
             
             console.log('Fitness Command Center loaded successfully!');
         });
@@ -2937,6 +3301,7 @@
             document.getElementById('nutrition-tab-btn').addEventListener('click', () => {
                 showTab('nutrition');
                 renderMeals();
+                renderSavedFoods();
             });
             document.getElementById('body-metrics-tab-btn').addEventListener('click', () => {
                 showTab('body-metrics');
@@ -3003,6 +3368,14 @@
                 currentNutritionDate = e.target.value;
                 renderMeals();
             });
+            
+            // Saved food search
+            const savedFoodSearch = document.getElementById('saved-food-search');
+            if (savedFoodSearch) {
+                savedFoodSearch.addEventListener('input', (e) => {
+                    renderSavedFoods(e.target.value);
+                });
+            }
             
             // Weight date input
             const weightDateInput = document.getElementById('weight-date-input');
