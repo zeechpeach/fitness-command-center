@@ -1014,6 +1014,55 @@
                 align-items: flex-start;
                 gap: 0.5rem;
             }
+
+            /* Fix calendar grid overflow on mobile */
+            .calendar-container {
+                overflow-x: auto;
+                overflow-y: hidden;
+            }
+
+            .calendar-grid {
+                min-width: 100%;
+            }
+
+            .calendar-day {
+                min-width: 40px;
+                min-height: 40px;
+                padding: 0.25rem;
+                font-size: 0.8rem;
+            }
+
+            .calendar-day-number {
+                font-size: 0.85rem;
+            }
+
+            .calendar-day-label {
+                font-size: 0.6rem;
+            }
+
+            /* Fix weight tracking section overflow on mobile */
+            .weight-input-row {
+                flex-direction: column;
+                gap: 0.75rem;
+            }
+
+            .weight-input-field {
+                width: 100%;
+            }
+
+            /* Ensure photo gallery is responsive */
+            .photo-gallery {
+                grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            }
+
+            /* Ensure meal inputs are responsive */
+            .food-input-row {
+                flex-direction: column;
+            }
+
+            .food-input {
+                min-width: 100%;
+            }
         }
     </style>
 </head>
@@ -2545,6 +2594,14 @@
             document.getElementById('workouts-missed').textContent = adherence.missed;
         }
 
+        // Helper function to format date string correctly without timezone issues
+        function formatDateString(dateStr) {
+            // dateStr is in format "YYYY-MM-DD"
+            const [year, month, day] = dateStr.split('-');
+            const date = new Date(year, month - 1, day); // month is 0-indexed
+            return date.toLocaleDateString();
+        }
+
         window.selectCalendarDay = function(dateStr) {
             selectedCalendarDay = dateStr;
             const workout = getWorkoutForDate(dateStr);
@@ -2555,7 +2612,7 @@
             const title = document.getElementById('selected-day-title');
             
             if (workout) {
-                title.textContent = `${workout.day} Workout - ${new Date(dateStr).toLocaleDateString()}`;
+                title.textContent = `${workout.day} Workout - ${formatDateString(dateStr)}`;
                 
                 let html = '<div style="display: grid; gap: 1rem;">';
                 
@@ -2592,7 +2649,7 @@
                 html += '</div>';
                 content.innerHTML = html;
             } else {
-                title.textContent = `${scheduledWorkout} - ${new Date(dateStr).toLocaleDateString()}`;
+                title.textContent = `${scheduledWorkout} - ${formatDateString(dateStr)}`;
                 content.innerHTML = `<p style="color: #64748b;">No workout logged for this day. Scheduled: ${scheduledWorkout}</p>`;
             }
             
