@@ -1089,6 +1089,82 @@
             color: #64748b;
         }
 
+        /* Meal Type Selection Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: rgba(15, 23, 42, 0.95);
+            border: 1px solid rgba(71, 85, 105, 0.5);
+            border-radius: 16px;
+            padding: 2rem;
+            max-width: 400px;
+            width: 90%;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: white;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .meal-type-buttons {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .meal-type-btn {
+            padding: 1rem;
+            background: rgba(30, 41, 59, 0.8);
+            border: 2px solid rgba(71, 85, 105, 0.5);
+            border-radius: 12px;
+            color: white;
+            cursor: pointer;
+            font-size: 1.1rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .meal-type-btn:hover {
+            background: rgba(59, 130, 246, 0.2);
+            border-color: #3b82f6;
+            transform: translateY(-2px);
+        }
+
+        .modal-close {
+            margin-top: 1rem;
+            padding: 0.75rem;
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 8px;
+            color: #ef4444;
+            cursor: pointer;
+            width: 100%;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .modal-close:hover {
+            background: rgba(239, 68, 68, 0.3);
+        }
+
         /* Exercise Substitution Styles */
         .substitution-tag {
             display: inline-block;
@@ -1525,6 +1601,20 @@
                     <li class="insight-item">Complete some workouts to get personalized insights!</li>
                 </ul>
             </div>
+        </div>
+    </div>
+
+    <!-- Meal Type Selection Modal -->
+    <div class="modal-overlay" id="meal-type-modal">
+        <div class="modal-content">
+            <h3 class="modal-title">🍽️ Select Meal Type</h3>
+            <div class="meal-type-buttons">
+                <button class="meal-type-btn" onclick="selectMealType('Breakfast')">🌅 Breakfast</button>
+                <button class="meal-type-btn" onclick="selectMealType('Lunch')">☀️ Lunch</button>
+                <button class="meal-type-btn" onclick="selectMealType('Dinner')">🌙 Dinner</button>
+                <button class="meal-type-btn" onclick="selectMealType('Snack')">🍪 Snack</button>
+            </div>
+            <button class="modal-close" onclick="closeMealTypeModal()">Cancel</button>
         </div>
     </div>
 
@@ -2837,7 +2927,12 @@
                 html += `<div class="meal-card">
                     <div class="meal-header">
                         <div>
-                            <div class="meal-type">${meal.mealType || 'Meal ' + (mealIndex + 1)}</div>
+                            <select class="meal-type" style="background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(71, 85, 105, 0.5); border-radius: 6px; color: white; padding: 0.5rem; font-size: 1.2rem; font-weight: 600; cursor: pointer;" onchange="changeMealType('${meal.id}', this.value)">
+                                <option value="Breakfast" ${meal.mealType === 'Breakfast' ? 'selected' : ''}>🌅 Breakfast</option>
+                                <option value="Lunch" ${meal.mealType === 'Lunch' ? 'selected' : ''}>☀️ Lunch</option>
+                                <option value="Dinner" ${meal.mealType === 'Dinner' ? 'selected' : ''}>🌙 Dinner</option>
+                                <option value="Snack" ${meal.mealType === 'Snack' ? 'selected' : ''}>🍪 Snack</option>
+                            </select>
                             <div class="meal-time">${meal.time || ''}</div>
                         </div>
                         <button class="btn" style="background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3);" onclick="deleteMeal('${meal.id}')">Delete</button>
@@ -2911,26 +3006,21 @@
             document.getElementById('total-fats').textContent = Math.round(totalFats) + 'g';
         }
 
-        window.addMeal = async function() {
-            const mealTypes = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
-            
-            // Prompt user to select meal type
-            const mealType = prompt(
-                'Select meal type:\n1 - Breakfast\n2 - Lunch\n3 - Dinner\n4 - Snack\n\nEnter number (1-4):'
-            );
-            
-            // Validate input
-            const mealIndex = parseInt(mealType) - 1;
-            if (isNaN(mealIndex) || mealIndex < 0 || mealIndex > 3) {
-                alert('Invalid selection. Please enter a number between 1 and 4.');
-                return;
-            }
-            
-            const selectedMealType = mealTypes[mealIndex];
+        // Meal type selection modal functions
+        window.showMealTypeModal = function() {
+            document.getElementById('meal-type-modal').classList.add('active');
+        };
+
+        window.closeMealTypeModal = function() {
+            document.getElementById('meal-type-modal').classList.remove('active');
+        };
+
+        window.selectMealType = async function(mealType) {
+            closeMealTypeModal();
             
             const mealData = {
                 date: currentNutritionDate,
-                mealType: selectedMealType,
+                mealType: mealType,
                 time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                 foods: []
             };
@@ -2945,11 +3035,33 @@
             }
         };
 
+        window.addMeal = function() {
+            showMealTypeModal();
+        };
+
         window.addFoodToMeal = function(mealId) {
             const meal = nutritionData.find(m => m.id === mealId);
             if (!meal.foods) meal.foods = [];
             meal.foods.push({ name: '', protein: 0, carbs: 0, fats: 0, calories: 0, quantity: 1 });
             renderMeals();
+        };
+
+        window.changeMealType = async function(mealId, newMealType) {
+            try {
+                const meal = nutritionData.find(m => m.id === mealId);
+                if (!meal) return;
+                
+                meal.mealType = newMealType;
+                
+                // Update in Firestore
+                const docRef = doc(db, "nutrition", mealId);
+                await updateDoc(docRef, { mealType: newMealType });
+                
+                console.log(`Updated meal ${mealId} to ${newMealType}`);
+            } catch (e) {
+                console.error("Error changing meal type:", e);
+                alert('Error changing meal type. Please try again.');
+            }
         };
 
         window.updateMealFood = async function(mealId, foodIndex, field, value) {
