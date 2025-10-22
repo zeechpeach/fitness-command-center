@@ -1531,7 +1531,7 @@
     <script type="module">
         // Firebase imports
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, query, orderBy, where, limit } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDocs, query, orderBy, where, limit, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
         // Firebase config
         const firebaseConfig = {
@@ -1663,12 +1663,19 @@
                 const q = query(collection(db, "nutrition"), orderBy("date", "desc"), limit(30));
                 const querySnapshot = await getDocs(q);
                 const nutrition = [];
+                const seenIds = new Set();
+                
                 querySnapshot.forEach((doc) => {
-                    nutrition.push({ id: doc.id, ...doc.data() });
+                    // Prevent duplicate IDs
+                    if (!seenIds.has(doc.id)) {
+                        seenIds.add(doc.id);
+                        nutrition.push({ id: doc.id, ...doc.data() });
+                    }
                 });
+                
                 nutritionData = nutrition;
                 window.nutritionData = nutrition;
-                console.log("Loaded nutrition data:", nutrition.length);
+                console.log("Loaded nutrition data:", nutrition.length, "entries");
                 return nutrition;
             } catch (e) {
                 console.error("Error loading nutrition:", e);
@@ -2871,6 +2878,7 @@
                             ${quantity !== 1 ? `<div style="font-size: 0.7rem; color: #64748b; text-align: center;">${displayCalories}</div>` : ''}
                         </div>
                         <button class="btn-save-food" onclick="saveFoodToLibrary('${meal.id}', ${foodIndex})" title="Save to library">💾</button>
+                        <button class="btn-delete-food" onclick="deleteFoodFromMeal('${meal.id}', ${foodIndex})" title="Delete food">🗑️</button>
                     </div>`;
                 });
                 
@@ -2905,12 +2913,24 @@
 
         window.addMeal = async function() {
             const mealTypes = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
-            const existingMeals = nutritionData.filter(n => n.date === currentNutritionDate);
-            const mealType = mealTypes[existingMeals.length % 4];
+            
+            // Prompt user to select meal type
+            const mealType = prompt(
+                'Select meal type:\n1 - Breakfast\n2 - Lunch\n3 - Dinner\n4 - Snack\n\nEnter number (1-4):'
+            );
+            
+            // Validate input
+            const mealIndex = parseInt(mealType) - 1;
+            if (isNaN(mealIndex) || mealIndex < 0 || mealIndex > 3) {
+                alert('Invalid selection. Please enter a number between 1 and 4.');
+                return;
+            }
+            
+            const selectedMealType = mealTypes[mealIndex];
             
             const mealData = {
                 date: currentNutritionDate,
-                mealType: mealType,
+                mealType: selectedMealType,
                 time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                 foods: []
             };
@@ -2921,6 +2941,7 @@
                 renderMeals();
             } catch (e) {
                 console.error("Error adding meal:", e);
+                alert('Error adding meal. Please check your connection and try again.');
             }
         };
 
@@ -2931,29 +2952,73 @@
             renderMeals();
         };
 
-        window.updateMealFood = function(mealId, foodIndex, field, value) {
+        window.updateMealFood = async function(mealId, foodIndex, field, value) {
             const meal = nutritionData.find(m => m.id === mealId);
             if (meal && meal.foods && meal.foods[foodIndex]) {
                 meal.foods[foodIndex][field] = value;
                 updateNutritionSummary();
-                // Auto-save to Firebase (debounced would be better in production)
-                saveMealToFirebase(meal);
+                
+                // Auto-save to Firebase with debouncing
+                if (meal.saveTimeout) {
+                    clearTimeout(meal.saveTimeout);
+                }
+                meal.saveTimeout = setTimeout(async () => {
+                    try {
+                        const docRef = doc(db, "nutrition", mealId);
+                        await updateDoc(docRef, { foods: meal.foods });
+                    } catch (e) {
+                        console.error("Error updating meal:", e);
+                    }
+                }, 1000); // Wait 1 second after last edit before saving
             }
         };
 
         async function saveMealToFirebase(meal) {
-            try {
-                const { id, ...mealData } = meal;
-                await addDoc(collection(db, "nutrition"), mealData);
-            } catch (e) {
-                console.error("Error saving meal:", e);
-            }
+            // This function is no longer needed as we use updateDoc directly
+            console.warn('saveMealToFirebase is deprecated, use updateDoc directly');
         }
 
         window.deleteMeal = async function(mealId) {
             if (confirm('Delete this meal?')) {
-                nutritionData = nutritionData.filter(m => m.id !== mealId);
-                renderMeals();
+                try {
+                    // Delete from Firestore
+                    const docRef = doc(db, "nutrition", mealId);
+                    await deleteDoc(docRef);
+                    
+                    // Remove from local state
+                    nutritionData = nutritionData.filter(m => m.id !== mealId);
+                    renderMeals();
+                } catch (e) {
+                    console.error("Error deleting meal:", e);
+                    alert('Error deleting meal. Please try again.');
+                }
+            }
+        };
+
+        window.deleteFoodFromMeal = async function(mealId, foodIndex) {
+            if (confirm('Delete this food item?')) {
+                try {
+                    const meal = nutritionData.find(m => m.id === mealId);
+                    if (!meal || !meal.foods) return;
+                    
+                    // Remove the food from the array
+                    meal.foods.splice(foodIndex, 1);
+                    
+                    // If meal has no foods left, delete the entire meal
+                    if (meal.foods.length === 0) {
+                        await window.deleteMeal(mealId);
+                        return;
+                    }
+                    
+                    // Update in Firestore
+                    const docRef = doc(db, "nutrition", mealId);
+                    await updateDoc(docRef, { foods: meal.foods });
+                    
+                    renderMeals();
+                } catch (e) {
+                    console.error("Error deleting food from meal:", e);
+                    alert('Error deleting food item. Please try again.');
+                }
             }
         };
 
@@ -3150,12 +3215,14 @@
             
             // Save to Firebase
             try {
-                await saveMealToFirebase(targetMeal);
+                const docRef = doc(db, "nutrition", targetMeal.id);
+                await updateDoc(docRef, { foods: targetMeal.foods });
                 await saveSavedFoodsToFirebase();
                 renderMeals();
                 renderSavedFoods();
             } catch (e) {
                 console.error("Error quick adding food:", e);
+                alert('Error adding food to meal. Please try again.');
             }
         };
 
@@ -3307,6 +3374,60 @@
             
             container.innerHTML = html;
         }
+
+        // Utility function to wipe all nutrition data (call from console: window.wipeNutritionData())
+        window.wipeNutritionData = async function() {
+            if (!confirm('⚠️ WARNING: This will delete ALL nutrition and food data from Firestore. This cannot be undone!\n\nAre you sure you want to continue?')) {
+                return;
+            }
+            
+            if (!confirm('Please confirm one more time: Delete ALL nutrition data?')) {
+                return;
+            }
+            
+            try {
+                console.log('Starting data wipe...');
+                let deletedCount = 0;
+                
+                // Delete all nutrition documents
+                const nutritionQuery = query(collection(db, "nutrition"));
+                const nutritionSnapshot = await getDocs(nutritionQuery);
+                
+                for (const document of nutritionSnapshot.docs) {
+                    await deleteDoc(doc(db, "nutrition", document.id));
+                    deletedCount++;
+                }
+                
+                console.log(`Deleted ${deletedCount} nutrition documents`);
+                
+                // Delete all saved foods
+                const savedFoodsQuery = query(collection(db, "savedFoods"));
+                const savedFoodsSnapshot = await getDocs(savedFoodsQuery);
+                let savedFoodsDeleted = 0;
+                
+                for (const document of savedFoodsSnapshot.docs) {
+                    await deleteDoc(doc(db, "savedFoods", document.id));
+                    savedFoodsDeleted++;
+                }
+                
+                console.log(`Deleted ${savedFoodsDeleted} saved food documents`);
+                
+                // Clear local state
+                nutritionData = [];
+                window.nutritionData = [];
+                savedFoods = [];
+                window.savedFoods = [];
+                
+                // Refresh UI
+                renderMeals();
+                renderSavedFoods();
+                
+                alert(`✅ Data wipe complete!\n\nDeleted:\n- ${deletedCount} nutrition entries\n- ${savedFoodsDeleted} saved foods`);
+            } catch (e) {
+                console.error("Error wiping data:", e);
+                alert('Error wiping data: ' + e.message);
+            }
+        };
 
         // Main app initialization
         document.addEventListener('DOMContentLoaded', async function() {
