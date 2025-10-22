@@ -2083,7 +2083,7 @@
                 }
             });
             
-            const labels = Object.keys(weeklyData).map(date => new Date(date).toLocaleDateString());
+            const labels = Object.keys(weeklyData).map(date => formatDateString(date));
             const datasets = [
                 {
                     label: 'Push',
@@ -2485,7 +2485,7 @@
                 prContainer.innerHTML = sortedPRs.slice(0, 10).map(([exercise, pr]) => `
                     <div class="insight-item">
                         <strong>${exercise}</strong><br>
-                        ${pr.weight}lbs × ${pr.reps} reps - ${new Date(pr.date).toLocaleDateString()}
+                        ${pr.weight}lbs × ${pr.reps} reps - ${formatDateString(pr.date)}
                     </div>
                 `).join('');
             }
@@ -2809,7 +2809,7 @@
             charts.weight = new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: sortedWeights.map(w => new Date(w.date).toLocaleDateString()),
+                    labels: sortedWeights.map(w => formatDateString(w.date)),
                     datasets: [{
                         label: 'Weight (lbs)',
                         data: sortedWeights.map(w => w.weight),
@@ -2874,7 +2874,7 @@
             photoData.forEach(photo => {
                 html += `<div class="photo-item">
                     <img src="${photo.dataUrl}" alt="Progress photo">
-                    <div class="photo-date">${new Date(photo.date).toLocaleDateString()}</div>
+                    <div class="photo-date">${formatDateString(photo.date)}</div>
                 </div>`;
             });
             
@@ -3137,7 +3137,7 @@
 
                         ${previousExercise && !isStretch && !isRest ? `
                             <div class="previous-session">
-                                <div class="previous-header">Last session (${new Date(lastWorkout.date).toLocaleDateString()}):</div>
+                                <div class="previous-header">Last session (${formatDateString(lastWorkout.date)}):</div>
                                 <div class="previous-sets-compact">
                                     ${previousExercise.sets.filter(set => set.weight || set.reps).map(set => `${set.weight}×${set.reps}`).join(', ')}
                                 </div>
@@ -3242,7 +3242,7 @@
             const today = new Date().toISOString().split('T')[0];
             
             if (dateInput.value && dateInput.value !== today) {
-                logBtn.textContent = '📅 For ' + new Date(dateInput.value + 'T00:00:00').toLocaleDateString();
+                logBtn.textContent = '📅 For ' + formatDateString(dateInput.value);
                 logBtn.style.background = 'rgba(16, 185, 129, 0.2)';
                 logBtn.style.color = '#10b981';
             } else {
