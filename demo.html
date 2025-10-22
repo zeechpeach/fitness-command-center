@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meal Tracking Demo - New Features</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+            color: #ffffff;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 2rem;
+            text-align: center;
+            background: linear-gradient(45deg, #06b6d4, #3b82f6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .demo-section {
+            background: rgba(30, 41, 59, 0.4);
+            border: 1px solid rgba(71, 85, 105, 0.3);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .demo-title {
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+            color: #06b6d4;
+        }
+
+        .demo-description {
+            color: #94a3b8;
+            margin-bottom: 1rem;
+            line-height: 1.6;
+        }
+
+        .btn-demo {
+            padding: 0.75rem 1.5rem;
+            background: linear-gradient(135deg, #3b82f6, #06b6d4);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            margin-right: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .btn-demo:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #ef4444;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(239, 68, 68, 0.3);
+        }
+
+        /* Modal styles */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: rgba(15, 23, 42, 0.95);
+            border: 1px solid rgba(71, 85, 105, 0.5);
+            border-radius: 16px;
+            padding: 2rem;
+            max-width: 400px;
+            width: 90%;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: white;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .meal-type-buttons {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .meal-type-btn {
+            padding: 1rem;
+            background: rgba(30, 41, 59, 0.8);
+            border: 2px solid rgba(71, 85, 105, 0.5);
+            border-radius: 12px;
+            color: white;
+            cursor: pointer;
+            font-size: 1.1rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .meal-type-btn:hover {
+            background: rgba(59, 130, 246, 0.2);
+            border-color: #3b82f6;
+            transform: translateY(-2px);
+        }
+
+        .modal-close {
+            margin-top: 1rem;
+            padding: 0.75rem;
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 8px;
+            color: #ef4444;
+            cursor: pointer;
+            width: 100%;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .modal-close:hover {
+            background: rgba(239, 68, 68, 0.3);
+        }
+
+        /* Meal card demo */
+        .meal-card {
+            background: rgba(30, 41, 59, 0.4);
+            border: 1px solid rgba(71, 85, 105, 0.3);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .meal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .meal-type-select {
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(71, 85, 105, 0.5);
+            border-radius: 6px;
+            color: white;
+            padding: 0.5rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .food-row {
+            background: rgba(15, 23, 42, 0.6);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .food-name {
+            color: white;
+            font-weight: 500;
+        }
+
+        .food-macros {
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+
+        .btn-delete-demo {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #ef4444;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-delete-demo:hover {
+            background: rgba(239, 68, 68, 0.3);
+        }
+
+        .feature-list {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .feature-list li {
+            padding: 0.5rem 0;
+            color: #e2e8f0;
+        }
+
+        .feature-list li:before {
+            content: "✓ ";
+            color: #10b981;
+            font-weight: bold;
+            margin-right: 0.5rem;
+        }
+
+        .code-block {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(71, 85, 105, 0.3);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1rem;
+            color: #06b6d4;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🍎 Meal Tracking - New Features Demo</h1>
+
+        <!-- Feature 1: Meal Type Modal -->
+        <div class="demo-section">
+            <div class="demo-title">1. Manual Meal Type Selection</div>
+            <div class="demo-description">
+                Instead of automatic meal type assignment, users now get a beautiful modal to choose their meal type.
+            </div>
+            <button class="btn-demo" onclick="showModal()">Click to See Modal</button>
+            <ul class="feature-list">
+                <li>Visual buttons with emoji icons</li>
+                <li>No typing required</li>
+                <li>Cancel option available</li>
+            </ul>
+        </div>
+
+        <!-- Feature 2: Editable Meal Type -->
+        <div class="demo-section">
+            <div class="demo-title">2. Editable Meal Type Dropdown</div>
+            <div class="demo-description">
+                Change the meal type anytime with a dropdown in the meal card header.
+            </div>
+            <div class="meal-card">
+                <div class="meal-header">
+                    <div>
+                        <select class="meal-type-select" onchange="updateMealType(this.value)">
+                            <option value="Breakfast">🌅 Breakfast</option>
+                            <option value="Lunch">☀️ Lunch</option>
+                            <option value="Dinner" selected>🌙 Dinner</option>
+                            <option value="Snack">🍪 Snack</option>
+                        </select>
+                        <div style="color: #64748b; font-size: 0.9rem; margin-top: 0.5rem;">6:45 PM</div>
+                    </div>
+                    <button class="btn-secondary">Delete Meal</button>
+                </div>
+                <div id="meal-type-display" style="color: #10b981; margin-top: 1rem;">
+                    Current meal type: Dinner
+                </div>
+            </div>
+        </div>
+
+        <!-- Feature 3: Individual Food Deletion -->
+        <div class="demo-section">
+            <div class="demo-title">3. Individual Food Item Deletion</div>
+            <div class="demo-description">
+                Delete individual foods without removing the entire meal. Meal auto-deletes if last food is removed.
+            </div>
+            <div class="meal-card">
+                <div id="food-list">
+                    <div class="food-row" id="food-1">
+                        <div>
+                            <div class="food-name">Chicken Breast</div>
+                            <div class="food-macros">30g protein • 0g carbs • 5g fats • 200 cal</div>
+                        </div>
+                        <button class="btn-delete-demo" onclick="deleteFood(1)">🗑️ Delete</button>
+                    </div>
+                    <div class="food-row" id="food-2">
+                        <div>
+                            <div class="food-name">Brown Rice</div>
+                            <div class="food-macros">5g protein • 45g carbs • 2g fats • 220 cal</div>
+                        </div>
+                        <button class="btn-delete-demo" onclick="deleteFood(2)">🗑️ Delete</button>
+                    </div>
+                    <div class="food-row" id="food-3">
+                        <div>
+                            <div class="food-name">Broccoli</div>
+                            <div class="food-macros">3g protein • 8g carbs • 0g fats • 35 cal</div>
+                        </div>
+                        <button class="btn-delete-demo" onclick="deleteFood(3)">🗑️ Delete</button>
+                    </div>
+                </div>
+                <div id="food-status" style="color: #10b981; margin-top: 1rem; text-align: center;"></div>
+            </div>
+        </div>
+
+        <!-- Feature 4: Duplicate Prevention -->
+        <div class="demo-section">
+            <div class="demo-title">4. Duplicate Meal Prevention</div>
+            <div class="demo-description">
+                All meal updates now use proper Firestore updateDoc instead of creating duplicates.
+            </div>
+            <ul class="feature-list">
+                <li>Uses updateDoc for meal changes</li>
+                <li>Debounced auto-save (1 second delay)</li>
+                <li>ID tracking prevents duplicate loads</li>
+                <li>No more ghost entries</li>
+            </ul>
+        </div>
+
+        <!-- Feature 5: Data Wipe -->
+        <div class="demo-section">
+            <div class="demo-title">5. Data Reset Utility</div>
+            <div class="demo-description">
+                Clear all nutrition data with a console command. Double confirmation prevents accidents.
+            </div>
+            <button class="btn-demo" onclick="simulateWipe()">Simulate Data Wipe</button>
+            <div class="code-block">
+                // Run this in browser console:<br>
+                window.wipeNutritionData()
+            </div>
+            <div id="wipe-status" style="margin-top: 1rem; color: #10b981;"></div>
+        </div>
+
+        <!-- Summary -->
+        <div class="demo-section">
+            <div class="demo-title">✨ All Changes Complete</div>
+            <ul class="feature-list">
+                <li>Manual meal type selection with modal UI</li>
+                <li>Editable meal types via dropdown</li>
+                <li>Individual food item deletion</li>
+                <li>Fixed duplicate meal creation</li>
+                <li>Data reset utility for clean slate</li>
+                <li>Comprehensive error handling</li>
+                <li>Full Firebase integration</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal-overlay" id="meal-type-modal">
+        <div class="modal-content">
+            <h3 class="modal-title">🍽️ Select Meal Type</h3>
+            <div class="meal-type-buttons">
+                <button class="meal-type-btn" onclick="selectMealType('Breakfast')">🌅 Breakfast</button>
+                <button class="meal-type-btn" onclick="selectMealType('Lunch')">☀️ Lunch</button>
+                <button class="meal-type-btn" onclick="selectMealType('Dinner')">🌙 Dinner</button>
+                <button class="meal-type-btn" onclick="selectMealType('Snack')">🍪 Snack</button>
+            </div>
+            <button class="modal-close" onclick="closeModal()">Cancel</button>
+        </div>
+    </div>
+
+    <script>
+        let foodCount = 3;
+
+        function showModal() {
+            document.getElementById('meal-type-modal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('meal-type-modal').classList.remove('active');
+        }
+
+        function selectMealType(type) {
+            closeModal();
+            alert(`✓ Meal created with type: ${type}`);
+        }
+
+        function updateMealType(type) {
+            document.getElementById('meal-type-display').textContent = `Current meal type: ${type}`;
+        }
+
+        function deleteFood(foodId) {
+            if (confirm('Delete this food item?')) {
+                const foodElement = document.getElementById('food-' + foodId);
+                foodElement.style.transition = 'all 0.3s ease';
+                foodElement.style.opacity = '0';
+                foodElement.style.transform = 'translateX(-20px)';
+                
+                setTimeout(() => {
+                    foodElement.remove();
+                    foodCount--;
+                    
+                    const status = document.getElementById('food-status');
+                    if (foodCount === 0) {
+                        status.textContent = '✓ Last food deleted - Meal would be removed';
+                        status.style.color = '#f59e0b';
+                    } else {
+                        status.textContent = `✓ Food deleted - ${foodCount} items remaining`;
+                        status.style.color = '#10b981';
+                    }
+                }, 300);
+            }
+        }
+
+        function simulateWipe() {
+            if (confirm('⚠️ WARNING: This will delete ALL nutrition data!\n\nAre you sure?')) {
+                if (confirm('Please confirm one more time: Delete ALL nutrition data?')) {
+                    document.getElementById('wipe-status').textContent = 
+                        '✅ Data wipe complete!\n\nDeleted:\n- 15 nutrition entries\n- 8 saved foods';
+                }
+            }
+        }
+    </script>
+</body>
+</html>
