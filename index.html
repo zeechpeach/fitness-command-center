@@ -3394,43 +3394,56 @@
                 return;
             }
             
-            // Check if food already exists
-            const existingFood = savedFoods.find(f => f.name.toLowerCase() === food.name.toLowerCase());
-            if (existingFood) {
-                if (!confirm(`"${food.name}" already exists in saved foods. Update it?`)) {
-                    return;
-                }
-                // Update existing
-                existingFood.protein = parseFloat(food.protein) || 0;
-                existingFood.carbs = parseFloat(food.carbs) || 0;
-                existingFood.fats = parseFloat(food.fats) || 0;
-                existingFood.calories = parseFloat(food.calories) || 0;
-                existingFood.lastUsed = new Date().toISOString();
+            const newProtein = parseFloat(food.protein) || 0;
+            const newCarbs = parseFloat(food.carbs) || 0;
+            const newFats = parseFloat(food.fats) || 0;
+            const newCalories = parseFloat(food.calories) || 0;
+            
+            // Check if food already exists (by name and nutritional values)
+            const existingFood = savedFoods.find(f => {
+                const nameMatch = f.name.toLowerCase().trim() === food.name.toLowerCase().trim();
+                const proteinMatch = (parseFloat(f.protein) || 0) === newProtein;
+                const carbsMatch = (parseFloat(f.carbs) || 0) === newCarbs;
+                const fatsMatch = (parseFloat(f.fats) || 0) === newFats;
+                const caloriesMatch = (parseFloat(f.calories) || 0) === newCalories;
                 
+                return nameMatch && proteinMatch && carbsMatch && fatsMatch && caloriesMatch;
+            });
+            
+            if (existingFood) {
+                // Exact duplicate found - just update lastUsed
                 try {
-                    // Update only this specific food in Firebase
+                    existingFood.lastUsed = new Date().toISOString();
+                    existingFood.useCount = (existingFood.useCount || 0) + 1;
+                    
                     const docRef = doc(db, "savedFoods", existingFood.id);
                     await updateDoc(docRef, {
-                        protein: existingFood.protein,
-                        carbs: existingFood.carbs,
-                        fats: existingFood.fats,
-                        calories: existingFood.calories,
-                        lastUsed: existingFood.lastUsed
+                        lastUsed: existingFood.lastUsed,
+                        useCount: existingFood.useCount
                     });
-                    alert('Food updated in library!');
+                    alert('This food is already saved in your library!');
                     renderSavedFoods();
                 } catch (e) {
                     console.error("Error updating food:", e);
                     alert('Error updating food in library');
                 }
             } else {
-                // Add new
+                // Check if food with same name but different nutritional values exists
+                const sameName = savedFoods.find(f => f.name.toLowerCase().trim() === food.name.toLowerCase().trim());
+                
+                if (sameName) {
+                    if (!confirm(`"${food.name}" already exists in saved foods with different nutritional values. Save as a new entry?`)) {
+                        return;
+                    }
+                }
+                
+                // Add new food
                 const savedFood = {
                     name: food.name.trim(),
-                    protein: parseFloat(food.protein) || 0,
-                    carbs: parseFloat(food.carbs) || 0,
-                    fats: parseFloat(food.fats) || 0,
-                    calories: parseFloat(food.calories) || 0,
+                    protein: newProtein,
+                    carbs: newCarbs,
+                    fats: newFats,
+                    calories: newCalories,
                     created: new Date().toISOString(),
                     lastUsed: new Date().toISOString(),
                     useCount: 0
@@ -3606,10 +3619,20 @@
         window.deleteSavedFood = async function(foodId) {
             if (!confirm('Delete this saved food?')) return;
             
-            savedFoods = savedFoods.filter(f => f.id !== foodId);
-            renderSavedFoods();
-            
-            // Note: In production, you'd also delete from Firebase here
+            try {
+                // Delete from Firebase
+                const docRef = doc(db, "savedFoods", foodId);
+                await deleteDoc(docRef);
+                
+                // Remove from local state
+                savedFoods = savedFoods.filter(f => f.id !== foodId);
+                renderSavedFoods();
+                
+                console.log(`Deleted saved food ${foodId} from Firebase`);
+            } catch (e) {
+                console.error("Error deleting saved food:", e);
+                alert('Error deleting saved food. Please try again.');
+            }
         };
 
         async function loadSavedFoods() {
@@ -3617,17 +3640,87 @@
                 const q = query(collection(db, "savedFoods"), orderBy("lastUsed", "desc"));
                 const querySnapshot = await getDocs(q);
                 
-                savedFoods = [];
+                const allFoods = [];
                 querySnapshot.forEach((doc) => {
-                    savedFoods.push({ id: doc.id, ...doc.data() });
+                    allFoods.push({ id: doc.id, ...doc.data() });
                 });
                 
-                console.log(`Loaded ${savedFoods.length} saved foods`);
+                console.log(`Loaded ${allFoods.length} saved foods from database`);
+                
+                // Deduplicate foods based on name and nutritional values
+                const deduplicatedFoods = await deduplicateSavedFoods(allFoods);
+                savedFoods = deduplicatedFoods;
+                
+                console.log(`After deduplication: ${savedFoods.length} unique saved foods`);
             } catch (e) {
                 console.error("Error loading saved foods:", e);
                 // Initialize with empty array if error
                 savedFoods = [];
             }
+        }
+        
+        /**
+         * Deduplicates saved foods based on name and nutritional values.
+         * If duplicates exist, keeps the most recently used one and deletes others from Firebase.
+         */
+        async function deduplicateSavedFoods(foods) {
+            if (!foods || foods.length === 0) return [];
+            
+            const foodMap = new Map();
+            const duplicatesToDelete = [];
+            
+            // Create a unique key for each food based on name and nutritional values
+            const createFoodKey = (food) => {
+                const name = (food.name || '').toLowerCase().trim();
+                const protein = parseFloat(food.protein) || 0;
+                const carbs = parseFloat(food.carbs) || 0;
+                const fats = parseFloat(food.fats) || 0;
+                const calories = parseFloat(food.calories) || 0;
+                return `${name}_${protein}_${carbs}_${fats}_${calories}`;
+            };
+            
+            // Group foods by their unique key
+            for (const food of foods) {
+                const key = createFoodKey(food);
+                
+                if (!foodMap.has(key)) {
+                    foodMap.set(key, food);
+                } else {
+                    // Duplicate found - keep the one with more recent lastUsed date
+                    const existing = foodMap.get(key);
+                    const existingDate = new Date(existing.lastUsed || 0);
+                    const currentDate = new Date(food.lastUsed || 0);
+                    
+                    if (currentDate > existingDate) {
+                        // Current food is more recent, replace existing and mark old for deletion
+                        duplicatesToDelete.push(existing.id);
+                        foodMap.set(key, food);
+                    } else {
+                        // Existing is more recent, mark current for deletion
+                        duplicatesToDelete.push(food.id);
+                    }
+                }
+            }
+            
+            // Delete duplicates from Firebase
+            if (duplicatesToDelete.length > 0) {
+                console.log(`Found ${duplicatesToDelete.length} duplicate saved foods to clean up`);
+                
+                for (const foodId of duplicatesToDelete) {
+                    try {
+                        const docRef = doc(db, "savedFoods", foodId);
+                        await deleteDoc(docRef);
+                        console.log(`Deleted duplicate saved food ${foodId}`);
+                    } catch (e) {
+                        console.error(`Error deleting duplicate food ${foodId}:`, e);
+                    }
+                }
+                
+                console.log(`Cleaned up ${duplicatesToDelete.length} duplicate saved foods from database`);
+            }
+            
+            // Return deduplicated list
+            return Array.from(foodMap.values());
         }
 
         // Weight Functions
