@@ -3408,11 +3408,20 @@
                 existingFood.lastUsed = new Date().toISOString();
                 
                 try {
-                    await saveSavedFoodsToFirebase();
+                    // Update only this specific food in Firebase
+                    const docRef = doc(db, "savedFoods", existingFood.id);
+                    await updateDoc(docRef, {
+                        protein: existingFood.protein,
+                        carbs: existingFood.carbs,
+                        fats: existingFood.fats,
+                        calories: existingFood.calories,
+                        lastUsed: existingFood.lastUsed
+                    });
                     alert('Food updated in library!');
                     renderSavedFoods();
                 } catch (e) {
                     console.error("Error updating food:", e);
+                    alert('Error updating food in library');
                 }
             } else {
                 // Add new
@@ -3440,12 +3449,12 @@
         };
 
         async function saveSavedFoodsToFirebase() {
-            // Update all saved foods in Firebase (simplified approach)
-            // In production, you'd update individual documents
+            // Update existing saved food documents in Firebase
             for (const food of savedFoods) {
                 if (food.id) {
                     try {
-                        await addDoc(collection(db, "savedFoods"), {
+                        const docRef = doc(db, "savedFoods", food.id);
+                        await updateDoc(docRef, {
                             name: food.name,
                             protein: food.protein,
                             carbs: food.carbs,
@@ -3575,9 +3584,17 @@
             
             // Save to Firebase
             try {
-                const docRef = doc(db, "nutrition", targetMeal.id);
-                await updateDoc(docRef, { foods: targetMeal.foods });
-                await saveSavedFoodsToFirebase();
+                // Update the meal with the new food
+                const mealDocRef = doc(db, "nutrition", targetMeal.id);
+                await updateDoc(mealDocRef, { foods: targetMeal.foods });
+                
+                // Update only this specific saved food's usage stats
+                const foodDocRef = doc(db, "savedFoods", food.id);
+                await updateDoc(foodDocRef, {
+                    useCount: food.useCount,
+                    lastUsed: food.lastUsed
+                });
+                
                 renderMeals();
                 renderSavedFoods();
             } catch (e) {
