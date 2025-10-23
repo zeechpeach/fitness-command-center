@@ -781,17 +781,22 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 1rem;
+            gap: 0.75rem;
         }
 
         .meal-type {
             font-size: 1.2rem;
             font-weight: 600;
             color: white;
+            min-height: 44px;
+            display: flex;
+            align-items: center;
         }
 
         .meal-time {
             color: #64748b;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
+            margin-top: 0.25rem;
         }
 
         .food-input-row {
@@ -804,11 +809,13 @@
         .food-input {
             flex: 2;
             min-width: 200px;
-            padding: 0.5rem;
+            padding: 0.75rem;
+            min-height: 44px;
             background: rgba(30, 41, 59, 0.8);
             border: 1px solid rgba(71, 85, 105, 0.5);
             border-radius: 6px;
             color: white;
+            font-size: 1rem;
         }
 
         .food-input:focus {
@@ -834,18 +841,31 @@
 
         .macro-input {
             width: 80px;
-            padding: 0.5rem;
+            padding: 0.75rem 0.5rem;
+            min-height: 44px;
             background: rgba(30, 41, 59, 0.8);
             border: 1px solid rgba(71, 85, 105, 0.5);
             border-radius: 6px;
             color: white;
             text-align: center;
+            font-size: 1rem;
         }
 
         .macro-input:focus {
             outline: none;
             border-color: #06b6d4;
             box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.2);
+        }
+
+        .macro-inputs-grid {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .food-action-buttons {
+            display: flex;
+            gap: 0.5rem;
         }
 
         .macro-summary {
@@ -1053,14 +1073,19 @@
         }
 
         .btn-delete-food {
-            padding: 0.5rem;
+            padding: 0.75rem;
+            min-width: 44px;
+            min-height: 44px;
             background: rgba(239, 68, 68, 0.2);
             color: #ef4444;
             border: 1px solid rgba(239, 68, 68, 0.3);
             border-radius: 6px;
             cursor: pointer;
-            font-size: 0.8rem;
+            font-size: 1rem;
             transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .btn-delete-food:hover {
@@ -1068,15 +1093,19 @@
         }
 
         .btn-save-food {
-            padding: 0.5rem 1rem;
+            padding: 0.75rem 1rem;
+            min-height: 44px;
             background: rgba(59, 130, 246, 0.2);
             color: #3b82f6;
             border: 1px solid rgba(59, 130, 246, 0.3);
             border-radius: 6px;
             cursor: pointer;
-            font-size: 0.8rem;
+            font-size: 0.9rem;
             font-weight: 500;
             transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .btn-save-food:hover {
@@ -1205,8 +1234,36 @@
         }
 
         @media (max-width: 768px) {
+            /* Reduce body padding for more screen space */
+            body {
+                padding: 0.5rem;
+            }
+
+            /* Optimize header for mobile */
+            .header {
+                margin-bottom: 1rem;
+                padding: 1rem 0;
+            }
+
             .header h1 {
-                font-size: 2rem;
+                font-size: 1.75rem;
+                margin-bottom: 0.25rem;
+            }
+
+            .header p {
+                font-size: 0.9rem;
+            }
+
+            /* Optimize tabs for mobile scrolling */
+            .nav-tabs {
+                gap: 0.5rem;
+                margin-bottom: 1rem;
+            }
+
+            .nav-tab {
+                padding: 0.65rem 1rem;
+                font-size: 0.9rem;
+                min-height: 44px;
             }
             
             .exercise-header {
@@ -1273,13 +1330,200 @@
                 grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
             }
 
-            /* Ensure meal inputs are responsive */
+            /* Mobile-optimized meal cards */
+            .meal-card {
+                padding: 1rem;
+                margin-bottom: 1rem;
+                border-radius: 12px;
+            }
+
+            .meal-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+                margin-bottom: 0.75rem;
+            }
+
+            .meal-header > div:first-child {
+                width: 100%;
+            }
+
+            .meal-header button {
+                width: 100%;
+                min-height: 44px;
+                padding: 0.75rem;
+                font-size: 0.9rem;
+            }
+
+            .meal-type {
+                width: 100%;
+                font-size: 1.1rem;
+                padding: 0.75rem;
+                min-height: 48px;
+            }
+
+            .meal-time {
+                font-size: 0.8rem;
+            }
+
+            /* Optimize food input rows for mobile */
             .food-input-row {
                 flex-direction: column;
+                gap: 0.5rem;
+                margin-bottom: 0.75rem;
             }
 
             .food-input {
+                width: 100%;
                 min-width: 100%;
+                padding: 0.75rem;
+                font-size: 1rem;
+            }
+
+            /* Create a grid layout for macro inputs on mobile */
+            .macro-inputs-grid {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 0.5rem;
+                width: 100%;
+            }
+
+            .macro-input-wrapper {
+                width: 100%;
+            }
+
+            .macro-input {
+                width: 100%;
+                padding: 0.75rem;
+                font-size: 1rem;
+                min-height: 48px;
+            }
+
+            /* Make action buttons full width on mobile */
+            .food-action-buttons {
+                display: flex;
+                gap: 0.5rem;
+                width: 100%;
+                margin-top: 0.5rem;
+            }
+
+            .btn-save-food,
+            .btn-delete-food {
+                flex: 1;
+                min-height: 48px;
+                padding: 0.75rem;
+                font-size: 0.95rem;
+            }
+
+            /* Optimize macro summary for mobile */
+            .macro-summary {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 0.75rem;
+                margin-top: 1rem;
+                padding-top: 1rem;
+            }
+
+            .macro-item {
+                padding: 0.75rem;
+                background: rgba(15, 23, 42, 0.6);
+                border-radius: 8px;
+            }
+
+            .macro-value {
+                font-size: 1.3rem;
+            }
+
+            .macro-label {
+                font-size: 0.75rem;
+            }
+
+            /* Add Meal button optimization */
+            .btn-add {
+                width: 100%;
+                min-height: 48px;
+                padding: 0.75rem;
+                font-size: 0.95rem;
+                margin-top: 0.5rem;
+            }
+
+            /* Optimize saved foods panel */
+            .saved-foods-panel {
+                padding: 1rem;
+                margin-bottom: 1rem;
+            }
+
+            .saved-food-item {
+                padding: 0.75rem;
+            }
+
+            .btn-quick-add {
+                min-height: 44px;
+                padding: 0.65rem 0.85rem;
+                font-size: 0.85rem;
+            }
+
+            /* Analytics card optimization */
+            .analytics-card {
+                padding: 1rem;
+                margin-bottom: 1rem;
+            }
+
+            .analytics-title {
+                font-size: 1rem;
+                margin-bottom: 0.75rem;
+            }
+
+            /* Reduce intelligence panel spacing */
+            .intelligence-panel {
+                padding: 1rem;
+                margin-bottom: 1rem;
+            }
+
+            .suggestions-grid {
+                grid-template-columns: 1fr;
+                gap: 0.75rem;
+            }
+
+            .suggestion-card {
+                padding: 0.75rem;
+            }
+        }
+
+        /* Additional breakpoint for very small phones (iPhone SE, etc.) */
+        @media (max-width: 375px) {
+            body {
+                padding: 0.25rem;
+            }
+
+            .header h1 {
+                font-size: 1.5rem;
+            }
+
+            .header p {
+                font-size: 0.85rem;
+            }
+
+            .meal-card {
+                padding: 0.75rem;
+            }
+
+            .macro-summary {
+                grid-template-columns: 1fr;
+            }
+
+            .macro-input {
+                width: 100%;
+            }
+
+            .food-input-row {
+                gap: 0.4rem;
+            }
+        }
+
+        /* Breakpoint for larger phones */
+        @media (min-width: 414px) and (max-width: 768px) {
+            .macro-inputs-grid {
+                grid-template-columns: repeat(3, 1fr);
             }
         }
     </style>
@@ -2927,7 +3171,7 @@
                 html += `<div class="meal-card">
                     <div class="meal-header">
                         <div>
-                            <select class="meal-type" style="background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(71, 85, 105, 0.5); border-radius: 6px; color: white; padding: 0.5rem; font-size: 1.2rem; font-weight: 600; cursor: pointer;" onchange="changeMealType('${meal.id}', this.value)">
+                            <select class="meal-type" style="background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(71, 85, 105, 0.5); border-radius: 6px; color: white; padding: 0.75rem; font-size: 1.2rem; font-weight: 600; cursor: pointer;" onchange="changeMealType('${meal.id}', this.value)">
                                 <option value="Breakfast" ${meal.mealType === 'Breakfast' ? 'selected' : ''}>🌅 Breakfast</option>
                                 <option value="Lunch" ${meal.mealType === 'Lunch' ? 'selected' : ''}>☀️ Lunch</option>
                                 <option value="Dinner" ${meal.mealType === 'Dinner' ? 'selected' : ''}>🌙 Dinner</option>
@@ -2935,7 +3179,7 @@
                             </select>
                             <div class="meal-time">${meal.time || ''}</div>
                         </div>
-                        <button class="btn" style="background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3);" onclick="deleteMeal('${meal.id}')">Delete</button>
+                        <button class="btn" style="background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); padding: 0.75rem 1rem; min-height: 44px;" onclick="deleteMeal('${meal.id}')">🗑️ Delete</button>
                     </div>
                     <div id="meal-${meal.id}">`;
                 
@@ -2948,32 +3192,36 @@
                     
                     html += `<div class="food-input-row">
                         <input type="text" class="food-input" value="${food.name}" placeholder="Food name" onchange="updateMealFood('${meal.id}', ${foodIndex}, 'name', this.value)">
-                        <div class="macro-input-wrapper">
-                            <label class="macro-input-label">Qty</label>
-                            <input type="number" class="macro-input" value="${quantity}" placeholder="1" step="0.1" min="0.1" onchange="updateMealFood('${meal.id}', ${foodIndex}, 'quantity', this.value)" style="width: 60px;">
+                        <div class="macro-inputs-grid">
+                            <div class="macro-input-wrapper">
+                                <label class="macro-input-label">Qty</label>
+                                <input type="number" class="macro-input" value="${quantity}" placeholder="1" step="0.1" min="0.1" onchange="updateMealFood('${meal.id}', ${foodIndex}, 'quantity', this.value)">
+                            </div>
+                            <div class="macro-input-wrapper">
+                                <label class="macro-input-label">Protein</label>
+                                <input type="number" class="macro-input" value="${food.protein || 0}" placeholder="0" step="0.1" onchange="updateMealFood('${meal.id}', ${foodIndex}, 'protein', this.value)">
+                                ${quantity !== 1 ? `<div style="font-size: 0.7rem; color: #64748b; text-align: center; margin-top: 0.25rem;">${displayProtein}g</div>` : ''}
+                            </div>
+                            <div class="macro-input-wrapper">
+                                <label class="macro-input-label">Carbs</label>
+                                <input type="number" class="macro-input" value="${food.carbs || 0}" placeholder="0" step="0.1" onchange="updateMealFood('${meal.id}', ${foodIndex}, 'carbs', this.value)">
+                                ${quantity !== 1 ? `<div style="font-size: 0.7rem; color: #64748b; text-align: center; margin-top: 0.25rem;">${displayCarbs}g</div>` : ''}
+                            </div>
+                            <div class="macro-input-wrapper">
+                                <label class="macro-input-label">Fats</label>
+                                <input type="number" class="macro-input" value="${food.fats || 0}" placeholder="0" step="0.1" onchange="updateMealFood('${meal.id}', ${foodIndex}, 'fats', this.value)">
+                                ${quantity !== 1 ? `<div style="font-size: 0.7rem; color: #64748b; text-align: center; margin-top: 0.25rem;">${displayFats}g</div>` : ''}
+                            </div>
+                            <div class="macro-input-wrapper">
+                                <label class="macro-input-label">Calories</label>
+                                <input type="number" class="macro-input" value="${food.calories || 0}" placeholder="0" onchange="updateMealFood('${meal.id}', ${foodIndex}, 'calories', this.value)">
+                                ${quantity !== 1 ? `<div style="font-size: 0.7rem; color: #64748b; text-align: center; margin-top: 0.25rem;">${displayCalories}</div>` : ''}
+                            </div>
                         </div>
-                        <div class="macro-input-wrapper">
-                            <label class="macro-input-label">Protein (g)</label>
-                            <input type="number" class="macro-input" value="${food.protein || 0}" placeholder="0" step="0.1" onchange="updateMealFood('${meal.id}', ${foodIndex}, 'protein', this.value)">
-                            ${quantity !== 1 ? `<div style="font-size: 0.7rem; color: #64748b; text-align: center;">${displayProtein}g</div>` : ''}
+                        <div class="food-action-buttons">
+                            <button class="btn-save-food" onclick="saveFoodToLibrary('${meal.id}', ${foodIndex})" title="Save to library">💾 Save</button>
+                            <button class="btn-delete-food" onclick="deleteFoodFromMeal('${meal.id}', ${foodIndex})" title="Delete food">🗑️ Delete</button>
                         </div>
-                        <div class="macro-input-wrapper">
-                            <label class="macro-input-label">Carbs (g)</label>
-                            <input type="number" class="macro-input" value="${food.carbs || 0}" placeholder="0" step="0.1" onchange="updateMealFood('${meal.id}', ${foodIndex}, 'carbs', this.value)">
-                            ${quantity !== 1 ? `<div style="font-size: 0.7rem; color: #64748b; text-align: center;">${displayCarbs}g</div>` : ''}
-                        </div>
-                        <div class="macro-input-wrapper">
-                            <label class="macro-input-label">Fats (g)</label>
-                            <input type="number" class="macro-input" value="${food.fats || 0}" placeholder="0" step="0.1" onchange="updateMealFood('${meal.id}', ${foodIndex}, 'fats', this.value)">
-                            ${quantity !== 1 ? `<div style="font-size: 0.7rem; color: #64748b; text-align: center;">${displayFats}g</div>` : ''}
-                        </div>
-                        <div class="macro-input-wrapper">
-                            <label class="macro-input-label">Calories</label>
-                            <input type="number" class="macro-input" value="${food.calories || 0}" placeholder="0" onchange="updateMealFood('${meal.id}', ${foodIndex}, 'calories', this.value)">
-                            ${quantity !== 1 ? `<div style="font-size: 0.7rem; color: #64748b; text-align: center;">${displayCalories}</div>` : ''}
-                        </div>
-                        <button class="btn-save-food" onclick="saveFoodToLibrary('${meal.id}', ${foodIndex})" title="Save to library">💾</button>
-                        <button class="btn-delete-food" onclick="deleteFoodFromMeal('${meal.id}', ${foodIndex})" title="Delete food">🗑️</button>
                     </div>`;
                 });
                 
