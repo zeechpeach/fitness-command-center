@@ -2606,8 +2606,8 @@
             return Array.from(exercises).sort();
         }
 
-        // Get exercise progression data for PR Timeline
-        function getExerciseProgression(exerciseName) {
+        // Get exercise progression data for PR Timeline (specific exercise)
+        function getExerciseProgressionForTimeline(exerciseName) {
             const progression = [];
             
             allWorkouts.slice().reverse().forEach(workout => {
@@ -2832,7 +2832,7 @@
                 return;
             }
             
-            const progression = getExerciseProgression(exerciseName);
+            const progression = getExerciseProgressionForTimeline(exerciseName);
             
             if (progression.length === 0) {
                 ctx.getContext('2d').clearRect(0, 0, ctx.width, ctx.height);
