@@ -1755,17 +1755,12 @@
 
         <!-- ANALYTICS TAB -->
         <div id="analytics-content" class="tab-content">
-            <div class="analytics-grid">
-                <div class="analytics-card">
-                    <h3 class="analytics-title">💪 Total Volume</h3>
-                    <div class="stat-value" id="total-volume">0</div>
-                    <div class="stat-label">lbs lifted this month</div>
-                </div>
-
+            <!-- Row 1: Main Stats and Volume Cards -->
+            <div class="analytics-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
                 <div class="analytics-card">
                     <h3 class="analytics-title">🎯 Personal Records</h3>
                     <div class="stat-value" id="pr-count">0</div>
-                    <div class="stat-label">PRs set this month</div>
+                    <div class="stat-label">PRs set this week</div>
                 </div>
 
                 <div class="analytics-card">
@@ -1773,48 +1768,115 @@
                     <div class="stat-value" id="workout-streak">0</div>
                     <div class="stat-label">consecutive workouts</div>
                 </div>
+
+                <div class="analytics-card">
+                    <h3 class="analytics-title">💪 Upper Volume</h3>
+                    <div class="stat-value" id="upper-record">0</div>
+                    <div class="stat-label">Record: <span id="upper-record-lbs">0</span> lbs</div>
+                    <div class="stat-label">Avg: <span id="upper-avg">0</span> lbs | <span id="upper-trend">→</span></div>
+                    <div class="stat-label" style="font-size: 0.8rem; margin-top: 0.5rem;"><span id="upper-mom"></span></div>
+                </div>
+
+                <div class="analytics-card">
+                    <h3 class="analytics-title">🏋️ Lower Volume</h3>
+                    <div class="stat-value" id="lower-record">0</div>
+                    <div class="stat-label">Record: <span id="lower-record-lbs">0</span> lbs</div>
+                    <div class="stat-label">Avg: <span id="lower-avg">0</span> lbs | <span id="lower-trend">→</span></div>
+                    <div class="stat-label" style="font-size: 0.8rem; margin-top: 0.5rem;"><span id="lower-mom"></span></div>
+                </div>
+
+                <div class="analytics-card">
+                    <h3 class="analytics-title">🚀 Push Volume</h3>
+                    <div class="stat-value" id="push-record">0</div>
+                    <div class="stat-label">Record: <span id="push-record-lbs">0</span> lbs</div>
+                    <div class="stat-label">Avg: <span id="push-avg">0</span> lbs | <span id="push-trend">→</span></div>
+                    <div class="stat-label" style="font-size: 0.8rem; margin-top: 0.5rem;"><span id="push-mom"></span></div>
+                </div>
             </div>
 
+            <!-- Row 2: More Volume Cards -->
+            <div class="analytics-grid" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
+                <div class="analytics-card">
+                    <h3 class="analytics-title">🎯 Pull Volume</h3>
+                    <div class="stat-value" id="pull-record">0</div>
+                    <div class="stat-label">Record: <span id="pull-record-lbs">0</span> lbs</div>
+                    <div class="stat-label">Avg: <span id="pull-avg">0</span> lbs | <span id="pull-trend">→</span></div>
+                    <div class="stat-label" style="font-size: 0.8rem; margin-top: 0.5rem;"><span id="pull-mom"></span></div>
+                </div>
+
+                <div class="analytics-card">
+                    <h3 class="analytics-title">🦵 Legs Volume</h3>
+                    <div class="stat-value" id="legs-record">0</div>
+                    <div class="stat-label">Record: <span id="legs-record-lbs">0</span> lbs</div>
+                    <div class="stat-label">Avg: <span id="legs-avg">0</span> lbs | <span id="legs-trend">→</span></div>
+                    <div class="stat-label" style="font-size: 0.8rem; margin-top: 0.5rem;"><span id="legs-mom"></span></div>
+                </div>
+
+                <div class="analytics-card">
+                    <h3 class="analytics-title">⚠️ Focus Areas</h3>
+                    <div id="focus-areas-content" style="color: #94a3b8; font-size: 0.9rem;">
+                        <p>Complete more workouts to see focus areas!</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 3: Charts -->
             <div class="chart-grid">
                 <div class="analytics-card">
-                    <h3 class="analytics-title">📈 Volume Trends</h3>
-                    <div class="chart-container">
-                        <canvas id="volume-chart"></canvas>
-                    </div>
-                </div>
-
-                <div class="analytics-card">
-                    <h3 class="analytics-title">💪 Strength Progression</h3>
-                    <div class="chart-container">
-                        <canvas id="strength-chart"></canvas>
-                    </div>
-                </div>
-
-                <div class="analytics-card">
-                    <h3 class="analytics-title">🎯 Muscle Group Balance</h3>
-                    <div class="chart-container">
-                        <canvas id="balance-chart"></canvas>
-                    </div>
-                </div>
-
-                <div class="analytics-card">
-                    <h3 class="analytics-title">🏋️ Top Exercises</h3>
-                    <div class="chart-container">
-                        <canvas id="exercise-chart"></canvas>
-                    </div>
-                </div>
-
-                <div class="analytics-card">
-                    <h3 class="analytics-title">📊 Rep Range Analysis</h3>
-                    <div class="chart-container">
-                        <canvas id="rep-range-chart"></canvas>
-                    </div>
-                </div>
-
-                <div class="analytics-card">
                     <h3 class="analytics-title">🏆 PR Timeline</h3>
+                    <div style="margin-bottom: 1rem;">
+                        <label for="exercise-selector" style="color: #94a3b8; font-size: 0.9rem; margin-right: 0.5rem;">Exercise:</label>
+                        <select id="exercise-selector" style="padding: 0.5rem; background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(71, 85, 105, 0.3); border-radius: 8px; color: white; font-size: 0.9rem;">
+                            <option value="">Select an exercise</option>
+                        </select>
+                    </div>
                     <div class="chart-container">
                         <canvas id="pr-timeline-chart"></canvas>
+                    </div>
+                </div>
+
+                <div class="analytics-card">
+                    <h3 class="analytics-title">📊 Session Comparison</h3>
+                    <div style="margin-bottom: 1rem;">
+                        <label for="comparison-selector" style="color: #94a3b8; font-size: 0.9rem; margin-right: 0.5rem;">Workout Type:</label>
+                        <select id="comparison-selector" style="padding: 0.5rem; background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(71, 85, 105, 0.3); border-radius: 8px; color: white; font-size: 0.9rem;">
+                            <option value="Upper">Upper</option>
+                            <option value="Lower">Lower</option>
+                            <option value="Push">Push</option>
+                            <option value="Pull">Pull</option>
+                            <option value="Legs">Legs</option>
+                        </select>
+                    </div>
+                    <div id="session-comparison-content" style="color: #94a3b8; font-size: 0.9rem;">
+                        <p>Select a workout type to compare sessions</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 4: Analytics -->
+            <div class="chart-grid">
+                <div class="analytics-card">
+                    <h3 class="analytics-title">📈 Progression Snapshot</h3>
+                    <div id="progression-snapshot" style="color: #94a3b8; font-size: 0.9rem;">
+                        <div style="margin-bottom: 1rem;">
+                            <strong style="color: white;">Quick Wins:</strong>
+                            <div id="quick-wins">Complete workouts to see PRs!</div>
+                        </div>
+                        <div style="margin-bottom: 1rem;">
+                            <strong style="color: #10b981;">Trending Up:</strong>
+                            <div id="trending-up">N/A</div>
+                        </div>
+                        <div>
+                            <strong style="color: #f59e0b;">Needs Attention:</strong>
+                            <div id="needs-attention">N/A</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="analytics-card">
+                    <h3 class="analytics-title">🔥 Intensity Heatmap</h3>
+                    <div id="intensity-heatmap" style="color: #94a3b8; font-size: 0.9rem;">
+                        <div id="heatmap-content"></div>
                     </div>
                 </div>
             </div>
@@ -2185,47 +2247,11 @@
         }
 
         function calculatePRCount() {
-            const thisMonth = new Date().getMonth();
-            const thisYear = new Date().getFullYear();
+            const today = new Date();
+            const sevenDaysAgo = new Date(today.getTime() - (7 * 24 * 60 * 60 * 1000));
             
-            const monthlyWorkouts = allWorkouts.filter(workout => {
-                const workoutDate = new Date(workout.date);
-                return workoutDate.getMonth() === thisMonth && workoutDate.getFullYear() === thisYear;
-            });
-            
-            let prCount = 0;
-            const exercisePRs = {};
-            
-            // Track PRs by finding new max weights in current month
-            allWorkouts.forEach(workout => {
-                Object.values(workout.exercises || {}).forEach(exercise => {
-                    exercise.sets.forEach(set => {
-                        const weight = parseFloat(set.weight);
-                        const reps = parseInt(set.reps);
-                        
-                        if (weight && reps) {
-                            const exerciseName = exercise.exercise;
-                            const workoutDate = new Date(workout.date);
-                            
-                            if (!exercisePRs[exerciseName]) {
-                                exercisePRs[exerciseName] = { weight: 0, date: null };
-                            }
-                            
-                            if (weight > exercisePRs[exerciseName].weight) {
-                                // Check if this PR was set this month
-                                if (workoutDate.getMonth() === thisMonth && workoutDate.getFullYear() === thisYear) {
-                                    if (exercisePRs[exerciseName].date === null || workoutDate > exercisePRs[exerciseName].date) {
-                                        prCount++;
-                                    }
-                                }
-                                exercisePRs[exerciseName] = { weight, date: workoutDate };
-                            }
-                        }
-                    });
-                });
-            });
-            
-            return prCount;
+            const recentPRs = getRecentPRs(7);
+            return recentPRs.length;
         }
 
         function detectPlateaus() {
@@ -2421,6 +2447,247 @@
             }, 0);
         }
 
+        // Get all workouts of a specific type (e.g., all "Upper" workouts)
+        function getWorkoutsByType(workoutType) {
+            return allWorkouts.filter(workout => workout.day === workoutType);
+        }
+
+        // Calculate record volume for a workout type
+        function getRecordVolumeForType(workoutType) {
+            const workouts = getWorkoutsByType(workoutType);
+            if (workouts.length === 0) return 0;
+            
+            return Math.max(...workouts.map(workout => calculateWorkoutVolume(workout)));
+        }
+
+        // Calculate average volume for a workout type in current month
+        function getCurrentMonthAverageVolume(workoutType) {
+            const thisMonth = new Date().getMonth();
+            const thisYear = new Date().getFullYear();
+            
+            const monthWorkouts = allWorkouts.filter(workout => {
+                const workoutDate = new Date(workout.date);
+                return workout.day === workoutType && 
+                       workoutDate.getMonth() === thisMonth && 
+                       workoutDate.getFullYear() === thisYear;
+            });
+            
+            if (monthWorkouts.length === 0) return 0;
+            
+            const totalVolume = monthWorkouts.reduce((sum, workout) => sum + calculateWorkoutVolume(workout), 0);
+            return Math.round(totalVolume / monthWorkouts.length);
+        }
+
+        // Calculate average volume for a workout type in last month
+        function getLastMonthAverageVolume(workoutType) {
+            const lastMonth = new Date().getMonth() - 1;
+            const year = lastMonth < 0 ? new Date().getFullYear() - 1 : new Date().getFullYear();
+            const month = lastMonth < 0 ? 11 : lastMonth;
+            
+            const monthWorkouts = allWorkouts.filter(workout => {
+                const workoutDate = new Date(workout.date);
+                return workout.day === workoutType && 
+                       workoutDate.getMonth() === month && 
+                       workoutDate.getFullYear() === year;
+            });
+            
+            if (monthWorkouts.length === 0) return 0;
+            
+            const totalVolume = monthWorkouts.reduce((sum, workout) => sum + calculateWorkoutVolume(workout), 0);
+            return Math.round(totalVolume / monthWorkouts.length);
+        }
+
+        // Get trend direction for last 3 sessions
+        function getTrendDirection(workoutType) {
+            const workouts = getWorkoutsByType(workoutType).slice(0, 3);
+            if (workouts.length < 2) return '→';
+            
+            const volumes = workouts.map(w => calculateWorkoutVolume(w)).reverse();
+            
+            // Check if trending up
+            let isIncreasing = true;
+            let isDecreasing = true;
+            
+            for (let i = 1; i < volumes.length; i++) {
+                if (volumes[i] <= volumes[i - 1]) isIncreasing = false;
+                if (volumes[i] >= volumes[i - 1]) isDecreasing = false;
+            }
+            
+            if (isIncreasing) return '↗️';
+            if (isDecreasing) return '↘️';
+            return '→';
+        }
+
+        // Find exercises with recent PRs
+        function getRecentPRs(daysBack) {
+            const cutoffDate = new Date();
+            cutoffDate.setDate(cutoffDate.getDate() - daysBack);
+            
+            const exercisePRs = {};
+            const recentPRs = [];
+            
+            // Build PR history chronologically
+            allWorkouts.slice().reverse().forEach(workout => {
+                if (workout.day === 'Rest') return;
+                
+                Object.values(workout.exercises || {}).forEach(exercise => {
+                    if (!exercise.exercise.toLowerCase().includes('stretch')) {
+                        const maxWeight = Math.max(...exercise.sets.map(set => parseFloat(set.weight) || 0));
+                        
+                        if (maxWeight > 0) {
+                            const exerciseName = exercise.exercise;
+                            const currentPR = exercisePRs[exerciseName] || 0;
+                            
+                            if (maxWeight > currentPR) {
+                                const workoutDate = new Date(workout.date);
+                                if (workoutDate >= cutoffDate) {
+                                    recentPRs.push({ exercise: exerciseName, weight: maxWeight, date: workout.date });
+                                }
+                                exercisePRs[exerciseName] = maxWeight;
+                            }
+                        }
+                    }
+                });
+            });
+            
+            return recentPRs;
+        }
+
+        // Find exercises without progression
+        function getPlateauedExercises(sessionsBack) {
+            const exerciseHistory = {};
+            
+            // Track last N sessions for each exercise
+            allWorkouts.slice(0, sessionsBack * 2).forEach(workout => {
+                if (workout.day === 'Rest') return;
+                
+                Object.values(workout.exercises || {}).forEach(exercise => {
+                    if (!exercise.exercise.toLowerCase().includes('stretch')) {
+                        const exerciseName = exercise.exercise;
+                        const maxWeight = Math.max(...exercise.sets.map(set => parseFloat(set.weight) || 0));
+                        
+                        if (maxWeight > 0) {
+                            if (!exerciseHistory[exerciseName]) {
+                                exerciseHistory[exerciseName] = [];
+                            }
+                            exerciseHistory[exerciseName].push(maxWeight);
+                        }
+                    }
+                });
+            });
+            
+            // Find exercises that haven't progressed
+            const plateaued = [];
+            Object.keys(exerciseHistory).forEach(exercise => {
+                const weights = exerciseHistory[exercise].slice(0, sessionsBack);
+                if (weights.length >= sessionsBack) {
+                    const hasProgress = weights.some((weight, idx) => idx > 0 && weight > weights[idx - 1]);
+                    if (!hasProgress) {
+                        plateaued.push({ exercise, weight: weights[0] });
+                    }
+                }
+            });
+            
+            return plateaued.slice(0, 3);
+        }
+
+        // Get all unique exercises from workout history
+        function getAllExercises() {
+            const exercises = new Set();
+            allWorkouts.forEach(workout => {
+                if (workout.day !== 'Rest') {
+                    Object.values(workout.exercises || {}).forEach(exercise => {
+                        if (!exercise.exercise.toLowerCase().includes('stretch')) {
+                            exercises.add(exercise.exercise);
+                        }
+                    });
+                }
+            });
+            return Array.from(exercises).sort();
+        }
+
+        // Get exercise progression data for PR Timeline
+        function getExerciseProgression(exerciseName) {
+            const progression = [];
+            
+            allWorkouts.slice().reverse().forEach(workout => {
+                if (workout.day === 'Rest') return;
+                
+                Object.values(workout.exercises || {}).forEach(exercise => {
+                    if (exercise.exercise === exerciseName) {
+                        const maxWeight = Math.max(...exercise.sets.map(set => parseFloat(set.weight) || 0));
+                        if (maxWeight > 0) {
+                            progression.push({
+                                x: workout.date,
+                                y: maxWeight,
+                                isPR: false
+                            });
+                        }
+                    }
+                });
+            });
+            
+            // Mark PRs
+            let currentPR = 0;
+            progression.forEach(point => {
+                if (point.y > currentPR) {
+                    point.isPR = true;
+                    currentPR = point.y;
+                }
+            });
+            
+            return progression;
+        }
+
+        // Get exercises showing consistent improvement
+        function getTrendingUpExercises() {
+            const exerciseHistory = {};
+            
+            // Track recent sessions for each exercise
+            allWorkouts.slice(0, 10).forEach(workout => {
+                if (workout.day === 'Rest') return;
+                
+                Object.values(workout.exercises || {}).forEach(exercise => {
+                    if (!exercise.exercise.toLowerCase().includes('stretch')) {
+                        const exerciseName = exercise.exercise;
+                        const maxWeight = Math.max(...exercise.sets.map(set => parseFloat(set.weight) || 0));
+                        
+                        if (maxWeight > 0) {
+                            if (!exerciseHistory[exerciseName]) {
+                                exerciseHistory[exerciseName] = [];
+                            }
+                            exerciseHistory[exerciseName].push(maxWeight);
+                        }
+                    }
+                });
+            });
+            
+            // Find exercises trending up
+            const trending = [];
+            Object.keys(exerciseHistory).forEach(exercise => {
+                const weights = exerciseHistory[exercise].slice(0, 4);
+                if (weights.length >= 3) {
+                    // Check if generally increasing
+                    const increases = weights.filter((weight, idx) => idx > 0 && weight > weights[idx - 1]).length;
+                    if (increases >= 2) {
+                        trending.push(exercise);
+                    }
+                }
+            });
+            
+            return trending.slice(0, 5);
+        }
+
+        // Get days since last workout of a specific type
+        function getDaysSinceLastWorkout(workoutType) {
+            const workouts = getWorkoutsByType(workoutType);
+            if (workouts.length === 0) return null;
+            
+            const lastWorkout = new Date(workouts[0].date);
+            const today = new Date();
+            return Math.floor((today - lastWorkout) / (1000 * 60 * 60 * 24));
+        }
+
         function generateAIInsights() {
             if (allWorkouts.length < 3) {
                 return [
@@ -2553,373 +2820,258 @@
         }
 
         // Chart Functions
-        function createVolumeChart() {
-            const ctx = document.getElementById('volume-chart');
-            if (!ctx) return;
-            
-            if (charts.volume) charts.volume.destroy();
-            
-            // Get last 12 weeks of data
-            const weeklyData = {};
-            const today = new Date();
-            
-            for (let i = 11; i >= 0; i--) {
-                const weekStart = new Date(today.getTime() - (i * 7 * 24 * 60 * 60 * 1000));
-                const weekKey = weekStart.toISOString().split('T')[0];
-                weeklyData[weekKey] = { Push: 0, Pull: 0, Upper: 0, Lower: 0, Legs: 0 };
-            }
-            
-            allWorkouts.forEach(workout => {
-                if (workout.day === 'Rest') return;
-                
-                const workoutDate = new Date(workout.date);
-                const weekStart = new Date(workoutDate.getTime() - (workoutDate.getDay() * 24 * 60 * 60 * 1000));
-                const weekKey = weekStart.toISOString().split('T')[0];
-                
-                if (weeklyData[weekKey]) {
-                    const volume = calculateWorkoutVolume(workout);
-                    weeklyData[weekKey][workout.day] += volume;
-                }
-            });
-            
-            const labels = Object.keys(weeklyData).map(date => formatDateString(date));
-            const datasets = [
-                {
-                    label: 'Push',
-                    data: Object.values(weeklyData).map(week => week.Push),
-                    borderColor: '#ef4444',
-                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                    tension: 0.4
-                },
-                {
-                    label: 'Pull',
-                    data: Object.values(weeklyData).map(week => week.Pull),
-                    borderColor: '#3b82f6',
-                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                    tension: 0.4
-                },
-                {
-                    label: 'Upper',
-                    data: Object.values(weeklyData).map(week => week.Upper),
-                    borderColor: '#10b981',
-                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                    tension: 0.4
-                },
-                {
-                    label: 'Lower',
-                    data: Object.values(weeklyData).map(week => week.Lower),
-                    borderColor: '#f59e0b',
-                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
-                    tension: 0.4
-                },
-                {
-                    label: 'Legs',
-                    data: Object.values(weeklyData).map(week => week.Legs),
-                    borderColor: '#8b5cf6',
-                    backgroundColor: 'rgba(139, 92, 246, 0.1)',
-                    tension: 0.4
-                }
-            ];
-            
-            charts.volume = new Chart(ctx, {
-                type: 'line',
-                data: { labels, datasets },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { position: 'top' }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            title: { display: true, text: 'Volume (lbs)' }
-                        }
-                    }
-                }
-            });
-        }
-
-        function createStrengthChart() {
-            const ctx = document.getElementById('strength-chart');
-            if (!ctx) return;
-            
-            if (charts.strength) charts.strength.destroy();
-            
-            // Track key compound movements
-            const keyExercises = ['Barbell Bench Press', 'Barbell Squat', 'Romanian Deadlift', 'Weighted Pull-Ups'];
-            const datasets = [];
-            
-            keyExercises.forEach((exerciseName, index) => {
-                const exerciseData = [];
-                const exerciseWorkouts = allWorkouts.filter(workout =>
-                    workout.day !== 'Rest' && Object.values(workout.exercises || {}).some(ex => ex.exercise === exerciseName)
-                ).slice(0, 10).reverse();
-                
-                exerciseWorkouts.forEach(workout => {
-                    const exercise = Object.values(workout.exercises || {}).find(ex => ex.exercise === exerciseName);
-                    if (exercise) {
-                        const maxWeight = Math.max(...exercise.sets.map(set => parseFloat(set.weight) || 0));
-                        if (maxWeight > 0) {
-                            exerciseData.push({
-                                x: workout.date,
-                                y: maxWeight
-                            });
-                        }
-                    }
-                });
-                
-                if (exerciseData.length > 0) {
-                    const colors = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b'];
-                    datasets.push({
-                        label: exerciseName,
-                        data: exerciseData,
-                        borderColor: colors[index],
-                        backgroundColor: colors[index],
-                        tension: 0.4
-                    });
-                }
-            });
-            
-            charts.strength = new Chart(ctx, {
-                type: 'line',
-                data: { datasets },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { position: 'top' }
-                    },
-                    scales: {
-                        x: {
-                            type: 'time',
-                            time: { unit: 'day' }
-                        },
-                        y: {
-                            beginAtZero: true,
-                            title: { display: true, text: 'Max Weight (lbs)' }
-                        }
-                    }
-                }
-            });
-        }
-
-        function createBalanceChart() {
-            const ctx = document.getElementById('balance-chart');
-            if (!ctx) return;
-            
-            if (charts.balance) charts.balance.destroy();
-            
-            const muscleGroupVolumes = calculateMuscleGroupVolumes();
-            const labels = Object.keys(muscleGroupVolumes);
-            const data = Object.values(muscleGroupVolumes);
-            
-            charts.balance = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels,
-                    datasets: [{
-                        data,
-                        backgroundColor: [
-                            '#ef4444',
-                            '#3b82f6',
-                            '#10b981',
-                            '#f59e0b',
-                            '#8b5cf6'
-                        ]
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { position: 'right' }
-                    }
-                }
-            });
-        }
-
-        function createExerciseChart() {
-            const ctx = document.getElementById('exercise-chart');
-            if (!ctx) return;
-            
-            if (charts.exercise) charts.exercise.destroy();
-            
-            const exerciseVolumes = {};
-            allWorkouts.slice(0, 8).forEach(workout => {
-                if (workout.day === 'Rest') return;
-                
-                Object.values(workout.exercises || {}).forEach(exercise => {
-                    if (!exercise.exercise.toLowerCase().includes('stretch')) {
-                        const volume = exercise.sets.reduce((sum, set) => 
-                            sum + (parseFloat(set.weight) || 0) * (parseInt(set.reps) || 0), 0);
-                        exerciseVolumes[exercise.exercise] = (exerciseVolumes[exercise.exercise] || 0) + volume;
-                    }
-                });
-            });
-            
-            const sortedExercises = Object.entries(exerciseVolumes)
-                .sort(([,a], [,b]) => b - a)
-                .slice(0, 10);
-            
-            charts.exercise = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: sortedExercises.map(([name]) => name.length > 20 ? name.substring(0, 17) + '...' : name),
-                    datasets: [{
-                        label: 'Volume (lbs)',
-                        data: sortedExercises.map(([,volume]) => volume),
-                        backgroundColor: '#06b6d4'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    indexAxis: 'y',
-                    plugins: {
-                        legend: { display: false }
-                    },
-                    scales: {
-                        x: {
-                            beginAtZero: true,
-                            title: { display: true, text: 'Volume (lbs)' }
-                        }
-                    }
-                }
-            });
-        }
-
-        function createRepRangeChart() {
-            const ctx = document.getElementById('rep-range-chart');
-            if (!ctx) return;
-            
-            if (charts.repRange) charts.repRange.destroy();
-            
-            const repRanges = {
-                'Heavy (1-5)': 0,
-                'Strength (6-8)': 0,
-                'Hypertrophy (9-12)': 0,
-                'Endurance (13+)': 0
-            };
-            
-            allWorkouts.slice(0, 8).forEach(workout => {
-                if (workout.day === 'Rest') return;
-                
-                Object.values(workout.exercises || {}).forEach(exercise => {
-                    if (!exercise.exercise.toLowerCase().includes('stretch')) {
-                        exercise.sets.forEach(set => {
-                            const reps = parseInt(set.reps) || 0;
-                            const weight = parseFloat(set.weight) || 0;
-                            const volume = weight * reps;
-                            
-                            if (reps <= 5) repRanges['Heavy (1-5)'] += volume;
-                            else if (reps <= 8) repRanges['Strength (6-8)'] += volume;
-                            else if (reps <= 12) repRanges['Hypertrophy (9-12)'] += volume;
-                            else repRanges['Endurance (13+)'] += volume;
-                        });
-                    }
-                });
-            });
-            
-            charts.repRange = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: Object.keys(repRanges),
-                    datasets: [{
-                        label: 'Volume (lbs)',
-                        data: Object.values(repRanges),
-                        backgroundColor: ['#dc2626', '#ea580c', '#ca8a04', '#16a34a']
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            title: { display: true, text: 'Volume (lbs)' }
-                        }
-                    }
-                }
-            });
-        }
-
-        function createPRTimelineChart() {
+        function createPRTimelineChart(exerciseName) {
             const ctx = document.getElementById('pr-timeline-chart');
             if (!ctx) return;
             
             if (charts.prTimeline) charts.prTimeline.destroy();
             
-            const prs = [];
-            const exercisePRHistory = {};
+            if (!exerciseName) {
+                // No exercise selected
+                ctx.getContext('2d').clearRect(0, 0, ctx.width, ctx.height);
+                return;
+            }
             
-            // Build PR history
-            allWorkouts.slice().reverse().forEach(workout => {
-                if (workout.day === 'Rest') return;
-                
-                Object.values(workout.exercises || {}).forEach(exercise => {
-                    if (!exercise.exercise.toLowerCase().includes('stretch')) {
-                        const maxWeight = Math.max(...exercise.sets.map(set => parseFloat(set.weight) || 0));
-                        
-                        if (maxWeight > 0) {
-                            const exerciseName = exercise.exercise;
-                            const currentPR = exercisePRHistory[exerciseName] || 0;
-                            
-                            if (maxWeight > currentPR) {
-                                prs.push({
-                                    x: workout.date,
-                                    y: maxWeight,
-                                    exercise: exerciseName
-                                });
-                                exercisePRHistory[exerciseName] = maxWeight;
-                            }
-                        }
-                    }
+            const progression = getExerciseProgression(exerciseName);
+            
+            if (progression.length === 0) {
+                ctx.getContext('2d').clearRect(0, 0, ctx.width, ctx.height);
+                return;
+            }
+            
+            const maxWeight = Math.max(...progression.map(p => p.y));
+            
+            // Separate PR points from regular points
+            const prPoints = progression.filter(p => p.isPR);
+            const regularPoints = progression.filter(p => !p.isPR);
+            
+            const datasets = [];
+            
+            // Regular progression line
+            if (regularPoints.length > 0) {
+                datasets.push({
+                    label: 'Weight',
+                    data: progression.map(p => ({ x: p.x, y: p.y })),
+                    borderColor: '#06b6d4',
+                    backgroundColor: 'rgba(6, 182, 212, 0.1)',
+                    pointRadius: 4,
+                    pointBackgroundColor: '#06b6d4',
+                    tension: 0.4,
+                    fill: true
                 });
-            });
+            }
             
-            // Group PRs by exercise for different colors
-            const exerciseColors = {};
-            const uniqueExercises = [...new Set(prs.map(pr => pr.exercise))];
-            const colors = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6'];
-            
-            uniqueExercises.forEach((exercise, index) => {
-                exerciseColors[exercise] = colors[index % colors.length];
-            });
-            
-            const datasets = uniqueExercises.slice(0, 5).map(exercise => ({
-                label: exercise,
-                data: prs.filter(pr => pr.exercise === exercise),
-                backgroundColor: exerciseColors[exercise],
-                borderColor: exerciseColors[exercise],
-                pointRadius: 6
-            }));
+            // PR points overlay
+            if (prPoints.length > 0) {
+                datasets.push({
+                    label: 'PRs',
+                    data: prPoints.map(p => ({ x: p.x, y: p.y })),
+                    borderColor: '#10b981',
+                    backgroundColor: '#10b981',
+                    pointRadius: 8,
+                    pointStyle: 'star',
+                    showLine: false
+                });
+            }
             
             charts.prTimeline = new Chart(ctx, {
-                type: 'scatter',
+                type: 'line',
                 data: { datasets },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: { position: 'top' }
+                        legend: { 
+                            position: 'top',
+                            labels: { color: '#94a3b8' }
+                        },
+                        title: {
+                            display: true,
+                            text: `Max Weight: ${maxWeight} lbs`,
+                            color: '#ffffff',
+                            font: { size: 14, weight: 'bold' }
+                        }
                     },
                     scales: {
                         x: {
                             type: 'time',
-                            time: { unit: 'day' }
+                            time: { unit: 'day' },
+                            ticks: { color: '#94a3b8' },
+                            grid: { color: 'rgba(71, 85, 105, 0.3)' }
                         },
                         y: {
                             beginAtZero: true,
-                            title: { display: true, text: 'Weight (lbs)' }
+                            title: { display: true, text: 'Weight (lbs)', color: '#94a3b8' },
+                            ticks: { color: '#94a3b8' },
+                            grid: { color: 'rgba(71, 85, 105, 0.3)' }
                         }
                     }
                 }
             });
         }
+
+        function updateSessionComparison(workoutType) {
+            const workouts = getWorkoutsByType(workoutType);
+            const container = document.getElementById('session-comparison-content');
+            
+            if (workouts.length < 2) {
+                container.innerHTML = '<p>Need at least 2 sessions to compare</p>';
+                return;
+            }
+            
+            const lastSession = workouts[0];
+            const previousSession = workouts[1];
+            
+            const lastVolume = calculateWorkoutVolume(lastSession);
+            const previousVolume = calculateWorkoutVolume(previousSession);
+            
+            const lastExerciseCount = Object.keys(lastSession.exercises || {}).length;
+            const previousExerciseCount = Object.keys(previousSession.exercises || {}).length;
+            
+            // Calculate average weight
+            const calculateAvgWeight = (workout) => {
+                const exercises = Object.values(workout.exercises || {});
+                if (exercises.length === 0) return 0;
+                
+                const totalWeight = exercises.reduce((sum, ex) => {
+                    return sum + ex.sets.reduce((s, set) => s + (parseFloat(set.weight) || 0), 0);
+                }, 0);
+                const totalSets = exercises.reduce((sum, ex) => sum + ex.sets.length, 0);
+                
+                return totalSets > 0 ? Math.round(totalWeight / totalSets) : 0;
+            };
+            
+            const lastAvgWeight = calculateAvgWeight(lastSession);
+            const previousAvgWeight = calculateAvgWeight(previousSession);
+            
+            const volumeChange = lastVolume - previousVolume;
+            const volumeChangePercent = previousVolume > 0 ? Math.round((volumeChange / previousVolume) * 100) : 0;
+            
+            const isImproving = volumeChange > 0;
+            const changeColor = isImproving ? '#10b981' : '#ef4444';
+            const changeIcon = isImproving ? '✓' : '✗';
+            
+            container.innerHTML = `
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div>
+                        <strong style="color: white;">Last Session</strong>
+                        <div style="margin-top: 0.5rem;">
+                            <div>Volume: <strong>${lastVolume.toLocaleString()} lbs</strong></div>
+                            <div>Exercises: <strong>${lastExerciseCount}</strong></div>
+                            <div>Avg Weight: <strong>${lastAvgWeight} lbs</strong></div>
+                            <div style="font-size: 0.8rem; color: #64748b;">${new Date(lastSession.date).toLocaleDateString()}</div>
+                        </div>
+                    </div>
+                    <div>
+                        <strong style="color: white;">Previous Session</strong>
+                        <div style="margin-top: 0.5rem;">
+                            <div>Volume: <strong>${previousVolume.toLocaleString()} lbs</strong></div>
+                            <div>Exercises: <strong>${previousExerciseCount}</strong></div>
+                            <div>Avg Weight: <strong>${previousAvgWeight} lbs</strong></div>
+                            <div style="font-size: 0.8rem; color: #64748b;">${new Date(previousSession.date).toLocaleDateString()}</div>
+                        </div>
+                    </div>
+                </div>
+                <div style="margin-top: 1rem; padding: 1rem; background: rgba(15, 23, 42, 0.5); border-radius: 8px; border-left: 3px solid ${changeColor};">
+                    <div style="color: ${changeColor}; font-weight: bold; font-size: 1.1rem;">
+                        ${changeIcon} ${isImproving ? 'Improving' : 'Declining'}
+                    </div>
+                    <div style="margin-top: 0.5rem;">
+                        Volume Change: <strong style="color: ${changeColor};">${volumeChange > 0 ? '+' : ''}${volumeChange.toLocaleString()} lbs (${volumeChangePercent > 0 ? '+' : ''}${volumeChangePercent}%)</strong>
+                    </div>
+                </div>
+            `;
+        }
+
+        function updateIntensityHeatmap() {
+            const container = document.getElementById('heatmap-content');
+            
+            if (allWorkouts.length === 0) {
+                container.innerHTML = '<p>Complete workouts to see intensity patterns!</p>';
+                return;
+            }
+            
+            // Get last 4 weeks of workouts
+            const today = new Date();
+            const fourWeeksAgo = new Date(today.getTime() - (28 * 24 * 60 * 60 * 1000));
+            
+            const recentWorkouts = allWorkouts.filter(w => {
+                const workoutDate = new Date(w.date);
+                return workoutDate >= fourWeeksAgo;
+            });
+            
+            // Group by day of week
+            const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            const intensityByDay = {};
+            
+            dayNames.forEach(day => {
+                intensityByDay[day] = [];
+            });
+            
+            recentWorkouts.forEach(workout => {
+                const workoutDate = new Date(workout.date);
+                const dayOfWeek = dayNames[workoutDate.getDay()];
+                
+                // Calculate average intensity score
+                const intensity = workout.intensity || {};
+                const avgScore = (
+                    (intensity.energy || 0) +
+                    (intensity.motivation || 0) +
+                    (10 - (intensity.fatigue || 0)) +
+                    (intensity.satisfaction || 0)
+                ) / 4;
+                
+                intensityByDay[dayOfWeek].push(avgScore);
+            });
+            
+            // Calculate average for each day
+            const dayAverages = {};
+            Object.keys(intensityByDay).forEach(day => {
+                const scores = intensityByDay[day];
+                dayAverages[day] = scores.length > 0 
+                    ? scores.reduce((a, b) => a + b, 0) / scores.length 
+                    : 0;
+            });
+            
+            // Create heatmap HTML
+            const getColorForScore = (score) => {
+                if (score === 0) return 'rgba(71, 85, 105, 0.3)';
+                if (score < 4) return '#ef4444';
+                if (score < 6) return '#f59e0b';
+                if (score < 8) return '#10b981';
+                return '#06b6d4';
+            };
+            
+            const heatmapHTML = `
+                <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.5rem; margin-top: 1rem;">
+                    ${dayNames.map(day => {
+                        const score = dayAverages[day];
+                        const color = getColorForScore(score);
+                        return `
+                            <div style="text-align: center;">
+                                <div style="font-size: 0.8rem; margin-bottom: 0.5rem; color: #94a3b8;">${day}</div>
+                                <div style="
+                                    background: ${color};
+                                    border-radius: 8px;
+                                    padding: 1rem 0.5rem;
+                                    font-weight: bold;
+                                    color: white;
+                                    font-size: 0.9rem;
+                                ">
+                                    ${score > 0 ? score.toFixed(1) : '-'}
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+                <div style="margin-top: 1rem; font-size: 0.8rem; color: #64748b; text-align: center;">
+                    Average intensity score (0-10) based on energy, motivation, fatigue, and satisfaction
+                </div>
+            `;
+            
+            container.innerHTML = heatmapHTML;
+        }
+        
         // UI Functions
         function updateSuggestions() {
             const suggestions = generateAdvancedSuggestions();
@@ -2934,17 +3086,175 @@
         }
 
         function updateAnalytics() {
-            document.getElementById('total-volume').textContent = calculateTotalVolume().toLocaleString();
+            // Update basic stats
             document.getElementById('pr-count').textContent = calculatePRCount();
             document.getElementById('workout-streak').textContent = calculateWorkoutStreak();
             
-            // Update charts
-            createVolumeChart();
-            createStrengthChart();
-            createBalanceChart();
-            createExerciseChart();
-            createRepRangeChart();
-            createPRTimelineChart();
+            // Update volume cards for each workout type
+            const workoutTypes = ['Upper', 'Lower', 'Push', 'Pull', 'Legs'];
+            workoutTypes.forEach(type => {
+                const typeKey = type.toLowerCase();
+                
+                // Record volume
+                const recordVolume = getRecordVolumeForType(type);
+                const recordElement = document.getElementById(`${typeKey}-record`);
+                const recordLbsElement = document.getElementById(`${typeKey}-record-lbs`);
+                if (recordElement && recordLbsElement) {
+                    recordElement.textContent = recordVolume > 0 ? recordVolume.toLocaleString() : '0';
+                    recordLbsElement.textContent = recordVolume > 0 ? recordVolume.toLocaleString() : '0';
+                }
+                
+                // Current month average
+                const currentAvg = getCurrentMonthAverageVolume(type);
+                const avgElement = document.getElementById(`${typeKey}-avg`);
+                if (avgElement) {
+                    avgElement.textContent = currentAvg > 0 ? currentAvg.toLocaleString() : '0';
+                }
+                
+                // Trend
+                const trend = getTrendDirection(type);
+                const trendElement = document.getElementById(`${typeKey}-trend`);
+                if (trendElement) {
+                    trendElement.textContent = trend;
+                }
+                
+                // Month-over-month
+                const lastMonthAvg = getLastMonthAverageVolume(type);
+                const momElement = document.getElementById(`${typeKey}-mom`);
+                if (momElement) {
+                    if (currentAvg > 0 && lastMonthAvg > 0) {
+                        const diff = currentAvg - lastMonthAvg;
+                        const sign = diff > 0 ? '+' : '';
+                        momElement.textContent = `${sign}${diff.toLocaleString()} lbs vs last month`;
+                        momElement.style.color = diff > 0 ? '#10b981' : (diff < 0 ? '#ef4444' : '#94a3b8');
+                    } else if (currentAvg > 0) {
+                        momElement.textContent = 'First month tracked';
+                        momElement.style.color = '#94a3b8';
+                    } else {
+                        momElement.textContent = 'No data this month';
+                        momElement.style.color = '#94a3b8';
+                    }
+                }
+            });
+            
+            // Update exercise selector for PR Timeline
+            const exerciseSelector = document.getElementById('exercise-selector');
+            if (exerciseSelector) {
+                const exercises = getAllExercises();
+                exerciseSelector.innerHTML = '<option value="">Select an exercise</option>' +
+                    exercises.map(ex => `<option value="${ex}">${ex}</option>`).join('');
+                
+                // Set default to first exercise if available
+                if (exercises.length > 0) {
+                    exerciseSelector.value = exercises[0];
+                    createPRTimelineChart(exercises[0]);
+                }
+            }
+            
+            // Update session comparison with default (Upper)
+            updateSessionComparison('Upper');
+            
+            // Update progression snapshot
+            updateProgressionSnapshot();
+            
+            // Update focus areas
+            updateFocusAreas();
+            
+            // Update intensity heatmap
+            updateIntensityHeatmap();
+        }
+
+        function updateProgressionSnapshot() {
+            // Quick Wins
+            const recentPRs = getRecentPRs(7);
+            const quickWinsElement = document.getElementById('quick-wins');
+            if (quickWinsElement) {
+                if (recentPRs.length > 0) {
+                    const uniqueExercises = [...new Set(recentPRs.map(pr => pr.exercise))];
+                    quickWinsElement.innerHTML = `🏆 <strong>${uniqueExercises.length}</strong> exercise${uniqueExercises.length !== 1 ? 's' : ''} hit PRs this week!`;
+                    quickWinsElement.style.color = '#10b981';
+                } else {
+                    quickWinsElement.innerHTML = 'No PRs this week yet. Keep pushing!';
+                    quickWinsElement.style.color = '#94a3b8';
+                }
+            }
+            
+            // Trending Up
+            const trendingExercises = getTrendingUpExercises();
+            const trendingUpElement = document.getElementById('trending-up');
+            if (trendingUpElement) {
+                if (trendingExercises.length > 0) {
+                    trendingUpElement.innerHTML = trendingExercises.map(ex => `• ${ex}`).join('<br>');
+                    trendingUpElement.style.color = '#10b981';
+                } else {
+                    trendingUpElement.innerHTML = 'Complete more workouts to see trends';
+                    trendingUpElement.style.color = '#94a3b8';
+                }
+            }
+            
+            // Needs Attention
+            const plateauedExercises = getPlateauedExercises(3);
+            const needsAttentionElement = document.getElementById('needs-attention');
+            if (needsAttentionElement) {
+                if (plateauedExercises.length > 0) {
+                    needsAttentionElement.innerHTML = plateauedExercises.map(ex => 
+                        `• ${ex.exercise} (stuck at ${ex.weight} lbs)`
+                    ).join('<br>');
+                    needsAttentionElement.style.color = '#f59e0b';
+                } else {
+                    needsAttentionElement.innerHTML = 'All exercises progressing well! 💪';
+                    needsAttentionElement.style.color = '#10b981';
+                }
+            }
+        }
+
+        function updateFocusAreas() {
+            const container = document.getElementById('focus-areas-content');
+            if (!container) return;
+            
+            const workoutTypes = ['Upper', 'Lower', 'Push', 'Pull', 'Legs'];
+            const warnings = [];
+            
+            // Check for workout types not done recently
+            workoutTypes.forEach(type => {
+                const daysSince = getDaysSinceLastWorkout(type);
+                if (daysSince !== null && daysSince > 5) {
+                    warnings.push(`⚠️ It's been ${daysSince} days since your last ${type} workout`);
+                }
+            });
+            
+            // Check for imbalanced training this month
+            const thisMonth = new Date().getMonth();
+            const thisYear = new Date().getFullYear();
+            const typeFrequency = {};
+            
+            workoutTypes.forEach(type => {
+                typeFrequency[type] = allWorkouts.filter(w => {
+                    const workoutDate = new Date(w.date);
+                    return w.day === type && 
+                           workoutDate.getMonth() === thisMonth && 
+                           workoutDate.getFullYear() === thisYear;
+                }).length;
+            });
+            
+            const frequencies = Object.values(typeFrequency).filter(f => f > 0);
+            if (frequencies.length > 1) {
+                const maxFreq = Math.max(...frequencies);
+                const minFreq = Math.min(...frequencies);
+                
+                if (maxFreq - minFreq >= 2) {
+                    const undertrainedTypes = Object.keys(typeFrequency).filter(type => typeFrequency[type] === minFreq);
+                    warnings.push(`💡 Consider adding more ${undertrainedTypes.join(' or ')} workouts to balance your training`);
+                }
+            }
+            
+            if (warnings.length > 0) {
+                container.innerHTML = warnings.map(w => `<div style="margin-bottom: 0.5rem;">${w}</div>`).join('');
+                container.style.color = '#f59e0b';
+            } else {
+                container.innerHTML = '<div>✅ Your training is well balanced! Keep it up!</div>';
+                container.style.color = '#10b981';
+            }
         }
 
         function updateInsights() {
@@ -4018,6 +4328,21 @@
             // Weight date input
             const weightDateInput = document.getElementById('weight-date-input');
             weightDateInput.value = new Date().toISOString().split('T')[0];
+            
+            // Analytics dropdowns
+            const exerciseSelector = document.getElementById('exercise-selector');
+            if (exerciseSelector) {
+                exerciseSelector.addEventListener('change', (e) => {
+                    createPRTimelineChart(e.target.value);
+                });
+            }
+            
+            const comparisonSelector = document.getElementById('comparison-selector');
+            if (comparisonSelector) {
+                comparisonSelector.addEventListener('change', (e) => {
+                    updateSessionComparison(e.target.value);
+                });
+            }
         }
 
         function setupIntensityInputs() {
