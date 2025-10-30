@@ -2844,16 +2844,21 @@
                     
                     console.log(`Recent intensity - Energy: ${avgEnergy.toFixed(1)}, Fatigue: ${avgFatigue.toFixed(1)}, Satisfaction: ${avgSatisfaction.toFixed(1)}`);
                     
-                    // Compare recent vs prior volume
-                    const recentVol = recentIntensity.slice(0, 3).reduce((sum, w) => sum + calculateWorkoutVolume(w), 0) / 3;
-                    const priorVol = recentIntensity.slice(3, 6).reduce((sum, w) => sum + calculateWorkoutVolume(w), 0) / 3;
-                    const volChange = priorVol > 0 ? Math.round(((recentVol - priorVol) / priorVol) * 100) : 0;
+                    // Compare recent vs prior volume (only if we have enough data)
+                    if (recentIntensity.length >= 6) {
+                        const recentVol = recentIntensity.slice(0, 3).reduce((sum, w) => sum + calculateWorkoutVolume(w), 0) / 3;
+                        const priorVol = recentIntensity.slice(3, 6).reduce((sum, w) => sum + calculateWorkoutVolume(w), 0) / 3;
+                        const volChange = priorVol > 0 ? Math.round(((recentVol - priorVol) / priorVol) * 100) : 0;
                     
-                    if (avgEnergy < 2.5 && volChange > 0) {
-                        insights.push(`Low energy scores (avg ${avgEnergy.toFixed(1)}/5) last week but volume still up - good mental toughness`);
-                    } else if (avgFatigue > 3.5 && volChange < -10) {
-                        insights.push(`High fatigue scores correlate with ${Math.abs(volChange)}% volume drop - consider deload week`);
-                    } else if (avgSatisfaction >= 4.5) {
+                        if (avgEnergy < 2.5 && volChange > 0) {
+                            insights.push(`Low energy scores (avg ${avgEnergy.toFixed(1)}/5) last week but volume still up - good mental toughness`);
+                        } else if (avgFatigue > 3.5 && volChange < -10) {
+                            insights.push(`High fatigue scores correlate with ${Math.abs(volChange)}% volume drop - consider deload week`);
+                        }
+                    }
+                    
+                    // Add satisfaction insight regardless of volume data
+                    if (avgSatisfaction >= 4.5) {
                         insights.push(`Satisfaction scores averaging ${avgSatisfaction.toFixed(1)}/5 - training is going well!`);
                     }
                 }
@@ -3248,7 +3253,7 @@
                 const avgScore = (
                     (intensity.energy || 0) +
                     (intensity.motivation || 0) +
-                    (5 - (intensity.fatigue || 0)) +  // Invert fatigue within 1-5 scale
+                    (6 - (intensity.fatigue || 1)) +  // Invert fatigue: 1->5, 2->4, 3->3, 4->2, 5->1
                     (intensity.satisfaction || 0)
                 ) / 4;
                 
