@@ -982,6 +982,31 @@
             text-align: center;
         }
 
+        .btn-delete-photo {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            padding: 0.5rem;
+            min-width: 36px;
+            min-height: 36px;
+            background: rgba(239, 68, 68, 0.9);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+
+        .btn-delete-photo:hover {
+            background: rgba(239, 68, 68, 1);
+            transform: scale(1.1);
+        }
+
         /* Saved Foods Styles */
         .saved-foods-panel {
             background: rgba(30, 41, 59, 0.4);
@@ -1860,14 +1885,16 @@
                     <div id="progression-snapshot" style="color: #94a3b8; font-size: 0.9rem;">
                         <div style="margin-bottom: 1rem;">
                             <strong style="color: white;">Quick Wins:</strong>
-                            <div id="quick-wins">Complete workouts to see PRs!</div>
+                            <div id="quick-wins">Complete at least 2 workouts to see recent PRs</div>
                         </div>
                         <div style="margin-bottom: 1rem;">
                             <strong style="color: #10b981;">Trending Up:</strong>
+                            <div style="font-size: 0.8rem; color: #64748b; margin-bottom: 0.25rem;">Improving over last 4 sessions</div>
                             <div id="trending-up">N/A</div>
                         </div>
                         <div>
                             <strong style="color: #f59e0b;">Needs Attention:</strong>
+                            <div style="font-size: 0.8rem; color: #64748b; margin-bottom: 0.25rem;">No progress for 3+ sessions</div>
                             <div id="needs-attention">N/A</div>
                         </div>
                     </div>
@@ -2717,6 +2744,121 @@
             const avgVolumePerWorkout = Math.round(totalVolume / allWorkouts.length);
             insights.push(`Your average workout volume is ${avgVolumePerWorkout.toLocaleString()}lbs - solid training stimulus.`);
             
+            // Data requirements: minimum 5 workouts, 5 nutrition days, 5 weight entries
+            const hasEnoughData = allWorkouts.length >= 5 && 
+                                   window.nutritionData && window.nutritionData.length >= 5 && 
+                                   window.weightData && window.weightData.length >= 5;
+            
+            if (hasEnoughData) {
+                console.log('Calculating correlation insights with sufficient data...');
+                
+                // 1. Strength vs. Weight Changes
+                // Compare last 2 weeks vs prior 2 weeks
+                const today = new Date();
+                const twoWeeksAgo = new Date(today.getTime() - (14 * 24 * 60 * 60 * 1000));
+                const fourWeeksAgo = new Date(today.getTime() - (28 * 24 * 60 * 60 * 1000));
+                
+                const recentWorkouts = allWorkouts.filter(w => new Date(w.date) >= twoWeeksAgo);
+                const priorWorkouts = allWorkouts.filter(w => {
+                    const date = new Date(w.date);
+                    return date >= fourWeeksAgo && date < twoWeeksAgo;
+                });
+                
+                if (recentWorkouts.length > 0 && priorWorkouts.length > 0) {
+                    const recentVolume = recentWorkouts.reduce((sum, w) => sum + calculateWorkoutVolume(w), 0) / recentWorkouts.length;
+                    const priorVolume = priorWorkouts.reduce((sum, w) => sum + calculateWorkoutVolume(w), 0) / priorWorkouts.length;
+                    const volumeChangePercent = priorVolume > 0 ? Math.round(((recentVolume - priorVolume) / priorVolume) * 100) : 0;
+                    
+                    console.log(`Volume change: ${volumeChangePercent}%`);
+                    
+                    // Weight changes
+                    const recentWeights = window.weightData.filter(w => new Date(w.date) >= twoWeeksAgo);
+                    const priorWeights = window.weightData.filter(w => {
+                        const date = new Date(w.date);
+                        return date >= fourWeeksAgo && date < twoWeeksAgo;
+                    });
+                    
+                    if (recentWeights.length > 0 && priorWeights.length > 0) {
+                        const avgRecentWeight = recentWeights.reduce((sum, w) => sum + parseFloat(w.weight), 0) / recentWeights.length;
+                        const avgPriorWeight = priorWeights.reduce((sum, w) => sum + parseFloat(w.weight), 0) / priorWeights.length;
+                        const weightChange = avgRecentWeight - avgPriorWeight;
+                        
+                        console.log(`Weight change: ${weightChange.toFixed(1)}lbs`);
+                        
+                        // Generate strength vs weight correlation insight
+                        if (volumeChangePercent > 5 && weightChange > 1) {
+                            insights.push(`Your strength is up ${volumeChangePercent}% while weight increased ${weightChange.toFixed(1)}lbs - excellent lean mass gains!`);
+                        } else if (Math.abs(volumeChangePercent) < 5 && weightChange < -2) {
+                            insights.push(`Strength maintaining while weight down ${Math.abs(weightChange).toFixed(1)}lbs - good cutting progress`);
+                        } else if (Math.abs(weightChange) < 1 && volumeChangePercent > 10) {
+                            insights.push(`Weight stable but strength up ${volumeChangePercent}% - great recomp!`);
+                        } else if (volumeChangePercent < -5 && weightChange < -3) {
+                            insights.push(`Strength declining ${Math.abs(volumeChangePercent)}% while weight down ${Math.abs(weightChange).toFixed(1)}lbs - may need more calories`);
+                        }
+                    }
+                }
+                
+                // 2. Nutrition Adequacy
+                const last14Days = new Date(today.getTime() - (14 * 24 * 60 * 60 * 1000));
+                const recentNutrition = window.nutritionData.filter(n => new Date(n.date) >= last14Days);
+                
+                // Get workout days in last 14 days
+                const recentWorkoutDates = allWorkouts
+                    .filter(w => new Date(w.date) >= last14Days)
+                    .map(w => w.date);
+                const workoutDaysCount = recentWorkoutDates.length;
+                
+                if (recentNutrition.length >= 5 && workoutDaysCount >= 3) {
+                    // Calculate average protein on workout days
+                    const workoutDayNutrition = recentNutrition.filter(n => recentWorkoutDates.includes(n.date));
+                    
+                    if (workoutDayNutrition.length > 0) {
+                        const totalProtein = workoutDayNutrition.reduce((sum, meal) => {
+                            return sum + (meal.foods || []).reduce((foodSum, food) => 
+                                foodSum + (parseFloat(food.protein) || 0), 0);
+                        }, 0);
+                        const avgProtein = Math.round(totalProtein / workoutDayNutrition.length);
+                        
+                        console.log(`Avg protein on workout days: ${avgProtein}g, Workouts/week: ${workoutDaysCount}`);
+                        
+                        if (avgProtein >= 150 && workoutDaysCount >= 4) {
+                            insights.push(`Averaging ${avgProtein}g protein/day with ${workoutDaysCount} workouts/week - optimal for growth`);
+                        } else if (avgProtein < 120 && workoutDaysCount >= 3) {
+                            insights.push(`Only ${avgProtein}g protein on workout days - consider increasing to 0.8-1g per lb bodyweight`);
+                        } else if (avgProtein >= 200) {
+                            insights.push(`Great job hitting ${avgProtein}g+ protein on training days`);
+                        }
+                    }
+                }
+                
+                // 3. Recovery Indicators - correlate intensity ratings with volume changes
+                const workoutsWithIntensity = allWorkouts.filter(w => w.intensity && 
+                    (w.intensity.energy || w.intensity.motivation || w.intensity.fatigue || w.intensity.satisfaction));
+                
+                if (workoutsWithIntensity.length >= 5) {
+                    const recentIntensity = workoutsWithIntensity.slice(0, 7);
+                    
+                    const avgEnergy = recentIntensity.reduce((sum, w) => sum + (w.intensity.energy || 0), 0) / recentIntensity.length;
+                    const avgFatigue = recentIntensity.reduce((sum, w) => sum + (w.intensity.fatigue || 0), 0) / recentIntensity.length;
+                    const avgSatisfaction = recentIntensity.reduce((sum, w) => sum + (w.intensity.satisfaction || 0), 0) / recentIntensity.length;
+                    
+                    console.log(`Recent intensity - Energy: ${avgEnergy.toFixed(1)}, Fatigue: ${avgFatigue.toFixed(1)}, Satisfaction: ${avgSatisfaction.toFixed(1)}`);
+                    
+                    // Compare recent vs prior volume
+                    const recentVol = recentIntensity.slice(0, 3).reduce((sum, w) => sum + calculateWorkoutVolume(w), 0) / 3;
+                    const priorVol = recentIntensity.slice(3, 6).reduce((sum, w) => sum + calculateWorkoutVolume(w), 0) / 3;
+                    const volChange = priorVol > 0 ? Math.round(((recentVol - priorVol) / priorVol) * 100) : 0;
+                    
+                    if (avgEnergy < 2.5 && volChange > 0) {
+                        insights.push(`Low energy scores (avg ${avgEnergy.toFixed(1)}/5) last week but volume still up - good mental toughness`);
+                    } else if (avgFatigue > 3.5 && volChange < -10) {
+                        insights.push(`High fatigue scores correlate with ${Math.abs(volChange)}% volume drop - consider deload week`);
+                    } else if (avgSatisfaction >= 4.5) {
+                        insights.push(`Satisfaction scores averaging ${avgSatisfaction.toFixed(1)}/5 - training is going well!`);
+                    }
+                }
+            }
+            
             return insights;
         }
 
@@ -2925,25 +3067,6 @@
             const lastVolume = calculateWorkoutVolume(lastSession);
             const previousVolume = calculateWorkoutVolume(previousSession);
             
-            const lastExerciseCount = Object.keys(lastSession.exercises || {}).length;
-            const previousExerciseCount = Object.keys(previousSession.exercises || {}).length;
-            
-            // Calculate average weight
-            const calculateAvgWeight = (workout) => {
-                const exercises = Object.values(workout.exercises || {});
-                if (exercises.length === 0) return 0;
-                
-                const totalWeight = exercises.reduce((sum, ex) => {
-                    return sum + ex.sets.reduce((s, set) => s + (parseFloat(set.weight) || 0), 0);
-                }, 0);
-                const totalSets = exercises.reduce((sum, ex) => sum + ex.sets.length, 0);
-                
-                return totalSets > 0 ? Math.round(totalWeight / totalSets) : 0;
-            };
-            
-            const lastAvgWeight = calculateAvgWeight(lastSession);
-            const previousAvgWeight = calculateAvgWeight(previousSession);
-            
             const volumeChange = lastVolume - previousVolume;
             const volumeChangePercent = previousVolume > 0 ? Math.round((volumeChange / previousVolume) * 100) : 0;
             
@@ -2951,14 +3074,123 @@
             const changeColor = isImproving ? '#10b981' : '#ef4444';
             const changeIcon = isImproving ? '✓' : '✗';
             
+            // Exercise-by-exercise comparison
+            const exerciseChanges = { increased: [], decreased: [], plateaued: [] };
+            
+            // Get exercises from last session
+            Object.values(lastSession.exercises || {}).forEach(lastExercise => {
+                const exerciseName = lastExercise.exercise;
+                
+                // Find matching exercise in previous session
+                const previousExercise = Object.values(previousSession.exercises || {})
+                    .find(ex => ex.exercise === exerciseName);
+                
+                if (previousExercise) {
+                    // Calculate max weight × reps for each session
+                    const lastMax = Math.max(...lastExercise.sets.map(set => 
+                        (parseFloat(set.weight) || 0) * (parseInt(set.reps) || 0)
+                    ));
+                    const previousMax = Math.max(...previousExercise.sets.map(set => 
+                        (parseFloat(set.weight) || 0) * (parseInt(set.reps) || 0)
+                    ));
+                    
+                    // Find the sets that correspond to those max values
+                    const lastBestSet = lastExercise.sets.find(set => 
+                        (parseFloat(set.weight) || 0) * (parseInt(set.reps) || 0) === lastMax
+                    );
+                    const previousBestSet = previousExercise.sets.find(set => 
+                        (parseFloat(set.weight) || 0) * (parseInt(set.reps) || 0) === previousMax
+                    );
+                    
+                    const lastWeight = parseFloat(lastBestSet?.weight) || 0;
+                    const lastReps = parseInt(lastBestSet?.reps) || 0;
+                    const previousWeight = parseFloat(previousBestSet?.weight) || 0;
+                    const previousReps = parseInt(previousBestSet?.reps) || 0;
+                    
+                    if (lastMax > previousMax) {
+                        exerciseChanges.increased.push({
+                            name: exerciseName,
+                            previous: `${previousWeight}×${previousReps}`,
+                            current: `${lastWeight}×${lastReps}`
+                        });
+                    } else if (lastMax < previousMax) {
+                        exerciseChanges.decreased.push({
+                            name: exerciseName,
+                            previous: `${previousWeight}×${previousReps}`,
+                            current: `${lastWeight}×${lastReps}`
+                        });
+                    }
+                    // Note: Plateaued detection requires 3+ sessions, handled separately
+                }
+            });
+            
+            // Build exercise breakdown HTML
+            let exerciseBreakdownHTML = '';
+            if (exerciseChanges.increased.length > 0) {
+                exerciseBreakdownHTML += `
+                    <div style="margin-top: 1rem; padding: 0.75rem; background: rgba(16, 185, 129, 0.1); border-radius: 8px; border-left: 3px solid #10b981;">
+                        <div style="color: #10b981; font-weight: bold; margin-bottom: 0.5rem;">↑ Increased</div>
+                        ${exerciseChanges.increased.map(ex => 
+                            `<div style="font-size: 0.9rem; margin: 0.25rem 0;">• ${ex.name}: ${ex.previous} → ${ex.current}</div>`
+                        ).join('')}
+                    </div>
+                `;
+            }
+            
+            if (exerciseChanges.decreased.length > 0) {
+                exerciseBreakdownHTML += `
+                    <div style="margin-top: 1rem; padding: 0.75rem; background: rgba(239, 68, 68, 0.1); border-radius: 8px; border-left: 3px solid #ef4444;">
+                        <div style="color: #ef4444; font-weight: bold; margin-bottom: 0.5rem;">↓ Decreased</div>
+                        ${exerciseChanges.decreased.map(ex => 
+                            `<div style="font-size: 0.9rem; margin: 0.25rem 0;">• ${ex.name}: ${ex.previous} → ${ex.current}</div>`
+                        ).join('')}
+                    </div>
+                `;
+            }
+            
+            // Check for plateaued exercises (need 3+ sessions)
+            if (workouts.length >= 3) {
+                const plateauedExercises = [];
+                const thirdSession = workouts[2];
+                
+                Object.values(lastSession.exercises || {}).forEach(lastEx => {
+                    const exName = lastEx.exercise;
+                    const prevEx = Object.values(previousSession.exercises || {}).find(e => e.exercise === exName);
+                    const thirdEx = Object.values(thirdSession.exercises || {}).find(e => e.exercise === exName);
+                    
+                    if (prevEx && thirdEx) {
+                        const lastMax = Math.max(...lastEx.sets.map(s => (parseFloat(s.weight) || 0) * (parseInt(s.reps) || 0)));
+                        const prevMax = Math.max(...prevEx.sets.map(s => (parseFloat(s.weight) || 0) * (parseInt(s.reps) || 0)));
+                        const thirdMax = Math.max(...thirdEx.sets.map(s => (parseFloat(s.weight) || 0) * (parseInt(s.reps) || 0)));
+                        
+                        if (lastMax === prevMax && prevMax === thirdMax && lastMax > 0) {
+                            const bestSet = lastEx.sets.find(s => (parseFloat(s.weight) || 0) * (parseInt(s.reps) || 0) === lastMax);
+                            plateauedExercises.push({
+                                name: exName,
+                                value: `${parseFloat(bestSet?.weight) || 0}×${parseInt(bestSet?.reps) || 0}`
+                            });
+                        }
+                    }
+                });
+                
+                if (plateauedExercises.length > 0) {
+                    exerciseBreakdownHTML += `
+                        <div style="margin-top: 1rem; padding: 0.75rem; background: rgba(245, 158, 11, 0.1); border-radius: 8px; border-left: 3px solid #f59e0b;">
+                            <div style="color: #f59e0b; font-weight: bold; margin-bottom: 0.5rem;">⚠️ Plateaued (3+ sessions)</div>
+                            ${plateauedExercises.map(ex => 
+                                `<div style="font-size: 0.9rem; margin: 0.25rem 0;">• ${ex.name}: ${ex.value}</div>`
+                            ).join('')}
+                        </div>
+                    `;
+                }
+            }
+            
             container.innerHTML = `
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                     <div>
                         <strong style="color: white;">Last Session</strong>
                         <div style="margin-top: 0.5rem;">
                             <div>Volume: <strong>${lastVolume.toLocaleString()} lbs</strong></div>
-                            <div>Exercises: <strong>${lastExerciseCount}</strong></div>
-                            <div>Avg Weight: <strong>${lastAvgWeight} lbs</strong></div>
                             <div style="font-size: 0.8rem; color: #64748b;">${new Date(lastSession.date).toLocaleDateString()}</div>
                         </div>
                     </div>
@@ -2966,8 +3198,6 @@
                         <strong style="color: white;">Previous Session</strong>
                         <div style="margin-top: 0.5rem;">
                             <div>Volume: <strong>${previousVolume.toLocaleString()} lbs</strong></div>
-                            <div>Exercises: <strong>${previousExerciseCount}</strong></div>
-                            <div>Avg Weight: <strong>${previousAvgWeight} lbs</strong></div>
                             <div style="font-size: 0.8rem; color: #64748b;">${new Date(previousSession.date).toLocaleDateString()}</div>
                         </div>
                     </div>
@@ -2980,6 +3210,7 @@
                         Volume Change: <strong style="color: ${changeColor};">${volumeChange > 0 ? '+' : ''}${volumeChange.toLocaleString()} lbs (${volumeChangePercent > 0 ? '+' : ''}${volumeChangePercent}%)</strong>
                     </div>
                 </div>
+                ${exerciseBreakdownHTML}
             `;
         }
 
@@ -3012,16 +3243,19 @@
                 const workoutDate = new Date(workout.date);
                 const dayOfWeek = dayNames[workoutDate.getDay()];
                 
-                // Calculate average intensity score
+                // Calculate average intensity score (1-5 scale)
                 const intensity = workout.intensity || {};
                 const avgScore = (
                     (intensity.energy || 0) +
                     (intensity.motivation || 0) +
-                    (10 - (intensity.fatigue || 0)) +
+                    (5 - (intensity.fatigue || 0)) +  // Invert fatigue within 1-5 scale
                     (intensity.satisfaction || 0)
                 ) / 4;
                 
-                intensityByDay[dayOfWeek].push(avgScore);
+                // Scale to 0-10 range
+                const scaledScore = (avgScore / 5) * 10;
+                
+                intensityByDay[dayOfWeek].push(scaledScore);
             });
             
             // Calculate average for each day
@@ -3065,7 +3299,7 @@
                     }).join('')}
                 </div>
                 <div style="margin-top: 1rem; font-size: 0.8rem; color: #64748b; text-align: center;">
-                    Average intensity score (0-10) based on energy, motivation, fatigue, and satisfaction
+                    Intensity score (0-10) - calculated from your 1-5 ratings. Fatigue is inverted (lower fatigue = higher score).
                 </div>
             `;
             
@@ -3187,7 +3421,7 @@
                     trendingUpElement.innerHTML = trendingExercises.map(ex => `• ${ex}`).join('<br>');
                     trendingUpElement.style.color = '#10b981';
                 } else {
-                    trendingUpElement.innerHTML = 'Complete more workouts to see trends';
+                    trendingUpElement.innerHTML = 'Need 3+ sessions per exercise to detect trends';
                     trendingUpElement.style.color = '#94a3b8';
                 }
             }
@@ -4135,6 +4369,24 @@
             reader.readAsDataURL(file);
         };
 
+        window.deleteProgressPhoto = async function(photoId) {
+            if (confirm('Delete this progress photo?')) {
+                try {
+                    // Delete from Firestore
+                    await deleteDoc(doc(db, "photos", photoId));
+                    
+                    // Remove from local photoData array
+                    window.photoData = window.photoData.filter(p => p.id !== photoId);
+                    
+                    // Re-render the gallery
+                    renderPhotos();
+                } catch (e) {
+                    console.error("Error deleting progress photo:", e);
+                    alert('Error deleting photo. Please try again.');
+                }
+            }
+        };
+
         function renderPhotos() {
             const container = document.getElementById('photo-gallery');
             if (!container) return;
@@ -4148,6 +4400,7 @@
             photoData.forEach(photo => {
                 html += `<div class="photo-item">
                     <img src="${photo.dataUrl}" alt="Progress photo">
+                    <button class="btn-delete-photo" onclick="deleteProgressPhoto('${photo.id}')" title="Delete photo">🗑️</button>
                     <div class="photo-date">${formatDateString(photo.date)}</div>
                 </div>`;
             });
