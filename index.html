@@ -1649,6 +1649,25 @@
             .suggestion-card {
                 padding: 0.75rem;
             }
+
+            /* Body goal mobile optimization */
+            .goal-input-row {
+                flex-direction: column;
+                gap: 0.75rem;
+            }
+
+            .goal-input-group {
+                min-width: 100%;
+            }
+
+            .calorie-breakdown {
+                flex-direction: column;
+                gap: 0.75rem;
+            }
+
+            .calorie-item {
+                min-width: 100%;
+            }
         }
 
         /* Additional breakpoint for very small phones (iPhone SE, etc.) */
@@ -2396,6 +2415,17 @@
             
             if (!bodyGoal || !targetWeight || !goalStartDate) {
                 console.log('Missing required fields for body goal');
+                return;
+            }
+            
+            // Validation
+            if (targetWeight <= 0) {
+                alert('Target weight must be greater than zero');
+                return;
+            }
+            
+            if (isNaN(targetWeight)) {
+                alert('Please enter a valid number for target weight');
                 return;
             }
             
