@@ -1007,6 +1007,143 @@
             transform: scale(1.1);
         }
 
+        /* Body Goal Styles */
+        .body-goal-card {
+            background: rgba(30, 41, 59, 0.4);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(71, 85, 105, 0.3);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .goal-input-row {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .goal-input-group {
+            flex: 1;
+            min-width: 200px;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .goal-input-label {
+            color: #94a3b8;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .goal-select, .goal-input {
+            padding: 0.75rem;
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(71, 85, 105, 0.5);
+            border-radius: 8px;
+            color: white;
+            font-size: 1rem;
+        }
+
+        .goal-select:focus, .goal-input:focus {
+            outline: none;
+            border-color: #06b6d4;
+            box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.2);
+        }
+
+        .goal-display {
+            background: rgba(6, 182, 212, 0.1);
+            border: 1px solid rgba(6, 182, 212, 0.3);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+
+        .goal-display-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .goal-display-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .goal-display-label {
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+
+        .goal-display-value {
+            color: #06b6d4;
+            font-size: 1rem;
+            font-weight: 500;
+        }
+
+        .progress-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+            font-weight: 500;
+        }
+
+        .progress-indicator.on-track {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #10b981;
+        }
+
+        .progress-indicator.off-track {
+            background: rgba(251, 146, 60, 0.1);
+            border: 1px solid rgba(251, 146, 60, 0.3);
+            color: #fb923c;
+        }
+
+        .calorie-target-card {
+            background: rgba(30, 41, 59, 0.4);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(71, 85, 105, 0.3);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .calorie-breakdown {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .calorie-item {
+            flex: 1;
+            min-width: 150px;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(71, 85, 105, 0.3);
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+        }
+
+        .calorie-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #06b6d4;
+            margin-bottom: 0.25rem;
+        }
+
+        .calorie-label {
+            color: #94a3b8;
+            font-size: 0.85rem;
+        }
+
         /* Saved Foods Styles */
         .saved-foods-panel {
             background: rgba(30, 41, 59, 0.4);
@@ -1512,6 +1649,25 @@
             .suggestion-card {
                 padding: 0.75rem;
             }
+
+            /* Body goal mobile optimization */
+            .goal-input-row {
+                flex-direction: column;
+                gap: 0.75rem;
+            }
+
+            .goal-input-group {
+                min-width: 100%;
+            }
+
+            .calorie-breakdown {
+                flex-direction: column;
+                gap: 0.75rem;
+            }
+
+            .calorie-item {
+                min-width: 100%;
+            }
         }
 
         /* Additional breakpoint for very small phones (iPhone SE, etc.) */
@@ -1732,6 +1888,27 @@
                 </div>
             </div>
 
+            <div class="calorie-target-card" id="calorie-target-card" style="display: none;">
+                <h3 class="analytics-title">🎯 Calorie Target</h3>
+                <div class="calorie-breakdown">
+                    <div class="calorie-item">
+                        <div class="calorie-value" id="maintenance-calories">--</div>
+                        <div class="calorie-label">Maintenance</div>
+                    </div>
+                    <div class="calorie-item">
+                        <div class="calorie-value" id="target-calories">--</div>
+                        <div class="calorie-label" id="target-calories-label">Your Goal</div>
+                    </div>
+                    <div class="calorie-item">
+                        <div class="calorie-value" id="calories-remaining">--</div>
+                        <div class="calorie-label">Remaining</div>
+                    </div>
+                </div>
+                <div style="text-align: center; margin-top: 1rem; color: #94a3b8; font-size: 0.85rem;">
+                    <span id="calorie-update-notice">Calories update automatically when you log weight</span>
+                </div>
+            </div>
+
             <div class="saved-foods-panel">
                 <h3 class="analytics-title">⭐ Saved Foods</h3>
                 <input type="text" id="saved-food-search" class="saved-food-search" placeholder="Search saved foods...">
@@ -1755,6 +1932,53 @@
                     <input type="date" id="weight-date-input" class="weight-input-field" style="flex: 0.5;">
                     <input type="number" id="weight-value-input" class="weight-input-field" placeholder="Weight (lbs)" step="0.1">
                     <button class="btn btn-complete" onclick="logWeight()" style="margin: 0; padding: 0.75rem 1.5rem;">Log Weight</button>
+                </div>
+            </div>
+
+            <div class="body-goal-card">
+                <h3 class="analytics-title">🎯 Body Goal</h3>
+                <div class="goal-input-row">
+                    <div class="goal-input-group">
+                        <label class="goal-input-label">Goal Type</label>
+                        <select id="body-goal-select" class="goal-select" onchange="saveBodyGoal()">
+                            <option value="">Select Goal</option>
+                            <option value="cutting">Cutting (Lose Weight)</option>
+                            <option value="bulking">Bulking (Gain Weight)</option>
+                            <option value="maintaining">Maintaining (Stay Current)</option>
+                        </select>
+                    </div>
+                    <div class="goal-input-group">
+                        <label class="goal-input-label">Target Weight (lbs)</label>
+                        <input type="number" id="target-weight-input" class="goal-input" placeholder="Enter target weight" step="0.1" onchange="saveBodyGoal()">
+                    </div>
+                    <div class="goal-input-group">
+                        <label class="goal-input-label">Goal Start Date</label>
+                        <input type="date" id="goal-start-date-input" class="goal-input" onchange="saveBodyGoal()">
+                    </div>
+                </div>
+                <div id="goal-display-container" style="display: none;">
+                    <div class="goal-display">
+                        <div class="goal-display-row">
+                            <span class="goal-display-label">Current Weight:</span>
+                            <span class="goal-display-value" id="display-current-weight">-- lbs</span>
+                        </div>
+                        <div class="goal-display-row">
+                            <span class="goal-display-label">7-Day Moving Average:</span>
+                            <span class="goal-display-value" id="display-moving-avg">-- lbs</span>
+                        </div>
+                        <div class="goal-display-row">
+                            <span class="goal-display-label">Weight to Goal:</span>
+                            <span class="goal-display-value" id="display-weight-diff">-- lbs</span>
+                        </div>
+                        <div class="goal-display-row">
+                            <span class="goal-display-label">Estimated Completion:</span>
+                            <span class="goal-display-value" id="display-goal-date">--</span>
+                        </div>
+                    </div>
+                    <div id="progress-indicator" class="progress-indicator on-track">
+                        <span>⏳</span>
+                        <span id="progress-status-text">Set your goal to track progress</span>
+                    </div>
                 </div>
             </div>
 
@@ -1991,6 +2215,8 @@
         window.photoData = photoData;
         let savedFoods = [];
         window.savedFoods = savedFoods;
+        let bodyGoalData = null;
+        window.bodyGoalData = bodyGoalData;
 
         const workoutPlans = {
             Upper: [
@@ -2140,6 +2366,295 @@
                 console.error("Error loading photos:", e);
                 return [];
             }
+        }
+
+        // Body Goal Functions
+        async function loadBodyGoalData() {
+            try {
+                const q = query(collection(db, "bodyGoals"), limit(1));
+                const querySnapshot = await getDocs(q);
+                if (!querySnapshot.empty) {
+                    const doc = querySnapshot.docs[0];
+                    bodyGoalData = { id: doc.id, ...doc.data() };
+                    window.bodyGoalData = bodyGoalData;
+                    console.log("Loaded body goal data:", bodyGoalData);
+                    populateBodyGoalForm();
+                    updateBodyGoalDisplay();
+                    updateNutritionCalories();
+                    return bodyGoalData;
+                }
+                return null;
+            } catch (e) {
+                console.error("Error loading body goal:", e);
+                return null;
+            }
+        }
+
+        function populateBodyGoalForm() {
+            if (!bodyGoalData) return;
+            
+            const goalSelect = document.getElementById('body-goal-select');
+            const targetWeightInput = document.getElementById('target-weight-input');
+            const goalStartDateInput = document.getElementById('goal-start-date-input');
+            
+            if (goalSelect && bodyGoalData.bodyGoal) {
+                goalSelect.value = bodyGoalData.bodyGoal;
+            }
+            if (targetWeightInput && bodyGoalData.targetWeight) {
+                targetWeightInput.value = bodyGoalData.targetWeight;
+            }
+            if (goalStartDateInput && bodyGoalData.goalStartDate) {
+                goalStartDateInput.value = bodyGoalData.goalStartDate;
+            }
+        }
+
+        window.saveBodyGoal = async function() {
+            const bodyGoal = document.getElementById('body-goal-select').value;
+            const targetWeight = parseFloat(document.getElementById('target-weight-input').value);
+            const goalStartDate = document.getElementById('goal-start-date-input').value;
+            
+            if (!bodyGoal || !targetWeight || !goalStartDate) {
+                console.log('Missing required fields for body goal');
+                return;
+            }
+            
+            // Validation
+            if (isNaN(targetWeight)) {
+                alert('Please enter a valid number for target weight');
+                return;
+            }
+            
+            if (targetWeight <= 0) {
+                alert('Target weight must be greater than zero');
+                return;
+            }
+            
+            const goalData = {
+                bodyGoal,
+                targetWeight,
+                goalStartDate,
+                updatedAt: new Date().toISOString()
+            };
+            
+            try {
+                if (bodyGoalData && bodyGoalData.id) {
+                    // Update existing
+                    await updateDoc(doc(db, "bodyGoals", bodyGoalData.id), goalData);
+                    bodyGoalData = { id: bodyGoalData.id, ...goalData };
+                } else {
+                    // Create new
+                    const docRef = await addDoc(collection(db, "bodyGoals"), goalData);
+                    bodyGoalData = { id: docRef.id, ...goalData };
+                }
+                window.bodyGoalData = bodyGoalData;
+                console.log('Body goal saved:', bodyGoalData);
+                updateBodyGoalDisplay();
+                updateNutritionCalories();
+            } catch (e) {
+                console.error("Error saving body goal:", e);
+                alert('Error saving body goal');
+            }
+        };
+
+        function calculateMaintenanceCalories(weight) {
+            return Math.round(weight * 14.5);
+        }
+
+        function calculateTargetCalories(weight, bodyGoal) {
+            const maintenance = calculateMaintenanceCalories(weight);
+            
+            switch (bodyGoal) {
+                case 'cutting':
+                    return maintenance - 500;
+                case 'bulking':
+                    return maintenance + 250;
+                case 'maintaining':
+                    return maintenance;
+                default:
+                    return maintenance;
+            }
+        }
+
+        function calculate7DayMovingAverage(weightHistory) {
+            if (!weightHistory || weightHistory.length === 0) return null;
+            
+            // Sort by date descending
+            const sorted = [...weightHistory].sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            // Take last 7 entries (or fewer if less than 7 available)
+            const last7 = sorted.slice(0, Math.min(7, sorted.length));
+            
+            // Calculate average
+            const sum = last7.reduce((acc, w) => acc + w.weight, 0);
+            return sum / last7.length;
+        }
+
+        function calculateGoalEndDate(currentWeight, targetWeight, goalStartDate, bodyGoal) {
+            if (!currentWeight || !targetWeight || !goalStartDate || !bodyGoal) return null;
+            
+            if (bodyGoal === 'maintaining') return null;
+            
+            const weightDiff = Math.abs(targetWeight - currentWeight);
+            let weeksToGoal;
+            
+            if (bodyGoal === 'cutting') {
+                weeksToGoal = weightDiff / 1.0; // 1 lb per week
+            } else if (bodyGoal === 'bulking') {
+                weeksToGoal = weightDiff / 0.5; // 0.5 lb per week
+            } else {
+                return null;
+            }
+            
+            const startDate = new Date(goalStartDate);
+            const endDate = new Date(startDate);
+            endDate.setDate(startDate.getDate() + (weeksToGoal * 7));
+            
+            return endDate.toISOString().split('T')[0];
+        }
+
+        function checkIfOnTrack(movingAverage, targetWeight, currentWeight, bodyGoal) {
+            if (!movingAverage || !targetWeight || !bodyGoal) {
+                return { isOnTrack: false, message: 'Set your goal to track progress' };
+            }
+            
+            if (bodyGoal === 'maintaining') {
+                const deviation = Math.abs(movingAverage - targetWeight);
+                if (deviation <= 3) {
+                    return { isOnTrack: true, message: `On Track ✅ (within ±3 lbs of target)` };
+                } else {
+                    return { isOnTrack: false, message: `Off Track ⚠️ (${deviation.toFixed(1)} lbs from target)` };
+                }
+            } else if (bodyGoal === 'cutting') {
+                if (movingAverage <= currentWeight) {
+                    return { isOnTrack: true, message: 'On Track ✅ (trending downward)' };
+                } else {
+                    return { isOnTrack: false, message: 'Off Track ⚠️ (not trending downward)' };
+                }
+            } else if (bodyGoal === 'bulking') {
+                if (movingAverage >= currentWeight) {
+                    return { isOnTrack: true, message: 'On Track ✅ (trending upward)' };
+                } else {
+                    return { isOnTrack: false, message: 'Off Track ⚠️ (not trending upward)' };
+                }
+            }
+            
+            return { isOnTrack: false, message: 'Unable to determine progress' };
+        }
+
+        function updateBodyGoalDisplay() {
+            if (!bodyGoalData || !bodyGoalData.bodyGoal) {
+                document.getElementById('goal-display-container').style.display = 'none';
+                return;
+            }
+            
+            document.getElementById('goal-display-container').style.display = 'block';
+            
+            // Get current weight (most recent)
+            const currentWeight = weightData && weightData.length > 0 ? weightData[0].weight : null;
+            
+            // Calculate 7-day moving average
+            const movingAvg = calculate7DayMovingAverage(weightData);
+            
+            // Calculate weight difference
+            const weightDiff = currentWeight && bodyGoalData.targetWeight 
+                ? Math.abs(bodyGoalData.targetWeight - currentWeight) 
+                : null;
+            
+            // Calculate goal end date
+            const goalEndDate = currentWeight 
+                ? calculateGoalEndDate(currentWeight, bodyGoalData.targetWeight, bodyGoalData.goalStartDate, bodyGoalData.bodyGoal)
+                : null;
+            
+            // Update display
+            document.getElementById('display-current-weight').textContent = 
+                currentWeight ? `${currentWeight.toFixed(1)} lbs` : '-- lbs';
+            
+            document.getElementById('display-moving-avg').textContent = 
+                movingAvg ? `${movingAvg.toFixed(1)} lbs` : '-- lbs (log weight first)';
+            
+            document.getElementById('display-weight-diff').textContent = 
+                weightDiff ? `${weightDiff.toFixed(1)} lbs` : '-- lbs';
+            
+            if (bodyGoalData.bodyGoal === 'maintaining') {
+                document.getElementById('display-goal-date').textContent = 'Goal: Maintain current weight';
+            } else {
+                document.getElementById('display-goal-date').textContent = 
+                    goalEndDate ? new Date(goalEndDate).toLocaleDateString() : '--';
+            }
+            
+            // Update progress indicator
+            const progressStatus = checkIfOnTrack(movingAvg, bodyGoalData.targetWeight, currentWeight, bodyGoalData.bodyGoal);
+            const progressIndicator = document.getElementById('progress-indicator');
+            const progressText = document.getElementById('progress-status-text');
+            
+            if (progressStatus.isOnTrack) {
+                progressIndicator.className = 'progress-indicator on-track';
+            } else {
+                progressIndicator.className = 'progress-indicator off-track';
+            }
+            
+            progressText.textContent = progressStatus.message;
+        }
+
+        function updateNutritionCalories() {
+            if (!bodyGoalData || !bodyGoalData.bodyGoal) {
+                document.getElementById('calorie-target-card').style.display = 'none';
+                return;
+            }
+            
+            // Get current weight (most recent)
+            const currentWeight = weightData && weightData.length > 0 ? weightData[0].weight : null;
+            
+            if (!currentWeight) {
+                document.getElementById('calorie-target-card').style.display = 'none';
+                return;
+            }
+            
+            document.getElementById('calorie-target-card').style.display = 'block';
+            
+            const maintenanceCalories = calculateMaintenanceCalories(currentWeight);
+            const targetCalories = calculateTargetCalories(currentWeight, bodyGoalData.bodyGoal);
+            
+            document.getElementById('maintenance-calories').textContent = maintenanceCalories;
+            document.getElementById('target-calories').textContent = targetCalories;
+            
+            // Update label based on goal
+            const labelMap = {
+                'cutting': 'Cutting Goal',
+                'bulking': 'Bulking Goal',
+                'maintaining': 'Maintaining Goal'
+            };
+            document.getElementById('target-calories-label').textContent = 
+                labelMap[bodyGoalData.bodyGoal] || 'Your Goal';
+            
+            // Calculate remaining calories
+            const totalCalories = calculateTotalCalories();
+            const remaining = targetCalories - totalCalories;
+            document.getElementById('calories-remaining').textContent = remaining;
+            
+            // Update remaining color
+            const remainingElement = document.getElementById('calories-remaining');
+            if (remaining < 0) {
+                remainingElement.style.color = '#ef4444'; // red
+            } else if (remaining < 200) {
+                remainingElement.style.color = '#fb923c'; // orange
+            } else {
+                remainingElement.style.color = '#06b6d4'; // cyan
+            }
+        }
+
+        function calculateTotalCalories() {
+            // Get current date nutrition
+            const currentDateMeals = nutritionData.filter(m => m.date === currentNutritionDate);
+            let total = 0;
+            currentDateMeals.forEach(meal => {
+                if (meal.foods) {
+                    meal.foods.forEach(food => {
+                        total += parseInt(food.calories) || 0;
+                    });
+                }
+            });
+            return total;
         }
 
         // Workout Schedule Cycle: upper/lower/rest/push/pull/legs/rest
@@ -3801,6 +4316,9 @@
             document.getElementById('total-protein').textContent = Math.round(totalProtein) + 'g';
             document.getElementById('total-carbs').textContent = Math.round(totalCarbs) + 'g';
             document.getElementById('total-fats').textContent = Math.round(totalFats) + 'g';
+            
+            // Update calories remaining if body goal is set
+            updateNutritionCalories();
         }
 
         // Meal type selection modal functions
@@ -4298,6 +4816,8 @@
                 document.getElementById('weight-value-input').value = '';
                 
                 createWeightChart();
+                updateBodyGoalDisplay();
+                updateNutritionCalories();
                 alert('Weight logged successfully!');
             } catch (e) {
                 console.error("Error logging weight:", e);
@@ -4481,7 +5001,8 @@
                 loadNutritionData(),
                 loadWeightData(),
                 loadPhotoData(),
-                loadSavedFoods()
+                loadSavedFoods(),
+                loadBodyGoalData()
             ]);
             
             // Update with real data
@@ -4508,11 +5029,13 @@
                 showTab('nutrition');
                 renderMeals();
                 renderSavedFoods();
+                updateNutritionCalories();
             });
             document.getElementById('body-metrics-tab-btn').addEventListener('click', () => {
                 showTab('body-metrics');
                 createWeightChart();
                 renderPhotos();
+                updateBodyGoalDisplay();
             });
             document.getElementById('analytics-tab-btn').addEventListener('click', () => {
                 showTab('analytics');
@@ -4586,6 +5109,12 @@
             // Weight date input
             const weightDateInput = document.getElementById('weight-date-input');
             weightDateInput.value = new Date().toISOString().split('T')[0];
+            
+            // Goal start date input
+            const goalStartDateInput = document.getElementById('goal-start-date-input');
+            if (goalStartDateInput && !goalStartDateInput.value) {
+                goalStartDateInput.value = new Date().toISOString().split('T')[0];
+            }
             
             // Analytics dropdowns
             const exerciseSelector = document.getElementById('exercise-selector');
