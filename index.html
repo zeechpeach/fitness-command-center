@@ -4396,13 +4396,13 @@
             const container = document.getElementById('photo-gallery');
             if (!container) return;
             
-            if (photoData.length === 0) {
+            if (window.photoData.length === 0) {
                 container.innerHTML = '<p style="color: #64748b; text-align: center; padding: 2rem;">No progress photos yet. Upload your first one!</p>';
                 return;
             }
             
             let html = '';
-            photoData.forEach(photo => {
+            window.photoData.forEach(photo => {
                 html += `<div class="photo-item">
                     <img src="${photo.dataUrl}" alt="Progress photo">
                     <button class="btn-delete-photo" onclick="deleteProgressPhoto('${photo.id}')" title="Delete photo">🗑️</button>
