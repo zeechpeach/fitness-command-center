@@ -2419,13 +2419,13 @@
             }
             
             // Validation
-            if (targetWeight <= 0) {
-                alert('Target weight must be greater than zero');
+            if (isNaN(targetWeight)) {
+                alert('Please enter a valid number for target weight');
                 return;
             }
             
-            if (isNaN(targetWeight)) {
-                alert('Please enter a valid number for target weight');
+            if (targetWeight <= 0) {
+                alert('Target weight must be greater than zero');
                 return;
             }
             
@@ -2570,7 +2570,7 @@
                 currentWeight ? `${currentWeight.toFixed(1)} lbs` : '-- lbs';
             
             document.getElementById('display-moving-avg').textContent = 
-                movingAvg ? `${movingAvg.toFixed(1)} lbs` : '-- lbs (need 7 days)';
+                movingAvg ? `${movingAvg.toFixed(1)} lbs` : '-- lbs (log weight first)';
             
             document.getElementById('display-weight-diff').textContent = 
                 weightDiff ? `${weightDiff.toFixed(1)} lbs` : '-- lbs';
