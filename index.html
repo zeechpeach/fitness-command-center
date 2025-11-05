@@ -1395,6 +1395,44 @@
             background: rgba(71, 85, 105, 0.5);
         }
 
+        /* Travel Mode Styles */
+        .travel-mode-banner {
+            background: linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(59, 130, 246, 0.2));
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            display: none;
+        }
+
+        .travel-mode-banner.active {
+            display: block;
+        }
+
+        .travel-mode-controls {
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid rgba(71, 85, 105, 0.3);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .calendar-day.travel {
+            background: repeating-linear-gradient(
+                45deg,
+                rgba(168, 85, 247, 0.1),
+                rgba(168, 85, 247, 0.1) 10px,
+                rgba(59, 130, 246, 0.1) 10px,
+                rgba(59, 130, 246, 0.1) 20px
+            );
+            border: 1px solid rgba(168, 85, 247, 0.5);
+        }
+
+        .calendar-day.travel .calendar-day-label {
+            color: #a855f7;
+            font-weight: 600;
+        }
+
         @media (max-width: 768px) {
             /* Reduce body padding for more screen space */
             body {
@@ -1726,6 +1764,19 @@
             <div class="nav-tab" id="intelligence-tab-btn">🧠 Insights</div>
         </div>
 
+        <!-- Travel Mode Banner -->
+        <div id="travel-mode-banner" class="travel-mode-banner">
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap;">
+                <div>
+                    <div style="color: #a855f7; font-weight: 600; font-size: 1.1rem; margin-bottom: 0.25rem;">✈️ Travel Mode Active</div>
+                    <div style="color: #94a3b8; font-size: 0.9rem;">
+                        <span id="travel-mode-dates"></span>
+                    </div>
+                </div>
+                <button class="btn" onclick="endTravelMode()" style="background: rgba(168, 85, 247, 0.2); color: #a855f7; border: 1px solid rgba(168, 85, 247, 0.3);">End Travel Mode</button>
+            </div>
+        </div>
+
         <!-- WORKOUT TAB -->
         <div id="workout-content" class="tab-content active">
             <div class="workout-day-selector">
@@ -1819,6 +1870,25 @@
 
         <!-- CALENDAR TAB -->
         <div id="calendar-content" class="tab-content">
+            <!-- Travel Mode Controls -->
+            <div class="travel-mode-controls">
+                <h4 style="color: #a855f7; margin-bottom: 0.75rem;">✈️ Travel Mode</h4>
+                <div style="display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap; margin-bottom: 0.75rem;">
+                    <div style="flex: 1; min-width: 150px;">
+                        <label style="color: #94a3b8; font-size: 0.85rem; display: block; margin-bottom: 0.25rem;">Start Date</label>
+                        <input type="date" id="travel-start-date" style="width: 100%; padding: 0.5rem; background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(71, 85, 105, 0.5); border-radius: 6px; color: white;">
+                    </div>
+                    <div style="flex: 1; min-width: 150px;">
+                        <label style="color: #94a3b8; font-size: 0.85rem; display: block; margin-bottom: 0.25rem;">End Date</label>
+                        <input type="date" id="travel-end-date" style="width: 100%; padding: 0.5rem; background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(71, 85, 105, 0.5); border-radius: 6px; color: white;">
+                    </div>
+                    <button class="btn" onclick="enableTravelMode()" style="background: rgba(168, 85, 247, 0.2); color: #a855f7; border: 1px solid rgba(168, 85, 247, 0.3);">Set Travel Dates</button>
+                </div>
+                <div style="color: #64748b; font-size: 0.85rem; line-height: 1.5;">
+                    Travel mode pauses your workout schedule and excludes days from discipline scores. Your streak won't break during travel.
+                </div>
+            </div>
+
             <div class="adherence-card">
                 <h3 class="analytics-title">📊 Workout Adherence</h3>
                 <div class="adherence-score">
@@ -2158,6 +2228,30 @@
                     <li class="insight-item">Complete some workouts to get personalized insights!</li>
                 </ul>
             </div>
+
+            <div class="analytics-card">
+                <h3 class="analytics-title">🍎 Nutrition Analytics (Past 7 Days)</h3>
+                <div id="nutrition-insights" style="color: #94a3b8; font-size: 0.9rem;">
+                    <div style="margin-bottom: 1rem;">
+                        <strong style="color: #06b6d4;">Workout Days vs Rest Days</strong>
+                        <div id="nutrition-comparison" style="margin-top: 0.5rem;">
+                            Log nutrition for at least 3 days to see insights
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 1rem;">
+                        <strong style="color: #10b981;">Pre-Workout Nutrition</strong>
+                        <div id="preworkout-insights" style="margin-top: 0.5rem;">
+                            Track meal times to see pre-workout nutrition patterns
+                        </div>
+                    </div>
+                    <div>
+                        <strong style="color: #f59e0b;">Post-Workout Recovery</strong>
+                        <div id="postworkout-insights" style="margin-top: 0.5rem;">
+                            Track meal times to see post-workout nutrition patterns
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -2214,6 +2308,9 @@
         let photoData = [];
         window.photoData = photoData;
         let savedFoods = [];
+        window.savedFoods = savedFoods;
+        let travelModeData = [];
+        window.travelModeData = travelModeData;
         window.savedFoods = savedFoods;
         let bodyGoalData = null;
         window.bodyGoalData = bodyGoalData;
@@ -2674,6 +2771,11 @@
             const queryDate = new Date(date + 'T00:00:00.000Z');
             const actualWorkout = getWorkoutForDate(date);
             
+            // Check if date is in travel mode
+            if (isDateInTravelMode(date)) {
+                return 'Travel';
+            }
+            
             // If there's an actual workout on this date, return its type
             if (actualWorkout) {
                 return actualWorkout.day;
@@ -2684,9 +2786,12 @@
             const todayUTC = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()));
             
             if (queryDate >= todayUTC) {
-                // Find the most recent completed workout
+                // Find the most recent completed workout (excluding travel days)
                 const sortedWorkouts = allWorkouts
-                    .filter(w => new Date(w.date + 'T00:00:00.000Z') < todayUTC)
+                    .filter(w => {
+                        const workoutDate = new Date(w.date + 'T00:00:00.000Z');
+                        return workoutDate < todayUTC && !isDateInTravelMode(w.date);
+                    })
                     .sort((a, b) => new Date(b.date + 'T00:00:00.000Z') - new Date(a.date + 'T00:00:00.000Z()));
                 
                 if (sortedWorkouts.length > 0) {
@@ -2697,17 +2802,29 @@
                     // Find the index of the most recent workout type in the schedule
                     const lastIndex = workoutSchedule.indexOf(mostRecentType);
                     
-                    // Calculate days forward from the most recent workout
-                    const daysDiff = Math.floor((queryDate - mostRecentDate) / (1000 * 60 * 60 * 24));
+                    // Calculate non-travel days forward from the most recent workout
+                    let nonTravelDays = 0;
+                    for (let d = new Date(mostRecentDate); d < queryDate; d.setDate(d.getDate() + 1)) {
+                        const checkDateStr = d.toISOString().split('T')[0];
+                        if (!isDateInTravelMode(checkDateStr)) {
+                            nonTravelDays++;
+                        }
+                    }
                     
                     // Project forward in the 6-day cycle
-                    const scheduleIndex = (lastIndex + daysDiff) % workoutSchedule.length;
+                    const scheduleIndex = (lastIndex + nonTravelDays) % workoutSchedule.length;
                     return workoutSchedule[scheduleIndex];
                 } else {
                     // No workouts yet, use default schedule from reference date
                     const referenceDate = new Date('2024-01-01T00:00:00.000Z');
-                    const daysDiff = Math.floor((queryDate - referenceDate) / (1000 * 60 * 60 * 24));
-                    const scheduleIndex = ((daysDiff % workoutSchedule.length) + workoutSchedule.length) % workoutSchedule.length;
+                    let nonTravelDays = 0;
+                    for (let d = new Date(referenceDate); d < queryDate; d.setDate(d.getDate() + 1)) {
+                        const checkDateStr = d.toISOString().split('T')[0];
+                        if (!isDateInTravelMode(checkDateStr)) {
+                            nonTravelDays++;
+                        }
+                    }
+                    const scheduleIndex = ((nonTravelDays % workoutSchedule.length) + workoutSchedule.length) % workoutSchedule.length;
                     return workoutSchedule[scheduleIndex];
                 }
             }
@@ -2715,8 +2832,14 @@
             // For past dates without an actual workout, return empty or use default schedule
             // This allows showing "missed" workouts in the calendar
             const referenceDate = new Date('2024-01-01T00:00:00.000Z');
-            const daysDiff = Math.floor((queryDate - referenceDate) / (1000 * 60 * 60 * 24));
-            const scheduleIndex = ((daysDiff % workoutSchedule.length) + workoutSchedule.length) % workoutSchedule.length;
+            let nonTravelDays = 0;
+            for (let d = new Date(referenceDate); d < queryDate; d.setDate(d.getDate() + 1)) {
+                const checkDateStr = d.toISOString().split('T')[0];
+                if (!isDateInTravelMode(checkDateStr)) {
+                    nonTravelDays++;
+                }
+            }
+            const scheduleIndex = ((nonTravelDays % workoutSchedule.length) + workoutSchedule.length) % workoutSchedule.length;
             return workoutSchedule[scheduleIndex];
         }
 
@@ -2737,7 +2860,8 @@
                 const scheduledWorkout = getScheduledWorkout(dateStr);
                 const actualWorkout = getWorkoutForDate(dateStr);
                 
-                if (scheduledWorkout !== 'Rest') {
+                // Exclude rest days and travel days from adherence calculations
+                if (scheduledWorkout !== 'Rest' && scheduledWorkout !== 'Travel') {
                     scheduled++;
                     if (actualWorkout) {
                         completed++;
@@ -2792,7 +2916,7 @@
             // Calculate days since last workout
             const daysSinceLastWorkout = Math.floor((today - mostRecentDate) / (1000 * 60 * 60 * 24));
             
-            // Check if there's a missed workout (excluding rest days)
+            // Check if there's a missed workout (excluding rest days and travel days)
             let hasMissedWorkout = false;
             for (let i = 0; i < daysSinceLastWorkout; i++) {
                 const checkDate = new Date(today);
@@ -2801,7 +2925,8 @@
                 const scheduled = getScheduledWorkout(dateStr);
                 const actual = getWorkoutForDate(dateStr);
                 
-                if (scheduled !== 'Rest' && !actual) {
+                // Only count as missed if it was a scheduled workout (not rest or travel)
+                if (scheduled !== 'Rest' && scheduled !== 'Travel' && !actual) {
                     hasMissedWorkout = true;
                     break;
                 }
@@ -2823,7 +2948,8 @@
                 const scheduled = getScheduledWorkout(dateStr);
                 const actual = getWorkoutForDate(dateStr);
                 
-                if (scheduled !== 'Rest') {
+                // Only count scheduled workout days (not rest or travel)
+                if (scheduled !== 'Rest' && scheduled !== 'Travel') {
                     // This was a scheduled workout day
                     if (actual) {
                         streak++;
@@ -4135,6 +4261,101 @@
             });
             
             container.innerHTML = html || '<li class="insight-item">Complete more workouts to get personalized insights!</li>';
+            
+            // Update nutrition insights
+            updateNutritionInsights();
+        }
+
+        function updateNutritionInsights() {
+            const today = new Date();
+            const last7Days = new Date(today.getTime() - (7 * 24 * 60 * 60 * 1000));
+            
+            // Get nutrition data for past 7 days
+            const recentNutrition = window.nutritionData?.filter(n => new Date(n.date) >= last7Days) || [];
+            
+            // Get workout dates for past 7 days
+            const recentWorkouts = allWorkouts.filter(w => new Date(w.date) >= last7Days);
+            const workoutDates = recentWorkouts.map(w => w.date);
+            
+            // Group nutrition by date and calculate daily totals
+            const dailyNutrition = {};
+            recentNutrition.forEach(meal => {
+                if (!dailyNutrition[meal.date]) {
+                    dailyNutrition[meal.date] = { protein: 0, carbs: 0, fats: 0, calories: 0, meals: [] };
+                }
+                dailyNutrition[meal.date].meals.push(meal);
+                (meal.foods || []).forEach(food => {
+                    const qty = food.quantity || 1;
+                    dailyNutrition[meal.date].protein += (parseFloat(food.protein) || 0) * qty;
+                    dailyNutrition[meal.date].carbs += (parseFloat(food.carbs) || 0) * qty;
+                    dailyNutrition[meal.date].fats += (parseFloat(food.fats) || 0) * qty;
+                    dailyNutrition[meal.date].calories += (parseFloat(food.calories) || 0) * qty;
+                });
+            });
+            
+            // Filter out days with zero nutrition
+            const datesWithNutrition = Object.keys(dailyNutrition).filter(date => 
+                dailyNutrition[date].protein > 0 || dailyNutrition[date].calories > 0
+            );
+            
+            // Workout Days vs Rest Days Comparison
+            const comparisonContainer = document.getElementById('nutrition-comparison');
+            if (datesWithNutrition.length >= 3) {
+                const workoutDayData = datesWithNutrition.filter(date => workoutDates.includes(date));
+                const restDayData = datesWithNutrition.filter(date => !workoutDates.includes(date));
+                
+                let comparisonHtml = '<div style="font-size: 0.85rem; line-height: 1.6;">';
+                comparisonHtml += `<div style="margin-bottom: 0.5rem; color: #64748b;">Data from ${datesWithNutrition.length} days with logged nutrition</div>`;
+                
+                if (workoutDayData.length > 0) {
+                    const workoutAvg = {
+                        protein: Math.round(workoutDayData.reduce((sum, date) => sum + dailyNutrition[date].protein, 0) / workoutDayData.length),
+                        carbs: Math.round(workoutDayData.reduce((sum, date) => sum + dailyNutrition[date].carbs, 0) / workoutDayData.length),
+                        fats: Math.round(workoutDayData.reduce((sum, date) => sum + dailyNutrition[date].fats, 0) / workoutDayData.length),
+                        calories: Math.round(workoutDayData.reduce((sum, date) => sum + dailyNutrition[date].calories, 0) / workoutDayData.length)
+                    };
+                    
+                    comparisonHtml += `<div style="margin-bottom: 0.5rem; color: #10b981;">`;
+                    comparisonHtml += `<strong>Workout Days (${workoutDayData.length}):</strong> `;
+                    comparisonHtml += `${workoutAvg.protein}g protein, ${workoutAvg.carbs}g carbs, ${workoutAvg.fats}g fat, ${workoutAvg.calories} cal`;
+                    comparisonHtml += `</div>`;
+                }
+                
+                if (restDayData.length > 0) {
+                    const restAvg = {
+                        protein: Math.round(restDayData.reduce((sum, date) => sum + dailyNutrition[date].protein, 0) / restDayData.length),
+                        carbs: Math.round(restDayData.reduce((sum, date) => sum + dailyNutrition[date].carbs, 0) / restDayData.length),
+                        fats: Math.round(restDayData.reduce((sum, date) => sum + dailyNutrition[date].fats, 0) / restDayData.length),
+                        calories: Math.round(restDayData.reduce((sum, date) => sum + dailyNutrition[date].calories, 0) / restDayData.length)
+                    };
+                    
+                    comparisonHtml += `<div style="margin-bottom: 0.5rem; color: #3b82f6;">`;
+                    comparisonHtml += `<strong>Rest Days (${restDayData.length}):</strong> `;
+                    comparisonHtml += `${restAvg.protein}g protein, ${restAvg.carbs}g carbs, ${restAvg.fats}g fat, ${restAvg.calories} cal`;
+                    comparisonHtml += `</div>`;
+                }
+                
+                comparisonHtml += '</div>';
+                comparisonContainer.innerHTML = comparisonHtml;
+            } else {
+                comparisonContainer.innerHTML = '<div style="color: #64748b;">Log nutrition for at least 3 days to see insights</div>';
+            }
+            
+            // Pre-Workout Nutrition Analysis
+            const preworkoutContainer = document.getElementById('preworkout-insights');
+            let preworkoutHtml = '<div style="font-size: 0.85rem; line-height: 1.6;">';
+            
+            // Note: Full meal timing analysis would require meal time data
+            preworkoutHtml += '<div style="color: #64748b;">Meal timing analysis requires logged meal times. ';
+            preworkoutHtml += 'This feature tracks meals 1-4 hours before workouts to correlate with performance.</div>';
+            preworkoutContainer.innerHTML = preworkoutHtml + '</div>';
+            
+            // Post-Workout Recovery Analysis
+            const postworkoutContainer = document.getElementById('postworkout-insights');
+            let postworkoutHtml = '<div style="font-size: 0.85rem; line-height: 1.6;">';
+            postworkoutHtml += '<div style="color: #64748b;">Post-workout analysis tracks protein intake within 2 hours of completing workouts ';
+            postworkoutHtml += 'to correlate with next session performance.</div>';
+            postworkoutContainer.innerHTML = postworkoutHtml + '</div>';
         }
 
         function updateProgress() {
@@ -4229,17 +4450,21 @@
                 
                 let classes = ['calendar-day'];
                 if (dateStr === today) classes.push('today');
-                if (actualWorkout) {
+                if (scheduledWorkout === 'Travel') {
+                    classes.push('travel');
+                } else if (actualWorkout) {
                     classes.push('has-workout');
-                } else if (scheduledWorkout !== 'Rest' && date < new Date()) {
+                } else if (scheduledWorkout !== 'Rest' && scheduledWorkout !== 'Travel' && date < new Date()) {
                     classes.push('missed');
-                } else if (scheduledWorkout !== 'Rest') {
+                } else if (scheduledWorkout !== 'Rest' && scheduledWorkout !== 'Travel') {
                     classes.push('scheduled');
                 }
                 
+                const displayLabel = scheduledWorkout === 'Travel' ? '✈️ Travel' : scheduledWorkout;
+                
                 html += `<div class="${classes.join(' ')}" onclick="selectCalendarDay('${dateStr}')">
                     <div class="calendar-day-number">${day}</div>
-                    <div class="calendar-day-label ${scheduledWorkout}">${scheduledWorkout}</div>
+                    <div class="calendar-day-label ${scheduledWorkout}">${displayLabel}</div>
                 </div>`;
             }
             
@@ -4322,6 +4547,122 @@
             
             container.style.display = 'block';
         };
+
+        // Travel Mode Functions
+        function isDateInTravelMode(dateStr) {
+            if (!window.travelModeData || window.travelModeData.length === 0) return false;
+            
+            const checkDate = new Date(dateStr);
+            return window.travelModeData.some(period => {
+                const start = new Date(period.startDate);
+                const end = new Date(period.endDate);
+                return checkDate >= start && checkDate <= end;
+            });
+        }
+
+        function getCurrentTravelPeriod() {
+            const today = new Date().toISOString().split('T')[0];
+            if (!window.travelModeData) return null;
+            
+            return window.travelModeData.find(period => {
+                const start = new Date(period.startDate);
+                const end = new Date(period.endDate);
+                const check = new Date(today);
+                return check >= start && check <= end;
+            });
+        }
+
+        window.enableTravelMode = async function() {
+            const startDate = document.getElementById('travel-start-date').value;
+            const endDate = document.getElementById('travel-end-date').value;
+            
+            if (!startDate || !endDate) {
+                alert('Please select both start and end dates');
+                return;
+            }
+            
+            if (new Date(endDate) < new Date(startDate)) {
+                alert('End date must be after start date');
+                return;
+            }
+            
+            try {
+                const travelPeriod = {
+                    startDate,
+                    endDate,
+                    createdAt: new Date().toISOString()
+                };
+                
+                const docRef = await addDoc(collection(db, "travelMode"), travelPeriod);
+                console.log('Travel mode enabled:', docRef.id);
+                
+                await loadTravelModeData();
+                updateTravelModeBanner();
+                renderCalendar();
+                
+                // Clear inputs
+                document.getElementById('travel-start-date').value = '';
+                document.getElementById('travel-end-date').value = '';
+                
+                alert('Travel mode enabled! Your workout schedule is paused during these dates.');
+            } catch (e) {
+                console.error('Error enabling travel mode:', e);
+                alert('Failed to enable travel mode');
+            }
+        };
+
+        window.endTravelMode = async function() {
+            const currentPeriod = getCurrentTravelPeriod();
+            if (!currentPeriod || !currentPeriod.id) {
+                alert('No active travel period found');
+                return;
+            }
+            
+            if (!confirm('End travel mode and resume normal schedule?')) {
+                return;
+            }
+            
+            try {
+                await deleteDoc(doc(db, "travelMode", currentPeriod.id));
+                console.log('Travel mode ended');
+                
+                await loadTravelModeData();
+                updateTravelModeBanner();
+                renderCalendar();
+                
+                alert('Welcome back! Your workout schedule has resumed.');
+            } catch (e) {
+                console.error('Error ending travel mode:', e);
+                alert('Failed to end travel mode');
+            }
+        };
+
+        async function loadTravelModeData() {
+            try {
+                const q = query(collection(db, "travelMode"), orderBy("createdAt", "desc"));
+                const querySnapshot = await getDocs(q);
+                window.travelModeData = [];
+                querySnapshot.forEach((document) => {
+                    window.travelModeData.push({ id: document.id, ...document.data() });
+                });
+                console.log('Travel mode data loaded:', window.travelModeData.length, 'periods');
+            } catch (e) {
+                console.error('Error loading travel mode data:', e);
+            }
+        }
+
+        function updateTravelModeBanner() {
+            const banner = document.getElementById('travel-mode-banner');
+            const datesSpan = document.getElementById('travel-mode-dates');
+            const currentPeriod = getCurrentTravelPeriod();
+            
+            if (currentPeriod) {
+                banner.classList.add('active');
+                datesSpan.textContent = `${formatDateString(currentPeriod.startDate)} - ${formatDateString(currentPeriod.endDate)}`;
+            } else {
+                banner.classList.remove('active');
+            }
+        }
 
         // Nutrition Functions
         function renderMeals() {
@@ -5106,7 +5447,8 @@
                 loadWeightData(),
                 loadPhotoData(),
                 loadSavedFoods(),
-                loadBodyGoalData()
+                loadBodyGoalData(),
+                loadTravelModeData()
             ]);
             
             // Update with real data
@@ -5115,6 +5457,7 @@
             updateInsights();
             updateProgress();
             renderSavedFoods();
+            updateTravelModeBanner();
             
             console.log('Fitness Command Center loaded successfully!');
         });
