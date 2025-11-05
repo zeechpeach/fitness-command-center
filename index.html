@@ -2658,7 +2658,17 @@
         }
 
         // Workout Schedule Cycle: upper/lower/rest/push/pull/legs/rest
-        const workoutSchedule = ['Upper', 'Lower', 'Rest', 'Push', 'Pull', 'Legs', 'Rest'];
+        // Workout cycle: 6-day repeating cycle
+        const workoutSchedule = ['Upper', 'Lower', 'Rest', 'Push', 'Pull', 'Legs'];
+        
+        // Timezone configuration
+        let userTimezone = 'America/Los_Angeles'; // Default fallback to PST
+        try {
+            userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Los_Angeles';
+        } catch (e) {
+            console.warn('Could not detect timezone, using default PST:', e);
+        }
+        console.log('Using timezone:', userTimezone);
         
         function getScheduledWorkout(date) {
             const queryDate = new Date(date + 'T00:00:00.000Z');
@@ -2677,7 +2687,7 @@
                 // Find the most recent completed workout
                 const sortedWorkouts = allWorkouts
                     .filter(w => new Date(w.date + 'T00:00:00.000Z') < todayUTC)
-                    .sort((a, b) => new Date(b.date + 'T00:00:00.000Z') - new Date(a.date + 'T00:00:00.000Z'));
+                    .sort((a, b) => new Date(b.date + 'T00:00:00.000Z') - new Date(a.date + 'T00:00:00.000Z()));
                 
                 if (sortedWorkouts.length > 0) {
                     const mostRecent = sortedWorkouts[0];
@@ -2690,14 +2700,14 @@
                     // Calculate days forward from the most recent workout
                     const daysDiff = Math.floor((queryDate - mostRecentDate) / (1000 * 60 * 60 * 24));
                     
-                    // Project forward in the cycle
-                    const scheduleIndex = (lastIndex + daysDiff) % 7;
+                    // Project forward in the 6-day cycle
+                    const scheduleIndex = (lastIndex + daysDiff) % workoutSchedule.length;
                     return workoutSchedule[scheduleIndex];
                 } else {
                     // No workouts yet, use default schedule from reference date
                     const referenceDate = new Date('2024-01-01T00:00:00.000Z');
                     const daysDiff = Math.floor((queryDate - referenceDate) / (1000 * 60 * 60 * 24));
-                    const scheduleIndex = ((daysDiff % 7) + 7) % 7;
+                    const scheduleIndex = ((daysDiff % workoutSchedule.length) + workoutSchedule.length) % workoutSchedule.length;
                     return workoutSchedule[scheduleIndex];
                 }
             }
@@ -2706,7 +2716,7 @@
             // This allows showing "missed" workouts in the calendar
             const referenceDate = new Date('2024-01-01T00:00:00.000Z');
             const daysDiff = Math.floor((queryDate - referenceDate) / (1000 * 60 * 60 * 24));
-            const scheduleIndex = ((daysDiff % 7) + 7) % 7;
+            const scheduleIndex = ((daysDiff % workoutSchedule.length) + workoutSchedule.length) % workoutSchedule.length;
             return workoutSchedule[scheduleIndex];
         }
 
@@ -2768,21 +2778,62 @@
         function calculateWorkoutStreak() {
             if (allWorkouts.length === 0) return 0;
             
-            const sortedWorkouts = allWorkouts.sort((a, b) => new Date(b.date) - new Date(a.date));
-            let streak = 1;
-            let currentDate = new Date(sortedWorkouts[0].date);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
             
-            for (let i = 1; i < sortedWorkouts.length; i++) {
-                const workoutDate = new Date(sortedWorkouts[i].date);
-                const daysDiff = Math.floor((currentDate - workoutDate) / (1000 * 60 * 60 * 24));
+            // Sort workouts by date (most recent first)
+            const sortedWorkouts = allWorkouts.sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            // Check if the most recent workout is within the last scheduled workout day
+            const mostRecentWorkout = sortedWorkouts[0];
+            const mostRecentDate = new Date(mostRecentWorkout.date);
+            mostRecentDate.setHours(0, 0, 0, 0);
+            
+            // Calculate days since last workout
+            const daysSinceLastWorkout = Math.floor((today - mostRecentDate) / (1000 * 60 * 60 * 24));
+            
+            // Check if there's a missed workout (excluding rest days)
+            let hasMissedWorkout = false;
+            for (let i = 0; i < daysSinceLastWorkout; i++) {
+                const checkDate = new Date(today);
+                checkDate.setDate(checkDate.getDate() - i - 1);
+                const dateStr = checkDate.toISOString().split('T')[0];
+                const scheduled = getScheduledWorkout(dateStr);
+                const actual = getWorkoutForDate(dateStr);
                 
-                // Allow 1-2 day gaps (normal rest days in training program)
-                if (daysDiff <= 2) {
-                    streak++;
-                    currentDate = workoutDate;
-                } else {
+                if (scheduled !== 'Rest' && !actual) {
+                    hasMissedWorkout = true;
                     break;
                 }
+            }
+            
+            // If there's a missed workout day, streak is broken
+            if (hasMissedWorkout) {
+                return 0;
+            }
+            
+            // Count consecutive workouts (not days, but completed scheduled workout days)
+            let streak = 0;
+            let checkDate = new Date(today);
+            checkDate.setHours(0, 0, 0, 0);
+            
+            // Go backwards day by day and check for completed scheduled workouts
+            for (let daysBack = 0; daysBack < 365; daysBack++) {
+                const dateStr = checkDate.toISOString().split('T')[0];
+                const scheduled = getScheduledWorkout(dateStr);
+                const actual = getWorkoutForDate(dateStr);
+                
+                if (scheduled !== 'Rest') {
+                    // This was a scheduled workout day
+                    if (actual) {
+                        streak++;
+                    } else if (checkDate < today) {
+                        // Missed a past scheduled workout - streak ends
+                        break;
+                    }
+                }
+                
+                checkDate.setDate(checkDate.getDate() - 1);
             }
             
             return streak;
@@ -3313,35 +3364,68 @@
                     }
                 }
                 
-                // 2. Nutrition Adequacy
-                const last14Days = new Date(today.getTime() - (14 * 24 * 60 * 60 * 1000));
-                const recentNutrition = window.nutritionData.filter(n => new Date(n.date) >= last14Days);
+                // 2. Nutrition Adequacy (Past 7 Days)
+                const last7Days = new Date(today.getTime() - (7 * 24 * 60 * 60 * 1000));
+                const recentNutrition = window.nutritionData.filter(n => new Date(n.date) >= last7Days);
                 
-                // Get workout days in last 14 days
+                // Get workout days in last 7 days
                 const recentWorkoutDates = allWorkouts
-                    .filter(w => new Date(w.date) >= last14Days)
+                    .filter(w => new Date(w.date) >= last7Days)
                     .map(w => w.date);
                 const workoutDaysCount = recentWorkoutDates.length;
                 
-                if (recentNutrition.length >= 5 && workoutDaysCount >= 3) {
-                    // Calculate average protein on workout days
-                    const workoutDayNutrition = recentNutrition.filter(n => recentWorkoutDates.includes(n.date));
+                // Group nutrition by date and calculate daily totals
+                const dailyNutrition = {};
+                recentNutrition.forEach(meal => {
+                    if (!dailyNutrition[meal.date]) {
+                        dailyNutrition[meal.date] = { protein: 0, carbs: 0, fats: 0, calories: 0 };
+                    }
+                    (meal.foods || []).forEach(food => {
+                        const qty = food.quantity || 1;
+                        dailyNutrition[meal.date].protein += (parseFloat(food.protein) || 0) * qty;
+                        dailyNutrition[meal.date].carbs += (parseFloat(food.carbs) || 0) * qty;
+                        dailyNutrition[meal.date].fats += (parseFloat(food.fats) || 0) * qty;
+                        dailyNutrition[meal.date].calories += (parseFloat(food.calories) || 0) * qty;
+                    });
+                });
+                
+                // Filter out days with zero nutrition (not logged)
+                const datesWithNutrition = Object.keys(dailyNutrition).filter(date => 
+                    dailyNutrition[date].protein > 0 || dailyNutrition[date].calories > 0
+                );
+                
+                if (datesWithNutrition.length >= 3) {
+                    // Separate workout days and rest days
+                    const workoutDayData = datesWithNutrition.filter(date => recentWorkoutDates.includes(date));
+                    const restDayData = datesWithNutrition.filter(date => !recentWorkoutDates.includes(date));
                     
-                    if (workoutDayNutrition.length > 0) {
-                        const totalProtein = workoutDayNutrition.reduce((sum, meal) => {
-                            return sum + (meal.foods || []).reduce((foodSum, food) => 
-                                foodSum + (parseFloat(food.protein) || 0), 0);
-                        }, 0);
-                        const avgProtein = Math.round(totalProtein / workoutDayNutrition.length);
+                    if (workoutDayData.length > 0) {
+                        const workoutAvgProtein = Math.round(
+                            workoutDayData.reduce((sum, date) => sum + dailyNutrition[date].protein, 0) / workoutDayData.length
+                        );
+                        const workoutAvgCalories = Math.round(
+                            workoutDayData.reduce((sum, date) => sum + dailyNutrition[date].calories, 0) / workoutDayData.length
+                        );
                         
-                        console.log(`Avg protein on workout days: ${avgProtein}g, Workouts/week: ${workoutDaysCount}`);
+                        console.log(`Avg protein on workout days (${workoutDayData.length} days): ${workoutAvgProtein}g`);
                         
-                        if (avgProtein >= 150 && workoutDaysCount >= 4) {
-                            insights.push(`Averaging ${avgProtein}g protein/day with ${workoutDaysCount} workouts/week - optimal for growth`);
-                        } else if (avgProtein < 120 && workoutDaysCount >= 3) {
-                            insights.push(`Only ${avgProtein}g protein on workout days - consider increasing to 0.8-1g per lb bodyweight`);
-                        } else if (avgProtein >= 200) {
-                            insights.push(`Great job hitting ${avgProtein}g+ protein on training days`);
+                        if (workoutAvgProtein >= 150 && workoutDaysCount >= 3) {
+                            insights.push(`Averaging ${workoutAvgProtein}g protein on ${workoutDayData.length} workout days (past 7 days) - excellent for muscle growth`);
+                        } else if (workoutAvgProtein < 120 && workoutDaysCount >= 2) {
+                            insights.push(`Only ${workoutAvgProtein}g protein on workout days (${workoutDayData.length} days tracked) - aim for 0.8-1g per lb bodyweight`);
+                        }
+                    }
+                    
+                    if (restDayData.length > 0 && workoutDayData.length > 0) {
+                        const restAvgProtein = Math.round(
+                            restDayData.reduce((sum, date) => sum + dailyNutrition[date].protein, 0) / restDayData.length
+                        );
+                        const workoutAvgProtein = Math.round(
+                            workoutDayData.reduce((sum, date) => sum + dailyNutrition[date].protein, 0) / workoutDayData.length
+                        );
+                        
+                        if (restAvgProtein < workoutAvgProtein - 30) {
+                            insights.push(`Rest day protein (${restAvgProtein}g avg) is much lower than workout days (${workoutAvgProtein}g) - keep protein consistent for recovery`);
                         }
                     }
                 }
@@ -3382,8 +3466,28 @@
             return insights;
         }
 
-        function getLastWorkoutForDay(day) {
-            return allWorkouts.find(workout => workout.day === day);
+        function getLastWorkoutForDay(day, exerciseApproach = null) {
+            // Filter workouts by day
+            const dayWorkouts = allWorkouts.filter(workout => workout.day === day);
+            
+            if (dayWorkouts.length === 0) return null;
+            
+            // If no specific approach requested, return the most recent workout
+            if (!exerciseApproach) {
+                return dayWorkouts[0];
+            }
+            
+            // Filter by matching approach (standard, heavy, form focus, etc.)
+            const matchingWorkouts = dayWorkouts.filter(workout => {
+                // Check if this workout has exercises with the matching approach
+                const exercises = Object.values(workout.exercises || {});
+                return exercises.some(ex => {
+                    const workoutApproach = ex.approach || 'standard';
+                    return workoutApproach.toLowerCase() === exerciseApproach.toLowerCase();
+                });
+            });
+            
+            return matchingWorkouts.length > 0 ? matchingWorkouts[0] : dayWorkouts[0];
         }
 
         function getPersonalRecords() {
@@ -5278,9 +5382,13 @@
 
                         ${previousExercise && !isStretch && !isRest ? `
                             <div class="previous-session">
-                                <div class="previous-header">Last session (${formatDateString(lastWorkout.date)}):</div>
+                                <div class="previous-header">Last session (${formatDateString(lastWorkout.date)})${lastWorkout.exercises?.[exerciseIndex]?.approach ? ` - ${lastWorkout.exercises[exerciseIndex].approach}` : ''}:</div>
                                 <div class="previous-sets-compact">
-                                    ${previousExercise.sets.filter(set => set.weight || set.reps).map(set => `${set.weight}×${set.reps}`).join(', ')}
+                                    ${previousExercise.sets.filter(set => set.weight || set.reps).map(set => {
+                                        let setStr = `${set.weight}×${set.reps}`;
+                                        if (set.notes) setStr += ` (${set.notes})`;
+                                        return setStr;
+                                    }).join(', ')}
                                 </div>
                             </div>
                         ` : ''}`;
