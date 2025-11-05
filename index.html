@@ -2756,7 +2756,7 @@
         }
 
         // Workout Schedule Cycle: upper/lower/rest/push/pull/legs/rest
-        // Workout cycle: 6-day repeating cycle
+        // Workout cycle: 7-day repeating cycle
         const workoutSchedule = ['Upper', 'Lower', 'Rest', 'Push', 'Pull', 'Legs', 'Rest'];
         
         // Timezone configuration
@@ -2812,7 +2812,7 @@
                         }
                     }
                     
-                    // Project forward in the 6-day cycle
+                    // Project forward in the 7-day cycle
                     const scheduleIndex = (lastIndex + nonTravelDays) % workoutSchedule.length;
                     return workoutSchedule[scheduleIndex];
                 } else {
