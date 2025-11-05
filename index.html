@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Zach's Fitness Command Center</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
     <style>
@@ -2755,8 +2756,8 @@
         }
 
         // Workout Schedule Cycle: upper/lower/rest/push/pull/legs/rest
-        // Workout cycle: 6-day repeating cycle
-        const workoutSchedule = ['Upper', 'Lower', 'Rest', 'Push', 'Pull', 'Legs'];
+        // Workout cycle: 7-day repeating cycle
+        const workoutSchedule = ['Upper', 'Lower', 'Rest', 'Push', 'Pull', 'Legs', 'Rest'];
         
         // Timezone configuration
         let userTimezone = 'America/Los_Angeles'; // Default fallback to PST
@@ -2792,7 +2793,7 @@
                         const workoutDate = new Date(w.date + 'T00:00:00.000Z');
                         return workoutDate < todayUTC && !isDateInTravelMode(w.date);
                     })
-                    .sort((a, b) => new Date(b.date + 'T00:00:00.000Z') - new Date(a.date + 'T00:00:00.000Z()));
+                    .sort((a, b) => new Date(b.date + 'T00:00:00.000Z') - new Date(a.date + 'T00:00:00.000Z'));
                 
                 if (sortedWorkouts.length > 0) {
                     const mostRecent = sortedWorkouts[0];
@@ -2811,7 +2812,7 @@
                         }
                     }
                     
-                    // Project forward in the 6-day cycle
+                    // Project forward in the 7-day cycle
                     const scheduleIndex = (lastIndex + nonTravelDays) % workoutSchedule.length;
                     return workoutSchedule[scheduleIndex];
                 } else {
