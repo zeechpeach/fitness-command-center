@@ -2309,7 +2309,6 @@
         let photoData = [];
         window.photoData = photoData;
         let savedFoods = [];
-        window.savedFoods = savedFoods;
         let travelModeData = [];
         window.travelModeData = travelModeData;
         window.savedFoods = savedFoods;
@@ -5651,13 +5650,15 @@
         function renderWorkout() {
             const container = document.getElementById('exercises-container');
             const exercises = workoutPlans[currentDay];
-            const lastWorkout = getLastWorkoutForDay(currentDay);
             const exerciseProgression = getExerciseProgression();
             
             let html = '';
             
             exercises.forEach((exercise, exerciseIndex) => {
                 const workoutExercise = currentWorkout[exerciseIndex];
+                // Get last workout matching current exercise's approach
+                const currentApproach = workoutExercise.approach || 'standard';
+                const lastWorkout = getLastWorkoutForDay(currentDay, currentApproach);
                 const previousExercise = lastWorkout?.exercises?.[exerciseIndex];
                 
                 // Check if this is a stretch exercise or rest day
@@ -5796,7 +5797,9 @@
         };
 
         window.copyPrevious = function(exerciseIndex, setIndex) {
-            const lastWorkout = getLastWorkoutForDay(currentDay);
+            // Get last workout matching current exercise's approach
+            const currentApproach = currentWorkout[exerciseIndex].approach || 'standard';
+            const lastWorkout = getLastWorkoutForDay(currentDay, currentApproach);
             const previousSet = lastWorkout?.exercises?.[exerciseIndex]?.sets[setIndex];
             
             if (previousSet) {
