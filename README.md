@@ -23,12 +23,15 @@ A comprehensive personal fitness management platform with intelligent workout tr
 - Automatic schedule calculation based on cycle
 
 ### 🍎 Nutrition Tracking
-- Log meals throughout the day
+- Log meals throughout the day with meal type categorization (Breakfast, Lunch, Dinner, Snack)
 - Track macros: Protein, Carbs, Fats, Calories
 - Daily nutrition summaries
 - Date selection to view/edit past nutrition data
 - Multiple meals per day with multiple foods per meal
 - Real-time macro totals
+- Workout day vs rest day nutrition comparison (past 7 days)
+- Automatic exclusion of days without logged nutrition
+- Nutrition insights showing average macros on workout and rest days
 
 ### ⚖️ Body Metrics
 - Daily weight logging
@@ -40,19 +43,21 @@ A comprehensive personal fitness management platform with intelligent workout tr
 ### 📊 Analytics & Insights
 - Total volume tracking
 - Personal record monitoring
-- Workout streak calculation
+- Workout streak calculation (excludes rest days and travel days)
 - Overload score with detailed breakdown
 - Volume trends by workout type
 - Strength progression charts
 - Muscle group balance analysis
 - Rep range analysis
 - PR timeline visualization
-- AI-generated workout insights
+- AI-generated workout insights based on 7-day windows
 - Plateau detection and suggestions
+- Nutrition analytics with workout/rest day comparisons
+- Session comparison filtered by exercise type (standard, heavy, form focus)
 
 ## Workout Schedule Cycle
 
-The application follows a 7-day repeating workout schedule:
+The application follows a 6-day repeating workout schedule:
 
 1. **Upper** - Upper body focus (chest, back, shoulders, arms)
 2. **Lower** - Lower body focus (legs, glutes)
@@ -60,9 +65,8 @@ The application follows a 7-day repeating workout schedule:
 4. **Push** - Push muscles (chest, shoulders, triceps)
 5. **Pull** - Pull muscles (back, biceps)
 6. **Legs** - Legs focus (quads, hamstrings, calves)
-7. **Rest** - Recovery day
 
-The cycle automatically repeats, and the calendar shows which workout is scheduled for each day.
+The cycle automatically repeats, and the calendar shows which workout is scheduled for each day. When a workout is missed, the schedule continues from the last completed workout, ensuring the cycle stays aligned with your actual training.
 
 ## Exercise Approach Variations
 
@@ -75,6 +79,20 @@ For each exercise, you can select different approaches without affecting progres
 
 These variations are tagged and saved with your workout data for future reference.
 
+## Travel Mode
+
+Travel Mode allows you to pause your workout schedule when traveling without breaking your streak or affecting discipline scores:
+
+- **Set Travel Dates**: Select start and end dates in the Calendar tab
+- **Schedule Pauses**: Workout cycle pauses during travel and resumes exactly where it left off
+- **No Penalty**: Travel days don't count as missed workouts or break your streak
+- **Visual Indication**: Calendar shows travel days with a distinctive ✈️ icon and styling
+- **Easy Management**: End travel mode early with the "End Travel Mode" button
+
+## Timezone Support
+
+The application automatically detects your browser/system timezone and applies it consistently across all date and time displays. If detection fails, it defaults to America/Los_Angeles (PST).
+
 ## Data Storage
 
 All data is stored in Firebase Firestore with the following collections:
@@ -83,6 +101,7 @@ All data is stored in Firebase Firestore with the following collections:
 - **nutrition**: Meals, foods, macros, calories
 - **weight**: Daily weight entries
 - **photos**: Progress photos with dates
+- **travelMode**: Travel period date ranges
 
 ## Usage
 
