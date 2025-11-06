@@ -48,9 +48,15 @@ After this fix, all future workouts will log with the correct LA timezone.
 **Workflow Now:**
 1. Click "Add Meal" → Select meal type → Meal is created and set as editing context
 2. Click "Add Food" on specific meal → Food row appears → Meal is set as editing context
-3. Use Quick Add → Food adds to the currently editing meal (not time-based)
-4. Edit portions/macros → Changes tracked locally
-5. Click "Save Changes" button → Confirmation alert → Data saved to Firebase
+3. **Option A - Manual Entry:** Fill in food details → Edit portions/macros → Click "💾 Save Changes" button on meal → Confirmation alert → Data saved to Firebase
+4. **Option B - Quick Add:** Go to Saved Foods tab → Click "Quick Add" on a saved food → Enter quantity → Food is added and auto-saved to the currently editing meal
+5. The "💾 Save" button next to each food row is for saving that food to your library for future quick access (different from saving meal changes)
+
+**Key Workflow Improvements:**
+- Manual food edits now require explicit "Save Changes" action (no auto-save) with confirmation
+- Quick Add is a complete action that auto-saves immediately (as it should)
+- Foods always add to the meal that has "Add Food" clicked, not based on time
+- Clear visual indication when meal has unsaved changes
 
 ### 3. Workout Calendar Logic ✅
 
