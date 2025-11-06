@@ -5159,12 +5159,16 @@
                     lastUsed: food.lastUsed
                 });
                 
+                // Clear unsaved changes flag since we just saved
+                targetMeal.hasUnsavedChanges = false;
+                
                 renderMeals();
                 renderSavedFoods();
             } catch (e) {
                 console.error("Error quick adding food:", e);
                 alert('Error adding food to meal. Please try again.');
             }
+        };
         };
 
         window.deleteSavedFood = async function(foodId) {
