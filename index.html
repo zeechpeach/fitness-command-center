@@ -2305,6 +2305,7 @@
         let nutritionData = [];
         window.nutritionData = nutritionData;
         let currentNutritionDate = new Date().toISOString().split('T')[0];
+        let currentEditingMealId = null; // Track which meal is currently being edited
         let weightData = [];
         window.weightData = weightData;
         let photoData = [];
@@ -2759,20 +2760,53 @@
         // Workout cycle: 7-day repeating cycle
         const workoutSchedule = ['Upper', 'Lower', 'Rest', 'Push', 'Pull', 'Legs', 'Rest'];
         
-        // Timezone configuration
-        let userTimezone = 'America/Los_Angeles'; // Default fallback to PST
+        // Timezone configuration - default to LA timezone, but respect device timezone when traveling
+        const DEFAULT_TIMEZONE = 'America/Los_Angeles';
+        let userTimezone = DEFAULT_TIMEZONE;
         try {
-            userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Los_Angeles';
+            const detectedTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            // Use detected timezone if different from LA (indicates user is traveling)
+            if (detectedTimezone && detectedTimezone !== DEFAULT_TIMEZONE) {
+                userTimezone = detectedTimezone;
+                console.log('User appears to be traveling, using detected timezone:', userTimezone);
+            } else {
+                userTimezone = DEFAULT_TIMEZONE;
+            }
         } catch (e) {
             console.warn('Could not detect timezone, using default PST:', e);
         }
         console.log('Using timezone:', userTimezone);
         
+        // Timezone-aware date helper functions
+        function getTodayDateString() {
+            // Get current date in the user's timezone (LA or device timezone)
+            const now = new Date();
+            const formatter = new Intl.DateTimeFormat('en-CA', {
+                timeZone: userTimezone,
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            });
+            return formatter.format(now); // Returns YYYY-MM-DD format
+        }
+        
+        function getCurrentTimeString() {
+            // Get current time in user's timezone
+            const now = new Date();
+            const formatter = new Intl.DateTimeFormat('en-US', {
+                timeZone: userTimezone,
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            });
+            return formatter.format(now);
+        }
+        
         function getScheduledWorkout(date) {
             const queryDate = new Date(date + 'T00:00:00.000Z');
             const actualWorkout = getWorkoutForDate(date);
             
-            // Check if date is in travel mode
+            // Check if date is in travel mode - show scheduled workout but don't penalize if missed
             if (isDateInTravelMode(date)) {
                 return 'Travel';
             }
@@ -2782,66 +2816,52 @@
                 return actualWorkout.day;
             }
             
-            // For future dates, project from the most recent completed workout
-            const today = new Date();
-            const todayUTC = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()));
+            // For scheduling, find the most recent completed NON-REST workout
+            // This ensures the sequence progresses based on actual training, not calendar days
+            const todayStr = getTodayDateString();
+            const todayDate = new Date(todayStr + 'T00:00:00.000Z');
             
-            if (queryDate >= todayUTC) {
-                // Find the most recent completed workout (excluding travel days)
-                const sortedWorkouts = allWorkouts
-                    .filter(w => {
-                        const workoutDate = new Date(w.date + 'T00:00:00.000Z');
-                        return workoutDate < todayUTC && !isDateInTravelMode(w.date);
-                    })
-                    .sort((a, b) => new Date(b.date + 'T00:00:00.000Z') - new Date(a.date + 'T00:00:00.000Z'));
+            // Find the most recent completed NON-REST workout (excluding travel days and rest days)
+            const completedWorkouts = allWorkouts
+                .filter(w => {
+                    const workoutDate = new Date(w.date + 'T00:00:00.000Z');
+                    return !isDateInTravelMode(w.date) && w.day !== 'Rest';
+                })
+                .sort((a, b) => new Date(b.date + 'T00:00:00.000Z') - new Date(a.date + 'T00:00:00.000Z'));
+            
+            if (completedWorkouts.length > 0) {
+                const mostRecent = completedWorkouts[0];
+                const mostRecentDate = new Date(mostRecent.date + 'T00:00:00.000Z');
+                const mostRecentType = mostRecent.day;
                 
-                if (sortedWorkouts.length > 0) {
-                    const mostRecent = sortedWorkouts[0];
-                    const mostRecentDate = new Date(mostRecent.date + 'T00:00:00.000Z');
-                    const mostRecentType = mostRecent.day;
-                    
-                    // Find the index of the most recent workout type in the schedule
-                    const lastIndex = workoutSchedule.indexOf(mostRecentType);
-                    
-                    // Calculate non-travel days forward from the most recent workout
-                    let nonTravelDays = 0;
-                    for (let d = new Date(mostRecentDate); d < queryDate; d.setDate(d.getDate() + 1)) {
-                        const checkDateStr = d.toISOString().split('T')[0];
-                        if (!isDateInTravelMode(checkDateStr)) {
-                            nonTravelDays++;
-                        }
+                // Find the index of the most recent workout type in the schedule
+                const lastIndex = workoutSchedule.indexOf(mostRecentType);
+                
+                // Count calendar days forward from the most recent workout (excluding travel days)
+                let daysSince = 0;
+                for (let d = new Date(mostRecentDate); d < queryDate; d.setDate(d.getDate() + 1)) {
+                    const checkDateStr = d.toISOString().split('T')[0];
+                    if (!isDateInTravelMode(checkDateStr)) {
+                        daysSince++;
                     }
-                    
-                    // Project forward in the 7-day cycle
-                    const scheduleIndex = (lastIndex + nonTravelDays) % workoutSchedule.length;
-                    return workoutSchedule[scheduleIndex];
-                } else {
-                    // No workouts yet, use default schedule from reference date
-                    const referenceDate = new Date('2024-01-01T00:00:00.000Z');
-                    let nonTravelDays = 0;
-                    for (let d = new Date(referenceDate); d < queryDate; d.setDate(d.getDate() + 1)) {
-                        const checkDateStr = d.toISOString().split('T')[0];
-                        if (!isDateInTravelMode(checkDateStr)) {
-                            nonTravelDays++;
-                        }
+                }
+                
+                // Project forward in the 7-day cycle
+                const scheduleIndex = (lastIndex + daysSince) % workoutSchedule.length;
+                return workoutSchedule[scheduleIndex];
+            } else {
+                // No workouts yet, use default schedule from reference date
+                const referenceDate = new Date('2024-01-01T00:00:00.000Z');
+                let nonTravelDays = 0;
+                for (let d = new Date(referenceDate); d < queryDate; d.setDate(d.getDate() + 1)) {
+                    const checkDateStr = d.toISOString().split('T')[0];
+                    if (!isDateInTravelMode(checkDateStr)) {
+                        nonTravelDays++;
                     }
-                    const scheduleIndex = ((nonTravelDays % workoutSchedule.length) + workoutSchedule.length) % workoutSchedule.length;
-                    return workoutSchedule[scheduleIndex];
                 }
+                const scheduleIndex = ((nonTravelDays % workoutSchedule.length) + workoutSchedule.length) % workoutSchedule.length;
+                return workoutSchedule[scheduleIndex];
             }
-            
-            // For past dates without an actual workout, return empty or use default schedule
-            // This allows showing "missed" workouts in the calendar
-            const referenceDate = new Date('2024-01-01T00:00:00.000Z');
-            let nonTravelDays = 0;
-            for (let d = new Date(referenceDate); d < queryDate; d.setDate(d.getDate() + 1)) {
-                const checkDateStr = d.toISOString().split('T')[0];
-                if (!isDateInTravelMode(checkDateStr)) {
-                    nonTravelDays++;
-                }
-            }
-            const scheduleIndex = ((nonTravelDays % workoutSchedule.length) + workoutSchedule.length) % workoutSchedule.length;
-            return workoutSchedule[scheduleIndex];
         }
 
         function getWorkoutForDate(dateString) {
@@ -4442,7 +4462,7 @@
             }
             
             // Add days of current month
-            const today = new Date().toISOString().split('T')[0];
+            const today = getTodayDateString();
             for (let day = 1; day <= daysInMonth; day++) {
                 const date = new Date(year, month, day);
                 const dateStr = date.toISOString().split('T')[0];
@@ -4736,7 +4756,10 @@
                 });
                 
                 html += `</div>
-                    <button class="btn btn-add" onclick="addFoodToMeal('${meal.id}')" style="margin-top: 0.5rem;">+ Add Food</button>
+                    <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem; flex-wrap: wrap;">
+                        <button class="btn btn-add" onclick="addFoodToMeal('${meal.id}')">+ Add Food</button>
+                        ${meal.hasUnsavedChanges ? `<button class="btn" style="background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3);" onclick="saveMealChanges('${meal.id}')">💾 Save Changes</button>` : ''}
+                    </div>
                 </div>`;
             });
             
@@ -4782,13 +4805,15 @@
             const mealData = {
                 date: currentNutritionDate,
                 mealType: mealType,
-                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                time: getCurrentTimeString(),
                 foods: []
             };
             
             try {
                 const docRef = await addDoc(collection(db, "nutrition"), mealData);
-                nutritionData.unshift({ id: docRef.id, ...mealData });
+                const newMeal = { id: docRef.id, ...mealData };
+                nutritionData.unshift(newMeal);
+                currentEditingMealId = newMeal.id; // Set context to the newly created meal
                 renderMeals();
             } catch (e) {
                 console.error("Error adding meal:", e);
@@ -4804,6 +4829,7 @@
             const meal = nutritionData.find(m => m.id === mealId);
             if (!meal.foods) meal.foods = [];
             meal.foods.push({ name: '', protein: 0, carbs: 0, fats: 0, calories: 0, quantity: 1 });
+            currentEditingMealId = mealId; // Set the context to this meal
             renderMeals();
         };
 
@@ -4829,20 +4855,25 @@
             const meal = nutritionData.find(m => m.id === mealId);
             if (meal && meal.foods && meal.foods[foodIndex]) {
                 meal.foods[foodIndex][field] = value;
+                meal.hasUnsavedChanges = true; // Mark meal as having unsaved changes
                 updateNutritionSummary();
-                
-                // Auto-save to Firebase with debouncing
-                if (meal.saveTimeout) {
-                    clearTimeout(meal.saveTimeout);
-                }
-                meal.saveTimeout = setTimeout(async () => {
-                    try {
-                        const docRef = doc(db, "nutrition", mealId);
-                        await updateDoc(docRef, { foods: meal.foods });
-                    } catch (e) {
-                        console.error("Error updating meal:", e);
-                    }
-                }, 1000); // Wait 1 second after last edit before saving
+                renderMeals(); // Re-render to show save button
+            }
+        };
+        
+        window.saveMealChanges = async function(mealId) {
+            const meal = nutritionData.find(m => m.id === mealId);
+            if (!meal) return;
+            
+            try {
+                const docRef = doc(db, "nutrition", mealId);
+                await updateDoc(docRef, { foods: meal.foods });
+                meal.hasUnsavedChanges = false;
+                alert('✅ Meal saved! Changes have been updated to the database and counted in daily calories.');
+                renderMeals();
+            } catch (e) {
+                console.error("Error saving meal:", e);
+                alert('❌ Error saving meal. Please try again.');
             }
         };
 
@@ -5056,39 +5087,46 @@
                 return;
             }
             
-            // Determine which meal type to add to based on current time
-            const currentHour = new Date().getHours();
-            let targetMealType;
-            if (currentHour < 11) {
-                targetMealType = 'Breakfast';
-            } else if (currentHour < 15) {
-                targetMealType = 'Lunch';
-            } else if (currentHour < 20) {
-                targetMealType = 'Dinner';
-            } else {
-                targetMealType = 'Snack';
-            }
+            let targetMeal;
             
-            // Find existing meal of this type for today, or create one
-            let meals = nutritionData.filter(n => n.date === currentNutritionDate);
-            let targetMeal = meals.find(m => m.mealType === targetMealType);
-            
-            if (!targetMeal) {
-                // Create a new meal of the appropriate type
-                const mealData = {
-                    date: currentNutritionDate,
-                    mealType: targetMealType,
-                    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                    foods: []
-                };
+            // If a meal is currently being edited, add food to that meal
+            if (currentEditingMealId) {
+                targetMeal = nutritionData.find(m => m.id === currentEditingMealId);
                 
-                try {
-                    const docRef = await addDoc(collection(db, "nutrition"), mealData);
-                    targetMeal = { id: docRef.id, ...mealData };
-                    nutritionData.unshift(targetMeal);
-                } catch (e) {
-                    console.error("Error creating meal:", e);
-                    alert('Error creating meal');
+                if (!targetMeal) {
+                    alert('Could not find the meal you were editing. Please try again.');
+                    currentEditingMealId = null;
+                    return;
+                }
+            } else {
+                // No meal is being edited, prompt user to select or create a meal
+                const meals = nutritionData.filter(n => n.date === currentNutritionDate);
+                
+                if (meals.length === 0) {
+                    // No meals exist for today, create one
+                    const mealType = prompt('Enter meal type (Breakfast, Lunch, Dinner, or Snack):', 'Lunch');
+                    if (!mealType) return; // User cancelled
+                    
+                    const mealData = {
+                        date: currentNutritionDate,
+                        mealType: mealType,
+                        time: getCurrentTimeString(),
+                        foods: []
+                    };
+                    
+                    try {
+                        const docRef = await addDoc(collection(db, "nutrition"), mealData);
+                        targetMeal = { id: docRef.id, ...mealData };
+                        nutritionData.unshift(targetMeal);
+                        currentEditingMealId = targetMeal.id;
+                    } catch (e) {
+                        console.error("Error creating meal:", e);
+                        alert('Error creating meal');
+                        return;
+                    }
+                } else {
+                    // Meals exist, ask which one to add to
+                    alert('Please click "Add Food" on the specific meal you want to add to, then use Quick Add.');
                     return;
                 }
             }
@@ -5121,12 +5159,16 @@
                     lastUsed: food.lastUsed
                 });
                 
+                // Clear unsaved changes flag since we just saved
+                targetMeal.hasUnsavedChanges = false;
+                
                 renderMeals();
                 renderSavedFoods();
             } catch (e) {
                 console.error("Error quick adding food:", e);
                 alert('Error adding food to meal. Please try again.');
             }
+        };
         };
 
         window.deleteSavedFood = async function(foodId) {
@@ -5437,6 +5479,9 @@
         document.addEventListener('DOMContentLoaded', async function() {
             console.log('Initializing Fitness Command Center...');
             
+            // Initialize timezone-aware current nutrition date
+            currentNutritionDate = getTodayDateString();
+            
             // Set up UI immediately
             setupEventListeners();
             initializeWorkout();
@@ -5543,6 +5588,7 @@
             nutritionDateInput.value = currentNutritionDate;
             nutritionDateInput.addEventListener('change', (e) => {
                 currentNutritionDate = e.target.value;
+                currentEditingMealId = null; // Clear meal context when changing dates
                 renderMeals();
             });
             
@@ -5836,7 +5882,7 @@
         window.setWorkoutDate = function() {
             const dateInput = document.getElementById('workout-date-input');
             const logBtn = document.getElementById('log-past-workout-btn');
-            const today = new Date().toISOString().split('T')[0];
+            const today = getTodayDateString();
             
             if (dateInput.value && dateInput.value !== today) {
                 logBtn.textContent = '📅 For ' + formatDateString(dateInput.value);
@@ -5851,7 +5897,7 @@
 
         async function completeWorkout() {
             const dateInput = document.getElementById('workout-date-input');
-            const today = new Date().toISOString().split('T')[0];
+            const today = getTodayDateString();
             const selectedDate = dateInput.value && dateInput.value !== today ? dateInput.value : today;
             
             const workoutData = {
