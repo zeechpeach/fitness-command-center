@@ -2760,6 +2760,10 @@
         // Workout cycle: 7-day repeating cycle
         const workoutSchedule = ['Upper', 'Lower', 'Rest', 'Push', 'Pull', 'Legs', 'Rest'];
         
+        // Configuration for schedule calculation
+        const MIN_SCHEDULE_DAYS = 14; // Minimum days to schedule ahead for missed workout queue
+        const FUTURE_SCHEDULE_BUFFER = 7; // Additional days beyond missed workouts to schedule
+        
         // Timezone configuration - default to LA timezone, but respect device timezone when traveling
         const DEFAULT_TIMEZONE = 'America/Los_Angeles';
         let userTimezone = DEFAULT_TIMEZONE;
@@ -2837,13 +2841,93 @@
                 // Find the index of the most recent workout type in the schedule
                 const lastIndex = workoutSchedule.indexOf(mostRecentType);
                 
-                // Count calendar days forward from the most recent workout (excluding travel days)
+                // For today and future dates, check for missed workouts and adjust schedule
+                if (queryDate >= todayDate) {
+                    // Build a list of all workouts that should have been completed from the day after
+                    // the most recent workout up to yesterday, tracking which ones were missed
+                    const expectedSchedule = [];
+                    let currentIndex = lastIndex;
+                    
+                    let checkDate = new Date(mostRecentDate);
+                    checkDate = new Date(checkDate.getTime() + 24 * 60 * 60 * 1000); // Add 1 day in milliseconds
+                    
+                    while (checkDate < todayDate) {
+                        const checkDateStr = checkDate.toISOString().split('T')[0];
+                        
+                        if (!isDateInTravelMode(checkDateStr)) {
+                            // Move to next in schedule
+                            currentIndex = (currentIndex + 1) % workoutSchedule.length;
+                            const expectedWorkout = workoutSchedule[currentIndex];
+                            
+                            // Track this day in the expected schedule
+                            expectedSchedule.push({
+                                date: checkDateStr,
+                                workout: expectedWorkout,
+                                completed: !!getWorkoutForDate(checkDateStr)
+                            });
+                        }
+                        
+                        // Add 1 day in milliseconds to avoid timezone mutation issues
+                        checkDate = new Date(checkDate.getTime() + 24 * 60 * 60 * 1000);
+                    }
+                    
+                    // Build a queue of workouts that need to be done:
+                    // 1. All missed non-Rest workouts from the past (in order)
+                    // 2. Followed by future workouts continuing from where the schedule would be
+                    const workoutQueue = [];
+                    
+                    // Add missed workouts first
+                    for (const day of expectedSchedule) {
+                        if (!day.completed && day.workout !== 'Rest') {
+                            workoutQueue.push(day.workout);
+                        }
+                    }
+                    
+                    // Now add future workouts continuing from the last expected position
+                    // Start from where we left off in expectedSchedule, or from mostRecent if empty
+                    let futureIndex = currentIndex;
+                    const daysToSchedule = Math.max(MIN_SCHEDULE_DAYS, workoutQueue.length + FUTURE_SCHEDULE_BUFFER);
+                    
+                    for (let i = 0; i < daysToSchedule; i++) {
+                        futureIndex = (futureIndex + 1) % workoutSchedule.length;
+                        workoutQueue.push(workoutSchedule[futureIndex]);
+                    }
+                    
+                    // Calculate which position in the queue corresponds to the query date
+                    // Count non-travel days from today to query date
+                    let daysFromToday = 0;
+                    let countDate = new Date(todayDate);
+                    while (countDate < queryDate) {
+                        const countDateStr = countDate.toISOString().split('T')[0];
+                        if (!isDateInTravelMode(countDateStr)) {
+                            daysFromToday++;
+                        }
+                        // Add 1 day in milliseconds to avoid timezone mutation issues
+                        countDate = new Date(countDate.getTime() + 24 * 60 * 60 * 1000);
+                    }
+                    
+                    // Return the workout from the queue at the appropriate position
+                    if (daysFromToday < workoutQueue.length) {
+                        return workoutQueue[daysFromToday];
+                    }
+                    
+                    // Fallback: if we somehow exceed the queue (shouldn't happen with MIN_SCHEDULE_DAYS),
+                    // continue the cycle from futureIndex + excessDays
+                    const excessDays = daysFromToday - workoutQueue.length;
+                    const fallbackIndex = (futureIndex + excessDays) % workoutSchedule.length;
+                    return workoutSchedule[fallbackIndex];
+                }
+                
+                // For past dates, use the original logic (no adjustment)
                 let daysSince = 0;
-                for (let d = new Date(mostRecentDate); d < queryDate; d.setDate(d.getDate() + 1)) {
+                let d = new Date(mostRecentDate);
+                while (d < queryDate) {
                     const checkDateStr = d.toISOString().split('T')[0];
                     if (!isDateInTravelMode(checkDateStr)) {
                         daysSince++;
                     }
+                    // Add 1 day in milliseconds to avoid timezone mutation issues
+                    d = new Date(d.getTime() + 24 * 60 * 60 * 1000);
                 }
                 
                 // Project forward in the 7-day cycle
@@ -2853,11 +2937,14 @@
                 // No workouts yet, use default schedule from reference date
                 const referenceDate = new Date('2024-01-01T00:00:00.000Z');
                 let nonTravelDays = 0;
-                for (let d = new Date(referenceDate); d < queryDate; d.setDate(d.getDate() + 1)) {
+                let d = new Date(referenceDate);
+                while (d < queryDate) {
                     const checkDateStr = d.toISOString().split('T')[0];
                     if (!isDateInTravelMode(checkDateStr)) {
                         nonTravelDays++;
                     }
+                    // Add 1 day in milliseconds to avoid timezone mutation issues
+                    d = new Date(d.getTime() + 24 * 60 * 60 * 1000);
                 }
                 const scheduleIndex = ((nonTravelDays % workoutSchedule.length) + workoutSchedule.length) % workoutSchedule.length;
                 return workoutSchedule[scheduleIndex];
