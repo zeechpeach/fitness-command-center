@@ -2844,7 +2844,7 @@
                     const expectedSchedule = [];
                     let currentIndex = lastIndex;
                     
-                    const checkDate = new Date(mostRecentDate);
+                    let checkDate = new Date(mostRecentDate);
                     checkDate.setDate(checkDate.getDate() + 1);
                     
                     while (checkDate < todayDate) {
@@ -2859,10 +2859,12 @@
                             expectedSchedule.push({
                                 date: checkDateStr,
                                 workout: expectedWorkout,
-                                completed: getWorkoutForDate(checkDateStr) != null
+                                completed: getWorkoutForDate(checkDateStr) !== null
                             });
                         }
                         
+                        // Create a new Date object for the next iteration to avoid mutation issues
+                        checkDate = new Date(checkDate);
                         checkDate.setDate(checkDate.getDate() + 1);
                     }
                     
@@ -2881,7 +2883,8 @@
                     // Now add future workouts continuing from the last expected position
                     // Start from where we left off in expectedSchedule, or from mostRecent if empty
                     let futureIndex = currentIndex;
-                    const daysToSchedule = Math.max(14, workoutQueue.length + 7); // Schedule at least 2 weeks ahead
+                    const MIN_SCHEDULE_DAYS = 14; // Schedule at least 2 weeks ahead
+                    const daysToSchedule = Math.max(MIN_SCHEDULE_DAYS, workoutQueue.length + 7);
                     
                     for (let i = 0; i < daysToSchedule; i++) {
                         futureIndex = (futureIndex + 1) % workoutSchedule.length;
@@ -2891,12 +2894,14 @@
                     // Calculate which position in the queue corresponds to the query date
                     // Count non-travel days from today to query date
                     let daysFromToday = 0;
-                    const countDate = new Date(todayDate);
+                    let countDate = new Date(todayDate);
                     while (countDate < queryDate) {
                         const countDateStr = countDate.toISOString().split('T')[0];
                         if (!isDateInTravelMode(countDateStr)) {
                             daysFromToday++;
                         }
+                        // Create a new Date object for the next iteration to avoid mutation issues
+                        countDate = new Date(countDate);
                         countDate.setDate(countDate.getDate() + 1);
                     }
                     
