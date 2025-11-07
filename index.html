@@ -2760,6 +2760,9 @@
         // Workout cycle: 7-day repeating cycle
         const workoutSchedule = ['Upper', 'Lower', 'Rest', 'Push', 'Pull', 'Legs', 'Rest'];
         
+        // Configuration for schedule calculation
+        const MIN_SCHEDULE_DAYS = 14; // Minimum days to schedule ahead for missed workout queue
+        
         // Timezone configuration - default to LA timezone, but respect device timezone when traveling
         const DEFAULT_TIMEZONE = 'America/Los_Angeles';
         let userTimezone = DEFAULT_TIMEZONE;
@@ -2882,7 +2885,6 @@
                     // Now add future workouts continuing from the last expected position
                     // Start from where we left off in expectedSchedule, or from mostRecent if empty
                     let futureIndex = currentIndex;
-                    const MIN_SCHEDULE_DAYS = 14; // Schedule at least 2 weeks ahead
                     const daysToSchedule = Math.max(MIN_SCHEDULE_DAYS, workoutQueue.length + 7);
                     
                     for (let i = 0; i < daysToSchedule; i++) {
@@ -2908,10 +2910,10 @@
                         return workoutQueue[daysFromToday];
                     }
                     
-                    // Fallback: if we somehow exceed the queue (shouldn't happen with MIN_SCHEDULE_DAYS = 14),
-                    // continue the cycle from where futureIndex ended
+                    // Fallback: if we somehow exceed the queue (shouldn't happen with MIN_SCHEDULE_DAYS),
+                    // continue the cycle from the next position after futureIndex
                     const excessDays = daysFromToday - workoutQueue.length;
-                    const fallbackIndex = (futureIndex + excessDays) % workoutSchedule.length;
+                    const fallbackIndex = (futureIndex + excessDays + 1) % workoutSchedule.length;
                     return workoutSchedule[fallbackIndex];
                 }
                 
