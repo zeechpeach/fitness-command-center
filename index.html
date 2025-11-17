@@ -1383,6 +1383,114 @@
             font-size: 0.85rem;
         }
 
+        /* Nutrition Layout - Sidebar for Desktop */
+        .nutrition-layout-container {
+            display: flex;
+            gap: 1.5rem;
+            align-items: flex-start;
+        }
+
+        .nutrition-main-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .nutrition-sidebar {
+            width: 350px;
+            flex-shrink: 0;
+            position: sticky;
+            top: 1.5rem;
+            max-height: calc(100vh - 3rem);
+            overflow-y: auto;
+        }
+
+        /* Mobile Saved Foods Button */
+        .mobile-saved-foods-btn {
+            display: none;
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            padding: 1rem 1.5rem;
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            font-size: 1rem;
+            font-weight: 600;
+            box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4);
+            cursor: pointer;
+            z-index: 100;
+            transition: all 0.3s ease;
+        }
+
+        .mobile-saved-foods-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 24px rgba(16, 185, 129, 0.5);
+        }
+
+        /* Saved Foods Modal/Sheet for Mobile */
+        .saved-foods-modal {
+            display: none;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(10, 14, 26, 0.98);
+            backdrop-filter: blur(20px);
+            border-top-left-radius: 24px;
+            border-top-right-radius: 24px;
+            padding: 1.5rem;
+            max-height: 80vh;
+            overflow-y: auto;
+            z-index: 1000;
+            transform: translateY(100%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.4);
+        }
+
+        .saved-foods-modal.active {
+            transform: translateY(0);
+        }
+
+        .modal-backdrop {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-backdrop.active {
+            opacity: 1;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-close-btn {
+            padding: 0.5rem;
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.5rem;
+            cursor: pointer;
+            min-width: 44px;
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
         /* Saved Foods Styles */
         .saved-foods-panel {
             background: rgba(30, 41, 59, 0.4);
@@ -1390,7 +1498,7 @@
             border: 1px solid rgba(71, 85, 105, 0.3);
             border-radius: 16px;
             padding: 1.5rem;
-            margin-bottom: 1.5rem;
+            margin-bottom: 0;
         }
 
         .saved-food-search {
@@ -1868,7 +1976,53 @@
             font-weight: 600;
         }
 
+        /* Desktop sidebar styles (768px and above) */
+        @media (min-width: 769px) {
+            .nutrition-layout-container {
+                display: flex;
+            }
+
+            .nutrition-sidebar {
+                display: block;
+            }
+
+            .mobile-saved-foods-btn {
+                display: none !important;
+            }
+
+            .saved-foods-modal {
+                display: none !important;
+            }
+
+            .saved-food-list {
+                max-height: calc(100vh - 300px);
+            }
+        }
+
         @media (max-width: 768px) {
+            /* Nutrition Layout - Mobile */
+            .nutrition-layout-container {
+                display: block;
+            }
+
+            .nutrition-sidebar {
+                display: none;
+            }
+
+            .mobile-saved-foods-btn {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+            }
+
+            .saved-foods-modal {
+                display: block;
+            }
+
+            .modal-backdrop {
+                display: block;
+            }
+
             /* Reduce body padding for more screen space */
             body {
                 padding: 0.5rem;
@@ -2394,66 +2548,95 @@
 
         <!-- NUTRITION TAB -->
         <div id="nutrition-content" class="tab-content">
-            <div class="analytics-card">
-                <h3 class="analytics-title">🍎 Daily Nutrition</h3>
-                <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
-                    <label style="color: #94a3b8; font-size: 0.9rem;">Date:</label>
-                    <input type="date" id="nutrition-date-input" style="padding: 0.5rem; background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(71, 85, 105, 0.5); border-radius: 6px; color: white;">
-                </div>
-                <div class="macro-summary">
-                    <div class="macro-item">
-                        <div class="macro-value" id="total-calories">0</div>
-                        <div class="macro-label">Calories</div>
+            <!-- Desktop/Tablet: Sidebar Layout | Mobile: Main content with floating button -->
+            <div class="nutrition-layout-container">
+                <!-- Sidebar for Desktop/Tablet (>768px) -->
+                <aside class="nutrition-sidebar">
+                    <div class="saved-foods-panel">
+                        <h3 class="analytics-title">⭐ Saved Foods</h3>
+                        <input type="text" id="saved-food-search" class="saved-food-search" placeholder="Search saved foods...">
+                        <div class="saved-food-list" id="saved-food-list">
+                            <div class="empty-state">No saved foods yet. Save a food from a meal below!</div>
+                        </div>
                     </div>
-                    <div class="macro-item">
-                        <div class="macro-value" id="total-protein">0g</div>
-                        <div class="macro-label">Protein</div>
+                </aside>
+
+                <!-- Main Content Area -->
+                <div class="nutrition-main-content">
+                    <div class="analytics-card">
+                        <h3 class="analytics-title">🍎 Daily Nutrition</h3>
+                        <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                            <label style="color: #94a3b8; font-size: 0.9rem;">Date:</label>
+                            <input type="date" id="nutrition-date-input" style="padding: 0.5rem; background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(71, 85, 105, 0.5); border-radius: 6px; color: white;">
+                        </div>
+                        <div class="macro-summary">
+                            <div class="macro-item">
+                                <div class="macro-value" id="total-calories">0</div>
+                                <div class="macro-label">Calories</div>
+                            </div>
+                            <div class="macro-item">
+                                <div class="macro-value" id="total-protein">0g</div>
+                                <div class="macro-label">Protein</div>
+                            </div>
+                            <div class="macro-item">
+                                <div class="macro-value" id="total-carbs">0g</div>
+                                <div class="macro-label">Carbs</div>
+                            </div>
+                            <div class="macro-item">
+                                <div class="macro-value" id="total-fats">0g</div>
+                                <div class="macro-label">Fats</div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="macro-item">
-                        <div class="macro-value" id="total-carbs">0g</div>
-                        <div class="macro-label">Carbs</div>
+
+                    <div class="calorie-target-card" id="calorie-target-card" style="display: none;">
+                        <h3 class="analytics-title">🎯 Calorie Target</h3>
+                        <div class="calorie-breakdown">
+                            <div class="calorie-item">
+                                <div class="calorie-value" id="maintenance-calories">--</div>
+                                <div class="calorie-label">Maintenance</div>
+                            </div>
+                            <div class="calorie-item">
+                                <div class="calorie-value" id="target-calories">--</div>
+                                <div class="calorie-label" id="target-calories-label">Your Goal</div>
+                            </div>
+                            <div class="calorie-item">
+                                <div class="calorie-value" id="calories-remaining">--</div>
+                                <div class="calorie-label">Remaining</div>
+                            </div>
+                        </div>
+                        <div style="text-align: center; margin-top: 1rem; color: #94a3b8; font-size: 0.85rem;">
+                            <span id="calorie-update-notice">Calories update automatically when you log weight</span>
+                        </div>
                     </div>
-                    <div class="macro-item">
-                        <div class="macro-value" id="total-fats">0g</div>
-                        <div class="macro-label">Fats</div>
+
+                    <div id="meals-container">
+                        <!-- Meals will be rendered here -->
                     </div>
+
+                    <button class="btn btn-add" onclick="addMeal()" style="width: 100%; padding: 1rem; font-size: 1rem;">+ Add Meal</button>
                 </div>
             </div>
 
-            <div class="calorie-target-card" id="calorie-target-card" style="display: none;">
-                <h3 class="analytics-title">🎯 Calorie Target</h3>
-                <div class="calorie-breakdown">
-                    <div class="calorie-item">
-                        <div class="calorie-value" id="maintenance-calories">--</div>
-                        <div class="calorie-label">Maintenance</div>
-                    </div>
-                    <div class="calorie-item">
-                        <div class="calorie-value" id="target-calories">--</div>
-                        <div class="calorie-label" id="target-calories-label">Your Goal</div>
-                    </div>
-                    <div class="calorie-item">
-                        <div class="calorie-value" id="calories-remaining">--</div>
-                        <div class="calorie-label">Remaining</div>
-                    </div>
-                </div>
-                <div style="text-align: center; margin-top: 1rem; color: #94a3b8; font-size: 0.85rem;">
-                    <span id="calorie-update-notice">Calories update automatically when you log weight</span>
-                </div>
-            </div>
+            <!-- Mobile Saved Foods Button (< 768px) -->
+            <button class="mobile-saved-foods-btn" onclick="openSavedFoodsModal()">
+                ⭐ Saved Foods
+            </button>
 
-            <div class="saved-foods-panel">
-                <h3 class="analytics-title">⭐ Saved Foods</h3>
-                <input type="text" id="saved-food-search" class="saved-food-search" placeholder="Search saved foods...">
-                <div class="saved-food-list" id="saved-food-list">
+            <!-- Modal Backdrop for Mobile -->
+            <div class="modal-backdrop" id="saved-foods-backdrop" onclick="closeSavedFoodsModal()"></div>
+
+            <!-- Mobile Saved Foods Modal/Bottom Sheet -->
+            <div class="saved-foods-modal" id="saved-foods-modal">
+                <div class="modal-header">
+                    <h3 class="analytics-title" style="margin-bottom: 0;">⭐ Saved Foods</h3>
+                    <button class="modal-close-btn" onclick="closeSavedFoodsModal()">✕</button>
+                </div>
+                <input type="text" id="saved-food-search-mobile" class="saved-food-search" placeholder="Search saved foods..." oninput="renderSavedFoods(this.value)">
+                <div class="saved-food-list" id="saved-food-list-mobile">
                     <div class="empty-state">No saved foods yet. Save a food from a meal below!</div>
                 </div>
             </div>
-
-            <div id="meals-container">
-                <!-- Meals will be rendered here -->
-            </div>
-
-            <button class="btn btn-add" onclick="addMeal()" style="width: 100%; padding: 1rem; font-size: 1rem;">+ Add Meal</button>
         </div>
 
         <!-- BODY METRICS TAB -->
@@ -5687,7 +5870,7 @@
 
         function renderSavedFoods(searchTerm = '') {
             const container = document.getElementById('saved-food-list');
-            if (!container) return;
+            const mobileContainer = document.getElementById('saved-food-list-mobile');
             
             let filteredFoods = savedFoods;
             if (searchTerm) {
@@ -5704,32 +5887,76 @@
                 return (b.useCount || 0) - (a.useCount || 0);
             });
             
+            let html = '';
             if (filteredFoods.length === 0) {
-                container.innerHTML = '<div class="empty-state">No saved foods found. Save a food from a meal below!</div>';
-                return;
+                html = '<div class="empty-state">No saved foods found. Save a food from a meal below!</div>';
+            } else {
+                filteredFoods.forEach(food => {
+                    html += `<div class="saved-food-item">
+                        <div class="saved-food-info">
+                            <div class="saved-food-name">${food.name}</div>
+                            <div class="saved-food-macros">
+                                <span>P: ${food.protein}g</span>
+                                <span>C: ${food.carbs}g</span>
+                                <span>F: ${food.fats}g</span>
+                                <span>Cal: ${food.calories}</span>
+                            </div>
+                        </div>
+                        <div class="saved-food-actions">
+                            <button class="btn-quick-add" onclick="quickAddFood('${food.id}'); closeSavedFoodsModal();">Quick Add</button>
+                            <button class="btn-delete-food" onclick="deleteSavedFood('${food.id}')">🗑️</button>
+                        </div>
+                    </div>`;
+                });
             }
             
-            let html = '';
-            filteredFoods.forEach(food => {
-                html += `<div class="saved-food-item">
-                    <div class="saved-food-info">
-                        <div class="saved-food-name">${food.name}</div>
-                        <div class="saved-food-macros">
-                            <span>P: ${food.protein}g</span>
-                            <span>C: ${food.carbs}g</span>
-                            <span>F: ${food.fats}g</span>
-                            <span>Cal: ${food.calories}</span>
-                        </div>
-                    </div>
-                    <div class="saved-food-actions">
-                        <button class="btn-quick-add" onclick="quickAddFood('${food.id}')">Quick Add</button>
-                        <button class="btn-delete-food" onclick="deleteSavedFood('${food.id}')">🗑️</button>
-                    </div>
-                </div>`;
-            });
-            
-            container.innerHTML = html;
+            // Update both desktop and mobile containers
+            if (container) container.innerHTML = html;
+            if (mobileContainer) mobileContainer.innerHTML = html;
         }
+
+        // Modal functions for mobile saved foods
+        window.openSavedFoodsModal = function() {
+            const modal = document.getElementById('saved-foods-modal');
+            const backdrop = document.getElementById('saved-foods-backdrop');
+            
+            if (modal && backdrop) {
+                // Render saved foods in mobile list
+                renderSavedFoods();
+                
+                // Show backdrop first
+                backdrop.style.display = 'block';
+                backdrop.classList.add('active');
+                
+                // Then show modal with animation
+                setTimeout(() => {
+                    modal.classList.add('active');
+                }, 10);
+                
+                // Prevent body scroll when modal is open
+                document.body.style.overflow = 'hidden';
+            }
+        };
+
+        window.closeSavedFoodsModal = function() {
+            const modal = document.getElementById('saved-foods-modal');
+            const backdrop = document.getElementById('saved-foods-backdrop');
+            
+            if (modal && backdrop) {
+                // Hide modal with animation
+                modal.classList.remove('active');
+                
+                // Hide backdrop after animation
+                setTimeout(() => {
+                    backdrop.classList.remove('active');
+                    backdrop.style.display = 'none';
+                }, 300);
+                
+                // Re-enable body scroll
+                document.body.style.overflow = '';
+            }
+        };
+
 
         window.quickAddFood = async function(foodId) {
             const food = savedFoods.find(f => f.id === foodId);
