@@ -15,69 +15,95 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
-            color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', system-ui, sans-serif;
+            background: #0a0e1a;
+            color: #e2e8f0;
             min-height: 100vh;
-            padding: 1rem;
+            padding: 1.5rem;
+            line-height: 1.6;
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 1280px;
             margin: 0 auto;
         }
 
         .header {
             text-align: center;
-            margin-bottom: 2rem;
+            margin-bottom: 3rem;
             padding: 2rem 0;
         }
 
         .header h1 {
             font-size: 2.5rem;
-            font-weight: 300;
-            background: linear-gradient(45deg, #06b6d4, #3b82f6);
+            font-weight: 600;
+            background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.75rem;
+            letter-spacing: -0.025em;
         }
 
         .header p {
-            color: #64748b;
-            font-size: 1.1rem;
+            color: #94a3b8;
+            font-size: 1rem;
+            font-weight: 400;
         }
 
         .nav-tabs {
             display: flex;
-            gap: 1rem;
-            margin-bottom: 2rem;
+            gap: 0.75rem;
+            margin-bottom: 2.5rem;
             overflow-x: auto;
-            padding-bottom: 0.5rem;
+            padding: 0.5rem;
+            background: rgba(15, 23, 42, 0.6);
+            border-radius: 16px;
+            backdrop-filter: blur(10px);
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .nav-tabs::-webkit-scrollbar {
+            height: 4px;
+        }
+
+        .nav-tabs::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.3);
+            border-radius: 2px;
+        }
+
+        .nav-tabs::-webkit-scrollbar-thumb {
+            background: rgba(59, 130, 246, 0.5);
+            border-radius: 2px;
         }
 
         .nav-tab {
-            padding: 0.75rem 1.5rem;
-            background: rgba(30, 41, 59, 0.5);
-            border: 1px solid rgba(71, 85, 105, 0.3);
+            padding: 0.875rem 1.5rem;
+            background: transparent;
+            border: none;
             border-radius: 12px;
             color: #94a3b8;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
             white-space: nowrap;
             font-weight: 500;
+            font-size: 0.95rem;
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .nav-tab.active {
-            background: linear-gradient(135deg, #3b82f6, #06b6d4);
-            color: white;
-            border-color: transparent;
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+            background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%);
+            color: #ffffff;
+            box-shadow: 0 4px 16px rgba(59, 130, 246, 0.35), 0 2px 8px rgba(6, 182, 212, 0.2);
+            transform: translateY(-1px);
         }
 
         .nav-tab:hover:not(.active) {
-            background: rgba(71, 85, 105, 0.5);
-            color: #e2e8f0;
+            background: rgba(59, 130, 246, 0.15);
+            color: #cbd5e1;
         }
 
         .tab-content {
@@ -97,57 +123,67 @@
         }
 
         .day-btn {
-            padding: 0.75rem 1.25rem;
-            background: rgba(30, 41, 59, 0.8);
-            border: 1px solid rgba(71, 85, 105, 0.5);
-            border-radius: 10px;
+            padding: 0.875rem 1.5rem;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(71, 85, 105, 0.25);
+            border-radius: 12px;
             color: #94a3b8;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
             white-space: nowrap;
             font-weight: 500;
-            border: none;
+            min-height: 44px;
+            display: flex;
+            align-items: center;
         }
 
         .day-btn.active {
-            background: linear-gradient(135deg, #10b981, #059669);
-            color: white;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: #ffffff;
             border-color: transparent;
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+            box-shadow: 0 4px 16px rgba(16, 185, 129, 0.3);
+            transform: translateY(-1px);
+        }
+
+        .day-btn:hover:not(.active) {
+            background: rgba(16, 185, 129, 0.15);
+            border-color: rgba(16, 185, 129, 0.3);
         }
 
         .intelligence-panel {
-            background: rgba(30, 41, 59, 0.4);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(71, 85, 105, 0.3);
-            border-radius: 16px;
-            padding: 1.5rem;
+            background: rgba(15, 23, 42, 0.5);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(71, 85, 105, 0.2);
+            border-radius: 20px;
+            padding: 2rem;
             margin-bottom: 2rem;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
         }
 
         .intelligence-header {
             display: flex;
             align-items: center;
             gap: 0.75rem;
-            margin-bottom: 1rem;
+            margin-bottom: 1.25rem;
         }
 
         .intelligence-header h3 {
             color: #06b6d4;
             font-weight: 600;
+            font-size: 1.125rem;
         }
 
         .ai-icon {
-            width: 24px;
-            height: 24px;
-            background: linear-gradient(135deg, #06b6d4, #3b82f6);
-            border-radius: 6px;
+            width: 28px;
+            height: 28px;
+            background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
+            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: white;
+            color: #ffffff;
             font-weight: bold;
-            font-size: 0.8rem;
+            font-size: 0.875rem;
         }
 
         .suggestions-grid {
@@ -157,10 +193,17 @@
         }
 
         .suggestion-card {
-            background: rgba(15, 23, 42, 0.6);
-            border: 1px solid rgba(71, 85, 105, 0.2);
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid rgba(71, 85, 105, 0.15);
             border-radius: 12px;
-            padding: 1rem;
+            padding: 1.25rem;
+            transition: all 0.25s ease;
+        }
+
+        .suggestion-card:hover {
+            background: rgba(15, 23, 42, 0.7);
+            border-color: rgba(71, 85, 105, 0.25);
+            transform: translateY(-2px);
         }
 
         .suggestion-type {
@@ -179,38 +222,45 @@
         }
 
         .exercise-card {
-            background: rgba(30, 41, 59, 0.4);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(71, 85, 105, 0.3);
-            border-radius: 16px;
-            padding: 1.5rem;
+            background: rgba(15, 23, 42, 0.5);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(71, 85, 105, 0.2);
+            border-radius: 20px;
+            padding: 2rem;
             margin-bottom: 1.5rem;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .exercise-card:hover {
+            border-color: rgba(71, 85, 105, 0.35);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
         }
 
         .exercise-header {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            margin-bottom: 1rem;
+            margin-bottom: 1.25rem;
             gap: 1rem;
         }
 
         .exercise-name {
             font-size: 1.25rem;
             font-weight: 600;
-            color: white;
+            color: #f1f5f9;
             margin-bottom: 0.5rem;
         }
 
         .exercise-target {
             display: inline-block;
-            background: rgba(6, 182, 212, 0.2);
+            background: rgba(6, 182, 212, 0.15);
             color: #06b6d4;
-            padding: 0.25rem 0.75rem;
-            border-radius: 6px;
+            padding: 0.375rem 0.875rem;
+            border-radius: 8px;
             font-size: 0.8rem;
-            font-weight: 500;
-            border: 1px solid rgba(6, 182, 212, 0.3);
+            font-weight: 600;
+            border: 1px solid rgba(6, 182, 212, 0.25);
         }
 
         .exercise-intelligence {
@@ -304,18 +354,18 @@
         }
 
         .intensity-inputs {
-            background: rgba(15, 23, 42, 0.6);
-            border: 1px solid rgba(71, 85, 105, 0.3);
-            border-radius: 12px;
-            padding: 1rem;
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid rgba(71, 85, 105, 0.2);
+            border-radius: 16px;
+            padding: 1.5rem;
             margin-bottom: 1.5rem;
         }
 
         .intensity-row {
             display: flex;
             align-items: center;
-            gap: 1rem;
-            margin-bottom: 0.75rem;
+            gap: 1.25rem;
+            margin-bottom: 1rem;
         }
 
         .intensity-row:last-child {
@@ -325,19 +375,39 @@
         .intensity-label {
             color: #e2e8f0;
             font-weight: 500;
-            min-width: 80px;
+            min-width: 100px;
+            font-size: 0.9375rem;
         }
 
         .intensity-scale {
             display: flex;
-            gap: 0.5rem;
+            gap: 0.625rem;
         }
 
         .intensity-btn {
-            width: 2rem;
-            height: 2rem;
-            border: 1px solid rgba(71, 85, 105, 0.5);
-            background: rgba(30, 41, 59, 0.8);
+            width: 2.5rem;
+            height: 2.5rem;
+            border: 1px solid rgba(71, 85, 105, 0.25);
+            background: rgba(15, 23, 42, 0.6);
+            color: #94a3b8;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 600;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .intensity-btn:hover:not(.active) {
+            background: rgba(59, 130, 246, 0.15);
+            border-color: rgba(59, 130, 246, 0.3);
+        }
+
+        .intensity-btn.active {
+            background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%);
+            color: #ffffff;
+            border-color: transparent;
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+        }
             color: #94a3b8;
             border-radius: 4px;
             cursor: pointer;
@@ -412,53 +482,64 @@
         }
 
         .btn {
-            padding: 0.5rem 1rem;
+            padding: 0.75rem 1.25rem;
             border: none;
-            border-radius: 6px;
+            border-radius: 12px;
             cursor: pointer;
             font-weight: 500;
-            transition: all 0.3s ease;
-            font-size: 0.9rem;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 0.875rem;
+            min-height: 44px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
         }
 
         .btn-copy {
-            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-            color: white;
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: #ffffff;
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
         }
 
         .btn-copy:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+            box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3);
         }
 
         .btn-add {
-            background: rgba(16, 185, 129, 0.2);
+            background: rgba(16, 185, 129, 0.15);
             color: #10b981;
             border: 1px solid rgba(16, 185, 129, 0.3);
         }
 
         .btn-add:hover {
-            background: rgba(16, 185, 129, 0.3);
+            background: rgba(16, 185, 129, 0.25);
+            border-color: rgba(16, 185, 129, 0.4);
         }
 
         .btn-complete {
             padding: 1rem 3rem;
-            background: linear-gradient(135deg, #10b981, #059669);
-            color: white;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: #ffffff;
             border: none;
-            border-radius: 12px;
-            font-size: 1.1rem;
+            border-radius: 16px;
+            font-size: 1.125rem;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 16px rgba(16, 185, 129, 0.25);
             display: block;
             margin: 2rem auto 0;
+            min-height: 56px;
         }
 
         .btn-complete:hover {
             transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);
+            box-shadow: 0 8px 24px rgba(16, 185, 129, 0.35);
         }
 
         .analytics-grid {
@@ -469,34 +550,47 @@
         }
 
         .analytics-card {
-            background: rgba(30, 41, 59, 0.4);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(71, 85, 105, 0.3);
-            border-radius: 16px;
-            padding: 1.5rem;
+            background: rgba(15, 23, 42, 0.5);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(71, 85, 105, 0.2);
+            border-radius: 20px;
+            padding: 2rem;
             margin-bottom: 1.5rem;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .analytics-card:hover {
+            border-color: rgba(71, 85, 105, 0.35);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            transform: translateY(-2px);
         }
 
         .analytics-title {
-            font-size: 1.1rem;
+            font-size: 1.125rem;
             font-weight: 600;
-            color: white;
-            margin-bottom: 1rem;
+            color: #f1f5f9;
+            margin-bottom: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
 
         .stat-value {
-            font-size: 2rem;
+            font-size: 2.5rem;
             font-weight: 700;
-            background: linear-gradient(135deg, #06b6d4, #3b82f6);
+            background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
+            line-height: 1.2;
         }
 
         .stat-label {
-            color: #64748b;
-            font-size: 0.9rem;
-            margin-top: 0.25rem;
+            color: #94a3b8;
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+            font-weight: 400;
         }
 
 
@@ -597,87 +691,105 @@
 
         /* Calendar Styles */
         .calendar-container {
-            background: rgba(30, 41, 59, 0.4);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(71, 85, 105, 0.3);
-            border-radius: 16px;
-            padding: 1.5rem;
+            background: rgba(15, 23, 42, 0.5);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(71, 85, 105, 0.2);
+            border-radius: 20px;
+            padding: 2rem;
             margin-bottom: 1.5rem;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
         }
 
         .calendar-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 1.5rem;
+            margin-bottom: 2rem;
+            gap: 1rem;
+            flex-wrap: wrap;
         }
 
         .calendar-nav-btn {
-            padding: 0.5rem 1rem;
-            background: rgba(59, 130, 246, 0.2);
-            border: 1px solid rgba(59, 130, 246, 0.3);
-            border-radius: 8px;
-            color: #3b82f6;
+            padding: 0.75rem 1.25rem;
+            background: rgba(59, 130, 246, 0.15);
+            border: 1px solid rgba(59, 130, 246, 0.25);
+            border-radius: 12px;
+            color: #60a5fa;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            font-weight: 500;
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
 
         .calendar-nav-btn:hover {
-            background: rgba(59, 130, 246, 0.3);
+            background: rgba(59, 130, 246, 0.25);
+            border-color: rgba(59, 130, 246, 0.4);
+            transform: translateY(-1px);
         }
 
         .calendar-month-year {
             font-size: 1.5rem;
             font-weight: 600;
-            color: white;
+            color: #f1f5f9;
+            flex: 1;
+            text-align: center;
         }
 
         .calendar-grid {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
-            gap: 0.5rem;
+            gap: 0.625rem;
         }
 
         .calendar-day-header {
             text-align: center;
-            padding: 0.5rem;
-            color: #64748b;
+            padding: 0.75rem 0.5rem;
+            color: #94a3b8;
             font-weight: 600;
-            font-size: 0.9rem;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
 
         .calendar-day {
             aspect-ratio: 1;
-            background: rgba(15, 23, 42, 0.6);
-            border: 1px solid rgba(71, 85, 105, 0.3);
-            border-radius: 8px;
-            padding: 0.5rem;
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid rgba(71, 85, 105, 0.2);
+            border-radius: 12px;
+            padding: 0.625rem;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             position: relative;
+            min-height: 70px;
         }
 
         .calendar-day:hover {
-            background: rgba(71, 85, 105, 0.5);
+            background: rgba(59, 130, 246, 0.15);
+            border-color: rgba(59, 130, 246, 0.3);
             transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
         }
 
         .calendar-day.other-month {
-            opacity: 0.3;
+            opacity: 0.25;
+            pointer-events: none;
         }
 
         .calendar-day.today {
             border-color: #06b6d4;
-            box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.3);
+            box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.3), 0 4px 12px rgba(6, 182, 212, 0.2);
         }
 
         .calendar-day.has-workout {
-            background: rgba(16, 185, 129, 0.2);
-            border-color: #10b981;
+            background: rgba(16, 185, 129, 0.15);
+            border-color: rgba(16, 185, 129, 0.4);
         }
 
         .calendar-day.scheduled {
@@ -687,20 +799,21 @@
 
         .calendar-day.missed {
             background: rgba(239, 68, 68, 0.1);
-            border-color: rgba(239, 68, 68, 0.3);
+            border-color: rgba(239, 68, 68, 0.35);
         }
 
         .calendar-day-number {
-            font-size: 1rem;
+            font-size: 1.125rem;
             font-weight: 600;
-            color: white;
-            margin-bottom: 0.25rem;
+            color: #f1f5f9;
+            margin-bottom: 0.375rem;
         }
 
         .calendar-day-label {
-            font-size: 0.7rem;
+            font-size: 0.75rem;
             color: #94a3b8;
             text-align: center;
+            font-weight: 500;
         }
 
         .calendar-day-label.Upper { color: #10b981; }
@@ -708,27 +821,28 @@
         .calendar-day-label.Push { color: #ef4444; }
         .calendar-day-label.Pull { color: #3b82f6; }
         .calendar-day-label.Legs { color: #8b5cf6; }
-        .calendar-day-label.Rest { color: #64748b; }
+        .calendar-day-label.Rest { color: #94a3b8; }
         .calendar-day-label.Travel { color: #a855f7; }
 
         .adherence-card {
-            background: rgba(30, 41, 59, 0.4);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(71, 85, 105, 0.3);
-            border-radius: 16px;
-            padding: 1.5rem;
+            background: rgba(15, 23, 42, 0.5);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(71, 85, 105, 0.2);
+            border-radius: 20px;
+            padding: 2rem;
             margin-bottom: 1.5rem;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
         }
 
         .adherence-score {
             text-align: center;
-            margin-bottom: 1rem;
+            margin-bottom: 1.5rem;
         }
 
         .adherence-score-value {
-            font-size: 3rem;
+            font-size: 3.5rem;
             font-weight: 700;
-            background: linear-gradient(135deg, #10b981, #059669);
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
@@ -736,46 +850,57 @@
 
         .adherence-stats {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            grid-template-columns: repeat(3, 1fr);
             gap: 1rem;
-            margin-top: 1rem;
         }
 
         .adherence-stat {
             text-align: center;
-            padding: 1rem;
-            background: rgba(15, 23, 42, 0.6);
-            border-radius: 8px;
+            padding: 1.25rem;
+            background: rgba(15, 23, 42, 0.5);
+            border-radius: 12px;
+            border: 1px solid rgba(71, 85, 105, 0.15);
+            transition: all 0.25s ease;
+        }
+
+        .adherence-stat:hover {
+            background: rgba(15, 23, 42, 0.7);
+            transform: translateY(-2px);
         }
 
         .adherence-stat-value {
-            font-size: 1.5rem;
-            font-weight: 600;
-            color: white;
+            font-size: 2rem;
+            font-weight: 700;
+            color: #f1f5f9;
+            line-height: 1.2;
         }
 
         .adherence-stat-label {
-            font-size: 0.8rem;
-            color: #64748b;
-            margin-top: 0.25rem;
+            font-size: 0.875rem;
+            color: #94a3b8;
+            margin-top: 0.5rem;
+            font-weight: 500;
         }
 
         .selected-day-workout {
-            background: rgba(30, 41, 59, 0.4);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(71, 85, 105, 0.3);
-            border-radius: 16px;
-            padding: 1.5rem;
+            background: rgba(15, 23, 42, 0.5);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(71, 85, 105, 0.2);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
         }
 
         /* Nutrition Styles */
         .meal-card {
-            background: rgba(30, 41, 59, 0.4);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(71, 85, 105, 0.3);
-            border-radius: 16px;
+            background: rgba(15, 23, 42, 0.5);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(71, 85, 105, 0.2);
+            border-radius: 20px;
             padding: 1.5rem;
             margin-bottom: 1.5rem;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .meal-header {
@@ -783,23 +908,109 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 1rem;
-            gap: 0.75rem;
+            gap: 1rem;
+            cursor: pointer;
+            user-select: none;
         }
 
         .meal-type {
-            font-size: 1.2rem;
+            font-size: 1.25rem;
             font-weight: 600;
-            color: white;
+            color: #f1f5f9;
             min-height: 44px;
             display: flex;
             align-items: center;
+            gap: 0.5rem;
         }
 
         .meal-time {
-            color: #64748b;
-            font-size: 0.85rem;
+            color: #94a3b8;
+            font-size: 0.875rem;
             margin-top: 0.25rem;
         }
+
+        /* Collapsible Meal Styles */
+        .meal-summary {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background: rgba(15, 23, 42, 0.4);
+            border-radius: 12px;
+            margin-top: 0.75rem;
+        }
+
+        .meal-summary-stats {
+            display: flex;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .meal-summary-stat {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .meal-summary-value {
+            font-size: 1.125rem;
+            font-weight: 700;
+            color: #f1f5f9;
+        }
+
+        .meal-summary-label {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            margin-top: 0.125rem;
+        }
+
+        .meal-collapse-icon {
+            font-size: 1.25rem;
+            transition: transform 0.3s ease;
+            color: #94a3b8;
+        }
+
+        .meal-card.collapsed .meal-collapse-icon {
+            transform: rotate(-90deg);
+        }
+
+        .meal-content {
+            overflow: hidden;
+            transition: max-height 0.3s ease, opacity 0.3s ease;
+        }
+
+        .meal-card.collapsed .meal-content {
+            max-height: 0;
+            opacity: 0;
+        }
+
+        .meal-card:not(.collapsed) .meal-content {
+            max-height: 5000px;
+            opacity: 1;
+        }
+
+        .quick-add-food-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.25rem;
+            background: rgba(16, 185, 129, 0.15);
+            color: #10b981;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 12px;
+            font-weight: 500;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            min-height: 44px;
+        }
+
+        .quick-add-food-btn:hover {
+            background: rgba(16, 185, 129, 0.25);
+            border-color: rgba(16, 185, 129, 0.4);
+            transform: translateY(-1px);
+        }
+
 
         .food-input-row {
             display: flex;
@@ -811,30 +1022,32 @@
         .food-input {
             flex: 2;
             min-width: 200px;
-            padding: 0.75rem;
-            min-height: 44px;
-            background: rgba(30, 41, 59, 0.8);
-            border: 1px solid rgba(71, 85, 105, 0.5);
-            border-radius: 6px;
-            color: white;
+            padding: 0.875rem;
+            min-height: 48px;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(71, 85, 105, 0.25);
+            border-radius: 12px;
+            color: #e2e8f0;
             font-size: 1rem;
+            transition: all 0.25s ease;
         }
 
         .food-input:focus {
             outline: none;
-            border-color: #06b6d4;
-            box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.2);
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+            background: rgba(15, 23, 42, 0.8);
         }
 
         .macro-input-wrapper {
             display: flex;
             flex-direction: column;
-            gap: 0.25rem;
+            gap: 0.375rem;
         }
 
         .macro-input-label {
             color: #94a3b8;
-            font-size: 0.7rem;
+            font-size: 0.75rem;
             font-weight: 600;
             text-align: center;
             text-transform: uppercase;
@@ -843,20 +1056,22 @@
 
         .macro-input {
             width: 80px;
-            padding: 0.75rem 0.5rem;
-            min-height: 44px;
-            background: rgba(30, 41, 59, 0.8);
-            border: 1px solid rgba(71, 85, 105, 0.5);
-            border-radius: 6px;
-            color: white;
+            padding: 0.875rem 0.5rem;
+            min-height: 48px;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(71, 85, 105, 0.25);
+            border-radius: 12px;
+            color: #e2e8f0;
             text-align: center;
             font-size: 1rem;
+            transition: all 0.25s ease;
         }
 
         .macro-input:focus {
             outline: none;
-            border-color: #06b6d4;
-            box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.2);
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+            background: rgba(15, 23, 42, 0.8);
         }
 
         .macro-inputs-grid {
@@ -872,37 +1087,50 @@
 
         .macro-summary {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: 1rem;
-            margin-top: 1.5rem;
-            padding-top: 1.5rem;
-            border-top: 1px solid rgba(71, 85, 105, 0.3);
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.25rem;
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(71, 85, 105, 0.2);
         }
 
         .macro-item {
             text-align: center;
+            padding: 1rem;
+            background: rgba(15, 23, 42, 0.4);
+            border-radius: 12px;
+            border: 1px solid rgba(71, 85, 105, 0.15);
+            transition: all 0.25s ease;
+        }
+
+        .macro-item:hover {
+            background: rgba(15, 23, 42, 0.6);
+            transform: translateY(-2px);
         }
 
         .macro-value {
-            font-size: 1.5rem;
-            font-weight: 600;
-            color: white;
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: #f1f5f9;
+            line-height: 1.2;
         }
 
         .macro-label {
-            font-size: 0.8rem;
-            color: #64748b;
-            margin-top: 0.25rem;
+            font-size: 0.875rem;
+            color: #94a3b8;
+            margin-top: 0.5rem;
+            font-weight: 500;
         }
 
         /* Body Metrics Styles */
         .weight-input-card {
-            background: rgba(30, 41, 59, 0.4);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(71, 85, 105, 0.3);
-            border-radius: 16px;
-            padding: 1.5rem;
+            background: rgba(15, 23, 42, 0.5);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(71, 85, 105, 0.2);
+            border-radius: 20px;
+            padding: 2rem;
             margin-bottom: 1.5rem;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
         }
 
         .weight-input-row {
@@ -913,13 +1141,21 @@
 
         .weight-input-field {
             flex: 1;
-            padding: 0.75rem;
-            background: rgba(30, 41, 59, 0.8);
-            border: 1px solid rgba(71, 85, 105, 0.5);
-            border-radius: 8px;
-            color: white;
-            font-size: 1.1rem;
+            padding: 0.875rem;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(71, 85, 105, 0.25);
+            border-radius: 12px;
+            color: #e2e8f0;
+            font-size: 1rem;
             text-align: center;
+            transition: all 0.25s ease;
+        }
+
+        .weight-input-field:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+            background: rgba(15, 23, 42, 0.8);
         }
 
         .weight-input-field:focus {
@@ -1459,12 +1695,13 @@
             /* Optimize tabs for mobile scrolling */
             .nav-tabs {
                 gap: 0.5rem;
-                margin-bottom: 1rem;
+                margin-bottom: 1.5rem;
+                padding: 0.375rem;
             }
 
             .nav-tab {
-                padding: 0.65rem 1rem;
-                font-size: 0.9rem;
+                padding: 0.75rem 1.125rem;
+                font-size: 0.875rem;
                 min-height: 44px;
             }
             
@@ -1496,25 +1733,37 @@
             .calendar-container {
                 overflow-x: auto;
                 overflow-y: hidden;
+                padding: 1.5rem;
             }
 
             .calendar-grid {
                 min-width: 100%;
+                gap: 0.5rem;
             }
 
             .calendar-day {
-                min-width: 40px;
-                min-height: 40px;
-                padding: 0.25rem;
-                font-size: 0.8rem;
+                min-width: 50px;
+                min-height: 50px;
+                padding: 0.375rem;
+                font-size: 0.875rem;
             }
 
             .calendar-day-number {
-                font-size: 0.85rem;
+                font-size: 1rem;
             }
 
             .calendar-day-label {
-                font-size: 0.6rem;
+                font-size: 0.65rem;
+            }
+
+            .adherence-stats {
+                grid-template-columns: 1fr;
+                gap: 0.75rem;
+            }
+
+            .macro-summary {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 0.75rem;
             }
 
             /* Fix weight tracking section overflow on mobile */
@@ -1534,32 +1783,46 @@
 
             /* Mobile-optimized meal cards */
             .meal-card {
-                padding: 1rem;
+                padding: 1.25rem;
                 margin-bottom: 1rem;
-                border-radius: 12px;
+                border-radius: 16px;
             }
 
             .meal-header {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 0.5rem;
+                flex-direction: row;
+                align-items: center;
+                gap: 0.75rem;
                 margin-bottom: 0.75rem;
             }
 
+            .meal-summary {
+                padding: 0.75rem;
+            }
+
+            .meal-summary-stats {
+                gap: 1rem;
+                justify-content: space-around;
+            }
+
+            .meal-summary-stat {
+                min-width: 60px;
+            }
+
             .meal-header > div:first-child {
-                width: 100%;
+                width: auto;
+                flex: 1;
             }
 
             .meal-header button {
-                width: 100%;
+                width: auto;
                 min-height: 44px;
                 padding: 0.75rem;
-                font-size: 0.9rem;
+                font-size: 0.875rem;
             }
 
             .meal-type {
                 width: 100%;
-                font-size: 1.1rem;
+                font-size: 1rem;
                 padding: 0.75rem;
                 min-height: 48px;
             }
@@ -4773,6 +5036,27 @@
         }
 
         // Nutrition Functions
+        // Track collapsed state for each meal
+        let collapsedMeals = {};
+
+        window.toggleMealCollapse = function(mealId) {
+            collapsedMeals[mealId] = !collapsedMeals[mealId];
+            renderMeals();
+        };
+
+        function calculateMealTotals(meal) {
+            let calories = 0, protein = 0, carbs = 0, fats = 0, foodCount = 0;
+            (meal.foods || []).forEach(food => {
+                const quantity = food.quantity || 1;
+                calories += (parseFloat(food.calories) || 0) * quantity;
+                protein += (parseFloat(food.protein) || 0) * quantity;
+                carbs += (parseFloat(food.carbs) || 0) * quantity;
+                fats += (parseFloat(food.fats) || 0) * quantity;
+                if (food.name && food.name.trim()) foodCount++;
+            });
+            return { calories: Math.round(calories), protein: Math.round(protein), carbs: Math.round(carbs), fats: Math.round(fats), foodCount };
+        }
+
         function renderMeals() {
             const meals = nutritionData.filter(n => n.date === currentNutritionDate);
             const container = document.getElementById('meals-container');
@@ -4785,18 +5069,57 @@
             
             let html = '';
             meals.forEach((meal, mealIndex) => {
-                html += `<div class="meal-card">
-                    <div class="meal-header">
-                        <div>
-                            <select class="meal-type" style="background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(71, 85, 105, 0.5); border-radius: 6px; color: white; padding: 0.75rem; font-size: 1.2rem; font-weight: 600; cursor: pointer;" onchange="changeMealType('${meal.id}', this.value)">
-                                <option value="Breakfast" ${meal.mealType === 'Breakfast' ? 'selected' : ''}>🌅 Breakfast</option>
-                                <option value="Lunch" ${meal.mealType === 'Lunch' ? 'selected' : ''}>☀️ Lunch</option>
-                                <option value="Dinner" ${meal.mealType === 'Dinner' ? 'selected' : ''}>🌙 Dinner</option>
-                                <option value="Snack" ${meal.mealType === 'Snack' ? 'selected' : ''}>🍪 Snack</option>
-                            </select>
+                const isCollapsed = collapsedMeals[meal.id] !== false; // Default to collapsed
+                const totals = calculateMealTotals(meal);
+                
+                html += `<div class="meal-card ${isCollapsed ? 'collapsed' : ''}" id="meal-card-${meal.id}">
+                    <div class="meal-header" onclick="toggleMealCollapse('${meal.id}')">
+                        <div style="flex: 1;">
+                            <div class="meal-type">
+                                ${meal.mealType === 'Breakfast' ? '🌅' : meal.mealType === 'Lunch' ? '☀️' : meal.mealType === 'Dinner' ? '🌙' : '🍪'} ${meal.mealType}
+                            </div>
                             <div class="meal-time">${meal.time || ''}</div>
                         </div>
-                        <button class="btn" style="background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); padding: 0.75rem 1rem; min-height: 44px;" onclick="deleteMeal('${meal.id}')">🗑️ Delete</button>
+                        <span class="meal-collapse-icon">▼</span>
+                    </div>`;
+                
+                // Show summary when collapsed
+                if (isCollapsed && totals.foodCount > 0) {
+                    html += `<div class="meal-summary">
+                        <div class="meal-summary-stats">
+                            <div class="meal-summary-stat">
+                                <span class="meal-summary-value">${totals.calories}</span>
+                                <span class="meal-summary-label">Calories</span>
+                            </div>
+                            <div class="meal-summary-stat">
+                                <span class="meal-summary-value">${totals.protein}g</span>
+                                <span class="meal-summary-label">Protein</span>
+                            </div>
+                            <div class="meal-summary-stat">
+                                <span class="meal-summary-value">${totals.carbs}g</span>
+                                <span class="meal-summary-label">Carbs</span>
+                            </div>
+                            <div class="meal-summary-stat">
+                                <span class="meal-summary-value">${totals.fats}g</span>
+                                <span class="meal-summary-label">Fats</span>
+                            </div>
+                            <div class="meal-summary-stat">
+                                <span class="meal-summary-value">${totals.foodCount}</span>
+                                <span class="meal-summary-label">Foods</span>
+                            </div>
+                        </div>
+                    </div>`;
+                }
+                
+                html += `<div class="meal-content">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; gap: 0.75rem; flex-wrap: wrap;">
+                        <select class="meal-type" style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(71, 85, 105, 0.25); border-radius: 12px; color: #e2e8f0; padding: 0.75rem; font-size: 1rem; font-weight: 500; cursor: pointer; min-height: 48px;" onchange="changeMealType('${meal.id}', this.value); event.stopPropagation();">
+                            <option value="Breakfast" ${meal.mealType === 'Breakfast' ? 'selected' : ''}>🌅 Breakfast</option>
+                            <option value="Lunch" ${meal.mealType === 'Lunch' ? 'selected' : ''}>☀️ Lunch</option>
+                            <option value="Dinner" ${meal.mealType === 'Dinner' ? 'selected' : ''}>🌙 Dinner</option>
+                            <option value="Snack" ${meal.mealType === 'Snack' ? 'selected' : ''}>🍪 Snack</option>
+                        </select>
+                        <button class="btn" style="background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); padding: 0.75rem 1rem; min-height: 48px; border-radius: 12px; font-weight: 500;" onclick="deleteMeal('${meal.id}'); event.stopPropagation();">🗑️ Delete</button>
                     </div>
                     <div id="meal-${meal.id}">`;
                 
@@ -4817,22 +5140,22 @@
                             <div class="macro-input-wrapper">
                                 <label class="macro-input-label">Protein</label>
                                 <input type="number" class="macro-input" value="${food.protein || 0}" placeholder="0" step="0.1" onchange="updateMealFood('${meal.id}', ${foodIndex}, 'protein', this.value)">
-                                ${quantity !== 1 ? `<div style="font-size: 0.7rem; color: #64748b; text-align: center; margin-top: 0.25rem;">${displayProtein}g</div>` : ''}
+                                ${quantity !== 1 ? `<div style="font-size: 0.7rem; color: #94a3b8; text-align: center; margin-top: 0.25rem;">${displayProtein}g</div>` : ''}
                             </div>
                             <div class="macro-input-wrapper">
                                 <label class="macro-input-label">Carbs</label>
                                 <input type="number" class="macro-input" value="${food.carbs || 0}" placeholder="0" step="0.1" onchange="updateMealFood('${meal.id}', ${foodIndex}, 'carbs', this.value)">
-                                ${quantity !== 1 ? `<div style="font-size: 0.7rem; color: #64748b; text-align: center; margin-top: 0.25rem;">${displayCarbs}g</div>` : ''}
+                                ${quantity !== 1 ? `<div style="font-size: 0.7rem; color: #94a3b8; text-align: center; margin-top: 0.25rem;">${displayCarbs}g</div>` : ''}
                             </div>
                             <div class="macro-input-wrapper">
                                 <label class="macro-input-label">Fats</label>
                                 <input type="number" class="macro-input" value="${food.fats || 0}" placeholder="0" step="0.1" onchange="updateMealFood('${meal.id}', ${foodIndex}, 'fats', this.value)">
-                                ${quantity !== 1 ? `<div style="font-size: 0.7rem; color: #64748b; text-align: center; margin-top: 0.25rem;">${displayFats}g</div>` : ''}
+                                ${quantity !== 1 ? `<div style="font-size: 0.7rem; color: #94a3b8; text-align: center; margin-top: 0.25rem;">${displayFats}g</div>` : ''}
                             </div>
                             <div class="macro-input-wrapper">
                                 <label class="macro-input-label">Calories</label>
                                 <input type="number" class="macro-input" value="${food.calories || 0}" placeholder="0" onchange="updateMealFood('${meal.id}', ${foodIndex}, 'calories', this.value)">
-                                ${quantity !== 1 ? `<div style="font-size: 0.7rem; color: #64748b; text-align: center; margin-top: 0.25rem;">${displayCalories}</div>` : ''}
+                                ${quantity !== 1 ? `<div style="font-size: 0.7rem; color: #94a3b8; text-align: center; margin-top: 0.25rem;">${displayCalories}</div>` : ''}
                             </div>
                         </div>
                         <div class="food-action-buttons">
@@ -4843,10 +5166,11 @@
                 });
                 
                 html += `</div>
-                    <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem; flex-wrap: wrap;">
-                        <button class="btn btn-add" onclick="addFoodToMeal('${meal.id}')">+ Add Food</button>
-                        ${meal.hasUnsavedChanges ? `<button class="btn" style="background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3);" onclick="saveMealChanges('${meal.id}')">💾 Save Changes</button>` : ''}
+                    <div style="display: flex; gap: 0.75rem; margin-top: 1rem; flex-wrap: wrap;">
+                        <button class="quick-add-food-btn" onclick="addFoodToMeal('${meal.id}'); event.stopPropagation();">+ Add Food</button>
+                        ${meal.hasUnsavedChanges ? `<button class="btn" style="background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 12px; padding: 0.75rem 1.25rem; font-weight: 500; min-height: 44px;" onclick="saveMealChanges('${meal.id}'); event.stopPropagation();">💾 Save Changes</button>` : ''}
                     </div>
+                </div>
                 </div>`;
             });
             
@@ -4868,13 +5192,37 @@
                 });
             });
             
-            document.getElementById('total-calories').textContent = Math.round(totalCalories);
-            document.getElementById('total-protein').textContent = Math.round(totalProtein) + 'g';
-            document.getElementById('total-carbs').textContent = Math.round(totalCarbs) + 'g';
-            document.getElementById('total-fats').textContent = Math.round(totalFats) + 'g';
+            // Animate the value changes
+            animateValue('total-calories', Math.round(totalCalories));
+            animateValue('total-protein', Math.round(totalProtein), 'g');
+            animateValue('total-carbs', Math.round(totalCarbs), 'g');
+            animateValue('total-fats', Math.round(totalFats), 'g');
             
             // Update calories remaining if body goal is set
             updateNutritionCalories();
+        }
+
+        function animateValue(elementId, newValue, suffix = '') {
+            const element = document.getElementById(elementId);
+            if (!element) return;
+            
+            const currentText = element.textContent.replace(/[^\d.-]/g, '');
+            const currentValue = parseFloat(currentText) || 0;
+            
+            if (currentValue === newValue) {
+                element.textContent = newValue + suffix;
+                return;
+            }
+            
+            element.style.transition = 'color 0.3s ease';
+            element.style.color = '#3b82f6';
+            
+            // Simple direct update with highlight
+            element.textContent = newValue + suffix;
+            
+            setTimeout(() => {
+                element.style.color = '';
+            }, 300);
         }
 
         // Meal type selection modal functions
