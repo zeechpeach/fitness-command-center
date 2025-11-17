@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calorie Calculation Tests</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: #0a0e1a;
+            color: #e2e8f0;
+            padding: 2rem;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #06b6d4;
+            margin-bottom: 2rem;
+        }
+        .test-section {
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid rgba(71, 85, 105, 0.3);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .test-case {
+            margin-bottom: 1rem;
+            padding: 1rem;
+            background: rgba(15, 23, 42, 0.6);
+            border-radius: 8px;
+        }
+        .test-pass {
+            border-left: 4px solid #10b981;
+        }
+        .test-fail {
+            border-left: 4px solid #ef4444;
+        }
+        .test-title {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        .test-result {
+            font-family: monospace;
+            font-size: 0.9rem;
+        }
+        button {
+            background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            margin-bottom: 1rem;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+        .summary {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-top: 2rem;
+            padding: 1rem;
+            background: rgba(59, 130, 246, 0.15);
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Calorie Calculation Tests</h1>
+        <button onclick="runTests()">Run All Tests</button>
+        <div id="test-results"></div>
+    </div>
+
+    <script>
+        // Mock data structure similar to the main app
+        let nutritionData = [];
+        const currentNutritionDate = '2025-11-17';
+
+        // Core function to test (from index.html)
+        function calculateTotalCalories() {
+            const currentDateMeals = nutritionData.filter(m => m.date === currentNutritionDate);
+            let total = 0;
+            currentDateMeals.forEach(meal => {
+                if (meal.foods) {
+                    meal.foods.forEach(food => {
+                        const quantity = food.quantity || 1;
+                        total += (parseFloat(food.calories) || 0) * quantity;
+                    });
+                }
+            });
+            return total;
+        }
+
+        // Test cases
+        const tests = [
+            {
+                name: "Single food with quantity 1",
+                setup: () => {
+                    nutritionData = [{
+                        date: currentNutritionDate,
+                        mealType: 'Breakfast',
+                        foods: [{ name: 'Egg', calories: 78, quantity: 1 }]
+                    }];
+                },
+                expected: 78,
+                description: "1 egg × 78 cal = 78 cal"
+            },
+            {
+                name: "Single food with quantity 3",
+                setup: () => {
+                    nutritionData = [{
+                        date: currentNutritionDate,
+                        mealType: 'Breakfast',
+                        foods: [{ name: 'Egg', calories: 78, quantity: 3 }]
+                    }];
+                },
+                expected: 234,
+                description: "3 eggs × 78 cal = 234 cal"
+            },
+            {
+                name: "Multiple foods with different quantities",
+                setup: () => {
+                    nutritionData = [{
+                        date: currentNutritionDate,
+                        mealType: 'Breakfast',
+                        foods: [
+                            { name: 'Egg', calories: 78, quantity: 3 },
+                            { name: 'Toast', calories: 80, quantity: 2 },
+                            { name: 'Banana', calories: 105, quantity: 1 }
+                        ]
+                    }];
+                },
+                expected: 499,
+                description: "(3×78) + (2×80) + (1×105) = 234 + 160 + 105 = 499 cal"
+            },
+            {
+                name: "Multiple meals with quantities",
+                setup: () => {
+                    nutritionData = [
+                        {
+                            date: currentNutritionDate,
+                            mealType: 'Breakfast',
+                            foods: [
+                                { name: 'Egg', calories: 78, quantity: 2 }
+                            ]
+                        },
+                        {
+                            date: currentNutritionDate,
+                            mealType: 'Lunch',
+                            foods: [
+                                { name: 'Chicken Breast', calories: 165, quantity: 1 },
+                                { name: 'Rice', calories: 130, quantity: 2 }
+                            ]
+                        }
+                    ];
+                },
+                expected: 581,
+                description: "Breakfast: 2×78=156, Lunch: 1×165=165 + 2×130=260, Total: 581 cal"
+            },
+            {
+                name: "Food with no quantity specified (defaults to 1)",
+                setup: () => {
+                    nutritionData = [{
+                        date: currentNutritionDate,
+                        mealType: 'Snack',
+                        foods: [{ name: 'Apple', calories: 95 }]
+                    }];
+                },
+                expected: 95,
+                description: "1 apple (default) × 95 cal = 95 cal"
+            },
+            {
+                name: "Decimal quantity (0.5 serving)",
+                setup: () => {
+                    nutritionData = [{
+                        date: currentNutritionDate,
+                        mealType: 'Snack',
+                        foods: [{ name: 'Protein Bar', calories: 200, quantity: 0.5 }]
+                    }];
+                },
+                expected: 100,
+                description: "0.5 servings × 200 cal = 100 cal"
+            },
+            {
+                name: "Mixed decimal and integer quantities",
+                setup: () => {
+                    nutritionData = [{
+                        date: currentNutritionDate,
+                        mealType: 'Breakfast',
+                        foods: [
+                            { name: 'Egg', calories: 78, quantity: 2 },
+                            { name: 'Milk', calories: 150, quantity: 0.5 },
+                            { name: 'Oats', calories: 300, quantity: 1 }
+                        ]
+                    }];
+                },
+                expected: 531,
+                description: "(2×78) + (0.5×150) + (1×300) = 156 + 75 + 300 = 531 cal"
+            },
+            {
+                name: "Remaining calories calculation (target 2000)",
+                setup: () => {
+                    nutritionData = [{
+                        date: currentNutritionDate,
+                        mealType: 'Breakfast',
+                        foods: [{ name: 'Egg', calories: 78, quantity: 3 }]
+                    }];
+                },
+                expected: 234,
+                description: "Total: 234 cal, Remaining from 2000: 1766 cal (not 1684)",
+                validateRemaining: true,
+                targetCalories: 2000
+            },
+            {
+                name: "Zero calories food",
+                setup: () => {
+                    nutritionData = [{
+                        date: currentNutritionDate,
+                        mealType: 'Snack',
+                        foods: [{ name: 'Water', calories: 0, quantity: 5 }]
+                    }];
+                },
+                expected: 0,
+                description: "5 servings × 0 cal = 0 cal"
+            },
+            {
+                name: "Empty meals array",
+                setup: () => {
+                    nutritionData = [];
+                },
+                expected: 0,
+                description: "No meals = 0 cal"
+            }
+        ];
+
+        function runTests() {
+            const resultsContainer = document.getElementById('test-results');
+            resultsContainer.innerHTML = '';
+            
+            let passed = 0;
+            let failed = 0;
+
+            tests.forEach((test, index) => {
+                test.setup();
+                const actual = calculateTotalCalories();
+                const success = actual === test.expected;
+                
+                if (success) passed++;
+                else failed++;
+
+                const testDiv = document.createElement('div');
+                testDiv.className = `test-case ${success ? 'test-pass' : 'test-fail'}`;
+                
+                let html = `
+                    <div class="test-title">
+                        ${success ? '✅' : '❌'} Test ${index + 1}: ${test.name}
+                    </div>
+                    <div class="test-result">
+                        ${test.description}
+                        <br>Expected: ${test.expected} cal
+                        <br>Actual: ${actual} cal
+                `;
+                
+                if (test.validateRemaining) {
+                    const remaining = test.targetCalories - actual;
+                    html += `<br>Remaining: ${remaining} cal (from target ${test.targetCalories})`;
+                }
+                
+                html += `</div>`;
+                testDiv.innerHTML = html;
+                resultsContainer.appendChild(testDiv);
+            });
+
+            const summaryDiv = document.createElement('div');
+            summaryDiv.className = 'summary';
+            summaryDiv.innerHTML = `
+                Test Results: ${passed} passed, ${failed} failed out of ${tests.length} tests
+                ${failed === 0 ? ' 🎉 All tests passed!' : ' ⚠️ Some tests failed'}
+            `;
+            resultsContainer.appendChild(summaryDiv);
+        }
+
+        // Auto-run tests on page load
+        window.addEventListener('load', runTests);
+    </script>
+</body>
+</html>

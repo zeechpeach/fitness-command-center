@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UI Improvements Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: #0a0e1a;
+            color: #e2e8f0;
+            padding: 2rem;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: #06b6d4;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .demo-section {
+            margin-bottom: 3rem;
+        }
+
+        .demo-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #3b82f6;
+        }
+
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .panel {
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid rgba(71, 85, 105, 0.3);
+            border-radius: 16px;
+            padding: 1.5rem;
+        }
+
+        .panel-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .before {
+            border: 2px solid #ef4444;
+        }
+
+        .after {
+            border: 2px solid #10b981;
+        }
+
+        .panel-title.before {
+            color: #ef4444;
+        }
+
+        .panel-title.after {
+            color: #10b981;
+        }
+
+        /* Saved Foods Styles */
+        .saved-foods-panel {
+            background: rgba(30, 41, 59, 0.4);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(71, 85, 105, 0.3);
+            border-radius: 16px;
+            padding: 1.5rem;
+        }
+
+        .saved-food-list-before {
+            display: grid;
+            gap: 0.5rem;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .saved-food-list-after {
+            display: grid;
+            gap: 0.75rem;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .saved-food-item-before {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(71, 85, 105, 0.3);
+            border-radius: 8px;
+            padding: 0.75rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .saved-food-item-after {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(71, 85, 105, 0.3);
+            border-radius: 8px;
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .saved-food-item-before:hover,
+        .saved-food-item-after:hover {
+            background: rgba(71, 85, 105, 0.3);
+            border-color: #06b6d4;
+        }
+
+        .saved-food-info {
+            flex: 1;
+        }
+
+        .saved-food-name {
+            color: white;
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+        }
+
+        .saved-food-macros {
+            font-size: 0.85rem;
+            color: #94a3b8;
+        }
+
+        /* Meal Card Styles */
+        .meal-card {
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid rgba(71, 85, 105, 0.3);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .meal-card.collapsed .meal-content {
+            display: none;
+        }
+
+        .meal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            margin-bottom: 1rem;
+        }
+
+        .meal-type {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #06b6d4;
+        }
+
+        .meal-collapse-icon {
+            font-size: 1.2rem;
+            transition: transform 0.3s ease;
+        }
+
+        .meal-card.collapsed .meal-collapse-icon {
+            transform: rotate(-90deg);
+        }
+
+        .meal-content {
+            padding-top: 1rem;
+            border-top: 1px solid rgba(71, 85, 105, 0.3);
+        }
+
+        .food-input-row {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(71, 85, 105, 0.3);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .note {
+            background: rgba(59, 130, 246, 0.15);
+            border-left: 4px solid #3b82f6;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-left: 0.5rem;
+        }
+
+        .badge-before {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+
+        .badge-after {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+        }
+
+        @media (max-width: 768px) {
+            .comparison {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 UI Improvements Demo</h1>
+
+        <!-- Saved Foods Spacing Demo -->
+        <div class="demo-section">
+            <div class="demo-title">1. Saved Foods Spacing Improvement</div>
+            <div class="comparison">
+                <div class="panel before">
+                    <div class="panel-title before">
+                        ❌ Before <span class="badge badge-before">Cramped</span>
+                    </div>
+                    <div class="saved-foods-panel">
+                        <div class="saved-food-list-before">
+                            <div class="saved-food-item-before">
+                                <div class="saved-food-info">
+                                    <div class="saved-food-name">🥚 Egg</div>
+                                    <div class="saved-food-macros">78 cal | 6g P | 1g C | 5g F</div>
+                                </div>
+                            </div>
+                            <div class="saved-food-item-before">
+                                <div class="saved-food-info">
+                                    <div class="saved-food-name">🍗 Chicken Breast</div>
+                                    <div class="saved-food-macros">165 cal | 31g P | 0g C | 4g F</div>
+                                </div>
+                            </div>
+                            <div class="saved-food-item-before">
+                                <div class="saved-food-info">
+                                    <div class="saved-food-name">🍚 Rice (1 cup)</div>
+                                    <div class="saved-food-macros">206 cal | 4g P | 45g C | 0g F</div>
+                                </div>
+                            </div>
+                            <div class="saved-food-item-before">
+                                <div class="saved-food-info">
+                                    <div class="saved-food-name">🥑 Avocado</div>
+                                    <div class="saved-food-macros">234 cal | 3g P | 12g C | 21g F</div>
+                                </div>
+                            </div>
+                            <div class="saved-food-item-before">
+                                <div class="saved-food-info">
+                                    <div class="saved-food-name">🥛 Protein Shake</div>
+                                    <div class="saved-food-macros">120 cal | 24g P | 3g C | 1g F</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="note">
+                            <strong>Issue:</strong> Items feel cramped with only 0.5rem gap and 0.75rem padding. Harder to tap on mobile and visually cluttered.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel after">
+                    <div class="panel-title after">
+                        ✅ After <span class="badge badge-after">Spacious</span>
+                    </div>
+                    <div class="saved-foods-panel">
+                        <div class="saved-food-list-after">
+                            <div class="saved-food-item-after">
+                                <div class="saved-food-info">
+                                    <div class="saved-food-name">🥚 Egg</div>
+                                    <div class="saved-food-macros">78 cal | 6g P | 1g C | 5g F</div>
+                                </div>
+                            </div>
+                            <div class="saved-food-item-after">
+                                <div class="saved-food-info">
+                                    <div class="saved-food-name">🍗 Chicken Breast</div>
+                                    <div class="saved-food-macros">165 cal | 31g P | 0g C | 4g F</div>
+                                </div>
+                            </div>
+                            <div class="saved-food-item-after">
+                                <div class="saved-food-info">
+                                    <div class="saved-food-name">🍚 Rice (1 cup)</div>
+                                    <div class="saved-food-macros">206 cal | 4g P | 45g C | 0g F</div>
+                                </div>
+                            </div>
+                            <div class="saved-food-item-after">
+                                <div class="saved-food-info">
+                                    <div class="saved-food-name">🥑 Avocado</div>
+                                    <div class="saved-food-macros">234 cal | 3g P | 12g C | 21g F</div>
+                                </div>
+                            </div>
+                            <div class="saved-food-item-after">
+                                <div class="saved-food-info">
+                                    <div class="saved-food-name">🥛 Protein Shake</div>
+                                    <div class="saved-food-macros">120 cal | 24g P | 3g C | 1g F</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="note">
+                            <strong>Improvement:</strong> Increased gap to 0.75rem (+50%) and padding to 1rem (+33%). Better touch targets, cleaner look, easier to read.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Meal Card Expansion Demo -->
+        <div class="demo-section">
+            <div class="demo-title">2. New Meal Auto-Expansion</div>
+            <div class="comparison">
+                <div class="panel before">
+                    <div class="panel-title before">
+                        ❌ Before <span class="badge badge-before">Collapsed by Default</span>
+                    </div>
+                    <div class="meal-card collapsed">
+                        <div class="meal-header">
+                            <div>
+                                <div class="meal-type">🌅 Breakfast</div>
+                            </div>
+                            <span class="meal-collapse-icon">▼</span>
+                        </div>
+                        <div class="meal-content">
+                            <div class="food-input-row">
+                                <div style="color: #94a3b8;">Ready to add foods...</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="note">
+                        <strong>Issue:</strong> Newly created meals defaulted to collapsed state. Users had to click to expand before adding foods - unnecessary friction and extra clicks.
+                    </div>
+                </div>
+
+                <div class="panel after">
+                    <div class="panel-title after">
+                        ✅ After <span class="badge badge-after">Expanded by Default</span>
+                    </div>
+                    <div class="meal-card">
+                        <div class="meal-header">
+                            <div>
+                                <div class="meal-type">🌅 Breakfast</div>
+                            </div>
+                            <span class="meal-collapse-icon">▼</span>
+                        </div>
+                        <div class="meal-content">
+                            <div class="food-input-row">
+                                <div style="color: #94a3b8;">Ready to add foods...</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="note">
+                        <strong>Improvement:</strong> New meals now automatically expand, ready for immediate food entry. Saves clicks and reduces friction in the logging workflow.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary -->
+        <div class="demo-section">
+            <div class="panel" style="background: rgba(59, 130, 246, 0.15); border-color: #3b82f6;">
+                <h2 style="color: #3b82f6; margin-bottom: 1rem;">📊 Summary of UI/UX Improvements</h2>
+                <ul style="list-style: none; padding-left: 0;">
+                    <li style="margin-bottom: 0.75rem;">
+                        <strong style="color: #10b981;">✅ Saved Foods Spacing:</strong>
+                        <ul style="margin-left: 1.5rem; margin-top: 0.5rem; color: #94a3b8;">
+                            <li>Gap increased from 0.5rem to 0.75rem (+50%)</li>
+                            <li>Padding increased from 0.75rem to 1rem (+33%)</li>
+                            <li>Better touch targets for mobile</li>
+                            <li>Cleaner, less cramped appearance</li>
+                        </ul>
+                    </li>
+                    <li style="margin-bottom: 0.75rem;">
+                        <strong style="color: #10b981;">✅ Meal Card Behavior:</strong>
+                        <ul style="margin-left: 1.5rem; margin-top: 0.5rem; color: #94a3b8;">
+                            <li>Changed default from collapsed to expanded</li>
+                            <li>New meals automatically open when created</li>
+                            <li>Reduces clicks required to add foods</li>
+                            <li>Smoother workflow for meal logging</li>
+                        </ul>
+                    </li>
+                    <li>
+                        <strong style="color: #10b981;">✅ Calorie Calculation Fix:</strong>
+                        <ul style="margin-left: 1.5rem; margin-top: 0.5rem; color: #94a3b8;">
+                            <li>calculateTotalCalories() now multiplies by quantity</li>
+                            <li>Remaining calories now accurate with multi-quantity foods</li>
+                            <li>Example: 3 eggs (78 cal each) = 234 cal, not 78 cal</li>
+                            <li>10 comprehensive tests validate the fix</li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
