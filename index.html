@@ -6409,8 +6409,8 @@
                             <div>
                                 <div class="exercise-name">
                                     ${exercise.name}
-                                    ${workoutExercise.substitution ? `<span class="substitution-tag">Substitution</span>` : ''}
-                                    ${workoutExercise.approach ? `<span class="substitution-tag">${workoutExercise.approach}</span>` : ''}
+                                    ${workoutExercise.substitution ? `<span class="substitution-tag">Alt for ${workoutExercise.originalExercise}</span>` : ''}
+                                    ${workoutExercise.approach && !workoutExercise.substitution ? `<span class="substitution-tag">${workoutExercise.approach}</span>` : ''}
                                 </div>
                                 <div class="exercise-target">${exercise.sets} × ${exercise.reps}</div>
                                 ${progressionInfo ? `<div class="exercise-progress-indicator">${progressionInfo} last session</div>` : ''}
