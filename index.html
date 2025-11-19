@@ -3622,7 +3622,11 @@
         }
 
         function getWorkoutForDate(dateString) {
-            return allWorkouts.find(w => w.date === dateString);
+            const workout = allWorkouts.find(w => w.date === dateString);
+            if (workout) {
+                console.log(`Found workout for ${dateString}: type="${workout.day}", hasExercises=${!!workout.exercises}`);
+            }
+            return workout;
         }
 
         function calculateAdherence() {
@@ -5228,21 +5232,37 @@
                 
                 let classes = ['calendar-day'];
                 if (dateStr === today) classes.push('today');
+                
+                // Determine display label and workout type
+                let displayLabel;
+                let labelClass;
+                
                 if (scheduledWorkout === 'Travel') {
                     classes.push('travel');
-                } else if (actualWorkout) {
+                    displayLabel = '✈️ Travel';
+                    labelClass = scheduledWorkout;
+                } else if (actualWorkout && actualWorkout.day) {
+                    // Use actual logged workout type
                     classes.push('has-workout');
+                    displayLabel = actualWorkout.day;
+                    labelClass = actualWorkout.day;
                 } else if (scheduledWorkout !== 'Rest' && scheduledWorkout !== 'Travel' && date < new Date()) {
                     classes.push('missed');
+                    displayLabel = scheduledWorkout;
+                    labelClass = scheduledWorkout;
                 } else if (scheduledWorkout !== 'Rest' && scheduledWorkout !== 'Travel') {
                     classes.push('scheduled');
+                    displayLabel = scheduledWorkout;
+                    labelClass = scheduledWorkout;
+                } else {
+                    // Rest day
+                    displayLabel = scheduledWorkout;
+                    labelClass = scheduledWorkout;
                 }
-                
-                const displayLabel = scheduledWorkout === 'Travel' ? '✈️ Travel' : scheduledWorkout;
                 
                 html += `<div class="${classes.join(' ')}" onclick="selectCalendarDay('${dateStr}')">
                     <div class="calendar-day-number">${day}</div>
-                    <div class="calendar-day-label ${scheduledWorkout}">${displayLabel}</div>
+                    <div class="calendar-day-label ${labelClass}">${displayLabel}</div>
                 </div>`;
             }
             
