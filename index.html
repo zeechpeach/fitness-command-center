@@ -5321,7 +5321,13 @@
                 // Show exercises
                 Object.values(workout.exercises || {}).forEach(exercise => {
                     html += '<div style="background: rgba(15, 23, 42, 0.6); padding: 1rem; border-radius: 8px;">';
-                    html += `<h4 style="color: white; margin-bottom: 0.5rem;">${exercise.exercise}</h4>`;
+                    html += `<h4 style="color: white; margin-bottom: 0.5rem;">${exercise.exercise}`;
+                    if (exercise.substitution && exercise.originalExercise) {
+                        html += ` <span style="background: rgba(6, 182, 212, 0.2); color: #06b6d4; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: normal;">Alt for ${exercise.originalExercise}</span>`;
+                    } else if (exercise.approach) {
+                        html += ` <span style="background: rgba(6, 182, 212, 0.2); color: #06b6d4; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: normal;">${exercise.approach}</span>`;
+                    }
+                    html += `</h4>`;
                     
                     exercise.sets.forEach((set, idx) => {
                         if (set.completed) {
@@ -7046,7 +7052,13 @@
             }
             
             Object.values(currentWorkout).forEach(exercise => {
-                exportText += exercise.exercise + '\n';
+                exportText += exercise.exercise;
+                if (exercise.substitution && exercise.originalExercise) {
+                    exportText += ' (Alt for ' + exercise.originalExercise + ')';
+                } else if (exercise.approach) {
+                    exportText += ' (' + exercise.approach + ')';
+                }
+                exportText += '\n';
                 
                 exercise.sets.forEach((set, index) => {
                     if (set.completed) {
