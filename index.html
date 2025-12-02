@@ -3547,10 +3547,7 @@
             
             // Find the most recent completed NON-REST workout (excluding rest days only)
             const completedWorkouts = allWorkouts
-                .filter(w => {
-                    const workoutDate = new Date(w.date + 'T00:00:00.000Z');
-                    return w.day !== 'Rest';
-                })
+                .filter(w => w.day !== 'Rest')
                 .sort((a, b) => new Date(b.date + 'T00:00:00.000Z') - new Date(a.date + 'T00:00:00.000Z'));
             
             if (completedWorkouts.length > 0) {
@@ -5574,8 +5571,7 @@
                         date: today,
                         day: 'Rest',
                         exercises: {},
-                        timestamp: new Date().toISOString(),
-                        restartMarker: true  // Mark this as a restart point
+                        timestamp: new Date().toISOString()
                     };
                     
                     // Check if there's already a workout today
