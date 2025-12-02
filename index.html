@@ -824,6 +824,7 @@
         .calendar-day-label.Legs { color: #8b5cf6; }
         .calendar-day-label.Rest { color: #94a3b8; }
         .calendar-day-label.Travel { color: #a855f7; }
+        .calendar-day-label.Sick { color: #f472b6; }
 
         .adherence-card {
             background: rgba(15, 23, 42, 0.5);
@@ -1976,6 +1977,22 @@
             font-weight: 600;
         }
 
+        .calendar-day.sick {
+            background: repeating-linear-gradient(
+                45deg,
+                rgba(244, 114, 182, 0.1),
+                rgba(244, 114, 182, 0.1) 10px,
+                rgba(236, 72, 153, 0.1) 10px,
+                rgba(236, 72, 153, 0.1) 20px
+            );
+            border: 1px solid rgba(244, 114, 182, 0.5);
+        }
+
+        .calendar-day.sick .calendar-day-label {
+            color: #f472b6;
+            font-weight: 600;
+        }
+
         /* Desktop sidebar styles (768px and above) */
         @media (min-width: 769px) {
             .nutrition-layout-container {
@@ -2505,6 +2522,21 @@
                 </div>
             </div>
 
+            <!-- Sick Day Controls -->
+            <div class="travel-mode-controls">
+                <h4 style="color: #f472b6; margin-bottom: 0.75rem;">🤒 Sick Day</h4>
+                <div style="display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap; margin-bottom: 0.75rem;">
+                    <div style="flex: 1; min-width: 150px;">
+                        <label style="color: #94a3b8; font-size: 0.85rem; display: block; margin-bottom: 0.25rem;">Select Date</label>
+                        <input type="date" id="sick-day-date" style="width: 100%; padding: 0.5rem; background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(71, 85, 105, 0.5); border-radius: 6px; color: white;">
+                    </div>
+                    <button class="btn" onclick="markSickDay()" style="background: rgba(244, 114, 182, 0.2); color: #f472b6; border: 1px solid rgba(244, 114, 182, 0.3);">Mark as Sick Day</button>
+                </div>
+                <div style="color: #64748b; font-size: 0.85rem; line-height: 1.5;">
+                    Mark a day as sick to cancel the scheduled workout. All remaining workouts will be pushed back by one day, maintaining the intended order.
+                </div>
+            </div>
+
             <div class="adherence-card">
                 <h3 class="analytics-title">📊 Workout Adherence</h3>
                 <div class="adherence-score">
@@ -2938,6 +2970,26 @@
         </div>
     </div>
 
+    <!-- Post-Travel Resume Options Modal -->
+    <div class="modal-overlay" id="post-travel-modal">
+        <div class="modal-content">
+            <h3 class="modal-title">✈️ Welcome Back!</h3>
+            <p style="color: #94a3b8; margin-bottom: 1.5rem; text-align: center;">How would you like to resume your workout program?</p>
+            <div class="meal-type-buttons">
+                <button class="meal-type-btn" onclick="resumeWorkoutProgram('resume')" style="background: rgba(16, 185, 129, 0.2); border-color: rgba(16, 185, 129, 0.3); color: #10b981;">
+                    <div style="font-size: 1.5rem; margin-bottom: 0.25rem;">▶️</div>
+                    <div style="font-weight: 600;">Resume</div>
+                    <div style="font-size: 0.75rem; opacity: 0.8; margin-top: 0.25rem;">Continue from where you left off</div>
+                </button>
+                <button class="meal-type-btn" onclick="resumeWorkoutProgram('restart')" style="background: rgba(59, 130, 246, 0.2); border-color: rgba(59, 130, 246, 0.3); color: #3b82f6;">
+                    <div style="font-size: 1.5rem; margin-bottom: 0.25rem;">🔄</div>
+                    <div style="font-weight: 600;">Restart</div>
+                    <div style="font-size: 0.75rem; opacity: 0.8; margin-top: 0.25rem;">Start the program from day 1</div>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script type="module">
         // Firebase imports
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -2980,6 +3032,8 @@
         let savedFoods = [];
         let travelModeData = [];
         window.travelModeData = travelModeData;
+        let sickDayData = [];
+        window.sickDayData = sickDayData;
         window.savedFoods = savedFoods;
         let bodyGoalData = null;
         window.bodyGoalData = bodyGoalData;
@@ -3475,10 +3529,68 @@
             });
             return formatter.format(now);
         }
+
+        // Helper function to get what workout would have been scheduled on a special day (travel/sick)
+        // This is used to show users what they're missing
+        function getWouldBeScheduledWorkout(date) {
+            const queryDate = new Date(date + 'T00:00:00.000Z');
+            const actualWorkout = getWorkoutForDate(date);
+            
+            // If there's an actual workout on this date, return its type
+            if (actualWorkout) {
+                return actualWorkout.day;
+            }
+            
+            // Calculate what workout would be here if we ignored travel/sick days
+            const todayStr = getTodayDateString();
+            const todayDate = new Date(todayStr + 'T00:00:00.000Z');
+            
+            // Find the most recent completed NON-REST workout (excluding rest days only)
+            const completedWorkouts = allWorkouts
+                .filter(w => w.day !== 'Rest')
+                .sort((a, b) => new Date(b.date + 'T00:00:00.000Z') - new Date(a.date + 'T00:00:00.000Z'));
+            
+            if (completedWorkouts.length > 0) {
+                const mostRecent = completedWorkouts[0];
+                const mostRecentDate = new Date(mostRecent.date + 'T00:00:00.000Z');
+                const mostRecentType = mostRecent.day;
+                
+                // Find the index of the most recent workout type in the schedule
+                const lastIndex = workoutSchedule.indexOf(mostRecentType);
+                
+                // Count all days (including travel/sick) from most recent to query date
+                let daysSince = 0;
+                let d = new Date(mostRecentDate);
+                while (d < queryDate) {
+                    daysSince++;
+                    d = new Date(d.getTime() + 24 * 60 * 60 * 1000);
+                }
+                
+                // Project forward in the 7-day cycle
+                const scheduleIndex = (lastIndex + daysSince) % workoutSchedule.length;
+                return workoutSchedule[scheduleIndex];
+            } else {
+                // No workouts yet, use default schedule from reference date
+                const referenceDate = new Date('2024-01-01T00:00:00.000Z');
+                let allDays = 0;
+                let d = new Date(referenceDate);
+                while (d < queryDate) {
+                    allDays++;
+                    d = new Date(d.getTime() + 24 * 60 * 60 * 1000);
+                }
+                const scheduleIndex = ((allDays % workoutSchedule.length) + workoutSchedule.length) % workoutSchedule.length;
+                return workoutSchedule[scheduleIndex];
+            }
+        }
         
         function getScheduledWorkout(date) {
             const queryDate = new Date(date + 'T00:00:00.000Z');
             const actualWorkout = getWorkoutForDate(date);
+            
+            // Check if date is a sick day
+            if (isDateSickDay(date)) {
+                return 'Sick';
+            }
             
             // Check if date is in travel mode - show scheduled workout but don't penalize if missed
             if (isDateInTravelMode(date)) {
@@ -3495,11 +3607,11 @@
             const todayStr = getTodayDateString();
             const todayDate = new Date(todayStr + 'T00:00:00.000Z');
             
-            // Find the most recent completed NON-REST workout (excluding travel days and rest days)
+            // Find the most recent completed NON-REST workout (excluding travel days, sick days, and rest days)
             const completedWorkouts = allWorkouts
                 .filter(w => {
                     const workoutDate = new Date(w.date + 'T00:00:00.000Z');
-                    return !isDateInTravelMode(w.date) && w.day !== 'Rest';
+                    return !isDateInTravelMode(w.date) && !isDateSickDay(w.date) && w.day !== 'Rest';
                 })
                 .sort((a, b) => new Date(b.date + 'T00:00:00.000Z') - new Date(a.date + 'T00:00:00.000Z'));
             
@@ -3524,7 +3636,7 @@
                     while (checkDate < todayDate) {
                         const checkDateStr = checkDate.toISOString().split('T')[0];
                         
-                        if (!isDateInTravelMode(checkDateStr)) {
+                        if (!isDateInTravelMode(checkDateStr) && !isDateSickDay(checkDateStr)) {
                             // Move to next in schedule
                             currentIndex = (currentIndex + 1) % workoutSchedule.length;
                             const expectedWorkout = workoutSchedule[currentIndex];
@@ -3564,12 +3676,12 @@
                     }
                     
                     // Calculate which position in the queue corresponds to the query date
-                    // Count non-travel days from today to query date
+                    // Count non-travel and non-sick days from today to query date
                     let daysFromToday = 0;
                     let countDate = new Date(todayDate);
                     while (countDate < queryDate) {
                         const countDateStr = countDate.toISOString().split('T')[0];
-                        if (!isDateInTravelMode(countDateStr)) {
+                        if (!isDateInTravelMode(countDateStr) && !isDateSickDay(countDateStr)) {
                             daysFromToday++;
                         }
                         // Add 1 day in milliseconds to avoid timezone mutation issues
@@ -3593,7 +3705,7 @@
                 let d = new Date(mostRecentDate);
                 while (d < queryDate) {
                     const checkDateStr = d.toISOString().split('T')[0];
-                    if (!isDateInTravelMode(checkDateStr)) {
+                    if (!isDateInTravelMode(checkDateStr) && !isDateSickDay(checkDateStr)) {
                         daysSince++;
                     }
                     // Add 1 day in milliseconds to avoid timezone mutation issues
@@ -3606,17 +3718,17 @@
             } else {
                 // No workouts yet, use default schedule from reference date
                 const referenceDate = new Date('2024-01-01T00:00:00.000Z');
-                let nonTravelDays = 0;
+                let nonSpecialDays = 0;
                 let d = new Date(referenceDate);
                 while (d < queryDate) {
                     const checkDateStr = d.toISOString().split('T')[0];
-                    if (!isDateInTravelMode(checkDateStr)) {
-                        nonTravelDays++;
+                    if (!isDateInTravelMode(checkDateStr) && !isDateSickDay(checkDateStr)) {
+                        nonSpecialDays++;
                     }
                     // Add 1 day in milliseconds to avoid timezone mutation issues
                     d = new Date(d.getTime() + 24 * 60 * 60 * 1000);
                 }
-                const scheduleIndex = ((nonTravelDays % workoutSchedule.length) + workoutSchedule.length) % workoutSchedule.length;
+                const scheduleIndex = ((nonSpecialDays % workoutSchedule.length) + workoutSchedule.length) % workoutSchedule.length;
                 return workoutSchedule[scheduleIndex];
             }
         }
@@ -3642,8 +3754,8 @@
                 const scheduledWorkout = getScheduledWorkout(dateStr);
                 const actualWorkout = getWorkoutForDate(dateStr);
                 
-                // Exclude rest days and travel days from adherence calculations
-                if (scheduledWorkout !== 'Rest' && scheduledWorkout !== 'Travel') {
+                // Exclude rest days, travel days, and sick days from adherence calculations
+                if (scheduledWorkout !== 'Rest' && scheduledWorkout !== 'Travel' && scheduledWorkout !== 'Sick') {
                     scheduled++;
                     if (actualWorkout) {
                         completed++;
@@ -5237,9 +5349,14 @@
                 let displayLabel;
                 let labelClass;
                 
-                if (scheduledWorkout === 'Travel') {
+                if (isDateSickDay(dateStr)) {
+                    classes.push('sick');
+                    displayLabel = '🤒 Sick Day';
+                    labelClass = 'Sick';
+                } else if (scheduledWorkout === 'Travel') {
                     classes.push('travel');
-                    displayLabel = '✈️ Travel';
+                    const wouldBeWorkout = getWouldBeScheduledWorkout(dateStr);
+                    displayLabel = `✈️ Travel (${wouldBeWorkout})`;
                     labelClass = scheduledWorkout;
                 } else if (actualWorkout && actualWorkout.day) {
                     // Use actual logged workout type
@@ -5346,7 +5463,15 @@
                 content.innerHTML = html;
             } else {
                 title.textContent = `${scheduledWorkout} - ${formatDateString(dateStr)}`;
-                content.innerHTML = `<p style="color: #64748b;">No workout logged for this day. Scheduled: ${scheduledWorkout}</p>`;
+                if (scheduledWorkout === 'Sick') {
+                    content.innerHTML = `<p style="color: #f472b6;">This day is marked as a sick day. Workout was canceled and schedule adjusted.</p>`;
+                } else if (scheduledWorkout === 'Travel') {
+                    const wouldBeWorkout = getWouldBeScheduledWorkout(dateStr);
+                    content.innerHTML = `<p style="color: #a855f7;">Travel day - workout schedule paused.</p>
+                        <p style="color: #64748b; margin-top: 0.5rem;">Scheduled workout if not traveling: <strong style="color: #94a3b8;">${wouldBeWorkout}</strong></p>`;
+                } else {
+                    content.innerHTML = `<p style="color: #64748b;">No workout logged for this day. Scheduled: ${scheduledWorkout}</p>`;
+                }
             }
             
             container.style.display = 'block';
@@ -5422,19 +5547,51 @@
                 return;
             }
             
-            if (!confirm('End travel mode and resume normal schedule?')) {
-                return;
-            }
+            // Store the period ID for later use
+            window.currentTravelPeriodToEnd = currentPeriod.id;
+            
+            // Show the post-travel modal
+            document.getElementById('post-travel-modal').classList.add('active');
+        };
+
+        window.resumeWorkoutProgram = async function(mode) {
+            // Close the modal
+            document.getElementById('post-travel-modal').classList.remove('active');
             
             try {
-                await deleteDoc(doc(db, "travelMode", currentPeriod.id));
+                // Delete the travel period
+                await deleteDoc(doc(db, "travelMode", window.currentTravelPeriodToEnd));
                 console.log('Travel mode ended');
+                
+                if (mode === 'restart') {
+                    // Restart the program by creating a Rest day workout for today
+                    // This will cause the schedule to restart from Upper tomorrow
+                    const today = getTodayDateString();
+                    const restartWorkout = {
+                        date: today,
+                        day: 'Rest',
+                        exercises: {},
+                        timestamp: new Date().toISOString()
+                    };
+                    
+                    // Check if there's already a workout today
+                    const existingWorkout = getWorkoutForDate(today);
+                    if (!existingWorkout) {
+                        await addDoc(collection(db, "workouts"), restartWorkout);
+                        console.log('Program restarted - Rest day logged for today');
+                    }
+                    
+                    await loadWorkoutsFromFirebase();
+                }
                 
                 await loadTravelModeData();
                 updateTravelModeBanner();
                 renderCalendar();
                 
-                alert('Welcome back! Your workout schedule has resumed.');
+                const message = mode === 'restart' 
+                    ? 'Welcome back! Your workout program has been restarted from day 1.' 
+                    : 'Welcome back! Your workout schedule has resumed from where you left off.';
+                alert(message);
             } catch (e) {
                 console.error('Error ending travel mode:', e);
                 alert('Failed to end travel mode');
@@ -5465,6 +5622,88 @@
                 datesSpan.textContent = `${formatDateString(currentPeriod.startDate)} - ${formatDateString(currentPeriod.endDate)}`;
             } else {
                 banner.classList.remove('active');
+            }
+        }
+
+        // Sick Day Functions
+        function isDateSickDay(dateStr) {
+            if (!window.sickDayData || window.sickDayData.length === 0) return false;
+            return window.sickDayData.some(sickDay => sickDay.date === dateStr);
+        }
+
+        window.markSickDay = async function() {
+            const dateInput = document.getElementById('sick-day-date').value;
+            
+            if (!dateInput) {
+                alert('Please select a date');
+                return;
+            }
+            
+            // Check if already marked as sick day
+            if (isDateSickDay(dateInput)) {
+                // Ask if user wants to remove the sick day
+                if (confirm('This day is already marked as sick. Do you want to remove it?')) {
+                    try {
+                        const sickDayToRemove = window.sickDayData.find(sd => sd.date === dateInput);
+                        if (sickDayToRemove && sickDayToRemove.id) {
+                            await deleteDoc(doc(db, "sickDays", sickDayToRemove.id));
+                            console.log('Sick day removed');
+                            
+                            await loadSickDayData();
+                            renderCalendar();
+                            
+                            document.getElementById('sick-day-date').value = '';
+                            alert('Sick day removed. Schedule will adjust accordingly.');
+                        }
+                    } catch (e) {
+                        console.error('Error removing sick day:', e);
+                        alert('Failed to remove sick day');
+                    }
+                }
+                return;
+            }
+            
+            // Check if there's already a workout logged for this date
+            const existingWorkout = getWorkoutForDate(dateInput);
+            if (existingWorkout) {
+                if (!confirm('There is already a workout logged for this day. Marking it as sick will not delete the workout but will adjust future scheduling. Continue?')) {
+                    return;
+                }
+            }
+            
+            try {
+                const sickDay = {
+                    date: dateInput,
+                    createdAt: new Date().toISOString()
+                };
+                
+                const docRef = await addDoc(collection(db, "sickDays"), sickDay);
+                console.log('Sick day marked:', docRef.id);
+                
+                await loadSickDayData();
+                renderCalendar();
+                
+                // Clear input
+                document.getElementById('sick-day-date').value = '';
+                
+                alert('Day marked as sick. All remaining workouts have been pushed back by one day.');
+            } catch (e) {
+                console.error('Error marking sick day:', e);
+                alert('Failed to mark sick day');
+            }
+        };
+
+        async function loadSickDayData() {
+            try {
+                const q = query(collection(db, "sickDays"), orderBy("createdAt", "desc"));
+                const querySnapshot = await getDocs(q);
+                window.sickDayData = [];
+                querySnapshot.forEach((document) => {
+                    window.sickDayData.push({ id: document.id, ...document.data() });
+                });
+                console.log('Sick day data loaded:', window.sickDayData.length, 'sick days');
+            } catch (e) {
+                console.error('Error loading sick day data:', e);
             }
         }
 
@@ -6406,7 +6645,8 @@
                 loadPhotoData(),
                 loadSavedFoods(),
                 loadBodyGoalData(),
-                loadTravelModeData()
+                loadTravelModeData(),
+                loadSickDayData()
             ]);
             
             // Update with real data

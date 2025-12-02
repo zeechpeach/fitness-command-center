@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendar Features Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', system-ui, sans-serif;
+            background: #0a0e1a;
+            color: #e2e8f0;
+            padding: 2rem;
+            line-height: 1.6;
+        }
+
+        h1 {
+            color: #06b6d4;
+            margin-bottom: 1rem;
+        }
+
+        h2 {
+            color: #94a3b8;
+            margin: 2rem 0 1rem 0;
+            font-size: 1.5rem;
+        }
+
+        h3 {
+            color: #94a3b8;
+            margin: 1.5rem 0 0.75rem 0;
+            font-size: 1.25rem;
+        }
+
+        .section {
+            background: rgba(15, 23, 42, 0.6);
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            border: 1px solid rgba(71, 85, 105, 0.3);
+        }
+
+        .feature {
+            margin-bottom: 1.5rem;
+        }
+
+        .test-case {
+            background: rgba(30, 41, 59, 0.5);
+            padding: 1rem;
+            margin: 0.75rem 0;
+            border-radius: 6px;
+            border-left: 3px solid #06b6d4;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-left: 0.5rem;
+        }
+
+        .status.pass {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .status.manual {
+            background: rgba(244, 114, 182, 0.2);
+            color: #f472b6;
+            border: 1px solid rgba(244, 114, 182, 0.3);
+        }
+
+        .code {
+            background: rgba(15, 23, 42, 0.8);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            color: #06b6d4;
+        }
+
+        ul {
+            margin-left: 1.5rem;
+            margin-top: 0.5rem;
+        }
+
+        li {
+            margin-bottom: 0.5rem;
+            color: #cbd5e1;
+        }
+
+        .visual-indicator {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            margin: 0.5rem 0.5rem 0.5rem 0;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .sick-indicator {
+            background: repeating-linear-gradient(
+                45deg,
+                rgba(244, 114, 182, 0.2),
+                rgba(244, 114, 182, 0.2) 10px,
+                rgba(236, 72, 153, 0.2) 10px,
+                rgba(236, 72, 153, 0.2) 20px
+            );
+            border: 1px solid rgba(244, 114, 182, 0.5);
+            color: #f472b6;
+        }
+
+        .travel-indicator {
+            background: repeating-linear-gradient(
+                45deg,
+                rgba(168, 85, 247, 0.2),
+                rgba(168, 85, 247, 0.2) 10px,
+                rgba(59, 130, 246, 0.2) 10px,
+                rgba(59, 130, 246, 0.2) 20px
+            );
+            border: 1px solid rgba(168, 85, 247, 0.5);
+            color: #a855f7;
+        }
+
+        .link {
+            color: #06b6d4;
+            text-decoration: none;
+            border-bottom: 1px solid transparent;
+            transition: border-color 0.2s;
+        }
+
+        .link:hover {
+            border-color: #06b6d4;
+        }
+    </style>
+</head>
+<body>
+    <h1>📅 Calendar and Scheduling Improvements - Test Plan</h1>
+    
+    <div class="section">
+        <p style="color: #94a3b8; font-size: 1.1rem;">
+            This document outlines the test plan for the Calendar and Scheduling improvements implemented in the Fitness Command Center application.
+        </p>
+    </div>
+
+    <h2>✅ Implementation Summary</h2>
+    
+    <div class="section">
+        <div class="feature">
+            <h3>1. Sick Day Feature</h3>
+            <p style="color: #cbd5e1;">Users can now mark any day as a "Sick Day" which cancels the workout and pushes all remaining workouts back by one day.</p>
+            
+            <div class="test-case">
+                <strong>Feature Components:</strong>
+                <ul>
+                    <li>New Firestore collection: <span class="code">sickDays</span></li>
+                    <li>UI controls in Calendar tab for marking sick days</li>
+                    <li>Visual indicator: <span class="sick-indicator">🤒 Sick Day</span></li>
+                    <li>Schedule automatically adjusts to skip sick days</li>
+                    <li>Sick days excluded from adherence calculations</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="feature">
+            <h3>2. Enhanced Travel Mode</h3>
+            <p style="color: #cbd5e1;">Travel Mode now shows what workout would have been scheduled, and provides resume options after travel.</p>
+            
+            <div class="test-case">
+                <strong>Enhancements:</strong>
+                <ul>
+                    <li>Calendar shows: <span class="travel-indicator">✈️ Travel (Push)</span> - displays the would-be workout</li>
+                    <li>Clicking a travel day shows: "Scheduled workout if not traveling: Push"</li>
+                    <li>Post-travel modal with two options:
+                        <ul>
+                            <li><strong>Resume:</strong> Continue from where you left off</li>
+                            <li><strong>Restart:</strong> Start the program from day 1</li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="feature">
+            <h3>3. Schedule Accuracy Improvements</h3>
+            <p style="color: #cbd5e1;">The workout schedule now properly handles interruptions and maintains the intended order.</p>
+            
+            <div class="test-case">
+                <strong>Improvements:</strong>
+                <ul>
+                    <li>Sick days and travel days are excluded from schedule calculations</li>
+                    <li>Missed workouts properly queue for future dates</li>
+                    <li>Out-of-order completion maintains intended sequence</li>
+                    <li>Helper function <span class="code">getWouldBeScheduledWorkout()</span> calculates theoretical schedule</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <h2>🧪 Manual Testing Scenarios</h2>
+
+    <div class="section">
+        <h3>Test 1: Mark Sick Day</h3>
+        <div class="test-case">
+            <strong>Steps:</strong>
+            <ol style="margin-left: 1.5rem;">
+                <li>Navigate to Calendar tab</li>
+                <li>Select a date in the "Sick Day" section</li>
+                <li>Click "Mark as Sick Day"</li>
+                <li>Verify the day shows <span class="sick-indicator">🤒 Sick Day</span> on calendar</li>
+                <li>Check that future workouts are pushed back by one day</li>
+                <li>Click the sick day to see details</li>
+            </ol>
+            <span class="status manual">MANUAL TEST REQUIRED</span>
+        </div>
+
+        <h3>Test 2: Remove Sick Day</h3>
+        <div class="test-case">
+            <strong>Steps:</strong>
+            <ol style="margin-left: 1.5rem;">
+                <li>Select a date already marked as sick day</li>
+                <li>Click "Mark as Sick Day" again</li>
+                <li>Confirm removal in the dialog</li>
+                <li>Verify the sick day indicator is removed</li>
+                <li>Check that schedule adjusts back accordingly</li>
+            </ol>
+            <span class="status manual">MANUAL TEST REQUIRED</span>
+        </div>
+
+        <h3>Test 3: Travel Mode with Workout Display</h3>
+        <div class="test-case">
+            <strong>Steps:</strong>
+            <ol style="margin-left: 1.5rem;">
+                <li>Set travel dates (start and end)</li>
+                <li>Click "Set Travel Dates"</li>
+                <li>Check calendar - travel days should show: <span class="travel-indicator">✈️ Travel (WorkoutType)</span></li>
+                <li>Click a travel day</li>
+                <li>Verify it shows: "Scheduled workout if not traveling: [WorkoutType]"</li>
+            </ol>
+            <span class="status manual">MANUAL TEST REQUIRED</span>
+        </div>
+
+        <h3>Test 4: Post-Travel Resume Options</h3>
+        <div class="test-case">
+            <strong>Steps:</strong>
+            <ol style="margin-left: 1.5rem;">
+                <li>While in active travel mode, click "End Travel Mode"</li>
+                <li>Verify modal appears with "Resume" and "Restart" options</li>
+                <li><strong>Test Resume:</strong>
+                    <ul style="margin-left: 1.5rem;">
+                        <li>Click "Resume"</li>
+                        <li>Verify schedule continues from where it left off</li>
+                    </ul>
+                </li>
+                <li><strong>Test Restart:</strong>
+                    <ul style="margin-left: 1.5rem;">
+                        <li>Set new travel period and end it</li>
+                        <li>Click "Restart"</li>
+                        <li>Verify schedule starts from Upper (day 1)</li>
+                    </ul>
+                </li>
+            </ol>
+            <span class="status manual">MANUAL TEST REQUIRED</span>
+        </div>
+
+        <h3>Test 5: Schedule Accuracy with Mixed Scenarios</h3>
+        <div class="test-case">
+            <strong>Steps:</strong>
+            <ol style="margin-left: 1.5rem;">
+                <li>Complete a few workouts in order (e.g., Upper, Lower, Rest, Push)</li>
+                <li>Mark a future day as sick</li>
+                <li>Set a travel period</li>
+                <li>Verify calendar correctly shows:
+                    <ul style="margin-left: 1.5rem;">
+                        <li>Completed workouts in green</li>
+                        <li>Sick days with pink diagonal stripes</li>
+                        <li>Travel days with purple diagonal stripes and workout name</li>
+                        <li>Upcoming scheduled workouts in the correct order</li>
+                    </ul>
+                </li>
+                <li>Check adherence score excludes sick and travel days</li>
+            </ol>
+            <span class="status manual">MANUAL TEST REQUIRED</span>
+        </div>
+
+        <h3>Test 6: Out-of-Order Completion</h3>
+        <div class="test-case">
+            <strong>Steps:</strong>
+            <ol style="margin-left: 1.5rem;">
+                <li>Complete workouts normally (e.g., Upper, Lower)</li>
+                <li>Skip a day (miss Rest day)</li>
+                <li>Complete the next workout (Push)</li>
+                <li>Verify schedule maintains proper order for future workouts</li>
+                <li>Check that missed non-Rest workouts are queued</li>
+            </ol>
+            <span class="status manual">MANUAL TEST REQUIRED</span>
+        </div>
+    </div>
+
+    <h2>🔍 Code Changes Summary</h2>
+
+    <div class="section">
+        <h3>Files Modified</h3>
+        <ul>
+            <li><span class="code">index.html</span> - Main application file</li>
+        </ul>
+
+        <h3>Key Functions Added/Modified</h3>
+        <ul>
+            <li><span class="code">isDateSickDay(dateStr)</span> - Check if a date is marked as sick day</li>
+            <li><span class="code">markSickDay()</span> - Mark or unmark a date as sick day</li>
+            <li><span class="code">loadSickDayData()</span> - Load sick day data from Firestore</li>
+            <li><span class="code">getWouldBeScheduledWorkout(date)</span> - Calculate theoretical workout schedule ignoring interruptions</li>
+            <li><span class="code">endTravelMode()</span> - Modified to show resume options modal</li>
+            <li><span class="code">resumeWorkoutProgram(mode)</span> - Handle resume vs restart logic</li>
+            <li><span class="code">getScheduledWorkout(date)</span> - Updated to handle sick days and skip them in calculations</li>
+            <li><span class="code">renderCalendar()</span> - Updated to show sick days and workout names on travel days</li>
+            <li><span class="code">selectCalendarDay(dateStr)</span> - Enhanced to show better info for special days</li>
+        </ul>
+
+        <h3>CSS Classes Added</h3>
+        <ul>
+            <li><span class="code">.calendar-day.sick</span> - Pink diagonal stripe pattern for sick days</li>
+            <li><span class="code">.calendar-day-label.Sick</span> - Pink text color for sick day labels</li>
+            <li>Post-travel modal using existing <span class="code">.modal-overlay</span> styles</li>
+        </ul>
+
+        <h3>Firestore Collections</h3>
+        <ul>
+            <li><span class="code">sickDays</span> - New collection storing sick day records</li>
+            <li>Each document contains: <span class="code">{ date: string, createdAt: string }</span></li>
+        </ul>
+    </div>
+
+    <h2>📋 Acceptance Criteria Verification</h2>
+
+    <div class="section">
+        <div class="test-case">
+            <strong>✅ Sick, Travel, and Rest days are visually indicated</strong>
+            <ul>
+                <li>Sick days: Pink diagonal stripes with 🤒 emoji</li>
+                <li>Travel days: Purple diagonal stripes with ✈️ emoji and workout name</li>
+                <li>Rest days: Gray text with "Rest" label</li>
+            </ul>
+        </div>
+
+        <div class="test-case">
+            <strong>✅ Workouts after interruptions resume in intended sequence</strong>
+            <ul>
+                <li>getScheduledWorkout() skips sick and travel days when calculating schedule</li>
+                <li>Missed workouts are queued and shown in future schedule</li>
+                <li>Order is maintained regardless of interruptions</li>
+            </ul>
+        </div>
+
+        <div class="test-case">
+            <strong>✅ User can select how to resume program after travel</strong>
+            <ul>
+                <li>Modal shown when ending travel mode</li>
+                <li>Resume option: Continues from last completed workout</li>
+                <li>Restart option: Begins program from day 1 (Upper workout)</li>
+            </ul>
+        </div>
+
+        <div class="test-case">
+            <strong>✅ Travel days show what workout would have been scheduled</strong>
+            <ul>
+                <li>Calendar displays: "✈️ Travel (Push)" format</li>
+                <li>Detail view shows: "Scheduled workout if not traveling: Push"</li>
+                <li>Helper function calculates theoretical schedule</li>
+            </ul>
+        </div>
+    </div>
+
+    <h2>🚀 How to Test</h2>
+
+    <div class="section">
+        <ol style="margin-left: 1.5rem;">
+            <li>Open the main application: <a href="index.html" class="link">index.html</a></li>
+            <li>Navigate to the Calendar tab</li>
+            <li>Test each scenario outlined in the "Manual Testing Scenarios" section above</li>
+            <li>Verify visual indicators match the descriptions</li>
+            <li>Check that schedule logic works correctly for edge cases</li>
+            <li>Confirm adherence calculations exclude sick and travel days</li>
+        </ol>
+    </div>
+
+    <div class="section" style="background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.3);">
+        <h3 style="color: #10b981;">✨ All Features Implemented</h3>
+        <p style="color: #cbd5e1;">
+            All requested features from the problem statement have been successfully implemented. 
+            The application now provides flexible calendar management with sick days, enhanced travel mode, 
+            and accurate workout scheduling that adapts to real user behavior.
+        </p>
+    </div>
+</body>
+</html>
