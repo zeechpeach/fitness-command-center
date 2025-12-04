@@ -301,6 +301,50 @@
             </ol>
             <span class="status manual">MANUAL TEST REQUIRED</span>
         </div>
+
+        <h3>Test 7: Logging Workout on Sick Day</h3>
+        <div class="test-case">
+            <strong>Steps:</strong>
+            <ol style="margin-left: 1.5rem;">
+                <li>Mark a specific date as a sick day (e.g., yesterday or a recent date)</li>
+                <li>Verify the calendar shows <span class="sick-indicator">🤒 Sick Day</span></li>
+                <li>Log a workout on that same date (e.g., Push workout)</li>
+                <li>Verify the calendar now shows the logged workout (e.g., "Push") instead of just "Sick"</li>
+                <li>Check that the logged workout is counted in adherence calculations</li>
+                <li>Verify future scheduled workouts use this logged workout as the anchor (schedule continues from Push, not from the last workout before the sick day)</li>
+                <li>Check December calendar to ensure the schedule properly continues from the logged workout on the sick day</li>
+            </ol>
+            <span class="status manual">MANUAL TEST REQUIRED</span>
+        </div>
+
+        <h3>Test 8: Logging Workout on Travel Day</h3>
+        <div class="test-case">
+            <strong>Steps:</strong>
+            <ol style="margin-left: 1.5rem;">
+                <li>Set a travel period for specific dates</li>
+                <li>Verify travel days show <span class="travel-indicator">✈️ Travel (WorkoutType)</span></li>
+                <li>Log a workout on one of the travel days (e.g., Lower workout)</li>
+                <li>Verify the calendar shows the logged workout type for that date</li>
+                <li>Check that the logged workout is counted in adherence calculations</li>
+                <li>Verify that the logged workout becomes the new anchor for future scheduling</li>
+                <li>Verify that other travel days without logged workouts continue to show as travel days and are excluded from adherence</li>
+            </ol>
+            <span class="status manual">MANUAL TEST REQUIRED</span>
+        </div>
+
+        <h3>Test 9: Sick Day Without Workout Remains Excluded</h3>
+        <div class="test-case">
+            <strong>Steps:</strong>
+            <ol style="margin-left: 1.5rem;">
+                <li>Mark a date as a sick day</li>
+                <li>Do NOT log any workout on that date</li>
+                <li>Verify the sick day shows <span class="sick-indicator">🤒 Sick Day</span> on calendar</li>
+                <li>Check adherence calculations exclude this sick day (not counted as scheduled or missed)</li>
+                <li>Verify future schedule continues as if the sick day doesn't exist in the sequence</li>
+                <li>Ensure this matches the previous behavior (sick days without workouts are skipped)</li>
+            </ol>
+            <span class="status manual">MANUAL TEST REQUIRED</span>
+        </div>
     </div>
 
     <h2>🔍 Code Changes Summary</h2>
@@ -374,6 +418,17 @@
                 <li>Calendar displays: "✈️ Travel (Push)" format</li>
                 <li>Detail view shows: "Scheduled workout if not traveling: Push"</li>
                 <li>Helper function calculates theoretical schedule</li>
+            </ul>
+        </div>
+
+        <div class="test-case">
+            <strong>✅ Logged workouts on sick/travel days take precedence</strong>
+            <ul>
+                <li>Actual logged workouts override sick/travel markers for scheduling</li>
+                <li>Logged workouts on sick/travel days are counted in adherence calculations</li>
+                <li>These logged workouts become anchors for future scheduling</li>
+                <li>Calendar shows the workout type (not just "Sick" or "Travel") when a workout is logged</li>
+                <li>Sick/travel days without logged workouts remain excluded from adherence and scheduling</li>
             </ul>
         </div>
     </div>
