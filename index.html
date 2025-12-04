@@ -3588,7 +3588,9 @@
             const actualWorkout = getWorkoutForDate(date);
             
             // If there's an actual workout on this date, return its type (HIGHEST PRIORITY)
-            // A logged workout overrides sick/travel markers
+            // A logged workout overrides sick/travel markers because actual workout data
+            // is authoritative - users want logged workouts to count toward their progress
+            // even if the date was originally marked as sick or travel
             if (actualWorkout) {
                 return actualWorkout.day;
             }
@@ -3609,7 +3611,8 @@
             const todayDate = new Date(todayStr + 'T00:00:00.000Z');
             
             // Find the most recent completed NON-REST workout
-            // Include workouts on sick/travel days (logged workouts are authoritative)
+            // Include all non-Rest workouts, regardless of sick/travel status
+            // (logged workouts are authoritative and should be used for schedule base calculations)
             const completedWorkouts = allWorkouts
                 .filter(w => {
                     return w.day !== 'Rest';
@@ -5677,7 +5680,10 @@
             // Check if there's already a workout logged for this date
             const existingWorkout = getWorkoutForDate(dateInput);
             if (existingWorkout) {
-                if (!confirm('There is already a workout logged for this day. The logged workout will remain visible and count toward adherence. Continue marking as sick day?')) {
+                const message = 'There is already a workout logged for this day.\n\n' +
+                                'The logged workout will remain visible and count toward adherence.\n\n' +
+                                'Continue marking as sick day?';
+                if (!confirm(message)) {
                     return;
                 }
             }
