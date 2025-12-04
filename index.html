@@ -3587,7 +3587,13 @@
             const queryDate = new Date(date + 'T00:00:00.000Z');
             const actualWorkout = getWorkoutForDate(date);
             
-            // Check if date is a sick day
+            // If there's an actual workout logged on this date, it takes precedence over sick/travel markers
+            // This ensures logged workouts count for adherence and become anchors for future scheduling
+            if (actualWorkout) {
+                return actualWorkout.day;
+            }
+            
+            // Check if date is a sick day (only if no workout was logged)
             if (isDateSickDay(date)) {
                 return 'Sick';
             }
@@ -3597,21 +3603,19 @@
                 return 'Travel';
             }
             
-            // If there's an actual workout on this date, return its type
-            if (actualWorkout) {
-                return actualWorkout.day;
-            }
-            
             // For scheduling, find the most recent completed NON-REST workout
             // This ensures the sequence progresses based on actual training, not calendar days
             const todayStr = getTodayDateString();
             const todayDate = new Date(todayStr + 'T00:00:00.000Z');
             
-            // Find the most recent completed NON-REST workout (excluding travel days, sick days, and rest days)
+            // Find the most recent completed NON-REST workout
+            // Include workouts logged on sick/travel days, as they count as completed workouts
             const completedWorkouts = allWorkouts
                 .filter(w => {
                     const workoutDate = new Date(w.date + 'T00:00:00.000Z');
-                    return !isDateInTravelMode(w.date) && !isDateSickDay(w.date) && w.day !== 'Rest';
+                    // Include all non-Rest workouts, even those on sick/travel days
+                    // (since a logged workout overrides the sick/travel marker)
+                    return w.day !== 'Rest';
                 })
                 .sort((a, b) => new Date(b.date + 'T00:00:00.000Z') - new Date(a.date + 'T00:00:00.000Z'));
             
@@ -3635,7 +3639,10 @@
                     
                     while (checkDate < todayDate) {
                         const checkDateStr = checkDate.toISOString().split('T')[0];
+                        const actualWorkoutOnDate = getWorkoutForDate(checkDateStr);
                         
+                        // Skip sick/travel days ONLY if no workout was actually logged
+                        // If a workout was logged, treat it as a normal workout day
                         if (!isDateInTravelMode(checkDateStr) && !isDateSickDay(checkDateStr)) {
                             // Move to next in schedule
                             currentIndex = (currentIndex + 1) % workoutSchedule.length;
@@ -3645,7 +3652,18 @@
                             expectedSchedule.push({
                                 date: checkDateStr,
                                 workout: expectedWorkout,
-                                completed: !!getWorkoutForDate(checkDateStr)
+                                completed: !!actualWorkoutOnDate
+                            });
+                        } else if (actualWorkoutOnDate) {
+                            // This is a sick/travel day BUT a workout was logged
+                            // Count it as completed and move schedule forward
+                            currentIndex = (currentIndex + 1) % workoutSchedule.length;
+                            const expectedWorkout = workoutSchedule[currentIndex];
+                            
+                            expectedSchedule.push({
+                                date: checkDateStr,
+                                workout: actualWorkoutOnDate.day,
+                                completed: true
                             });
                         }
                         
@@ -3677,11 +3695,18 @@
                     
                     // Calculate which position in the queue corresponds to the query date
                     // Count non-travel and non-sick days from today to query date
+                    // But include sick/travel days if a workout was actually logged on them
                     let daysFromToday = 0;
                     let countDate = new Date(todayDate);
                     while (countDate < queryDate) {
                         const countDateStr = countDate.toISOString().split('T')[0];
+                        const actualWorkoutOnDate = getWorkoutForDate(countDateStr);
+                        
+                        // Count this day if it's not sick/travel, OR if it is but has a logged workout
                         if (!isDateInTravelMode(countDateStr) && !isDateSickDay(countDateStr)) {
+                            daysFromToday++;
+                        } else if (actualWorkoutOnDate) {
+                            // Sick/travel day with a logged workout - count it
                             daysFromToday++;
                         }
                         // Add 1 day in milliseconds to avoid timezone mutation issues
@@ -3705,7 +3730,13 @@
                 let d = new Date(mostRecentDate);
                 while (d < queryDate) {
                     const checkDateStr = d.toISOString().split('T')[0];
+                    const actualWorkoutOnDate = getWorkoutForDate(checkDateStr);
+                    
+                    // Count days, but include sick/travel days if they have logged workouts
                     if (!isDateInTravelMode(checkDateStr) && !isDateSickDay(checkDateStr)) {
+                        daysSince++;
+                    } else if (actualWorkoutOnDate) {
+                        // Sick/travel day with a logged workout - count it
                         daysSince++;
                     }
                     // Add 1 day in milliseconds to avoid timezone mutation issues
@@ -3722,7 +3753,13 @@
                 let d = new Date(referenceDate);
                 while (d < queryDate) {
                     const checkDateStr = d.toISOString().split('T')[0];
+                    const actualWorkoutOnDate = getWorkoutForDate(checkDateStr);
+                    
+                    // Count days, but include sick/travel days if they have logged workouts
                     if (!isDateInTravelMode(checkDateStr) && !isDateSickDay(checkDateStr)) {
+                        nonSpecialDays++;
+                    } else if (actualWorkoutOnDate) {
+                        // Sick/travel day with a logged workout - count it
                         nonSpecialDays++;
                     }
                     // Add 1 day in milliseconds to avoid timezone mutation issues
