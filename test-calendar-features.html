@@ -301,6 +301,57 @@
             </ol>
             <span class="status manual">MANUAL TEST REQUIRED</span>
         </div>
+
+        <h3>Test 7: Logged Workout Overrides Sick Day Marker</h3>
+        <div class="test-case">
+            <strong>Steps:</strong>
+            <ol style="margin-left: 1.5rem;">
+                <li>Mark a future date (e.g., tomorrow) as a Sick Day</li>
+                <li>Verify the calendar shows <span class="sick-indicator">🤒 Sick Day</span></li>
+                <li>Log a workout on that same sick day date (e.g., complete "Upper" workout)</li>
+                <li>Check calendar - it should now show the logged workout (Upper) instead of "Sick Day"</li>
+                <li>Verify the workout appears in green (completed) on the calendar</li>
+                <li>Check adherence score - it should increment by 1 for the completed workout</li>
+                <li>Verify future schedule re-bases from the logged workout on that date</li>
+                <li>Next scheduled workout should follow the logged workout in the cycle</li>
+            </ol>
+            <span class="status manual">MANUAL TEST REQUIRED</span>
+        </div>
+
+        <h3>Test 8: Logged Workout Overrides Travel Mode</h3>
+        <div class="test-case">
+            <strong>Steps:</strong>
+            <ol style="margin-left: 1.5rem;">
+                <li>Set a travel period (e.g., 3 days starting tomorrow)</li>
+                <li>Verify calendar shows <span class="travel-indicator">✈️ Travel (WorkoutType)</span> for those dates</li>
+                <li>Log a workout on one of the travel days (e.g., complete "Lower" workout)</li>
+                <li>Check calendar - it should show the logged workout (Lower) instead of "Travel"</li>
+                <li>Verify the workout appears in green (completed) on the calendar</li>
+                <li>Check adherence - the travel day with logged workout should count as completed</li>
+                <li>Verify future schedule continues from the logged workout</li>
+                <li>Other travel days without logged workouts should still show as Travel</li>
+            </ol>
+            <span class="status manual">MANUAL TEST REQUIRED</span>
+        </div>
+
+        <h3>Test 9: Sick Day Warning When Workout Already Logged</h3>
+        <div class="test-case">
+            <strong>Steps:</strong>
+            <ol style="margin-left: 1.5rem;">
+                <li>Log a workout for today or a past date (e.g., "Push")</li>
+                <li>Attempt to mark that same date as a Sick Day</li>
+                <li>Verify a confirmation dialog appears warning that a workout is already logged</li>
+                <li>Confirm the dialog mentions the workout will remain visible and count toward adherence</li>
+                <li>If you proceed, verify:
+                    <ul style="margin-left: 1.5rem;">
+                        <li>The logged workout is still visible on calendar</li>
+                        <li>The workout still counts in adherence</li>
+                        <li>The sick day marker is set but doesn't override the workout</li>
+                    </ul>
+                </li>
+            </ol>
+            <span class="status manual">MANUAL TEST REQUIRED</span>
+        </div>
     </div>
 
     <h2>🔍 Code Changes Summary</h2>
@@ -314,12 +365,13 @@
         <h3>Key Functions Added/Modified</h3>
         <ul>
             <li><span class="code">isDateSickDay(dateStr)</span> - Check if a date is marked as sick day</li>
-            <li><span class="code">markSickDay()</span> - Mark or unmark a date as sick day</li>
+            <li><span class="code">markSickDay()</span> - Mark or unmark a date as sick day (warns if workout exists)</li>
             <li><span class="code">loadSickDayData()</span> - Load sick day data from Firestore</li>
             <li><span class="code">getWouldBeScheduledWorkout(date)</span> - Calculate theoretical workout schedule ignoring interruptions</li>
             <li><span class="code">endTravelMode()</span> - Modified to show resume options modal</li>
             <li><span class="code">resumeWorkoutProgram(mode)</span> - Handle resume vs restart logic</li>
-            <li><span class="code">getScheduledWorkout(date)</span> - Updated to handle sick days and skip them in calculations</li>
+            <li><span class="code">getScheduledWorkout(date)</span> - Updated to prioritize logged workouts over sick/travel markers; counts dates with logged workouts in schedule calculations</li>
+            <li><span class="code">calculateAdherence()</span> - Updated to count sick/travel days with logged workouts toward adherence</li>
             <li><span class="code">renderCalendar()</span> - Updated to show sick days and workout names on travel days</li>
             <li><span class="code">selectCalendarDay(dateStr)</span> - Enhanced to show better info for special days</li>
         </ul>
@@ -374,6 +426,17 @@
                 <li>Calendar displays: "✈️ Travel (Push)" format</li>
                 <li>Detail view shows: "Scheduled workout if not traveling: Push"</li>
                 <li>Helper function calculates theoretical schedule</li>
+            </ul>
+        </div>
+
+        <div class="test-case">
+            <strong>✅ Logged workouts override sick/travel markers</strong>
+            <ul>
+                <li>A workout logged on a sick day is displayed and counts toward adherence</li>
+                <li>A workout logged on a travel day is displayed and counts toward adherence</li>
+                <li>Calendar shows the actual workout instead of sick/travel indicator</li>
+                <li>Future schedule re-bases from the logged workout date</li>
+                <li>Sick/travel days without logged workouts remain skipped in schedule</li>
             </ul>
         </div>
     </div>

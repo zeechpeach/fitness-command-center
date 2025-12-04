@@ -3587,6 +3587,12 @@
             const queryDate = new Date(date + 'T00:00:00.000Z');
             const actualWorkout = getWorkoutForDate(date);
             
+            // If there's an actual workout on this date, return its type (HIGHEST PRIORITY)
+            // A logged workout overrides sick/travel markers
+            if (actualWorkout) {
+                return actualWorkout.day;
+            }
+            
             // Check if date is a sick day
             if (isDateSickDay(date)) {
                 return 'Sick';
@@ -3597,21 +3603,16 @@
                 return 'Travel';
             }
             
-            // If there's an actual workout on this date, return its type
-            if (actualWorkout) {
-                return actualWorkout.day;
-            }
-            
             // For scheduling, find the most recent completed NON-REST workout
             // This ensures the sequence progresses based on actual training, not calendar days
             const todayStr = getTodayDateString();
             const todayDate = new Date(todayStr + 'T00:00:00.000Z');
             
-            // Find the most recent completed NON-REST workout (excluding travel days, sick days, and rest days)
+            // Find the most recent completed NON-REST workout
+            // Include workouts on sick/travel days (logged workouts are authoritative)
             const completedWorkouts = allWorkouts
                 .filter(w => {
-                    const workoutDate = new Date(w.date + 'T00:00:00.000Z');
-                    return !isDateInTravelMode(w.date) && !isDateSickDay(w.date) && w.day !== 'Rest';
+                    return w.day !== 'Rest';
                 })
                 .sort((a, b) => new Date(b.date + 'T00:00:00.000Z') - new Date(a.date + 'T00:00:00.000Z'));
             
@@ -3635,8 +3636,10 @@
                     
                     while (checkDate < todayDate) {
                         const checkDateStr = checkDate.toISOString().split('T')[0];
+                        const hasWorkout = !!getWorkoutForDate(checkDateStr);
+                        const isSickOrTravel = isDateInTravelMode(checkDateStr) || isDateSickDay(checkDateStr);
                         
-                        if (!isDateInTravelMode(checkDateStr) && !isDateSickDay(checkDateStr)) {
+                        if (hasWorkout || !isSickOrTravel) {
                             // Move to next in schedule
                             currentIndex = (currentIndex + 1) % workoutSchedule.length;
                             const expectedWorkout = workoutSchedule[currentIndex];
@@ -3676,12 +3679,14 @@
                     }
                     
                     // Calculate which position in the queue corresponds to the query date
-                    // Count non-travel and non-sick days from today to query date
+                    // Count days that have a logged workout OR are not sick/travel days
                     let daysFromToday = 0;
                     let countDate = new Date(todayDate);
                     while (countDate < queryDate) {
                         const countDateStr = countDate.toISOString().split('T')[0];
-                        if (!isDateInTravelMode(countDateStr) && !isDateSickDay(countDateStr)) {
+                        const hasWorkout = !!getWorkoutForDate(countDateStr);
+                        const isSickOrTravel = isDateInTravelMode(countDateStr) || isDateSickDay(countDateStr);
+                        if (hasWorkout || !isSickOrTravel) {
                             daysFromToday++;
                         }
                         // Add 1 day in milliseconds to avoid timezone mutation issues
@@ -3705,7 +3710,9 @@
                 let d = new Date(mostRecentDate);
                 while (d < queryDate) {
                     const checkDateStr = d.toISOString().split('T')[0];
-                    if (!isDateInTravelMode(checkDateStr) && !isDateSickDay(checkDateStr)) {
+                    const hasWorkout = !!getWorkoutForDate(checkDateStr);
+                    const isSickOrTravel = isDateInTravelMode(checkDateStr) || isDateSickDay(checkDateStr);
+                    if (hasWorkout || !isSickOrTravel) {
                         daysSince++;
                     }
                     // Add 1 day in milliseconds to avoid timezone mutation issues
@@ -3722,7 +3729,9 @@
                 let d = new Date(referenceDate);
                 while (d < queryDate) {
                     const checkDateStr = d.toISOString().split('T')[0];
-                    if (!isDateInTravelMode(checkDateStr) && !isDateSickDay(checkDateStr)) {
+                    const hasWorkout = !!getWorkoutForDate(checkDateStr);
+                    const isSickOrTravel = isDateInTravelMode(checkDateStr) || isDateSickDay(checkDateStr);
+                    if (hasWorkout || !isSickOrTravel) {
                         nonSpecialDays++;
                     }
                     // Add 1 day in milliseconds to avoid timezone mutation issues
@@ -3754,7 +3763,9 @@
                 const scheduledWorkout = getScheduledWorkout(dateStr);
                 const actualWorkout = getWorkoutForDate(dateStr);
                 
-                // Exclude rest days, travel days, and sick days from adherence calculations
+                // Exclude rest days from adherence calculations
+                // Sick/travel days without logged workouts are excluded (getScheduledWorkout returns 'Sick'/'Travel')
+                // Sick/travel days WITH logged workouts are included (getScheduledWorkout returns the workout type)
                 if (scheduledWorkout !== 'Rest' && scheduledWorkout !== 'Travel' && scheduledWorkout !== 'Sick') {
                     scheduled++;
                     if (actualWorkout) {
@@ -5666,7 +5677,7 @@
             // Check if there's already a workout logged for this date
             const existingWorkout = getWorkoutForDate(dateInput);
             if (existingWorkout) {
-                if (!confirm('There is already a workout logged for this day. Marking it as sick will not delete the workout but will adjust future scheduling. Continue?')) {
+                if (!confirm('There is already a workout logged for this day. The logged workout will remain visible and count toward adherence. Continue marking as sick day?')) {
                     return;
                 }
             }
