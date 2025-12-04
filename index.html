@@ -5363,20 +5363,22 @@
                 let displayLabel;
                 let labelClass;
                 
-                if (isDateSickDay(dateStr)) {
+                // Priority 1: If there's an actual logged workout, show it (overrides sick/travel)
+                if (actualWorkout && actualWorkout.day) {
+                    classes.push('has-workout');
+                    displayLabel = actualWorkout.day;
+                    labelClass = actualWorkout.day;
+                } else if (isDateSickDay(dateStr)) {
+                    // Priority 2: Sick day (only if no workout logged)
                     classes.push('sick');
                     displayLabel = '🤒 Sick Day';
                     labelClass = 'Sick';
                 } else if (scheduledWorkout === 'Travel') {
+                    // Priority 3: Travel day (only if no workout logged)
                     classes.push('travel');
                     const wouldBeWorkout = getWouldBeScheduledWorkout(dateStr);
                     displayLabel = `✈️ Travel (${wouldBeWorkout})`;
                     labelClass = scheduledWorkout;
-                } else if (actualWorkout && actualWorkout.day) {
-                    // Use actual logged workout type
-                    classes.push('has-workout');
-                    displayLabel = actualWorkout.day;
-                    labelClass = actualWorkout.day;
                 } else if (scheduledWorkout !== 'Rest' && scheduledWorkout !== 'Travel' && date < new Date()) {
                     classes.push('missed');
                     displayLabel = scheduledWorkout;
