@@ -3658,7 +3658,6 @@
                             // This is a sick/travel day BUT a workout was logged
                             // Count it as completed and move schedule forward
                             currentIndex = (currentIndex + 1) % workoutSchedule.length;
-                            const expectedWorkout = workoutSchedule[currentIndex];
                             
                             expectedSchedule.push({
                                 date: checkDateStr,
@@ -5552,6 +5551,24 @@
                 return;
             }
             
+            // Check if there are existing workouts in the travel period
+            let hasExistingWorkouts = false;
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+                const dateStr = d.toISOString().split('T')[0];
+                if (getWorkoutForDate(dateStr)) {
+                    hasExistingWorkouts = true;
+                    break;
+                }
+            }
+            
+            if (hasExistingWorkouts) {
+                if (!confirm('Workouts are already logged during this period.\n\nLogged workouts will take precedence and count toward adherence.\n\nContinue setting travel dates?')) {
+                    return;
+                }
+            }
+            
             try {
                 const travelPeriod = {
                     startDate,
@@ -5703,7 +5720,7 @@
             // Check if there's already a workout logged for this date
             const existingWorkout = getWorkoutForDate(dateInput);
             if (existingWorkout) {
-                if (!confirm('There is already a workout logged for this day. The logged workout will take precedence and count toward your adherence. The sick day marker will only apply if you don\'t have a workout logged. Continue?')) {
+                if (!confirm('A workout is already logged for this day.\n\nThe logged workout will take precedence and count toward adherence.\n\nContinue marking as sick day?')) {
                     return;
                 }
             }
