@@ -5703,7 +5703,7 @@
             // Check if there's already a workout logged for this date
             const existingWorkout = getWorkoutForDate(dateInput);
             if (existingWorkout) {
-                if (!confirm('There is already a workout logged for this day. Marking it as sick will not delete the workout but will adjust future scheduling. Continue?')) {
+                if (!confirm('There is already a workout logged for this day. The logged workout will take precedence and count toward your adherence. The sick day marker will only apply if you don\'t have a workout logged. Continue?')) {
                     return;
                 }
             }
