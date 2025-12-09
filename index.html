@@ -3583,8 +3583,44 @@
             }
         }
         
+        // Helper function: Calculate calendar days between two dates (whole days)
+        // Returns positive number if date2 is after date1, negative if before
+        function daysBetween(date1Str, date2Str) {
+            const d1 = new Date(date1Str + 'T00:00:00.000Z');
+            const d2 = new Date(date2Str + 'T00:00:00.000Z');
+            const diffMs = d2.getTime() - d1.getTime();
+            const diffDays = Math.floor(diffMs / (24 * 60 * 60 * 1000));
+            return diffDays;
+        }
+        
+        // Helper function: Find the most recent completed non-Rest workout before (or on) a target date
+        // Returns { date: string, day: string } or null if none found
+        function getMostRecentCompletedNonRestWorkoutBefore(targetDateStr) {
+            const targetDate = new Date(targetDateStr + 'T00:00:00.000Z');
+            
+            // Filter to non-Rest workouts that are on or before the target date
+            const eligibleWorkouts = allWorkouts
+                .filter(w => {
+                    if (w.day === 'Rest') return false;
+                    const workoutDate = new Date(w.date + 'T00:00:00.000Z');
+                    return workoutDate <= targetDate;
+                })
+                .sort((a, b) => {
+                    const dateA = new Date(a.date + 'T00:00:00.000Z');
+                    const dateB = new Date(b.date + 'T00:00:00.000Z');
+                    return dateB.getTime() - dateA.getTime(); // Most recent first
+                });
+            
+            if (eligibleWorkouts.length > 0) {
+                return {
+                    date: eligibleWorkouts[0].date,
+                    day: eligibleWorkouts[0].day
+                };
+            }
+            return null;
+        }
+        
         function getScheduledWorkout(date) {
-            const queryDate = new Date(date + 'T00:00:00.000Z');
             const actualWorkout = getWorkoutForDate(date);
             
             // If there's an actual workout on this date, return its type (HIGHEST PRIORITY)
@@ -3605,142 +3641,32 @@
                 return 'Travel';
             }
             
-            // For scheduling, find the most recent completed NON-REST workout
-            // This ensures the sequence progresses based on actual training, not calendar days
-            const todayStr = getTodayDateString();
-            const todayDate = new Date(todayStr + 'T00:00:00.000Z');
+            // Calendar-day-based advancement approach:
+            // Find the most recent completed non-Rest workout, then advance through the 7-day cycle
+            // by counting calendar days (not skipping Rest/Sick/Travel)
             
-            // Find the most recent completed NON-REST workout
-            // Include all non-Rest workouts, regardless of sick/travel status
-            // (logged workouts are authoritative and should be used for schedule base calculations)
-            const completedWorkouts = allWorkouts
-                .filter(w => {
-                    return w.day !== 'Rest';
-                })
-                .sort((a, b) => new Date(b.date + 'T00:00:00.000Z') - new Date(a.date + 'T00:00:00.000Z'));
+            const lastCompleted = getMostRecentCompletedNonRestWorkoutBefore(date);
             
-            if (completedWorkouts.length > 0) {
-                const mostRecent = completedWorkouts[0];
-                const mostRecentDate = new Date(mostRecent.date + 'T00:00:00.000Z');
-                const mostRecentType = mostRecent.day;
+            if (lastCompleted) {
+                // We have a most recent completed non-Rest workout
+                // Calculate calendar days between lastCompleted.date and the target date
+                const daysDiff = daysBetween(lastCompleted.date, date);
                 
-                // Find the index of the most recent workout type in the schedule
-                const lastIndex = workoutSchedule.indexOf(mostRecentType);
+                // Find the index of the last completed workout in the schedule
+                const lastCompletedIndex = workoutSchedule.indexOf(lastCompleted.day);
                 
-                // For today and future dates, check for missed workouts and adjust schedule
-                if (queryDate >= todayDate) {
-                    // Build a list of all workouts that should have been completed from the day after
-                    // the most recent workout up to yesterday, tracking which ones were missed
-                    const expectedSchedule = [];
-                    let currentIndex = lastIndex;
-                    
-                    let checkDate = new Date(mostRecentDate);
-                    checkDate = new Date(checkDate.getTime() + 24 * 60 * 60 * 1000); // Add 1 day in milliseconds
-                    
-                    while (checkDate < todayDate) {
-                        const checkDateStr = checkDate.toISOString().split('T')[0];
-                        const hasWorkout = !!getWorkoutForDate(checkDateStr);
-                        const isSickOrTravel = isDateInTravelMode(checkDateStr) || isDateSickDay(checkDateStr);
-                        
-                        if (hasWorkout || !isSickOrTravel) {
-                            // Move to next in schedule
-                            currentIndex = (currentIndex + 1) % workoutSchedule.length;
-                            const expectedWorkout = workoutSchedule[currentIndex];
-                            
-                            // Track this day in the expected schedule
-                            expectedSchedule.push({
-                                date: checkDateStr,
-                                workout: expectedWorkout,
-                                completed: !!getWorkoutForDate(checkDateStr)
-                            });
-                        }
-                        
-                        // Add 1 day in milliseconds to avoid timezone mutation issues
-                        checkDate = new Date(checkDate.getTime() + 24 * 60 * 60 * 1000);
-                    }
-                    
-                    // Build a queue of workouts that need to be done:
-                    // 1. All missed non-Rest workouts from the past (in order)
-                    // 2. Followed by future workouts continuing from where the schedule would be
-                    const workoutQueue = [];
-                    
-                    // Add missed workouts first
-                    for (const day of expectedSchedule) {
-                        if (!day.completed && day.workout !== 'Rest') {
-                            workoutQueue.push(day.workout);
-                        }
-                    }
-                    
-                    // Now add future workouts continuing from the last expected position
-                    // Start from where we left off in expectedSchedule, or from mostRecent if empty
-                    let futureIndex = currentIndex;
-                    const daysToSchedule = Math.max(MIN_SCHEDULE_DAYS, workoutQueue.length + FUTURE_SCHEDULE_BUFFER);
-                    
-                    for (let i = 0; i < daysToSchedule; i++) {
-                        futureIndex = (futureIndex + 1) % workoutSchedule.length;
-                        workoutQueue.push(workoutSchedule[futureIndex]);
-                    }
-                    
-                    // Calculate which position in the queue corresponds to the query date
-                    // Count days that have a logged workout OR are not sick/travel days
-                    let daysFromToday = 0;
-                    let countDate = new Date(todayDate);
-                    while (countDate < queryDate) {
-                        const countDateStr = countDate.toISOString().split('T')[0];
-                        const hasWorkout = !!getWorkoutForDate(countDateStr);
-                        const isSickOrTravel = isDateInTravelMode(countDateStr) || isDateSickDay(countDateStr);
-                        if (hasWorkout || !isSickOrTravel) {
-                            daysFromToday++;
-                        }
-                        // Add 1 day in milliseconds to avoid timezone mutation issues
-                        countDate = new Date(countDate.getTime() + 24 * 60 * 60 * 1000);
-                    }
-                    
-                    // Return the workout from the queue at the appropriate position
-                    if (daysFromToday < workoutQueue.length) {
-                        return workoutQueue[daysFromToday];
-                    }
-                    
-                    // Fallback: if we somehow exceed the queue (shouldn't happen with MIN_SCHEDULE_DAYS),
-                    // continue the cycle from futureIndex + excessDays
-                    const excessDays = daysFromToday - workoutQueue.length;
-                    const fallbackIndex = (futureIndex + excessDays) % workoutSchedule.length;
-                    return workoutSchedule[fallbackIndex];
-                }
-                
-                // For past dates, use the original logic (no adjustment)
-                let daysSince = 0;
-                let d = new Date(mostRecentDate);
-                while (d < queryDate) {
-                    const checkDateStr = d.toISOString().split('T')[0];
-                    const hasWorkout = !!getWorkoutForDate(checkDateStr);
-                    const isSickOrTravel = isDateInTravelMode(checkDateStr) || isDateSickDay(checkDateStr);
-                    if (hasWorkout || !isSickOrTravel) {
-                        daysSince++;
-                    }
-                    // Add 1 day in milliseconds to avoid timezone mutation issues
-                    d = new Date(d.getTime() + 24 * 60 * 60 * 1000);
-                }
-                
-                // Project forward in the 7-day cycle
-                const scheduleIndex = (lastIndex + daysSince) % workoutSchedule.length;
+                // Advance by daysDiff positions in the 7-day cycle
+                const scheduleIndex = (lastCompletedIndex + daysDiff) % workoutSchedule.length;
                 return workoutSchedule[scheduleIndex];
             } else {
-                // No workouts yet, use default schedule from reference date
-                const referenceDate = new Date('2024-01-01T00:00:00.000Z');
-                let nonSpecialDays = 0;
-                let d = new Date(referenceDate);
-                while (d < queryDate) {
-                    const checkDateStr = d.toISOString().split('T')[0];
-                    const hasWorkout = !!getWorkoutForDate(checkDateStr);
-                    const isSickOrTravel = isDateInTravelMode(checkDateStr) || isDateSickDay(checkDateStr);
-                    if (hasWorkout || !isSickOrTravel) {
-                        nonSpecialDays++;
-                    }
-                    // Add 1 day in milliseconds to avoid timezone mutation issues
-                    d = new Date(d.getTime() + 24 * 60 * 60 * 1000);
-                }
-                const scheduleIndex = ((nonSpecialDays % workoutSchedule.length) + workoutSchedule.length) % workoutSchedule.length;
+                // No completed non-Rest workouts found
+                // Fall back to a deterministic reference date: 2025-01-01 maps to workoutSchedule[0] = 'Upper'
+                // This is documented and provides predictable behavior
+                const referenceDate = '2025-01-01'; // Maps to Upper (index 0)
+                const daysDiff = daysBetween(referenceDate, date);
+                
+                // Handle negative modulo safely
+                const scheduleIndex = ((daysDiff % workoutSchedule.length) + workoutSchedule.length) % workoutSchedule.length;
                 return workoutSchedule[scheduleIndex];
             }
         }
