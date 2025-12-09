@@ -58,35 +58,61 @@ After this fix, all future workouts will log with the correct LA timezone.
 - Foods always add to the meal that has "Add Food" clicked, not based on time
 - Clear visual indication when meal has unsaved changes
 
-### 3. Workout Calendar Logic ✅
+### 3. Workout Calendar Logic ✅ (UPDATED - December 2025)
 
-**Changes Made:**
-- Fixed workout sequencing logic in `getScheduledWorkout()`:
-  - Now tracks last COMPLETED NON-REST workout (ignores both rest days AND travel days)
-  - Sequence progresses based on actual training, not calendar days
-  - When determining next workout: finds most recent non-rest completed workout, then counts days forward in the 7-day cycle
-- Travel days continue to show scheduled workout but don't affect:
-  - Workout sequencing
-  - Adherence calculations (travel days excluded from adherence metrics)
-  - Discipline scores
-- Calendar correctly handles:
-  - Rest days completed during travel (marked as completed)
-  - Workouts completed during travel (optional, tracked if logged)
-  - Proper sequence continuation after travel ends
+**Problem Fixed:**
+The previous implementation compressed the 7-day workout cycle by skipping Rest days (and other non-anchor days) when calculating which workout should be scheduled on a given calendar date. This caused:
+- Rest days to be mislabeled as workouts (e.g., Wednesday the 3rd shown as 'Push' instead of 'Rest')
+- Consecutive workout days in the calendar where a rest should appear (e.g., week of 21-27 showing two consecutive workout entries)
 
-**Expected November Calendar Results** (after moving Nov 6 workout to Nov 5):
+**Root Cause:**
+The old logic only advanced the schedule index on days that were NOT sick/travel (using `if (hasWorkout || !isSickOrTravel)`). This meant that Rest, Sick, and Travel days were skipped when counting through the 7-day cycle, causing compression.
+
+**New Implementation:**
+- **Calendar-Day-Based Advancement**: Every calendar day advances the position in the 7-day cycle, including Rest days
+- **Helper Functions Added**:
+  - `daysBetween(date1, date2)`: Calculates whole calendar days between two dates
+  - `getMostRecentCompletedNonRestWorkoutBefore(targetDate)`: Finds the most recent completed non-Rest workout
+- **Fixed Algorithm**:
+  1. If an actual logged workout exists for the date, return it (highest priority)
+  2. If the date is marked as Sick, return 'Sick'
+  3. If the date is in Travel mode, return 'Travel'
+  4. Otherwise, find the most recent completed non-Rest workout and advance through the 7-day cycle by counting **calendar days** (not skipping Rest/Sick/Travel)
+  5. If no completed workouts exist, fall back to reference date: 2025-01-01 = 'Upper' (index 0)
+- **Sequencing Behavior Preserved**: The visual schedule continues based on the most recent completed non-Rest workout (completed workouts anchor the cycle progression)
+- **Logged Workouts Take Priority**: Actual logged workouts for a date override sick/travel markers
+
+**Example Results:**
 
 Based on the 7-day cycle: Upper/Lower/Rest/Push/Pull/Legs/Rest
 
-Assuming most recent completed workout before Nov 3 was "Lower" (day 1 in cycle):
-- Nov 3 (missed): **Push** - Day 3 in cycle (after rest day on day 2)
-- Nov 4 (rest day): **Rest** - Day 4 would be rest but likely not logged
-- Nov 5: **Pull** - Completed workout (moved from Nov 6)
-- Nov 6: **Legs** - Day 6 in cycle (next after Pull)
-- Nov 7: **Rest** - Day 7 in cycle
-- Nov 8+: Cycle continues from Upper (day 1)
+**Scenario 1 - No completed workouts (uses reference date 2025-01-01 = Upper):**
+- 2025-01-01: Upper
+- 2025-01-02: Lower
+- 2025-01-03: **Rest** (correctly preserved, not skipped)
+- 2025-01-04: Push
+- 2025-01-05: Pull
+- 2025-01-06: Legs
+- 2025-01-07: **Rest** (correctly preserved)
+- 2025-01-08: Upper (cycle repeats)
 
-The calendar will now correctly show workout progression based on the last completed non-rest workout (Pull on Nov 5).
+**Scenario 2 - Last completed Lower on 2025-11-01:**
+- 2025-11-01: Lower (completed, index 1)
+- 2025-11-02: **Rest** (index 1 + 1 day = index 2)
+- 2025-11-03: Push (index 1 + 2 days = index 3)
+- 2025-11-04: Pull
+- 2025-11-05: Legs
+- 2025-11-06: **Rest** (correctly preserved)
+- 2025-11-07: Upper
+- 2025-11-08: Lower
+
+**Testing:**
+- Created comprehensive test file: `test-calendar-scheduling.html`
+- All 30 tests passing, validating:
+  - Reference date alignment
+  - Calendar-day-based advancement
+  - Rest day preservation
+  - Week-by-week correctness
 
 ## Testing Recommendations
 

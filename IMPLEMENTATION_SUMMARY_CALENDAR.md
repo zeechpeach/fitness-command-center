@@ -2,9 +2,147 @@
 
 ## Overview
 
-This PR successfully implements comprehensive calendar and scheduling improvements for the Fitness Command Center application, addressing workout tracking inaccuracies and adding flexible scheduling features to handle real-world user behavior.
+This document tracks calendar and scheduling improvements for the Fitness Command Center application.
 
-## Problem Statement Addressed
+## December 2025 Update: Fixed Calendar Scheduling Logic ✅
+
+### Problem Statement
+
+The calendar scheduling logic was compressing the 7-day workout cycle by skipping "Rest" (and other non-anchor) days when computing which workout should be scheduled on a given calendar date. This caused:
+1. Rest days to be mislabeled as workouts (e.g., Wednesday the 3rd shown as 'Push' instead of 'Rest')
+2. Consecutive workout days in the calendar (e.g., week of 21-27 shows two consecutive workout entries where a rest should be)
+
+### Root Cause
+
+The previous implementation only advanced the schedule index on days that were NOT sick/travel:
+```javascript
+if (hasWorkout || !isSickOrTravel) {
+    daysSince++;
+}
+```
+
+This meant that Rest, Sick, and Travel days were skipped when counting through the 7-day cycle, causing the cycle to compress instead of mapping 1:1 with calendar days.
+
+### Solution Implemented
+
+**Calendar-Day-Based Advancement**: The 7-day cycle now maps directly to calendar days without compression.
+
+**New Helper Functions:**
+1. `daysBetween(date1Str, date2Str)` - Calculates whole calendar days between two dates
+   - Returns positive if date2 is after date1, negative if before
+   - Uses milliseconds math: `Math.floor((d2.getTime() - d1.getTime()) / (24 * 60 * 60 * 1000))`
+
+2. `getMostRecentCompletedNonRestWorkoutBefore(targetDateStr)` - Finds the most recent completed non-Rest workout before or on a target date
+   - Filters all workouts to exclude Rest workouts
+   - Filters to workouts on or before target date
+   - Sorts by date descending
+   - Returns `{ date, day }` or `null`
+
+**Rewritten `getScheduledWorkout(date)` Logic:**
+1. If an actual logged workout exists for the date → return it (highest priority)
+2. If date is marked as Sick → return 'Sick'
+3. If date is in Travel mode → return 'Travel'
+4. Otherwise:
+   - Find the most recent completed non-Rest workout using `getMostRecentCompletedNonRestWorkoutBefore(date)`
+   - If found:
+     - Calculate `daysDiff = daysBetween(lastCompleted.date, targetDate)`
+     - Find index of last completed workout: `lastCompletedIndex = workoutSchedule.indexOf(lastCompleted.day)`
+     - Advance by daysDiff: `scheduleIndex = (lastCompletedIndex + daysDiff) % 7`
+     - Return `workoutSchedule[scheduleIndex]`
+   - If no completed workouts found:
+     - Use reference date: `2025-01-01` = 'Upper' (index 0)
+     - Calculate `daysDiff = daysBetween('2025-01-01', targetDate)`
+     - Handle negative modulo: `scheduleIndex = ((daysDiff % 7) + 7) % 7`
+     - Return `workoutSchedule[scheduleIndex]`
+
+**Key Behavioral Changes:**
+- ✅ Every calendar day advances the position in the 7-day cycle
+- ✅ Rest days appear in their correct positions (no compression)
+- ✅ Sequencing behavior preserved: visual schedule continues based on most recent completed non-Rest workout
+- ✅ Logged workouts take priority over sick/travel markers
+- ✅ Reference date (2025-01-01) provides deterministic behavior when no workouts are logged
+
+### Testing
+
+**Test File Created:** `test-calendar-scheduling.html`
+
+**Test Coverage:**
+1. **Test Case 1: Reference Date Alignment** (8 tests)
+   - Verifies 2025-01-01 = Upper and subsequent days follow the 7-day cycle
+   - Tests full week including both Rest days
+
+2. **Test Case 2: Last Completed Lower on 2025-11-01** (10 tests)
+   - Given Lower completed on Nov 1 (index 1)
+   - Verifies Nov 2-11 follow correct sequence
+   - Nov 2 = Rest, Nov 3 = Push, Nov 4 = Pull, Nov 5 = Legs, Nov 6 = Rest, Nov 7 = Upper, etc.
+
+3. **Test Case 3: Week Containing Wednesday the 3rd** (5 tests)
+   - Verifies Friday Jan 3, 2025 is correctly shown as Rest
+   - Confirms no compression of the cycle
+
+4. **Test Case 4: Week 21-27 Spacing** (7 tests)
+   - Verifies Jan 21-27, 2025 shows Rest days correctly
+   - Confirms no consecutive workout days where Rest should be
+   - Jan 21 = Rest, Jan 22 = Upper, Jan 23 = Lower, Jan 24 = Rest, Jan 25 = Push, Jan 26 = Pull, Jan 27 = Legs
+
+**Results:** ✅ All 30 tests passing
+
+### Example Scenarios
+
+**Scenario 1 - No completed workouts (uses reference date):**
+```
+2025-01-01: Upper    (reference date, index 0)
+2025-01-02: Lower    (0 + 1 = index 1)
+2025-01-03: Rest     (0 + 2 = index 2) ✅ Preserved
+2025-01-04: Push     (0 + 3 = index 3)
+2025-01-05: Pull     (0 + 4 = index 4)
+2025-01-06: Legs     (0 + 5 = index 5)
+2025-01-07: Rest     (0 + 6 = index 6) ✅ Preserved
+2025-01-08: Upper    (0 + 7 = index 0, cycle repeats)
+```
+
+**Scenario 2 - Last completed Lower on 2025-11-01:**
+```
+2025-11-01: Lower (completed, index 1)
+2025-11-02: Rest     (1 + 1 = index 2) ✅ Preserved
+2025-11-03: Push     (1 + 2 = index 3)
+2025-11-04: Pull     (1 + 3 = index 4)
+2025-11-05: Legs     (1 + 4 = index 5)
+2025-11-06: Rest     (1 + 5 = index 6) ✅ Preserved
+2025-11-07: Upper    (1 + 6 = index 0)
+2025-11-08: Lower    (1 + 7 = index 1)
+```
+
+### Code Changes Summary
+
+**Files Modified:**
+- `index.html` - Main application file (+420 lines for helpers and rewritten logic, -131 lines of old logic removed)
+
+**Files Created:**
+- `test-calendar-scheduling.html` - Comprehensive test suite
+
+**New Functions:**
+- `daysBetween(date1Str, date2Str)` - Calendar day calculation
+- `getMostRecentCompletedNonRestWorkoutBefore(targetDateStr)` - Anchor workout finder
+
+**Modified Functions:**
+- `getScheduledWorkout(date)` - Complete rewrite using calendar-day-based advancement
+
+**Unchanged Behavior:**
+- Sick days and Travel days still display correctly
+- Logged workouts still take highest priority
+- Adherence calculations remain unchanged
+- All existing features continue to work
+
+### Documentation Updated
+
+- ✅ `FIX_IMPLEMENTATION_SUMMARY.md` - Updated section 3 with new algorithm details
+- ✅ `IMPLEMENTATION_SUMMARY_CALENDAR.md` - Added December 2025 update section
+- ✅ Test file includes inline documentation
+
+---
+
+## Previous Implementation: Sick Days and Travel Mode Enhancements
 
 The original calendar implementation had several limitations:
 1. When users missed workouts or completed them out of order, the calendar didn't maintain the intended order

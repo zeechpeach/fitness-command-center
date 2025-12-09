@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendar Scheduling Fix - Visual Demonstration</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', system-ui, sans-serif;
+            background: #0a0e1a;
+            color: #e2e8f0;
+            padding: 2rem;
+            line-height: 1.6;
+        }
+
+        h1 {
+            color: #06b6d4;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        h2 {
+            color: #94a3b8;
+            margin: 2rem 0 1rem 0;
+            font-size: 1.5rem;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+
+        .section {
+            background: rgba(15, 23, 42, 0.6);
+            padding: 1.5rem;
+            border-radius: 8px;
+            border: 1px solid rgba(71, 85, 105, 0.3);
+        }
+
+        .section.before {
+            border-left: 4px solid #ef4444;
+        }
+
+        .section.after {
+            border-left: 4px solid #10b981;
+        }
+
+        .calendar {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 0.5rem;
+            margin: 1rem 0;
+        }
+
+        .day {
+            background: rgba(30, 41, 59, 0.5);
+            padding: 0.75rem;
+            border-radius: 6px;
+            text-align: center;
+            font-size: 0.85rem;
+        }
+
+        .day-header {
+            font-weight: 600;
+            color: #94a3b8;
+            padding: 0.5rem;
+        }
+
+        .day-date {
+            color: #64748b;
+            font-size: 0.75rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .day-workout {
+            font-weight: 600;
+            padding: 0.25rem;
+            border-radius: 4px;
+        }
+
+        .Upper { background: rgba(59, 130, 246, 0.3); color: #60a5fa; }
+        .Lower { background: rgba(168, 85, 247, 0.3); color: #a78bfa; }
+        .Rest { background: rgba(71, 85, 105, 0.3); color: #94a3b8; }
+        .Push { background: rgba(236, 72, 153, 0.3); color: #f472b6; }
+        .Pull { background: rgba(34, 197, 94, 0.3); color: #4ade80; }
+        .Legs { background: rgba(251, 146, 60, 0.3); color: #fb923c; }
+
+        .issue {
+            background: rgba(239, 68, 68, 0.2);
+            border: 2px solid #ef4444;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .legend {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin: 1rem 0;
+            padding: 1rem;
+            background: rgba(30, 41, 59, 0.3);
+            border-radius: 6px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .legend-box {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+
+        .explanation {
+            background: rgba(59, 130, 246, 0.1);
+            border-left: 3px solid #3b82f6;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 4px;
+        }
+
+        .success-badge {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            display: inline-block;
+            margin: 1rem 0;
+            font-weight: 600;
+        }
+
+        .error-badge {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            display: inline-block;
+            margin: 1rem 0;
+            font-weight: 600;
+        }
+
+        @media (max-width: 768px) {
+            .comparison {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📅 Calendar Scheduling Fix - Visual Demonstration</h1>
+
+        <div class="section">
+            <h2>Problem Overview</h2>
+            <p>The calendar scheduling logic was compressing the 7-day workout cycle by skipping "Rest" days when calculating the schedule. This caused:</p>
+            <ul style="margin: 1rem 0 1rem 2rem;">
+                <li>Rest days to be mislabeled as workouts</li>
+                <li>Consecutive workout days where a Rest should appear</li>
+            </ul>
+        </div>
+
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-box Upper"></div>
+                <span>Upper</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box Lower"></div>
+                <span>Lower</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box Rest"></div>
+                <span>Rest</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box Push"></div>
+                <span>Push</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box Pull"></div>
+                <span>Pull</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box Legs"></div>
+                <span>Legs</span>
+            </div>
+        </div>
+
+        <h2>Example 1: Week Starting Jan 1, 2025</h2>
+        <div class="comparison">
+            <div class="section before">
+                <h3 style="color: #ef4444;">❌ BEFORE (Incorrect - Compressed Cycle)</h3>
+                <div class="error-badge">Rest days skipped in calculation</div>
+                <div class="calendar">
+                    <div class="day-header">Wed</div>
+                    <div class="day-header">Thu</div>
+                    <div class="day-header">Fri</div>
+                    <div class="day-header">Sat</div>
+                    <div class="day-header">Sun</div>
+                    <div class="day-header">Mon</div>
+                    <div class="day-header">Tue</div>
+
+                    <div class="day">
+                        <div class="day-date">Jan 1</div>
+                        <div class="day-workout Upper">Upper</div>
+                    </div>
+                    <div class="day">
+                        <div class="day-date">Jan 2</div>
+                        <div class="day-workout Lower">Lower</div>
+                    </div>
+                    <div class="day issue">
+                        <div class="day-date">Jan 3</div>
+                        <div class="day-workout Push">Push</div>
+                        <div style="color: #ef4444; font-size: 0.7rem; margin-top: 0.25rem;">Should be Rest!</div>
+                    </div>
+                    <div class="day">
+                        <div class="day-date">Jan 4</div>
+                        <div class="day-workout Pull">Pull</div>
+                    </div>
+                    <div class="day">
+                        <div class="day-date">Jan 5</div>
+                        <div class="day-workout Legs">Legs</div>
+                    </div>
+                    <div class="day">
+                        <div class="day-date">Jan 6</div>
+                        <div class="day-workout Upper">Upper</div>
+                    </div>
+                    <div class="day">
+                        <div class="day-date">Jan 7</div>
+                        <div class="day-workout Lower">Lower</div>
+                    </div>
+                </div>
+                <div class="explanation">
+                    <strong>Issue:</strong> The old logic skipped Rest days when counting, so Friday Jan 3 showed "Push" instead of "Rest". This compressed the 7-day cycle into only workout days.
+                </div>
+            </div>
+
+            <div class="section after">
+                <h3 style="color: #10b981;">✅ AFTER (Correct - 1:1 Calendar Mapping)</h3>
+                <div class="success-badge">Every calendar day advances the cycle</div>
+                <div class="calendar">
+                    <div class="day-header">Wed</div>
+                    <div class="day-header">Thu</div>
+                    <div class="day-header">Fri</div>
+                    <div class="day-header">Sat</div>
+                    <div class="day-header">Sun</div>
+                    <div class="day-header">Mon</div>
+                    <div class="day-header">Tue</div>
+
+                    <div class="day">
+                        <div class="day-date">Jan 1</div>
+                        <div class="day-workout Upper">Upper</div>
+                    </div>
+                    <div class="day">
+                        <div class="day-date">Jan 2</div>
+                        <div class="day-workout Lower">Lower</div>
+                    </div>
+                    <div class="day">
+                        <div class="day-date">Jan 3</div>
+                        <div class="day-workout Rest">Rest</div>
+                    </div>
+                    <div class="day">
+                        <div class="day-date">Jan 4</div>
+                        <div class="day-workout Push">Push</div>
+                    </div>
+                    <div class="day">
+                        <div class="day-date">Jan 5</div>
+                        <div class="day-workout Pull">Pull</div>
+                    </div>
+                    <div class="day">
+                        <div class="day-date">Jan 6</div>
+                        <div class="day-workout Legs">Legs</div>
+                    </div>
+                    <div class="day">
+                        <div class="day-date">Jan 7</div>
+                        <div class="day-workout Rest">Rest</div>
+                    </div>
+                </div>
+                <div class="explanation" style="border-left-color: #10b981; background: rgba(16, 185, 129, 0.1);">
+                    <strong>Fixed:</strong> The new logic counts every calendar day, so the 7-day cycle maps 1:1 with calendar days. Friday Jan 3 correctly shows "Rest".
+                </div>
+            </div>
+        </div>
+
+        <h2>Example 2: Week of Jan 21-27, 2025</h2>
+        <div class="comparison">
+            <div class="section before">
+                <h3 style="color: #ef4444;">❌ BEFORE (Incorrect)</h3>
+                <div class="calendar">
+                    <div class="day-header">Tue</div>
+                    <div class="day-header">Wed</div>
+                    <div class="day-header">Thu</div>
+                    <div class="day-header">Fri</div>
+                    <div class="day-header">Sat</div>
+                    <div class="day-header">Sun</div>
+                    <div class="day-header">Mon</div>
+
+                    <div class="day">
+                        <div class="day-date">Jan 21</div>
+                        <div class="day-workout Upper">Upper</div>
+                    </div>
+                    <div class="day issue">
+                        <div class="day-date">Jan 22</div>
+                        <div class="day-workout Lower">Lower</div>
+                        <div style="color: #ef4444; font-size: 0.7rem; margin-top: 0.25rem;">Consecutive with 21!</div>
+                    </div>
+                    <div class="day issue">
+                        <div class="day-date">Jan 23</div>
+                        <div class="day-workout Push">Push</div>
+                        <div style="color: #ef4444; font-size: 0.7rem; margin-top: 0.25rem;">Consecutive with 22!</div>
+                    </div>
+                    <div class="day">
+                        <div class="day-date">Jan 24</div>
+                        <div class="day-workout Pull">Pull</div>
+                    </div>
+                    <div class="day">
+                        <div class="day-date">Jan 25</div>
+                        <div class="day-workout Legs">Legs</div>
+                    </div>
+                    <div class="day">
+                        <div class="day-date">Jan 26</div>
+                        <div class="day-workout Upper">Upper</div>
+                    </div>
+                    <div class="day">
+                        <div class="day-date">Jan 27</div>
+                        <div class="day-workout Lower">Lower</div>
+                    </div>
+                </div>
+                <div class="explanation">
+                    <strong>Issue:</strong> Three consecutive workout days (21, 22, 23) with no Rest between them. The 7-day cycle was compressed.
+                </div>
+            </div>
+
+            <div class="section after">
+                <h3 style="color: #10b981;">✅ AFTER (Correct)</h3>
+                <div class="calendar">
+                    <div class="day-header">Tue</div>
+                    <div class="day-header">Wed</div>
+                    <div class="day-header">Thu</div>
+                    <div class="day-header">Fri</div>
+                    <div class="day-header">Sat</div>
+                    <div class="day-header">Sun</div>
+                    <div class="day-header">Mon</div>
+
+                    <div class="day">
+                        <div class="day-date">Jan 21</div>
+                        <div class="day-workout Rest">Rest</div>
+                    </div>
+                    <div class="day">
+                        <div class="day-date">Jan 22</div>
+                        <div class="day-workout Upper">Upper</div>
+                    </div>
+                    <div class="day">
+                        <div class="day-date">Jan 23</div>
+                        <div class="day-workout Lower">Lower</div>
+                    </div>
+                    <div class="day">
+                        <div class="day-date">Jan 24</div>
+                        <div class="day-workout Rest">Rest</div>
+                    </div>
+                    <div class="day">
+                        <div class="day-date">Jan 25</div>
+                        <div class="day-workout Push">Push</div>
+                    </div>
+                    <div class="day">
+                        <div class="day-date">Jan 26</div>
+                        <div class="day-workout Pull">Pull</div>
+                    </div>
+                    <div class="day">
+                        <div class="day-date">Jan 27</div>
+                        <div class="day-workout Legs">Legs</div>
+                    </div>
+                </div>
+                <div class="explanation" style="border-left-color: #10b981; background: rgba(16, 185, 129, 0.1);">
+                    <strong>Fixed:</strong> Rest days appear on Jan 21 and Jan 24, providing proper spacing. No consecutive workout sequences where a Rest should be.
+                </div>
+            </div>
+        </div>
+
+        <div class="section" style="background: rgba(16, 185, 129, 0.1); border-left: 4px solid #10b981;">
+            <h2 style="color: #10b981;">✨ Solution Summary</h2>
+            <p><strong>Key Change:</strong> The scheduling logic now counts every calendar day when advancing through the 7-day cycle, instead of skipping Rest/Sick/Travel days.</p>
+            <br>
+            <p><strong>Algorithm:</strong></p>
+            <ul style="margin: 0.5rem 0 0 2rem;">
+                <li>Find the most recent completed non-Rest workout</li>
+                <li>Calculate calendar days between that workout and the target date</li>
+                <li>Advance through the 7-day cycle by that many days</li>
+                <li>If no completed workouts, use reference date (2025-01-01 = Upper)</li>
+            </ul>
+            <br>
+            <p><strong>Result:</strong> The 7-day cycle (Upper / Lower / Rest / Push / Pull / Legs / Rest) now maps 1:1 with calendar days.</p>
+        </div>
+    </div>
+</body>
+</html>
