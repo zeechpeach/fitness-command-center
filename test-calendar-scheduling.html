@@ -422,27 +422,24 @@
             // Reset
             allWorkouts = [];
 
-            const testDates = [
-                { date: '2025-01-21', dow: 'Tue', expected: 'Upper' },   // Day 20 from Jan 1 -> (0 + 20) % 7 = 6 = Rest... wait let me recalc
-                { date: '2025-01-22', dow: 'Wed', expected: 'Lower' },   // Day 21 from Jan 1
-                { date: '2025-01-23', dow: 'Thu', expected: 'Rest' },    // Day 22 from Jan 1
-                { date: '2025-01-24', dow: 'Fri', expected: 'Push' },    // Day 23 from Jan 1
-                { date: '2025-01-25', dow: 'Sat', expected: 'Pull' },    // Day 24 from Jan 1
-                { date: '2025-01-26', dow: 'Sun', expected: 'Legs' },    // Day 25 from Jan 1
-                { date: '2025-01-27', dow: 'Mon', expected: 'Rest' },    // Day 26 from Jan 1
-            ];
-
-            // Calculate expected values correctly
+            // Calculate expected values:
             // Jan 1 = Upper (day 0 from reference)
-            // Jan 21 = day 20 from reference
-            // (0 + 20) % 7 = 6 = Rest (index 6)
-            testDates[0].expected = 'Rest';   // Jan 21
-            testDates[1].expected = 'Upper';  // Jan 22 -> (0 + 21) % 7 = 0
-            testDates[2].expected = 'Lower';  // Jan 23 -> (0 + 22) % 7 = 1
-            testDates[3].expected = 'Rest';   // Jan 24 -> (0 + 23) % 7 = 2
-            testDates[4].expected = 'Push';   // Jan 25 -> (0 + 24) % 7 = 3
-            testDates[5].expected = 'Pull';   // Jan 26 -> (0 + 25) % 7 = 4
-            testDates[6].expected = 'Legs';   // Jan 27 -> (0 + 26) % 7 = 5
+            // Jan 21 = day 20 from reference -> (0 + 20) % 7 = 6 = Rest (index 6)
+            // Jan 22 = day 21 from reference -> (0 + 21) % 7 = 0 = Upper
+            // Jan 23 = day 22 from reference -> (0 + 22) % 7 = 1 = Lower
+            // Jan 24 = day 23 from reference -> (0 + 23) % 7 = 2 = Rest
+            // Jan 25 = day 24 from reference -> (0 + 24) % 7 = 3 = Push
+            // Jan 26 = day 25 from reference -> (0 + 25) % 7 = 4 = Pull
+            // Jan 27 = day 26 from reference -> (0 + 26) % 7 = 5 = Legs
+            const testDates = [
+                { date: '2025-01-21', dow: 'Tue', expected: 'Rest' },
+                { date: '2025-01-22', dow: 'Wed', expected: 'Upper' },
+                { date: '2025-01-23', dow: 'Thu', expected: 'Lower' },
+                { date: '2025-01-24', dow: 'Fri', expected: 'Rest' },
+                { date: '2025-01-25', dow: 'Sat', expected: 'Push' },
+                { date: '2025-01-26', dow: 'Sun', expected: 'Pull' },
+                { date: '2025-01-27', dow: 'Mon', expected: 'Legs' },
+            ];
 
             const tbody = document.getElementById('test4-results');
             let passed = 0;

@@ -3484,6 +3484,10 @@
         // Workout cycle: 7-day repeating cycle
         const workoutSchedule = ['Upper', 'Lower', 'Rest', 'Push', 'Pull', 'Legs', 'Rest'];
         
+        // Reference date for schedule calculation when no completed workouts exist
+        // 2025-01-01 maps to workoutSchedule[0] = 'Upper'
+        const SCHEDULE_REFERENCE_DATE = '2025-01-01';
+        
         // Configuration for schedule calculation
         const MIN_SCHEDULE_DAYS = 14; // Minimum days to schedule ahead for missed workout queue
         const FUTURE_SCHEDULE_BUFFER = 7; // Additional days beyond missed workouts to schedule
@@ -3571,8 +3575,7 @@
                 return workoutSchedule[scheduleIndex];
             } else {
                 // No workouts yet, use default schedule from reference date
-                // Using 2025-01-01 as reference (same as getScheduledWorkout for consistency)
-                const referenceDate = new Date('2025-01-01T00:00:00.000Z');
+                const referenceDate = new Date(SCHEDULE_REFERENCE_DATE + 'T00:00:00.000Z');
                 let allDays = 0;
                 let d = new Date(referenceDate);
                 while (d < queryDate) {
@@ -3661,10 +3664,8 @@
                 return workoutSchedule[scheduleIndex];
             } else {
                 // No completed non-Rest workouts found
-                // Fall back to a deterministic reference date: 2025-01-01 maps to workoutSchedule[0] = 'Upper'
-                // This is documented and provides predictable behavior
-                const referenceDate = '2025-01-01'; // Maps to Upper (index 0)
-                const daysDiff = daysBetween(referenceDate, date);
+                // Fall back to deterministic reference date (defined at top of file)
+                const daysDiff = daysBetween(SCHEDULE_REFERENCE_DATE, date);
                 
                 // Handle negative modulo safely
                 const scheduleIndex = ((daysDiff % workoutSchedule.length) + workoutSchedule.length) % workoutSchedule.length;
