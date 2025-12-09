@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendar Scheduling Logic Tests</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', system-ui, sans-serif;
+            background: #0a0e1a;
+            color: #e2e8f0;
+            padding: 2rem;
+            line-height: 1.6;
+        }
+
+        h1 {
+            color: #06b6d4;
+            margin-bottom: 1rem;
+        }
+
+        h2 {
+            color: #94a3b8;
+            margin: 2rem 0 1rem 0;
+            font-size: 1.5rem;
+        }
+
+        .section {
+            background: rgba(15, 23, 42, 0.6);
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            border: 1px solid rgba(71, 85, 105, 0.3);
+        }
+
+        .test-case {
+            background: rgba(30, 41, 59, 0.5);
+            padding: 1rem;
+            margin: 0.75rem 0;
+            border-radius: 6px;
+            border-left: 3px solid #06b6d4;
+        }
+
+        .pass {
+            background: rgba(16, 185, 129, 0.2);
+            border-left-color: #10b981;
+        }
+
+        .fail {
+            background: rgba(239, 68, 68, 0.2);
+            border-left-color: #ef4444;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-left: 0.5rem;
+        }
+
+        .status.pass {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .status.fail {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .code {
+            background: rgba(15, 23, 42, 0.8);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            color: #06b6d4;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+        }
+
+        th, td {
+            padding: 0.75rem;
+            text-align: left;
+            border: 1px solid rgba(71, 85, 105, 0.3);
+        }
+
+        th {
+            background: rgba(30, 41, 59, 0.5);
+            color: #94a3b8;
+            font-weight: 600;
+        }
+
+        td {
+            background: rgba(15, 23, 42, 0.3);
+        }
+
+        .Rest {
+            color: #94a3b8;
+        }
+
+        .Upper, .Lower, .Push, .Pull, .Legs {
+            color: #06b6d4;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <h1>📅 Calendar Scheduling Logic Tests</h1>
+    
+    <div class="section">
+        <p style="color: #94a3b8; font-size: 1.1rem;">
+            This test file validates the fixed calendar scheduling logic that ensures the 7-day workout cycle 
+            (Upper / Lower / Rest / Push / Pull / Legs / Rest) maps correctly to calendar days without compression.
+        </p>
+    </div>
+
+    <h2>Test Setup</h2>
+    <div class="section">
+        <p><strong>7-Day Workout Schedule:</strong></p>
+        <div class="code" style="display: block; margin: 1rem 0;">
+            ['Upper', 'Lower', 'Rest', 'Push', 'Pull', 'Legs', 'Rest']
+        </div>
+        <p><strong>Reference Date:</strong> 2025-01-01 = Upper (index 0)</p>
+        <p><strong>Key Principle:</strong> Every calendar day advances the position in the 7-day cycle, including Rest days.</p>
+    </div>
+
+    <h2>Test Case 1: Reference Date Alignment</h2>
+    <div class="section">
+        <div class="test-case" id="test1">
+            <p><strong>Description:</strong> Verify that the reference date (2025-01-01) maps to Upper and subsequent days follow the 7-day cycle.</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Expected</th>
+                        <th>Actual</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="test1-results">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <h2>Test Case 2: Last Completed Lower on 2025-11-01</h2>
+    <div class="section">
+        <div class="test-case" id="test2">
+            <p><strong>Description:</strong> Given Lower completed on 2025-11-01, verify schedule for Nov 2-11.</p>
+            <p><strong>Scenario:</strong> Lower is at index 1, so Nov 2 should be Rest (index 2), Nov 3 should be Push (index 3), etc.</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Days Since Lower</th>
+                        <th>Expected</th>
+                        <th>Actual</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="test2-results">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <h2>Test Case 3: Week Containing Wednesday the 3rd</h2>
+    <div class="section">
+        <div class="test-case" id="test3">
+            <p><strong>Description:</strong> Verify that in a week where Wednesday the 3rd should be Rest, it is correctly shown as Rest (not compressed to a workout).</p>
+            <p><strong>Example:</strong> January 2025 - Wed Jan 1 = Upper, Thu Jan 2 = Lower, Fri Jan 3 = Rest</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Day of Week</th>
+                        <th>Expected</th>
+                        <th>Actual</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="test3-results">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <h2>Test Case 4: Week 21-27 Spacing</h2>
+    <div class="section">
+        <div class="test-case" id="test4">
+            <p><strong>Description:</strong> Verify that in the week of the 21st-27th, Rest days appear correctly and there are no consecutive workout days where a Rest should be.</p>
+            <p><strong>Example:</strong> Jan 21-27, 2025</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Day of Week</th>
+                        <th>Expected</th>
+                        <th>Actual</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="test4-results">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="results-summary" class="section">
+        <h2>Test Results Summary</h2>
+        <p id="summary-text"></p>
+    </div>
+
+    <script>
+        // Mock data and helper functions for testing
+        const workoutSchedule = ['Upper', 'Lower', 'Rest', 'Push', 'Pull', 'Legs', 'Rest'];
+        let allWorkouts = [];
+        const sickDays = new Set();
+        const travelMode = [];
+
+        // Helper function: Calculate calendar days between two dates
+        function daysBetween(date1Str, date2Str) {
+            const d1 = new Date(date1Str + 'T00:00:00.000Z');
+            const d2 = new Date(date2Str + 'T00:00:00.000Z');
+            const diffMs = d2.getTime() - d1.getTime();
+            const diffDays = Math.floor(diffMs / (24 * 60 * 60 * 1000));
+            return diffDays;
+        }
+
+        // Helper function: Find most recent completed non-Rest workout
+        function getMostRecentCompletedNonRestWorkoutBefore(targetDateStr) {
+            const targetDate = new Date(targetDateStr + 'T00:00:00.000Z');
+            
+            const eligibleWorkouts = allWorkouts
+                .filter(w => {
+                    if (w.day === 'Rest') return false;
+                    const workoutDate = new Date(w.date + 'T00:00:00.000Z');
+                    return workoutDate <= targetDate;
+                })
+                .sort((a, b) => {
+                    const dateA = new Date(a.date + 'T00:00:00.000Z');
+                    const dateB = new Date(b.date + 'T00:00:00.000Z');
+                    return dateB.getTime() - dateA.getTime();
+                });
+            
+            if (eligibleWorkouts.length > 0) {
+                return {
+                    date: eligibleWorkouts[0].date,
+                    day: eligibleWorkouts[0].day
+                };
+            }
+            return null;
+        }
+
+        function getWorkoutForDate(dateString) {
+            return allWorkouts.find(w => w.date === dateString);
+        }
+
+        function isDateSickDay(date) {
+            return sickDays.has(date);
+        }
+
+        function isDateInTravelMode(date) {
+            return false; // Simplified for testing
+        }
+
+        // Main scheduling function (fixed version)
+        function getScheduledWorkout(date) {
+            const actualWorkout = getWorkoutForDate(date);
+            
+            if (actualWorkout) {
+                return actualWorkout.day;
+            }
+            
+            if (isDateSickDay(date)) {
+                return 'Sick';
+            }
+            
+            if (isDateInTravelMode(date)) {
+                return 'Travel';
+            }
+            
+            const lastCompleted = getMostRecentCompletedNonRestWorkoutBefore(date);
+            
+            if (lastCompleted) {
+                const daysDiff = daysBetween(lastCompleted.date, date);
+                const lastCompletedIndex = workoutSchedule.indexOf(lastCompleted.day);
+                const scheduleIndex = (lastCompletedIndex + daysDiff) % workoutSchedule.length;
+                return workoutSchedule[scheduleIndex];
+            } else {
+                const referenceDate = '2025-01-01';
+                const daysDiff = daysBetween(referenceDate, date);
+                const scheduleIndex = ((daysDiff % workoutSchedule.length) + workoutSchedule.length) % workoutSchedule.length;
+                return workoutSchedule[scheduleIndex];
+            }
+        }
+
+        // Test functions
+        function runTest1() {
+            const testDates = [
+                { date: '2025-01-01', expected: 'Upper' },
+                { date: '2025-01-02', expected: 'Lower' },
+                { date: '2025-01-03', expected: 'Rest' },
+                { date: '2025-01-04', expected: 'Push' },
+                { date: '2025-01-05', expected: 'Pull' },
+                { date: '2025-01-06', expected: 'Legs' },
+                { date: '2025-01-07', expected: 'Rest' },
+                { date: '2025-01-08', expected: 'Upper' },
+            ];
+
+            const tbody = document.getElementById('test1-results');
+            let passed = 0;
+            testDates.forEach(test => {
+                const actual = getScheduledWorkout(test.date);
+                const pass = actual === test.expected;
+                if (pass) passed++;
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${test.date}</td>
+                    <td class="${test.expected}">${test.expected}</td>
+                    <td class="${actual}">${actual}</td>
+                    <td><span class="status ${pass ? 'pass' : 'fail'}">${pass ? 'PASS' : 'FAIL'}</span></td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            const testCase = document.getElementById('test1');
+            testCase.classList.add(passed === testDates.length ? 'pass' : 'fail');
+            return { passed, total: testDates.length };
+        }
+
+        function runTest2() {
+            // Set up: Lower completed on 2025-11-01
+            allWorkouts = [{ date: '2025-11-01', day: 'Lower' }];
+
+            const testDates = [
+                { date: '2025-11-02', daysSince: 1, expected: 'Rest' },    // Lower (1) + 1 = Rest (2)
+                { date: '2025-11-03', daysSince: 2, expected: 'Push' },    // Lower (1) + 2 = Push (3)
+                { date: '2025-11-04', daysSince: 3, expected: 'Pull' },    // Lower (1) + 3 = Pull (4)
+                { date: '2025-11-05', daysSince: 4, expected: 'Legs' },    // Lower (1) + 4 = Legs (5)
+                { date: '2025-11-06', daysSince: 5, expected: 'Rest' },    // Lower (1) + 5 = Rest (6)
+                { date: '2025-11-07', daysSince: 6, expected: 'Upper' },   // Lower (1) + 6 = Upper (0)
+                { date: '2025-11-08', daysSince: 7, expected: 'Lower' },   // Lower (1) + 7 = Lower (1)
+                { date: '2025-11-09', daysSince: 8, expected: 'Rest' },    // Lower (1) + 8 = Rest (2)
+                { date: '2025-11-10', daysSince: 9, expected: 'Push' },    // Lower (1) + 9 = Push (3)
+                { date: '2025-11-11', daysSince: 10, expected: 'Pull' },   // Lower (1) + 10 = Pull (4)
+            ];
+
+            const tbody = document.getElementById('test2-results');
+            let passed = 0;
+            testDates.forEach(test => {
+                const actual = getScheduledWorkout(test.date);
+                const pass = actual === test.expected;
+                if (pass) passed++;
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${test.date}</td>
+                    <td>${test.daysSince}</td>
+                    <td class="${test.expected}">${test.expected}</td>
+                    <td class="${actual}">${actual}</td>
+                    <td><span class="status ${pass ? 'pass' : 'fail'}">${pass ? 'PASS' : 'FAIL'}</span></td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            const testCase = document.getElementById('test2');
+            testCase.classList.add(passed === testDates.length ? 'pass' : 'fail');
+            return { passed, total: testDates.length };
+        }
+
+        function runTest3() {
+            // Reset
+            allWorkouts = [];
+
+            const testDates = [
+                { date: '2025-01-01', dow: 'Wed', expected: 'Upper' },
+                { date: '2025-01-02', dow: 'Thu', expected: 'Lower' },
+                { date: '2025-01-03', dow: 'Fri', expected: 'Rest' },  // This is the key test
+                { date: '2025-01-04', dow: 'Sat', expected: 'Push' },
+                { date: '2025-01-05', dow: 'Sun', expected: 'Pull' },
+            ];
+
+            const tbody = document.getElementById('test3-results');
+            let passed = 0;
+            testDates.forEach(test => {
+                const actual = getScheduledWorkout(test.date);
+                const pass = actual === test.expected;
+                if (pass) passed++;
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${test.date}</td>
+                    <td>${test.dow}</td>
+                    <td class="${test.expected}">${test.expected}</td>
+                    <td class="${actual}">${actual}</td>
+                    <td><span class="status ${pass ? 'pass' : 'fail'}">${pass ? 'PASS' : 'FAIL'}</span></td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            const testCase = document.getElementById('test3');
+            testCase.classList.add(passed === testDates.length ? 'pass' : 'fail');
+            return { passed, total: testDates.length };
+        }
+
+        function runTest4() {
+            // Reset
+            allWorkouts = [];
+
+            // Calculate expected values:
+            // Jan 1 = Upper (day 0 from reference)
+            // Jan 21 = day 20 from reference -> (0 + 20) % 7 = 6 = Rest (index 6)
+            // Jan 22 = day 21 from reference -> (0 + 21) % 7 = 0 = Upper
+            // Jan 23 = day 22 from reference -> (0 + 22) % 7 = 1 = Lower
+            // Jan 24 = day 23 from reference -> (0 + 23) % 7 = 2 = Rest
+            // Jan 25 = day 24 from reference -> (0 + 24) % 7 = 3 = Push
+            // Jan 26 = day 25 from reference -> (0 + 25) % 7 = 4 = Pull
+            // Jan 27 = day 26 from reference -> (0 + 26) % 7 = 5 = Legs
+            const testDates = [
+                { date: '2025-01-21', dow: 'Tue', expected: 'Rest' },
+                { date: '2025-01-22', dow: 'Wed', expected: 'Upper' },
+                { date: '2025-01-23', dow: 'Thu', expected: 'Lower' },
+                { date: '2025-01-24', dow: 'Fri', expected: 'Rest' },
+                { date: '2025-01-25', dow: 'Sat', expected: 'Push' },
+                { date: '2025-01-26', dow: 'Sun', expected: 'Pull' },
+                { date: '2025-01-27', dow: 'Mon', expected: 'Legs' },
+            ];
+
+            const tbody = document.getElementById('test4-results');
+            let passed = 0;
+            testDates.forEach(test => {
+                const actual = getScheduledWorkout(test.date);
+                const pass = actual === test.expected;
+                if (pass) passed++;
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${test.date}</td>
+                    <td>${test.dow}</td>
+                    <td class="${test.expected}">${test.expected}</td>
+                    <td class="${actual}">${actual}</td>
+                    <td><span class="status ${pass ? 'pass' : 'fail'}">${pass ? 'PASS' : 'FAIL'}</span></td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            const testCase = document.getElementById('test4');
+            testCase.classList.add(passed === testDates.length ? 'pass' : 'fail');
+            return { passed, total: testDates.length };
+        }
+
+        // Run all tests
+        document.addEventListener('DOMContentLoaded', () => {
+            const results = [];
+            results.push(runTest1());
+            results.push(runTest2());
+            results.push(runTest3());
+            results.push(runTest4());
+
+            const totalPassed = results.reduce((sum, r) => sum + r.passed, 0);
+            const totalTests = results.reduce((sum, r) => sum + r.total, 0);
+
+            const summaryText = document.getElementById('summary-text');
+            summaryText.innerHTML = `
+                <strong>Total: ${totalPassed}/${totalTests} tests passed</strong><br>
+                ${totalPassed === totalTests ? 
+                    '<span style="color: #10b981;">✅ All tests passed! The scheduling logic correctly preserves Rest days in the 7-day cycle.</span>' : 
+                    '<span style="color: #ef4444;">❌ Some tests failed. Please review the implementation.</span>'}
+            `;
+
+            const summarySection = document.getElementById('results-summary');
+            summarySection.classList.add(totalPassed === totalTests ? 'pass' : 'fail');
+        });
+    </script>
+</body>
+</html>
