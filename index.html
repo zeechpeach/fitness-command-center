@@ -3571,7 +3571,8 @@
                 return workoutSchedule[scheduleIndex];
             } else {
                 // No workouts yet, use default schedule from reference date
-                const referenceDate = new Date('2024-01-01T00:00:00.000Z');
+                // Using 2025-01-01 as reference (same as getScheduledWorkout for consistency)
+                const referenceDate = new Date('2025-01-01T00:00:00.000Z');
                 let allDays = 0;
                 let d = new Date(referenceDate);
                 while (d < queryDate) {
