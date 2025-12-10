@@ -1,4 +1,6 @@
-# Zach's Fitness Command Center
+# Unison
+
+Body in unison.
 
 A comprehensive personal fitness management platform with intelligent workout tracking, performance analytics, nutrition monitoring, and body metrics tracking.
 
