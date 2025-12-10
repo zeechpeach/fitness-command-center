@@ -813,18 +813,18 @@
         }
 
         .calendar-day.today {
-            border-color: #4caf50;
-            box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.3), 0 4px 12px rgba(76, 175, 80, 0.2);
+            border-color: var(--color-success);
+            box-shadow: 0 0 0 2px rgba(93, 138, 102, 0.3), 0 4px 12px rgba(93, 138, 102, 0.2);
         }
 
         .calendar-day.has-workout {
-            background: rgba(76, 175, 80, 0.15);
-            border-color: rgba(76, 175, 80, 0.4);
+            background: rgba(93, 138, 102, 0.15);
+            border-color: rgba(93, 138, 102, 0.4);
         }
 
         .calendar-day.scheduled {
-            background: rgba(76, 175, 80, 0.08);
-            border-color: rgba(76, 175, 80, 0.25);
+            background: rgba(93, 138, 102, 0.08);
+            border-color: rgba(93, 138, 102, 0.25);
         }
 
         .calendar-day.missed {
@@ -841,19 +841,19 @@
 
         .calendar-day-label {
             font-size: 0.75rem;
-            color: #6b6b6b;
+            color: var(--color-text-secondary);
             text-align: center;
             font-weight: 400;
         }
 
-        .calendar-day-label.Upper { color: #4caf50; }
-        .calendar-day-label.Lower { color: #ff9800; }
-        .calendar-day-label.Push { color: #f44336; }
-        .calendar-day-label.Pull { color: #2196f3; }
-        .calendar-day-label.Legs { color: #9c27b0; }
-        .calendar-day-label.Rest { color: #6b6b6b; }
-        .calendar-day-label.Travel { color: #ab47bc; }
-        .calendar-day-label.Sick { color: #ec407a; }
+        .calendar-day-label.Upper { color: var(--color-success); }
+        .calendar-day-label.Lower { color: #8B7355; }
+        .calendar-day-label.Push { color: #A67C52; }
+        .calendar-day-label.Pull { color: #5D7F7F; }
+        .calendar-day-label.Legs { color: #7D6B5D; }
+        .calendar-day-label.Rest { color: var(--color-text-secondary); }
+        .calendar-day-label.Travel { color: var(--color-accent-primary); }
+        .calendar-day-label.Sick { color: var(--color-error); }
 
         .adherence-card {
             background: rgba(255, 255, 255, 0.65);
@@ -874,7 +874,7 @@
         .adherence-score-value {
             font-size: 2.5rem;
             font-weight: 500;
-            color: #4caf50;
+            color: var(--color-success);
         }
 
         .adherence-stats {
@@ -910,7 +910,7 @@
 
         .adherence-stat-label {
             font-size: 0.8125rem;
-            color: #6b6b6b;
+            color: var(--color-text-secondary);
             margin-top: 0.5rem;
             font-weight: 300;
         }
@@ -959,7 +959,7 @@
         }
 
         .meal-time {
-            color: #6b6b6b;
+            color: var(--color-text-secondary);
             font-size: 0.8125rem;
             margin-top: 0.25rem;
         }
@@ -998,14 +998,14 @@
 
         .meal-summary-label {
             font-size: 0.75rem;
-            color: #6b6b6b;
+            color: var(--color-text-secondary);
             margin-top: 0.125rem;
         }
 
         .meal-collapse-icon {
             font-size: 1.25rem;
             transition: transform 0.15s ease-out;
-            color: #6b6b6b;
+            color: var(--color-text-secondary);
         }
 
         .meal-card.collapsed .meal-collapse-icon {
@@ -1035,7 +1035,7 @@
             background: rgba(255, 255, 255, 0.65);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
-            color: #4caf50;
+            color: var(--color-success);
             border: 1px solid rgba(255, 255, 255, 0.4);
             border-radius: 100px;
             font-weight: 400;
@@ -1074,8 +1074,8 @@
 
         .food-input:focus {
             outline: none;
-            border-color: #4caf50;
-            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.15);
+            border-color: var(--color-success);
+            box-shadow: 0 0 0 3px rgba(93, 138, 102, 0.15);
             background: rgba(255, 255, 255, 0.9);
         }
 
@@ -1086,7 +1086,7 @@
         }
 
         .macro-input-label {
-            color: #6b6b6b;
+            color: var(--color-text-secondary);
             font-size: 0.75rem;
             font-weight: 500;
             text-align: center;
@@ -1109,8 +1109,8 @@
 
         .macro-input:focus {
             outline: none;
-            border-color: #4caf50;
-            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.15);
+            border-color: var(--color-success);
+            box-shadow: 0 0 0 3px rgba(93, 138, 102, 0.15);
             background: rgba(255, 255, 255, 0.9);
         }
 
@@ -1161,7 +1161,7 @@
 
         .macro-label {
             font-size: 0.8125rem;
-            color: #6b6b6b;
+            color: var(--color-text-secondary);
             margin-top: 0.5rem;
             font-weight: 300;
         }
@@ -1198,8 +1198,8 @@
 
         .weight-input-field:focus {
             outline: none;
-            border-color: #4caf50;
-            box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+            border-color: var(--color-success);
+            box-shadow: 0 0 0 2px rgba(93, 138, 102, 0.2);
             background: rgba(255, 255, 255, 0.9);
         }
 
@@ -1215,7 +1215,7 @@
         }
 
         .photo-upload-area {
-            border: 2px dashed rgba(76, 175, 80, 0.4);
+            border: 2px dashed rgba(93, 138, 102, 0.4);
             border-radius: 16px;
             padding: 2rem;
             text-align: center;
@@ -1224,8 +1224,8 @@
         }
 
         .photo-upload-area:hover {
-            border-color: #4caf50;
-            background: rgba(76, 175, 80, 0.08);
+            border-color: var(--color-success);
+            background: rgba(93, 138, 102, 0.08);
         }
 
         .photo-gallery {
@@ -1573,7 +1573,7 @@
             background: var(--color-bg);
             border: 1px solid var(--color-border);
             border-radius: var(--radius-md);
-            padding: 1rem;
+            padding: 1.25rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -1596,14 +1596,16 @@
         .saved-food-name {
             color: var(--color-text-primary);
             font-weight: 500;
-            margin-bottom: 0.25rem;
+            margin-bottom: 0.5rem;
         }
 
         .saved-food-macros {
             color: var(--color-text-secondary);
             font-size: 0.75rem;
-            display: flex;
-            gap: 0.75rem;
+            display: grid;
+            grid-template-columns: repeat(4, auto);
+            gap: 1rem;
+            margin-top: 0.5rem;
         }
 
         .saved-food-actions {
@@ -1621,6 +1623,8 @@
             font-size: 0.8rem;
             font-weight: 500;
             transition: var(--transition-base);
+            white-space: nowrap;
+            min-width: 90px;
         }
 
         .btn-quick-add:hover {
@@ -2019,19 +2023,25 @@
             box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
         }
 
+        .schedule-exceptions-section input[type="date"]:focus {
+            outline: none;
+            border-color: var(--color-accent-primary);
+            box-shadow: 0 0 0 3px rgba(74, 93, 74, 0.1);
+        }
+
         .calendar-day.travel {
             background: repeating-linear-gradient(
                 45deg,
                 rgba(168, 85, 247, 0.1),
                 rgba(168, 85, 247, 0.1) 10px,
-                rgba(59, 130, 246, 0.1) 10px,
-                rgba(59, 130, 246, 0.1) 20px
+                rgba(74, 93, 74, 0.1) 10px,
+                rgba(74, 93, 74, 0.1) 20px
             );
             border: 1px solid rgba(168, 85, 247, 0.5);
         }
 
         .calendar-day.travel .calendar-day-label {
-            color: #a855f7;
+            color: var(--color-accent-primary);
             font-weight: 600;
         }
 
@@ -2047,7 +2057,7 @@
         }
 
         .calendar-day.sick .calendar-day-label {
-            color: #f472b6;
+            color: var(--color-error);
             font-weight: 600;
         }
 
@@ -2482,7 +2492,7 @@
             <div class="workout-controls" style="display: flex; gap: 1rem; margin-bottom: 1.5rem; align-items: center; flex-wrap: wrap;">
                 <button class="btn" id="log-past-workout-btn" style="background: rgba(168, 181, 160, 0.15); color: var(--color-accent-primary); border: 1px solid var(--color-accent-secondary);">Log Past Workout</button>
                 <div style="display: flex; align-items: center; gap: 0.5rem;">
-                    <label style="color: #6b6b6b; font-size: 0.9375rem;">Date:</label>
+                    <label style="color: var(--color-text-secondary); font-size: 0.9375rem;">Date:</label>
                     <input type="date" id="workout-date-input" style="padding: 0.5rem; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-sm); color: var(--color-text-primary);">
                 </div>
             </div>
@@ -2498,7 +2508,7 @@
                         <button class="intensity-btn" data-value="4">4</button>
                         <button class="intensity-btn" data-value="5">5</button>
                     </div>
-                    <span style="color: #64748b; font-size: 0.8rem;">Dragging → Energetic</span>
+                    <span style="color: var(--color-text-secondary); font-size: 0.8rem;">Dragging → Energetic</span>
                 </div>
                 <div class="intensity-row">
                     <span class="intensity-label">Motivation:</span>
@@ -2509,7 +2519,7 @@
                         <button class="intensity-btn" data-value="4">4</button>
                         <button class="intensity-btn" data-value="5">5</button>
                     </div>
-                    <span style="color: #64748b; font-size: 0.8rem;">Forced → Eager</span>
+                    <span style="color: var(--color-text-secondary); font-size: 0.8rem;">Forced → Eager</span>
                 </div>
             </div>
 
@@ -2531,7 +2541,7 @@
             </div>
 
             <div class="intensity-inputs">
-                <h4 style="color: #4caf50; margin-bottom: 1rem;">How did the workout go?</h4>
+                <h4 style="color: var(--color-success); margin-bottom: 1rem;">How did the workout go?</h4>
                 <div class="intensity-row">
                     <span class="intensity-label">Fatigue:</span>
                     <div class="intensity-scale" id="fatigue-scale">
@@ -2541,7 +2551,7 @@
                         <button class="intensity-btn" data-value="4">4</button>
                         <button class="intensity-btn" data-value="5">5</button>
                     </div>
-                    <span style="color: #64748b; font-size: 0.8rem;">Exhausted → Energized</span>
+                    <span style="color: var(--color-text-secondary); font-size: 0.8rem;">Exhausted → Energized</span>
                 </div>
                 <div class="intensity-row">
                     <span class="intensity-label">Satisfaction:</span>
@@ -2552,7 +2562,7 @@
                         <button class="intensity-btn" data-value="4">4</button>
                         <button class="intensity-btn" data-value="5">5</button>
                     </div>
-                    <span style="color: #64748b; font-size: 0.8rem;">Poor → Crushed it</span>
+                    <span style="color: var(--color-text-secondary); font-size: 0.8rem;">Poor → Crushed it</span>
                 </div>
             </div>
 
@@ -2561,40 +2571,6 @@
 
         <!-- CALENDAR TAB -->
         <div id="calendar-content" class="tab-content">
-            <!-- Travel Mode Controls -->
-            <div class="travel-mode-controls">
-                <h4 style="color: #ab47bc; margin-bottom: 0.75rem;">✈️ Travel Mode</h4>
-                <div style="display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap; margin-bottom: 0.75rem;">
-                    <div style="flex: 1; min-width: 150px;">
-                        <label style="color: #6b6b6b; font-size: 0.8125rem; display: block; margin-bottom: 0.25rem;">Start Date</label>
-                        <input type="date" id="travel-start-date" style="width: 100%; padding: 0.5rem; background: rgba(255, 255, 255, 0.7); border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 8px; color: #1a1a1a;">
-                    </div>
-                    <div style="flex: 1; min-width: 150px;">
-                        <label style="color: #6b6b6b; font-size: 0.8125rem; display: block; margin-bottom: 0.25rem;">End Date</label>
-                        <input type="date" id="travel-end-date" style="width: 100%; padding: 0.5rem; background: rgba(255, 255, 255, 0.7); border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 8px; color: #1a1a1a;">
-                    </div>
-                    <button class="btn" onclick="enableTravelMode()" style="background: rgba(171, 71, 188, 0.2); color: #ab47bc; border: 1px solid rgba(171, 71, 188, 0.3);">Set Travel Dates</button>
-                </div>
-                <div style="color: #6b6b6b; font-size: 0.8125rem; line-height: 1.5;">
-                    Travel mode pauses your workout schedule and excludes days from discipline scores. Your streak won't break during travel.
-                </div>
-            </div>
-
-            <!-- Sick Day Controls -->
-            <div class="travel-mode-controls">
-                <h4 style="color: #ec407a; margin-bottom: 0.75rem;">🤒 Sick Day</h4>
-                <div style="display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap; margin-bottom: 0.75rem;">
-                    <div style="flex: 1; min-width: 150px;">
-                        <label style="color: #6b6b6b; font-size: 0.8125rem; display: block; margin-bottom: 0.25rem;">Select Date</label>
-                        <input type="date" id="sick-day-date" style="width: 100%; padding: 0.5rem; background: rgba(255, 255, 255, 0.7); border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 8px; color: #1a1a1a;">
-                    </div>
-                    <button class="btn" onclick="markSickDay()" style="background: rgba(236, 64, 122, 0.2); color: #ec407a; border: 1px solid rgba(236, 64, 122, 0.3);">Mark as Sick Day</button>
-                </div>
-                <div style="color: #6b6b6b; font-size: 0.8125rem; line-height: 1.5;">
-                    Mark a day as sick to cancel the scheduled workout. All remaining workouts will be pushed back by one day, maintaining the intended order.
-                </div>
-            </div>
-
             <div class="adherence-card">
                 <h3 class="analytics-title">Workout Adherence</h3>
                 <div class="adherence-score">
@@ -2634,6 +2610,49 @@
                     <!-- Selected day workout will be rendered here -->
                 </div>
             </div>
+
+            <!-- Schedule Exceptions - Collapsible Section -->
+            <div class="schedule-exceptions-section">
+                <div class="schedule-exceptions-header" onclick="toggleScheduleExceptions()" style="cursor: pointer; display: flex; align-items: center; justify-content: space-between; padding: 1rem; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); margin-top: 1rem;">
+                    <h4 style="color: var(--color-text-secondary); font-size: 0.9375rem; margin: 0;">📋 Schedule Exceptions</h4>
+                    <span id="schedule-exceptions-toggle" style="color: var(--color-text-secondary); font-size: 1.2rem;">▼</span>
+                </div>
+                <div id="schedule-exceptions-content" style="display: none; margin-top: 0.5rem;">
+                    <!-- Travel Mode Controls -->
+                    <div class="travel-mode-controls">
+                        <h4 style="color: var(--color-text-secondary); margin-bottom: 0.75rem;">✈️ Travel Mode</h4>
+                        <div style="display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap; margin-bottom: 0.75rem;">
+                            <div style="flex: 1; min-width: 150px;">
+                                <label style="color: var(--color-text-secondary); font-size: 0.8125rem; display: block; margin-bottom: 0.25rem;">Start Date</label>
+                                <input type="date" id="travel-start-date" style="width: 100%; padding: 0.5rem; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-sm); color: var(--color-text-primary);">
+                            </div>
+                            <div style="flex: 1; min-width: 150px;">
+                                <label style="color: var(--color-text-secondary); font-size: 0.8125rem; display: block; margin-bottom: 0.25rem;">End Date</label>
+                                <input type="date" id="travel-end-date" style="width: 100%; padding: 0.5rem; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-sm); color: var(--color-text-primary);">
+                            </div>
+                            <button class="btn" onclick="enableTravelMode()" style="background: var(--color-bg); color: var(--color-text-secondary); border: 1px solid var(--color-border);">Set Travel Dates</button>
+                        </div>
+                        <div style="color: var(--color-text-secondary); font-size: 0.8125rem; line-height: 1.5;">
+                            Travel mode pauses your workout schedule and excludes days from discipline scores. Your streak won't break during travel.
+                        </div>
+                    </div>
+
+                    <!-- Sick Day Controls -->
+                    <div class="travel-mode-controls">
+                        <h4 style="color: var(--color-text-secondary); margin-bottom: 0.75rem;">🤒 Sick Day</h4>
+                        <div style="display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap; margin-bottom: 0.75rem;">
+                            <div style="flex: 1; min-width: 150px;">
+                                <label style="color: var(--color-text-secondary); font-size: 0.8125rem; display: block; margin-bottom: 0.25rem;">Select Date</label>
+                                <input type="date" id="sick-day-date" style="width: 100%; padding: 0.5rem; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-sm); color: var(--color-text-primary);">
+                            </div>
+                            <button class="btn" onclick="markSickDay()" style="background: var(--color-bg); color: var(--color-text-secondary); border: 1px solid var(--color-border);">Mark as Sick Day</button>
+                        </div>
+                        <div style="color: var(--color-text-secondary); font-size: 0.8125rem; line-height: 1.5;">
+                            Mark a day as sick to cancel the scheduled workout. All remaining workouts will be pushed back by one day, maintaining the intended order.
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- NUTRITION TAB -->
@@ -2656,8 +2675,8 @@
                     <div class="analytics-card">
                         <h3 class="analytics-title">Daily Nutrition</h3>
                         <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
-                            <label style="color: #6b6b6b; font-size: 0.9375rem;">Date:</label>
-                            <input type="date" id="nutrition-date-input" style="padding: 0.5rem; background: rgba(255, 255, 255, 0.7); border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 8px; color: #1a1a1a;">
+                            <label style="color: var(--color-text-secondary); font-size: 0.9375rem;">Date:</label>
+                            <input type="date" id="nutrition-date-input" style="padding: 0.5rem; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-sm); color: var(--color-text-primary);">
                         </div>
                         <div class="macro-summary">
                             <div class="macro-item">
@@ -2695,7 +2714,7 @@
                                 <div class="calorie-label">Remaining</div>
                             </div>
                         </div>
-                        <div style="text-align: center; margin-top: 1rem; color: #94a3b8; font-size: 0.85rem;">
+                        <div style="text-align: center; margin-top: 1rem; color: var(--color-text-secondary); font-size: 0.85rem;">
                             <span id="calorie-update-notice">Calories update automatically when you log weight</span>
                         </div>
                     </div>
@@ -2799,7 +2818,7 @@
                 <div class="photo-upload-area" onclick="document.getElementById('photo-input').click()">
                     <input type="file" id="photo-input" accept="image/*" style="display: none;" onchange="uploadProgressPhoto(event)">
                     <div style="font-size: 3rem; margin-bottom: 0.5rem;">📷</div>
-                    <div style="color: #94a3b8;">Click to upload a progress photo</div>
+                    <div style="color: var(--color-text-secondary);">Click to upload a progress photo</div>
                 </div>
                 <div class="photo-gallery" id="photo-gallery">
                     <!-- Photos will be rendered here -->
@@ -2868,7 +2887,7 @@
 
                 <div class="analytics-card">
                     <h3 class="analytics-title">⚠️ Focus Areas</h3>
-                    <div id="focus-areas-content" style="color: #94a3b8; font-size: 0.9rem;">
+                    <div id="focus-areas-content" style="color: var(--color-text-secondary); font-size: 0.9rem;">
                         <p>Complete more workouts to see focus areas!</p>
                     </div>
                 </div>
@@ -2879,8 +2898,8 @@
                 <div class="analytics-card">
                     <h3 class="analytics-title">🏆 PR Timeline</h3>
                     <div style="margin-bottom: 1rem;">
-                        <label for="exercise-selector" style="color: #6b6b6b; font-size: 0.9375rem; margin-right: 0.5rem;">Exercise:</label>
-                        <select id="exercise-selector" style="padding: 0.5rem; background: rgba(255, 255, 255, 0.7); border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 12px; color: #1a1a1a; font-size: 0.9375rem;">
+                        <label for="exercise-selector" style="color: var(--color-text-secondary); font-size: 0.9375rem; margin-right: 0.5rem;">Exercise:</label>
+                        <select id="exercise-selector" style="padding: 0.5rem; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); color: var(--color-text-primary); font-size: 0.9375rem;">
                             <option value="">Select an exercise</option>
                         </select>
                     </div>
@@ -2892,8 +2911,8 @@
                 <div class="analytics-card">
                     <h3 class="analytics-title">Session Comparison</h3>
                     <div style="margin-bottom: 1rem;">
-                        <label for="comparison-selector" style="color: #6b6b6b; font-size: 0.9375rem; margin-right: 0.5rem;">Workout Type:</label>
-                        <select id="comparison-selector" style="padding: 0.5rem; background: rgba(255, 255, 255, 0.7); border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 12px; color: #1a1a1a; font-size: 0.9375rem;">
+                        <label for="comparison-selector" style="color: var(--color-text-secondary); font-size: 0.9375rem; margin-right: 0.5rem;">Workout Type:</label>
+                        <select id="comparison-selector" style="padding: 0.5rem; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); color: var(--color-text-primary); font-size: 0.9375rem;">
                             <option value="Upper">Upper</option>
                             <option value="Lower">Lower</option>
                             <option value="Push">Push</option>
@@ -2901,7 +2920,7 @@
                             <option value="Legs">Legs</option>
                         </select>
                     </div>
-                    <div id="session-comparison-content" style="color: #6b6b6b; font-size: 0.9375rem;">
+                    <div id="session-comparison-content" style="color: var(--color-text-secondary); font-size: 0.9375rem;">
                         <p>Select a workout type to compare sessions</p>
                     </div>
                 </div>
@@ -2911,19 +2930,19 @@
             <div class="chart-grid">
                 <div class="analytics-card">
                     <h3 class="analytics-title">Progression Snapshot</h3>
-                    <div id="progression-snapshot" style="color: #6b6b6b; font-size: 0.9375rem;">
+                    <div id="progression-snapshot" style="color: var(--color-text-secondary); font-size: 0.9375rem;">
                         <div style="margin-bottom: 1rem;">
                             <strong style="color: #1a1a1a;">Quick Wins:</strong>
                             <div id="quick-wins">Complete at least 2 workouts to see recent PRs</div>
                         </div>
                         <div style="margin-bottom: 1rem;">
-                            <strong style="color: #10b981;">Trending Up:</strong>
-                            <div style="font-size: 0.8rem; color: #64748b; margin-bottom: 0.25rem;">Improving over last 4 sessions</div>
+                            <strong style="color: var(--color-success);">Trending Up:</strong>
+                            <div style="font-size: 0.8rem; color: var(--color-text-secondary); margin-bottom: 0.25rem;">Improving over last 4 sessions</div>
                             <div id="trending-up">N/A</div>
                         </div>
                         <div>
-                            <strong style="color: #f59e0b;">Needs Attention:</strong>
-                            <div style="font-size: 0.8rem; color: #64748b; margin-bottom: 0.25rem;">No progress for 3+ sessions</div>
+                            <strong style="color: var(--color-warning);">Needs Attention:</strong>
+                            <div style="font-size: 0.8rem; color: var(--color-text-secondary); margin-bottom: 0.25rem;">No progress for 3+ sessions</div>
                             <div id="needs-attention">N/A</div>
                         </div>
                     </div>
@@ -2931,7 +2950,7 @@
 
                 <div class="analytics-card">
                     <h3 class="analytics-title">🔥 Intensity Heatmap</h3>
-                    <div id="intensity-heatmap" style="color: #94a3b8; font-size: 0.9rem;">
+                    <div id="intensity-heatmap" style="color: var(--color-text-secondary); font-size: 0.9rem;">
                         <div id="heatmap-content"></div>
                     </div>
                 </div>
@@ -2943,14 +2962,14 @@
             <div class="analytics-card">
                 <h3 class="analytics-title">Exercise Progression</h3>
                 <div id="exercise-progress-list">
-                    <p style="color: #64748b;">Complete some workouts to see your detailed progression!</p>
+                    <p style="color: var(--color-text-secondary);">Complete some workouts to see your detailed progression!</p>
                 </div>
             </div>
 
             <div class="analytics-card">
                 <h3 class="analytics-title">🏆 Personal Records</h3>
                 <div id="progress-list">
-                    <p style="color: #64748b;">Complete some workouts to see your strength progression!</p>
+                    <p style="color: var(--color-text-secondary);">Complete some workouts to see your strength progression!</p>
                 </div>
             </div>
         </div>
@@ -2966,21 +2985,21 @@
 
             <div class="analytics-card">
                 <h3 class="analytics-title">Nutrition Analytics (Past 7 Days)</h3>
-                <div id="nutrition-insights" style="color: #94a3b8; font-size: 0.9rem;">
+                <div id="nutrition-insights" style="color: var(--color-text-secondary); font-size: 0.9rem;">
                     <div style="margin-bottom: 1rem;">
-                        <strong style="color: #06b6d4;">Workout Days vs Rest Days</strong>
+                        <strong style="color: var(--color-accent-primary);">Workout Days vs Rest Days</strong>
                         <div id="nutrition-comparison" style="margin-top: 0.5rem;">
                             Log nutrition for at least 3 days to see insights
                         </div>
                     </div>
                     <div style="margin-bottom: 1rem;">
-                        <strong style="color: #10b981;">Pre-Workout Nutrition</strong>
+                        <strong style="color: var(--color-success);">Pre-Workout Nutrition</strong>
                         <div id="preworkout-insights" style="margin-top: 0.5rem;">
                             Track meal times to see pre-workout nutrition patterns
                         </div>
                     </div>
                     <div>
-                        <strong style="color: #f59e0b;">Post-Workout Recovery</strong>
+                        <strong style="color: var(--color-warning);">Post-Workout Recovery</strong>
                         <div id="postworkout-insights" style="margin-top: 0.5rem;">
                             Track meal times to see post-workout nutrition patterns
                         </div>
@@ -3032,14 +3051,14 @@
     <div class="modal-overlay" id="post-travel-modal">
         <div class="modal-content">
             <h3 class="modal-title">✈️ Welcome Back!</h3>
-            <p style="color: #94a3b8; margin-bottom: 1.5rem; text-align: center;">How would you like to resume your workout program?</p>
+            <p style="color: var(--color-text-secondary); margin-bottom: 1.5rem; text-align: center;">How would you like to resume your workout program?</p>
             <div class="meal-type-buttons">
-                <button class="meal-type-btn" onclick="resumeWorkoutProgram('resume')" style="background: rgba(16, 185, 129, 0.2); border-color: rgba(16, 185, 129, 0.3); color: #10b981;">
+                <button class="meal-type-btn" onclick="resumeWorkoutProgram('resume')" style="background: rgba(93, 138, 102, 0.2); border-color: rgba(93, 138, 102, 0.3); color: var(--color-success);">
                     <div style="font-size: 1.5rem; margin-bottom: 0.25rem;">▶️</div>
                     <div style="font-weight: 600;">Resume</div>
                     <div style="font-size: 0.75rem; opacity: 0.8; margin-top: 0.25rem;">Continue from where you left off</div>
                 </button>
-                <button class="meal-type-btn" onclick="resumeWorkoutProgram('restart')" style="background: rgba(59, 130, 246, 0.2); border-color: rgba(59, 130, 246, 0.3); color: #3b82f6;">
+                <button class="meal-type-btn" onclick="resumeWorkoutProgram('restart')" style="background: rgba(74, 93, 74, 0.2); border-color: rgba(74, 93, 74, 0.3); color: var(--color-accent-primary);">
                     <div style="font-size: 1.5rem; margin-bottom: 0.25rem;">🔄</div>
                     <div style="font-weight: 600;">Restart</div>
                     <div style="font-size: 0.75rem; opacity: 0.8; margin-top: 0.25rem;">Start the program from day 1</div>
@@ -3515,11 +3534,11 @@
             // Update remaining color
             const remainingElement = document.getElementById('calories-remaining');
             if (remaining < 0) {
-                remainingElement.style.color = '#ef4444'; // red
+                remainingElement.style.color = 'var(--color-error)'; // red
             } else if (remaining < 200) {
-                remainingElement.style.color = '#fb923c'; // orange
+                remainingElement.style.color = 'var(--color-warning)'; // orange
             } else {
-                remainingElement.style.color = '#06b6d4'; // cyan
+                remainingElement.style.color = 'var(--color-accent-primary)'; // cyan
             }
         }
 
@@ -4669,7 +4688,7 @@
                     plugins: {
                         legend: { 
                             position: 'top',
-                            labels: { color: '#94a3b8' }
+                            labels: { color: 'var(--color-text-secondary)' }
                         },
                         title: {
                             display: true,
@@ -4682,13 +4701,13 @@
                         x: {
                             type: 'time',
                             time: { unit: 'day' },
-                            ticks: { color: '#6b6b6b' },
+                            ticks: { color: 'var(--color-text-secondary)' },
                             grid: { color: 'rgba(0, 0, 0, 0.08)' }
                         },
                         y: {
                             beginAtZero: true,
-                            title: { display: true, text: 'Weight (lbs)', color: '#6b6b6b' },
-                            ticks: { color: '#6b6b6b' },
+                            title: { display: true, text: 'Weight (lbs)', color: 'var(--color-text-secondary)' },
+                            ticks: { color: 'var(--color-text-secondary)' },
                             grid: { color: 'rgba(0, 0, 0, 0.08)' }
                         }
                     }
@@ -4715,7 +4734,7 @@
             const volumeChangePercent = previousVolume > 0 ? Math.round((volumeChange / previousVolume) * 100) : 0;
             
             const isImproving = volumeChange > 0;
-            const changeColor = isImproving ? '#10b981' : '#ef4444';
+            const changeColor = isImproving ? 'var(--color-success)' : 'var(--color-error)';
             const changeIcon = isImproving ? '✓' : '✗';
             
             // Exercise-by-exercise comparison
@@ -4772,8 +4791,8 @@
             let exerciseBreakdownHTML = '';
             if (exerciseChanges.increased.length > 0) {
                 exerciseBreakdownHTML += `
-                    <div style="margin-top: 1rem; padding: 0.75rem; background: rgba(16, 185, 129, 0.1); border-radius: 8px; border-left: 3px solid #10b981;">
-                        <div style="color: #10b981; font-weight: bold; margin-bottom: 0.5rem;">↑ Increased</div>
+                    <div style="margin-top: 1rem; padding: 0.75rem; background: rgba(93, 138, 102, 0.1); border-radius: 8px; border-left: 3px solid #5D8A66;">
+                        <div style="color: #5D8A66; font-weight: bold; margin-bottom: 0.5rem;">↑ Increased</div>
                         ${exerciseChanges.increased.map(ex => 
                             `<div style="font-size: 0.9rem; margin: 0.25rem 0;">• ${ex.name}: ${ex.previous} → ${ex.current}</div>`
                         ).join('')}
@@ -4783,8 +4802,8 @@
             
             if (exerciseChanges.decreased.length > 0) {
                 exerciseBreakdownHTML += `
-                    <div style="margin-top: 1rem; padding: 0.75rem; background: rgba(239, 68, 68, 0.1); border-radius: 8px; border-left: 3px solid #ef4444;">
-                        <div style="color: #ef4444; font-weight: bold; margin-bottom: 0.5rem;">↓ Decreased</div>
+                    <div style="margin-top: 1rem; padding: 0.75rem; background: rgba(196, 115, 109, 0.1); border-radius: 8px; border-left: 3px solid #C4736D;">
+                        <div style="color: #C4736D; font-weight: bold; margin-bottom: 0.5rem;">↓ Decreased</div>
                         ${exerciseChanges.decreased.map(ex => 
                             `<div style="font-size: 0.9rem; margin: 0.25rem 0;">• ${ex.name}: ${ex.previous} → ${ex.current}</div>`
                         ).join('')}
@@ -4819,8 +4838,8 @@
                 
                 if (plateauedExercises.length > 0) {
                     exerciseBreakdownHTML += `
-                        <div style="margin-top: 1rem; padding: 0.75rem; background: rgba(245, 158, 11, 0.1); border-radius: 8px; border-left: 3px solid #f59e0b;">
-                            <div style="color: #f59e0b; font-weight: bold; margin-bottom: 0.5rem;">⚠️ Plateaued (3+ sessions)</div>
+                        <div style="margin-top: 1rem; padding: 0.75rem; background: rgba(212, 168, 75, 0.1); border-radius: 8px; border-left: 3px solid #D4A84B;">
+                            <div style="color: #D4A84B; font-weight: bold; margin-bottom: 0.5rem;">⚠️ Plateaued (3+ sessions)</div>
                             ${plateauedExercises.map(ex => 
                                 `<div style="font-size: 0.9rem; margin: 0.25rem 0;">• ${ex.name}: ${ex.value}</div>`
                             ).join('')}
@@ -4835,14 +4854,14 @@
                         <strong style="color: white;">Last Session</strong>
                         <div style="margin-top: 0.5rem;">
                             <div>Volume: <strong>${lastVolume.toLocaleString()} lbs</strong></div>
-                            <div style="font-size: 0.8rem; color: #64748b;">${new Date(lastSession.date).toLocaleDateString()}</div>
+                            <div style="font-size: 0.8rem; color: var(--color-text-secondary);">${new Date(lastSession.date).toLocaleDateString()}</div>
                         </div>
                     </div>
                     <div>
                         <strong style="color: white;">Previous Session</strong>
                         <div style="margin-top: 0.5rem;">
                             <div>Volume: <strong>${previousVolume.toLocaleString()} lbs</strong></div>
-                            <div style="font-size: 0.8rem; color: #64748b;">${new Date(previousSession.date).toLocaleDateString()}</div>
+                            <div style="font-size: 0.8rem; color: var(--color-text-secondary);">${new Date(previousSession.date).toLocaleDateString()}</div>
                         </div>
                     </div>
                 </div>
@@ -4914,10 +4933,10 @@
             // Create heatmap HTML
             const getColorForScore = (score) => {
                 if (score === 0) return 'rgba(71, 85, 105, 0.3)';
-                if (score < 4) return '#ef4444';
-                if (score < 6) return '#f59e0b';
-                if (score < 8) return '#10b981';
-                return '#06b6d4';
+                if (score < 4) return 'var(--color-error)';
+                if (score < 6) return 'var(--color-warning)';
+                if (score < 8) return 'var(--color-success)';
+                return 'var(--color-accent-primary)';
             };
             
             const heatmapHTML = `
@@ -4927,7 +4946,7 @@
                         const color = getColorForScore(score);
                         return `
                             <div style="text-align: center;">
-                                <div style="font-size: 0.8rem; margin-bottom: 0.5rem; color: #94a3b8;">${day}</div>
+                                <div style="font-size: 0.8rem; margin-bottom: 0.5rem; color: var(--color-text-secondary);">${day}</div>
                                 <div style="
                                     background: ${color};
                                     border-radius: 8px;
@@ -4942,7 +4961,7 @@
                         `;
                     }).join('')}
                 </div>
-                <div style="margin-top: 1rem; font-size: 0.8rem; color: #64748b; text-align: center;">
+                <div style="margin-top: 1rem; font-size: 0.8rem; color: var(--color-text-secondary); text-align: center;">
                     Intensity score (0-10) - calculated from your 1-5 ratings. Fatigue is inverted (lower fatigue = higher score).
                 </div>
             `;
@@ -5004,13 +5023,13 @@
                         const diff = currentAvg - lastMonthAvg;
                         const sign = diff > 0 ? '+' : '';
                         momElement.textContent = `${sign}${diff.toLocaleString()} lbs vs last month`;
-                        momElement.style.color = diff > 0 ? '#10b981' : (diff < 0 ? '#ef4444' : '#94a3b8');
+                        momElement.style.color = diff > 0 ? 'var(--color-success)' : (diff < 0 ? 'var(--color-error)' : 'var(--color-text-secondary)');
                     } else if (currentAvg > 0) {
                         momElement.textContent = 'First month tracked';
-                        momElement.style.color = '#94a3b8';
+                        momElement.style.color = 'var(--color-text-secondary)';
                     } else {
                         momElement.textContent = 'No data this month';
-                        momElement.style.color = '#94a3b8';
+                        momElement.style.color = 'var(--color-text-secondary)';
                     }
                 }
             });
@@ -5050,10 +5069,10 @@
                 if (recentPRs.length > 0) {
                     const uniqueExercises = [...new Set(recentPRs.map(pr => pr.exercise))];
                     quickWinsElement.innerHTML = `🏆 <strong>${uniqueExercises.length}</strong> exercise${uniqueExercises.length !== 1 ? 's' : ''} hit PRs this week!`;
-                    quickWinsElement.style.color = '#10b981';
+                    quickWinsElement.style.color = 'var(--color-success)';
                 } else {
                     quickWinsElement.innerHTML = 'No PRs this week yet. Keep pushing!';
-                    quickWinsElement.style.color = '#94a3b8';
+                    quickWinsElement.style.color = 'var(--color-text-secondary)';
                 }
             }
             
@@ -5063,10 +5082,10 @@
             if (trendingUpElement) {
                 if (trendingExercises.length > 0) {
                     trendingUpElement.innerHTML = trendingExercises.map(ex => `• ${ex}`).join('<br>');
-                    trendingUpElement.style.color = '#10b981';
+                    trendingUpElement.style.color = 'var(--color-success)';
                 } else {
                     trendingUpElement.innerHTML = 'Need 3+ sessions per exercise to detect trends';
-                    trendingUpElement.style.color = '#94a3b8';
+                    trendingUpElement.style.color = 'var(--color-text-secondary)';
                 }
             }
             
@@ -5078,10 +5097,10 @@
                     needsAttentionElement.innerHTML = plateauedExercises.map(ex => 
                         `• ${ex.exercise} (stuck at ${ex.weight} lbs)`
                     ).join('<br>');
-                    needsAttentionElement.style.color = '#f59e0b';
+                    needsAttentionElement.style.color = 'var(--color-warning)';
                 } else {
                     needsAttentionElement.innerHTML = 'All exercises progressing well! 💪';
-                    needsAttentionElement.style.color = '#10b981';
+                    needsAttentionElement.style.color = 'var(--color-success)';
                 }
             }
         }
@@ -5128,10 +5147,10 @@
             
             if (warnings.length > 0) {
                 container.innerHTML = warnings.map(w => `<div style="margin-bottom: 0.5rem;">${w}</div>`).join('');
-                container.style.color = '#f59e0b';
+                container.style.color = 'var(--color-warning)';
             } else {
                 container.innerHTML = '<div>✅ Your training is well balanced! Keep it up!</div>';
-                container.style.color = '#10b981';
+                container.style.color = 'var(--color-success)';
             }
         }
 
@@ -5199,7 +5218,7 @@
                 const restDayData = datesWithNutrition.filter(date => !workoutDates.includes(date));
                 
                 let comparisonHtml = '<div style="font-size: 0.85rem; line-height: 1.6;">';
-                comparisonHtml += `<div style="margin-bottom: 0.5rem; color: #64748b;">Data from ${datesWithNutrition.length} days with logged nutrition</div>`;
+                comparisonHtml += `<div style="margin-bottom: 0.5rem; color: var(--color-text-secondary);">Data from ${datesWithNutrition.length} days with logged nutrition</div>`;
                 
                 if (workoutDayData.length > 0) {
                     const workoutAvg = {
@@ -5209,7 +5228,7 @@
                         calories: Math.round(workoutDayData.reduce((sum, date) => sum + dailyNutrition[date].calories, 0) / workoutDayData.length)
                     };
                     
-                    comparisonHtml += `<div style="margin-bottom: 0.5rem; color: #10b981;">`;
+                    comparisonHtml += `<div style="margin-bottom: 0.5rem; color: var(--color-success);">`;
                     comparisonHtml += `<strong>Workout Days (${workoutDayData.length}):</strong> `;
                     comparisonHtml += `${workoutAvg.protein}g protein, ${workoutAvg.carbs}g carbs, ${workoutAvg.fats}g fat, ${workoutAvg.calories} cal`;
                     comparisonHtml += `</div>`;
@@ -5223,7 +5242,7 @@
                         calories: Math.round(restDayData.reduce((sum, date) => sum + dailyNutrition[date].calories, 0) / restDayData.length)
                     };
                     
-                    comparisonHtml += `<div style="margin-bottom: 0.5rem; color: #3b82f6;">`;
+                    comparisonHtml += `<div style="margin-bottom: 0.5rem; color: var(--color-accent-primary);">`;
                     comparisonHtml += `<strong>Rest Days (${restDayData.length}):</strong> `;
                     comparisonHtml += `${restAvg.protein}g protein, ${restAvg.carbs}g carbs, ${restAvg.fats}g fat, ${restAvg.calories} cal`;
                     comparisonHtml += `</div>`;
@@ -5232,7 +5251,7 @@
                 comparisonHtml += '</div>';
                 comparisonContainer.innerHTML = comparisonHtml;
             } else {
-                comparisonContainer.innerHTML = '<div style="color: #64748b;">Log nutrition for at least 3 days to see insights</div>';
+                comparisonContainer.innerHTML = '<div style="color: var(--color-text-secondary);">Log nutrition for at least 3 days to see insights</div>';
             }
             
             // Pre-Workout Nutrition Analysis
@@ -5240,14 +5259,14 @@
             let preworkoutHtml = '<div style="font-size: 0.85rem; line-height: 1.6;">';
             
             // Note: Full meal timing analysis would require meal time data
-            preworkoutHtml += '<div style="color: #64748b;">Meal timing analysis requires logged meal times. ';
+            preworkoutHtml += '<div style="color: var(--color-text-secondary);">Meal timing analysis requires logged meal times. ';
             preworkoutHtml += 'This feature tracks meals 1-4 hours before workouts to correlate with performance.</div>';
             preworkoutContainer.innerHTML = preworkoutHtml + '</div>';
             
             // Post-Workout Recovery Analysis
             const postworkoutContainer = document.getElementById('postworkout-insights');
             let postworkoutHtml = '<div style="font-size: 0.85rem; line-height: 1.6;">';
-            postworkoutHtml += '<div style="color: #64748b;">Post-workout analysis tracks protein intake within 2 hours of completing workouts ';
+            postworkoutHtml += '<div style="color: var(--color-text-secondary);">Post-workout analysis tracks protein intake within 2 hours of completing workouts ';
             postworkoutHtml += 'to correlate with next session performance.</div>';
             postworkoutContainer.innerHTML = postworkoutHtml + '</div>';
         }
@@ -5260,7 +5279,7 @@
             
             // Update PRs
             if (Object.keys(prs).length === 0) {
-                prContainer.innerHTML = '<p style="color: #64748b;">Complete some workouts to see your personal records!</p>';
+                prContainer.innerHTML = '<p style="color: var(--color-text-secondary);">Complete some workouts to see your personal records!</p>';
             } else {
                 const sortedPRs = Object.entries(prs).sort(([,a], [,b]) => b.weight - a.weight);
                 
@@ -5274,7 +5293,7 @@
             
             // Update exercise progression
             if (Object.keys(progression).length === 0) {
-                progressionContainer.innerHTML = '<p style="color: #64748b;">Complete some workouts to see your detailed progression!</p>';
+                progressionContainer.innerHTML = '<p style="color: var(--color-text-secondary);">Complete some workouts to see your detailed progression!</p>';
             } else {
                 const sortedProgression = Object.entries(progression).sort(([,a], [,b]) => {
                     const typeOrder = { strength: 4, volume: 3, total_volume: 2, maintaining: 1 };
@@ -5283,17 +5302,17 @@
                 
                 progressionContainer.innerHTML = sortedProgression.slice(0, 15).map(([exercise, data]) => {
                     const typeColors = {
-                        strength: '#10b981',
-                        volume: '#3b82f6', 
-                        total_volume: '#f59e0b',
-                        maintaining: '#64748b'
+                        strength: 'var(--color-success)',
+                        volume: 'var(--color-accent-primary)', 
+                        total_volume: 'var(--color-warning)',
+                        maintaining: 'var(--color-text-secondary)'
                     };
                     
                     return `
                         <div class="insight-item" style="border-left-color: ${typeColors[data.type]};">
                             <strong>${exercise}</strong><br>
                             ${data.progression}<br>
-                            <span style="color: #94a3b8; font-size: 0.75rem;">
+                            <span style="color: var(--color-text-secondary); font-size: 0.75rem;">
                                 ${data.daysSince} days ago • ${data.sessions} sessions tracked
                             </span>
                         </div>
@@ -5428,12 +5447,12 @@
                 // Show intensity if available
                 if (workout.intensity) {
                     html += '<div style="background: rgba(15, 23, 42, 0.6); padding: 1rem; border-radius: 8px;">';
-                    html += '<h4 style="color: #06b6d4; margin-bottom: 0.5rem;">Session Intensity</h4>';
+                    html += '<h4 style="color: var(--color-accent-primary); margin-bottom: 0.5rem;">Session Intensity</h4>';
                     html += '<div style="display: flex; gap: 1rem; flex-wrap: wrap;">';
-                    if (workout.intensity.energy) html += `<span style="color: #94a3b8;">Energy: ${workout.intensity.energy}/5</span>`;
-                    if (workout.intensity.motivation) html += `<span style="color: #94a3b8;">Motivation: ${workout.intensity.motivation}/5</span>`;
-                    if (workout.intensity.fatigue) html += `<span style="color: #94a3b8;">Fatigue: ${workout.intensity.fatigue}/5</span>`;
-                    if (workout.intensity.satisfaction) html += `<span style="color: #94a3b8;">Satisfaction: ${workout.intensity.satisfaction}/5</span>`;
+                    if (workout.intensity.energy) html += `<span style="color: var(--color-text-secondary);">Energy: ${workout.intensity.energy}/5</span>`;
+                    if (workout.intensity.motivation) html += `<span style="color: var(--color-text-secondary);">Motivation: ${workout.intensity.motivation}/5</span>`;
+                    if (workout.intensity.fatigue) html += `<span style="color: var(--color-text-secondary);">Fatigue: ${workout.intensity.fatigue}/5</span>`;
+                    if (workout.intensity.satisfaction) html += `<span style="color: var(--color-text-secondary);">Satisfaction: ${workout.intensity.satisfaction}/5</span>`;
                     html += '</div></div>';
                 }
                 
@@ -5442,15 +5461,15 @@
                     html += '<div style="background: rgba(15, 23, 42, 0.6); padding: 1rem; border-radius: 8px;">';
                     html += `<h4 style="color: white; margin-bottom: 0.5rem;">${exercise.exercise}`;
                     if (exercise.substitution && exercise.originalExercise) {
-                        html += ` <span style="background: rgba(6, 182, 212, 0.2); color: #06b6d4; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: normal;">Alt for ${exercise.originalExercise}</span>`;
+                        html += ` <span style="background: rgba(74, 93, 74, 0.2); color: var(--color-accent-primary); padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: normal;">Alt for ${exercise.originalExercise}</span>`;
                     } else if (exercise.approach) {
-                        html += ` <span style="background: rgba(6, 182, 212, 0.2); color: #06b6d4; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: normal;">${exercise.approach}</span>`;
+                        html += ` <span style="background: rgba(74, 93, 74, 0.2); color: var(--color-accent-primary); padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: normal;">${exercise.approach}</span>`;
                     }
                     html += `</h4>`;
                     
                     exercise.sets.forEach((set, idx) => {
                         if (set.completed) {
-                            html += `<div style="color: #10b981; padding: 0.25rem;">✓ Completed</div>`;
+                            html += `<div style="color: var(--color-success); padding: 0.25rem;">✓ Completed</div>`;
                         } else if (set.weight || set.reps) {
                             html += `<div style="color: #93c5fd; padding: 0.25rem;">Set ${idx + 1}: ${set.weight}lbs × ${set.reps} reps`;
                             if (set.notes) html += ` (${set.notes})`;
@@ -5470,9 +5489,9 @@
                 } else if (scheduledWorkout === 'Travel') {
                     const wouldBeWorkout = getWouldBeScheduledWorkout(dateStr);
                     content.innerHTML = `<p style="color: #a855f7;">Travel day - workout schedule paused.</p>
-                        <p style="color: #64748b; margin-top: 0.5rem;">Scheduled workout if not traveling: <strong style="color: #94a3b8;">${wouldBeWorkout}</strong></p>`;
+                        <p style="color: var(--color-text-secondary); margin-top: 0.5rem;">Scheduled workout if not traveling: <strong style="color: var(--color-text-secondary);">${wouldBeWorkout}</strong></p>`;
                 } else {
-                    content.innerHTML = `<p style="color: #64748b;">No workout logged for this day. Scheduled: ${scheduledWorkout}</p>`;
+                    content.innerHTML = `<p style="color: var(--color-text-secondary);">No workout logged for this day. Scheduled: ${scheduledWorkout}</p>`;
                 }
             }
             
@@ -5502,6 +5521,19 @@
                 return check >= start && check <= end;
             });
         }
+
+        window.toggleScheduleExceptions = function() {
+            const content = document.getElementById('schedule-exceptions-content');
+            const toggle = document.getElementById('schedule-exceptions-toggle');
+            
+            if (content.style.display === 'none') {
+                content.style.display = 'block';
+                toggle.textContent = '▲';
+            } else {
+                content.style.display = 'none';
+                toggle.textContent = '▼';
+            }
+        };
 
         window.enableTravelMode = async function() {
             const startDate = document.getElementById('travel-start-date').value;
@@ -5796,7 +5828,7 @@
                             <option value="Dinner" ${meal.mealType === 'Dinner' ? 'selected' : ''}>🌙 Dinner</option>
                             <option value="Snack" ${meal.mealType === 'Snack' ? 'selected' : ''}>🍪 Snack</option>
                         </select>
-                        <button class="btn" style="background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); padding: 0.75rem 1rem; min-height: 48px; border-radius: 12px; font-weight: 500;" onclick="deleteMeal('${meal.id}'); event.stopPropagation();">🗑️ Delete</button>
+                        <button class="btn" style="background: rgba(196, 115, 109, 0.15); color: var(--color-error); border: 1px solid rgba(196, 115, 109, 0.3); padding: 0.75rem 1rem; min-height: 48px; border-radius: 12px; font-weight: 500;" onclick="deleteMeal('${meal.id}'); event.stopPropagation();">🗑️ Delete</button>
                     </div>
                     <div id="meal-${meal.id}">`;
                 
@@ -5817,22 +5849,22 @@
                             <div class="macro-input-wrapper">
                                 <label class="macro-input-label">Protein</label>
                                 <input type="number" class="macro-input" value="${food.protein || 0}" placeholder="0" step="0.1" onchange="updateMealFood('${meal.id}', ${foodIndex}, 'protein', this.value)">
-                                ${quantity !== 1 ? `<div style="font-size: 0.7rem; color: #94a3b8; text-align: center; margin-top: 0.25rem;">${displayProtein}g</div>` : ''}
+                                ${quantity !== 1 ? `<div style="font-size: 0.7rem; color: var(--color-text-secondary); text-align: center; margin-top: 0.25rem;">${displayProtein}g</div>` : ''}
                             </div>
                             <div class="macro-input-wrapper">
                                 <label class="macro-input-label">Carbs</label>
                                 <input type="number" class="macro-input" value="${food.carbs || 0}" placeholder="0" step="0.1" onchange="updateMealFood('${meal.id}', ${foodIndex}, 'carbs', this.value)">
-                                ${quantity !== 1 ? `<div style="font-size: 0.7rem; color: #94a3b8; text-align: center; margin-top: 0.25rem;">${displayCarbs}g</div>` : ''}
+                                ${quantity !== 1 ? `<div style="font-size: 0.7rem; color: var(--color-text-secondary); text-align: center; margin-top: 0.25rem;">${displayCarbs}g</div>` : ''}
                             </div>
                             <div class="macro-input-wrapper">
                                 <label class="macro-input-label">Fats</label>
                                 <input type="number" class="macro-input" value="${food.fats || 0}" placeholder="0" step="0.1" onchange="updateMealFood('${meal.id}', ${foodIndex}, 'fats', this.value)">
-                                ${quantity !== 1 ? `<div style="font-size: 0.7rem; color: #94a3b8; text-align: center; margin-top: 0.25rem;">${displayFats}g</div>` : ''}
+                                ${quantity !== 1 ? `<div style="font-size: 0.7rem; color: var(--color-text-secondary); text-align: center; margin-top: 0.25rem;">${displayFats}g</div>` : ''}
                             </div>
                             <div class="macro-input-wrapper">
                                 <label class="macro-input-label">Calories</label>
                                 <input type="number" class="macro-input" value="${food.calories || 0}" placeholder="0" onchange="updateMealFood('${meal.id}', ${foodIndex}, 'calories', this.value)">
-                                ${quantity !== 1 ? `<div style="font-size: 0.7rem; color: #94a3b8; text-align: center; margin-top: 0.25rem;">${displayCalories}</div>` : ''}
+                                ${quantity !== 1 ? `<div style="font-size: 0.7rem; color: var(--color-text-secondary); text-align: center; margin-top: 0.25rem;">${displayCalories}</div>` : ''}
                             </div>
                         </div>
                         <div class="food-action-buttons">
@@ -5845,7 +5877,7 @@
                 html += `</div>
                     <div style="display: flex; gap: 0.75rem; margin-top: 1rem; flex-wrap: wrap;">
                         <button class="quick-add-food-btn" onclick="addFoodToMeal('${meal.id}'); event.stopPropagation();">+ Add Food</button>
-                        ${meal.hasUnsavedChanges ? `<button class="btn" style="background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 12px; padding: 0.75rem 1.25rem; font-weight: 500; min-height: 44px;" onclick="saveMealChanges('${meal.id}'); event.stopPropagation();">💾 Save Changes</button>` : ''}
+                        ${meal.hasUnsavedChanges ? `<button class="btn" style="background: rgba(93, 138, 102, 0.2); color: var(--color-success); border: 1px solid rgba(93, 138, 102, 0.3); border-radius: 12px; padding: 0.75rem 1.25rem; font-weight: 500; min-height: 44px;" onclick="saveMealChanges('${meal.id}'); event.stopPropagation();">💾 Save Changes</button>` : ''}
                     </div>
                 </div>
                 </div>`;
@@ -5892,7 +5924,7 @@
             }
             
             element.style.transition = 'color 0.3s ease';
-            element.style.color = '#3b82f6';
+            element.style.color = 'var(--color-accent-primary)';
             
             // Simple direct update with highlight
             element.textContent = newValue + suffix;
@@ -6561,7 +6593,7 @@
             if (!container) return;
             
             if (window.photoData.length === 0) {
-                container.innerHTML = '<p style="color: #64748b; text-align: center; padding: 2rem;">No progress photos yet. Upload your first one!</p>';
+                container.innerHTML = '<p style="color: var(--color-text-secondary); text-align: center; padding: 2rem;">No progress photos yet. Upload your first one!</p>';
                 return;
             }
             
@@ -6965,7 +6997,7 @@
                                 <input type="number" class="weight-input" placeholder="lbs" 
                                        value="${set.weight}" 
                                        onchange="updateSet(${exerciseIndex}, ${setIndex}, 'weight', this.value)">
-                                <span style="color: #64748b;">×</span>
+                                <span style="color: var(--color-text-secondary);">×</span>
                                 <input type="number" class="reps-input" placeholder="reps" 
                                        value="${set.reps}" 
                                        onchange="updateSet(${exerciseIndex}, ${setIndex}, 'reps', this.value)">
