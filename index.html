@@ -39,6 +39,7 @@
             --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
             --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.06);
             --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.08);
+            --focus-shadow: 0 0 0 2px rgba(74, 93, 74, 0.2);
             
             /* Transitions */
             --transition-base: all 0.15s ease-out;
@@ -490,7 +491,7 @@
         .weight-input:focus, .reps-input:focus {
             outline: none;
             border-color: var(--color-accent-primary);
-            box-shadow: 0 0 0 2px rgba(74, 93, 74, 0.2);
+            box-shadow: var(--focus-shadow);
         }
 
         .notes-input {
@@ -506,7 +507,7 @@
         .notes-input:focus {
             outline: none;
             border-color: var(--color-accent-primary);
-            box-shadow: 0 0 0 2px rgba(74, 93, 74, 0.2);
+            box-shadow: var(--focus-shadow);
         }
 
         .notes-input::placeholder {
@@ -1331,7 +1332,7 @@
         .goal-select:focus, .goal-input:focus {
             outline: none;
             border-color: var(--color-accent-primary);
-            box-shadow: 0 0 0 2px rgba(74, 93, 74, 0.2);
+            box-shadow: var(--focus-shadow);
         }
 
         .goal-display {
@@ -1558,7 +1559,7 @@
         .saved-food-search:focus {
             outline: none;
             border-color: var(--color-accent-primary);
-            box-shadow: 0 0 0 2px rgba(74, 93, 74, 0.2);
+            box-shadow: var(--focus-shadow);
         }
 
         .saved-food-list {
@@ -1879,7 +1880,7 @@
         .alt-exercise-name-input:focus {
             outline: none;
             border-color: var(--color-accent-primary);
-            box-shadow: 0 0 0 2px rgba(74, 93, 74, 0.2);
+            box-shadow: var(--focus-shadow);
         }
 
         .alt-exercise-history-section {
@@ -2458,12 +2459,12 @@
         <div id="travel-mode-banner" class="travel-mode-banner">
             <div style="display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap;">
                 <div>
-                    <div style="color: #a855f7; font-weight: 600; font-size: 1.1rem; margin-bottom: 0.25rem;">Travel Mode Active</div>
-                    <div style="color: #94a3b8; font-size: 0.9rem;">
+                    <div style="color: var(--color-warning); font-weight: 600; font-size: 1.1rem; margin-bottom: 0.25rem;">Travel Mode Active</div>
+                    <div style="color: var(--color-text-secondary); font-size: 0.9rem;">
                         <span id="travel-mode-dates"></span>
                     </div>
                 </div>
-                <button class="btn" onclick="endTravelMode()" style="background: rgba(168, 85, 247, 0.2); color: #a855f7; border: 1px solid rgba(168, 85, 247, 0.3);">End Travel Mode</button>
+                <button class="btn" onclick="endTravelMode()" style="background: rgba(212, 168, 75, 0.15); color: var(--color-warning); border: 1px solid var(--color-warning);">End Travel Mode</button>
             </div>
         </div>
 
@@ -2479,7 +2480,7 @@
             </div>
 
             <div class="workout-controls" style="display: flex; gap: 1rem; margin-bottom: 1.5rem; align-items: center; flex-wrap: wrap;">
-                <button class="btn" id="log-past-workout-btn" style="background: rgba(168, 85, 247, 0.2); color: #a855f7; border: 1px solid rgba(168, 85, 247, 0.3);">Log Past Workout</button>
+                <button class="btn" id="log-past-workout-btn" style="background: rgba(168, 181, 160, 0.15); color: var(--color-accent-primary); border: 1px solid var(--color-accent-secondary);">Log Past Workout</button>
                 <div style="display: flex; align-items: center; gap: 0.5rem;">
                     <label style="color: #6b6b6b; font-size: 0.9375rem;">Date:</label>
                     <input type="date" id="workout-date-input" style="padding: 0.5rem; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-sm); color: var(--color-text-primary);">
@@ -2719,7 +2720,7 @@
             <div class="saved-foods-modal" id="saved-foods-modal">
                 <div class="modal-header">
                     <h3 class="analytics-title" style="margin-bottom: 0;">⭐ Saved Foods</h3>
-                    <button class="modal-close-btn" onclick="closeSavedFoodsModal()">✕</button>
+                    <button class="modal-close-btn" onclick="closeSavedFoodsModal()">×</button>
                 </div>
                 <input type="text" id="saved-food-search-mobile" class="saved-food-search" placeholder="Search saved foods..." oninput="renderSavedFoods(this.value)">
                 <div class="saved-food-list" id="saved-food-list-mobile">
@@ -3008,7 +3009,7 @@
         <div class="alt-exercise-modal-content">
             <div class="alt-exercise-modal-header">
                 <div class="alt-exercise-modal-title">Alternative Exercise</div>
-                <button class="alt-exercise-close-btn" onclick="closeAltExerciseModal()">✕ Close</button>
+                <button class="alt-exercise-close-btn" onclick="closeAltExerciseModal()">× Close</button>
             </div>
             
             <div class="alt-exercise-input-section">
@@ -7210,11 +7211,13 @@
             if (dateInput.value && dateInput.value !== today) {
                 logBtn.textContent = 'For ' + formatDateString(dateInput.value);
                 logBtn.style.background = 'rgba(93, 138, 102, 0.15)';
-                logBtn.style.color = 'var(--color-success)';
+                logBtn.style.color = '#5D8A66';
+                logBtn.style.borderColor = '#A8B5A0';
             } else {
                 logBtn.textContent = 'Log Past Workout';
-                logBtn.style.background = 'rgba(168, 85, 247, 0.2)';
-                logBtn.style.color = '#a855f7';
+                logBtn.style.background = 'rgba(168, 181, 160, 0.15)';
+                logBtn.style.color = '#4A5D4A';
+                logBtn.style.borderColor = '#A8B5A0';
             }
         };
 
