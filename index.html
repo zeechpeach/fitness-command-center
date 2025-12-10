@@ -3,8 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zach's Fitness Command Center</title>
+    <title>Unison</title>
     <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
     <style>
@@ -15,12 +18,13 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', system-ui, sans-serif;
-            background: #0a0e1a;
-            color: #e2e8f0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 50%, #a5d6a7 100%);
+            color: #1a1a1a;
             min-height: 100vh;
             padding: 1.5rem;
-            line-height: 1.6;
+            line-height: 1.5;
+            font-weight: 400;
         }
 
         .container {
@@ -35,20 +39,17 @@
         }
 
         .header h1 {
-            font-size: 2.5rem;
-            font-weight: 600;
-            background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 0.75rem;
-            letter-spacing: -0.025em;
+            font-size: 2rem;
+            font-weight: 300;
+            color: #1a1a1a;
+            margin-bottom: 0.5rem;
+            letter-spacing: 0.05em;
         }
 
         .header p {
-            color: #94a3b8;
-            font-size: 1rem;
-            font-weight: 400;
+            color: #6b6b6b;
+            font-size: 0.9375rem;
+            font-weight: 300;
         }
 
         .nav-tabs {
@@ -56,10 +57,13 @@
             gap: 0.5rem;
             margin-bottom: 2rem;
             overflow-x: auto;
-            padding: 0.375rem;
-            background: rgba(15, 23, 42, 0.6);
-            border-radius: 12px;
-            backdrop-filter: blur(10px);
+            padding: 0.5rem;
+            background: rgba(255, 255, 255, 0.65);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 100px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
             -webkit-overflow-scrolling: touch;
         }
 
@@ -68,12 +72,12 @@
         }
 
         .nav-tabs::-webkit-scrollbar-track {
-            background: rgba(15, 23, 42, 0.3);
+            background: rgba(255, 255, 255, 0.2);
             border-radius: 2px;
         }
 
         .nav-tabs::-webkit-scrollbar-thumb {
-            background: rgba(59, 130, 246, 0.5);
+            background: rgba(76, 175, 80, 0.5);
             border-radius: 2px;
         }
 
@@ -81,13 +85,13 @@
             padding: 0.625rem 1.125rem;
             background: transparent;
             border: none;
-            border-radius: 10px;
-            color: #94a3b8;
+            border-radius: 100px;
+            color: #6b6b6b;
             cursor: pointer;
-            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.15s ease-out;
             white-space: nowrap;
-            font-weight: 500;
-            font-size: 1rem;
+            font-weight: 400;
+            font-size: 0.9375rem;
             min-height: 44px;
             display: flex;
             align-items: center;
@@ -96,15 +100,15 @@
         }
 
         .nav-tab.active {
-            background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%);
+            background: #4caf50;
             color: #ffffff;
-            box-shadow: 0 4px 16px rgba(59, 130, 246, 0.35), 0 2px 8px rgba(6, 182, 212, 0.2);
-            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
         }
 
         .nav-tab:hover:not(.active) {
-            background: rgba(59, 130, 246, 0.15);
-            color: #cbd5e1;
+            background: rgba(76, 175, 80, 0.1);
+            color: #1a1a1a;
+            transform: scale(1.02);
         }
 
         .tab-content {
@@ -125,40 +129,43 @@
 
         .day-btn {
             padding: 0.875rem 1.5rem;
-            background: rgba(15, 23, 42, 0.6);
-            border: 1px solid rgba(71, 85, 105, 0.25);
-            border-radius: 12px;
-            color: #94a3b8;
+            background: rgba(255, 255, 255, 0.65);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 100px;
+            color: #1a1a1a;
             cursor: pointer;
-            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.15s ease-out;
             white-space: nowrap;
-            font-weight: 500;
+            font-weight: 400;
             min-height: 44px;
             display: flex;
             align-items: center;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
         }
 
         .day-btn.active {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            background: #4caf50;
             color: #ffffff;
             border-color: transparent;
-            box-shadow: 0 4px 16px rgba(16, 185, 129, 0.3);
-            transform: translateY(-1px);
+            box-shadow: 0 4px 16px rgba(76, 175, 80, 0.3);
         }
 
         .day-btn:hover:not(.active) {
-            background: rgba(16, 185, 129, 0.15);
-            border-color: rgba(16, 185, 129, 0.3);
+            background: rgba(255, 255, 255, 0.85);
+            transform: scale(1.02);
         }
 
         .intelligence-panel {
-            background: rgba(15, 23, 42, 0.5);
-            backdrop-filter: blur(16px);
-            border: 1px solid rgba(71, 85, 105, 0.2);
-            border-radius: 20px;
-            padding: 2rem;
-            margin-bottom: 2rem;
-            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+            background: rgba(255, 255, 255, 0.65);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 24px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
         }
 
         .intelligence-header {
@@ -169,21 +176,21 @@
         }
 
         .intelligence-header h3 {
-            color: #06b6d4;
-            font-weight: 600;
+            color: #1a1a1a;
+            font-weight: 500;
             font-size: 1.125rem;
         }
 
         .ai-icon {
             width: 28px;
             height: 28px;
-            background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
+            background: #4caf50;
             border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
             color: #ffffff;
-            font-weight: bold;
+            font-weight: 500;
             font-size: 0.875rem;
         }
 
@@ -194,48 +201,52 @@
         }
 
         .suggestion-card {
-            background: rgba(15, 23, 42, 0.5);
-            border: 1px solid rgba(71, 85, 105, 0.15);
-            border-radius: 12px;
-            padding: 1.25rem;
-            transition: all 0.25s ease;
+            background: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 16px;
+            padding: 1rem;
+            transition: all 0.15s ease-out;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
         }
 
         .suggestion-card:hover {
-            background: rgba(15, 23, 42, 0.7);
-            border-color: rgba(71, 85, 105, 0.25);
+            background: rgba(255, 255, 255, 0.7);
             transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
         }
 
         .suggestion-type {
-            color: #f59e0b;
-            font-size: 0.8rem;
-            font-weight: 600;
+            color: #4caf50;
+            font-size: 0.8125rem;
+            font-weight: 500;
             text-transform: uppercase;
             letter-spacing: 0.05em;
             margin-bottom: 0.5rem;
         }
 
         .suggestion-text {
-            color: #e2e8f0;
-            font-size: 0.9rem;
-            line-height: 1.4;
+            color: #1a1a1a;
+            font-size: 0.9375rem;
+            line-height: 1.5;
         }
 
         .exercise-card {
-            background: rgba(15, 23, 42, 0.5);
-            backdrop-filter: blur(16px);
-            border: 1px solid rgba(71, 85, 105, 0.2);
-            border-radius: 20px;
-            padding: 2rem;
-            margin-bottom: 1.5rem;
-            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: rgba(255, 255, 255, 0.65);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 24px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+            transition: all 0.15s ease-out;
         }
 
         .exercise-card:hover {
-            border-color: rgba(71, 85, 105, 0.35);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
         }
 
         .exercise-header {
@@ -247,21 +258,21 @@
         }
 
         .exercise-name {
-            font-size: 1.25rem;
-            font-weight: 600;
-            color: #f1f5f9;
+            font-size: 1.125rem;
+            font-weight: 500;
+            color: #1a1a1a;
             margin-bottom: 0.5rem;
         }
 
         .exercise-target {
             display: inline-block;
-            background: rgba(6, 182, 212, 0.15);
-            color: #06b6d4;
+            background: rgba(76, 175, 80, 0.15);
+            color: #4caf50;
             padding: 0.375rem 0.875rem;
-            border-radius: 8px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            border: 1px solid rgba(6, 182, 212, 0.25);
+            border-radius: 100px;
+            font-size: 0.8125rem;
+            font-weight: 400;
+            border: 1px solid rgba(76, 175, 80, 0.3);
         }
 
         .exercise-intelligence {
@@ -270,41 +281,45 @@
         }
 
         .suggested-weight {
-            background: linear-gradient(135deg, #10b981, #059669);
+            background: #4caf50;
             color: white;
             padding: 0.5rem 1rem;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 0.9rem;
+            border-radius: 100px;
+            font-weight: 500;
+            font-size: 0.9375rem;
             margin-bottom: 0.5rem;
             display: inline-block;
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
         }
 
         .pr-indicator {
-            color: #f59e0b;
-            font-size: 0.8rem;
-            font-weight: 500;
+            color: #4caf50;
+            font-size: 0.8125rem;
+            font-weight: 400;
         }
 
         .progression-indicator {
-            color: #10b981;
-            font-size: 0.8rem;
-            font-weight: 500;
+            color: #4caf50;
+            font-size: 0.8125rem;
+            font-weight: 400;
             margin-bottom: 0.25rem;
         }
 
         .previous-session {
-            background: rgba(59, 130, 246, 0.1);
-            border: 1px solid rgba(59, 130, 246, 0.2);
-            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 12px;
             padding: 0.75rem;
             margin-bottom: 1rem;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
         }
 
         .previous-header {
-            color: #60a5fa;
-            font-size: 0.8rem;
-            font-weight: 600;
+            color: #4caf50;
+            font-size: 0.8125rem;
+            font-weight: 500;
             margin-bottom: 0.5rem;
         }
 
@@ -315,22 +330,22 @@
         }
 
         .previous-set {
-            color: #93c5fd;
-            font-size: 0.8rem;
+            color: #4caf50;
+            font-size: 0.8125rem;
             text-align: center;
             padding: 0.25rem;
-            background: rgba(59, 130, 246, 0.1);
-            border-radius: 4px;
+            background: rgba(76, 175, 80, 0.1);
+            border-radius: 6px;
         }
 
         .previous-sets-compact {
-            color: #93c5fd;
-            font-size: 0.85rem;
-            line-height: 1.4;
-            background: rgba(59, 130, 246, 0.05);
+            color: #4caf50;
+            font-size: 0.875rem;
+            line-height: 1.5;
+            background: rgba(76, 175, 80, 0.08);
             padding: 0.5rem 0.75rem;
-            border-radius: 6px;
-            border: 1px solid rgba(59, 130, 246, 0.15);
+            border-radius: 8px;
+            border: 1px solid rgba(76, 175, 80, 0.2);
             max-height: 4rem;
             overflow-y: auto;
             overflow-x: hidden;
@@ -341,25 +356,28 @@
         }
         
         .previous-sets-compact::-webkit-scrollbar-track {
-            background: rgba(59, 130, 246, 0.05);
+            background: rgba(76, 175, 80, 0.05);
             border-radius: 3px;
         }
         
         .previous-sets-compact::-webkit-scrollbar-thumb {
-            background: rgba(59, 130, 246, 0.3);
+            background: rgba(76, 175, 80, 0.3);
             border-radius: 3px;
         }
         
         .previous-sets-compact::-webkit-scrollbar-thumb:hover {
-            background: rgba(59, 130, 246, 0.5);
+            background: rgba(76, 175, 80, 0.5);
         }
 
         .intensity-inputs {
-            background: rgba(15, 23, 42, 0.5);
-            border: 1px solid rgba(71, 85, 105, 0.2);
-            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.65);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 20px;
             padding: 1.5rem;
-            margin-bottom: 1.5rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
         }
 
         .intensity-row {
@@ -374,8 +392,8 @@
         }
 
         .intensity-label {
-            color: #e2e8f0;
-            font-weight: 500;
+            color: #1a1a1a;
+            font-weight: 400;
             min-width: 100px;
             font-size: 0.9375rem;
         }
@@ -388,39 +406,27 @@
         .intensity-btn {
             width: 2.5rem;
             height: 2.5rem;
-            border: 1px solid rgba(71, 85, 105, 0.25);
-            background: rgba(15, 23, 42, 0.6);
-            color: #94a3b8;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.5);
+            color: #6b6b6b;
             border-radius: 8px;
             cursor: pointer;
             font-size: 0.875rem;
-            font-weight: 600;
-            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            font-weight: 500;
+            transition: all 0.15s ease-out;
         }
 
         .intensity-btn:hover:not(.active) {
-            background: rgba(59, 130, 246, 0.15);
-            border-color: rgba(59, 130, 246, 0.3);
+            background: rgba(255, 255, 255, 0.8);
+            border-color: rgba(76, 175, 80, 0.3);
+            transform: scale(1.02);
         }
 
         .intensity-btn.active {
-            background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%);
+            background: #4caf50;
             color: #ffffff;
             border-color: transparent;
-            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
-        }
-            color: #94a3b8;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.8rem;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-
-        .intensity-btn.active {
-            background: linear-gradient(135deg, #3b82f6, #06b6d4);
-            color: white;
-            border-color: transparent;
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
         }
 
         .set-input-grid {
@@ -432,64 +438,67 @@
             display: flex;
             align-items: center;
             gap: 0.75rem;
-            background: rgba(15, 23, 42, 0.6);
+            background: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
             padding: 0.75rem;
-            border-radius: 8px;
-            border: 1px solid rgba(71, 85, 105, 0.3);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
         }
 
         .set-number {
             width: 2rem;
-            color: #64748b;
-            font-weight: 600;
+            color: #6b6b6b;
+            font-weight: 500;
             text-align: center;
         }
 
         .weight-input, .reps-input {
             width: 4rem;
             padding: 0.5rem;
-            background: rgba(30, 41, 59, 0.8);
-            border: 1px solid rgba(71, 85, 105, 0.5);
-            border-radius: 6px;
-            color: white;
+            background: rgba(255, 255, 255, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 8px;
+            color: #1a1a1a;
             text-align: center;
-            font-weight: 500;
+            font-weight: 400;
         }
 
         .weight-input:focus, .reps-input:focus {
             outline: none;
-            border-color: #06b6d4;
-            box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.2);
+            border-color: #4caf50;
+            box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
         }
 
         .notes-input {
             flex: 1;
             padding: 0.5rem;
-            background: rgba(30, 41, 59, 0.8);
-            border: 1px solid rgba(71, 85, 105, 0.5);
-            border-radius: 6px;
-            color: white;
-            font-size: 0.9rem;
+            background: rgba(255, 255, 255, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 8px;
+            color: #1a1a1a;
+            font-size: 0.9375rem;
         }
 
         .notes-input:focus {
             outline: none;
-            border-color: #06b6d4;
-            box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.2);
+            border-color: #4caf50;
+            box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
         }
 
         .notes-input::placeholder {
-            color: #64748b;
+            color: #6b6b6b;
         }
 
         .btn {
             padding: 0.75rem 1.25rem;
             border: none;
-            border-radius: 12px;
+            border-radius: 100px;
             cursor: pointer;
-            font-weight: 500;
-            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-            font-size: 0.875rem;
+            font-weight: 400;
+            transition: all 0.15s ease-out;
+            font-size: 0.9375rem;
             min-height: 44px;
             display: inline-flex;
             align-items: center;
@@ -498,49 +507,52 @@
         }
 
         .btn:hover {
-            transform: translateY(-1px);
+            transform: scale(1.02);
         }
 
         .btn-copy {
-            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            background: #4caf50;
             color: #ffffff;
-            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
         }
 
         .btn-copy:hover {
-            box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3);
+            box-shadow: 0 6px 16px rgba(76, 175, 80, 0.4);
         }
 
         .btn-add {
-            background: rgba(16, 185, 129, 0.15);
-            color: #10b981;
-            border: 1px solid rgba(16, 185, 129, 0.3);
+            background: rgba(255, 255, 255, 0.65);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            color: #4caf50;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
         }
 
         .btn-add:hover {
-            background: rgba(16, 185, 129, 0.25);
-            border-color: rgba(16, 185, 129, 0.4);
+            background: rgba(255, 255, 255, 0.85);
+            border-color: rgba(76, 175, 80, 0.3);
         }
 
         .btn-complete {
             padding: 1rem 3rem;
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            background: #4caf50;
             color: #ffffff;
             border: none;
-            border-radius: 16px;
+            border-radius: 100px;
             font-size: 1.125rem;
-            font-weight: 600;
+            font-weight: 500;
             cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 4px 16px rgba(16, 185, 129, 0.25);
+            transition: all 0.15s ease-out;
+            box-shadow: 0 8px 24px rgba(76, 175, 80, 0.3);
             display: block;
             margin: 2rem auto 0;
             min-height: 56px;
         }
 
         .btn-complete:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(16, 185, 129, 0.35);
+            transform: scale(1.02);
+            box-shadow: 0 10px 32px rgba(76, 175, 80, 0.4);
         }
 
         .analytics-grid {
@@ -551,47 +563,44 @@
         }
 
         .analytics-card {
-            background: rgba(15, 23, 42, 0.5);
-            backdrop-filter: blur(16px);
-            border: 1px solid rgba(71, 85, 105, 0.2);
-            border-radius: 20px;
-            padding: 2rem;
-            margin-bottom: 1.5rem;
-            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: rgba(255, 255, 255, 0.65);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 24px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+            transition: all 0.15s ease-out;
         }
 
         .analytics-card:hover {
-            border-color: rgba(71, 85, 105, 0.35);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
             transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
         }
 
         .analytics-title {
             font-size: 1.125rem;
-            font-weight: 600;
-            color: #f1f5f9;
-            margin-bottom: 1.25rem;
+            font-weight: 500;
+            color: #1a1a1a;
+            margin-bottom: 1rem;
             display: flex;
             align-items: center;
             gap: 0.5rem;
         }
 
         .stat-value {
-            font-size: 2.5rem;
-            font-weight: 700;
-            background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            font-size: 2rem;
+            font-weight: 500;
+            color: #1a1a1a;
             line-height: 1.2;
         }
 
         .stat-label {
-            color: #94a3b8;
-            font-size: 0.875rem;
+            color: #6b6b6b;
+            font-size: 0.8125rem;
             margin-top: 0.5rem;
-            font-weight: 400;
+            font-weight: 300;
         }
 
 
@@ -616,38 +625,41 @@
         .insight-item {
             padding: 0.75rem;
             margin-bottom: 0.5rem;
-            background: rgba(15, 23, 42, 0.6);
-            border-radius: 8px;
-            border-left: 4px solid #06b6d4;
-            color: #e2e8f0;
-            font-size: 0.9rem;
+            background: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 12px;
+            border-left: 4px solid #4caf50;
+            color: #1a1a1a;
+            font-size: 0.9375rem;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
         }
 
         .plateau-alert {
-            border-left-color: #f59e0b;
-            background: rgba(245, 158, 11, 0.1);
+            border-left-color: #ff9800;
+            background: rgba(255, 152, 0, 0.1);
         }
 
         .progression-highlight {
-            border-left-color: #10b981;
-            background: rgba(16, 185, 129, 0.1);
+            border-left-color: #4caf50;
+            background: rgba(76, 175, 80, 0.1);
         }
 
         .stretch-checkbox {
             width: 1.25rem;
             height: 1.25rem;
-            background: rgba(30, 41, 59, 0.8);
-            border: 2px solid rgba(71, 85, 105, 0.5);
-            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.7);
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            border-radius: 6px;
             cursor: pointer;
             appearance: none;
             position: relative;
-            transition: all 0.3s ease;
+            transition: all 0.15s ease-out;
         }
 
         .stretch-checkbox:checked {
-            background: linear-gradient(135deg, #10b981, #059669);
-            border-color: #10b981;
+            background: #4caf50;
+            border-color: #4caf50;
         }
 
         .stretch-checkbox:checked::after {
@@ -665,11 +677,14 @@
             display: flex;
             align-items: center;
             gap: 0.75rem;
-            background: rgba(15, 23, 42, 0.6);
+            background: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
             padding: 0.75rem;
-            border-radius: 8px;
-            border: 1px solid rgba(71, 85, 105, 0.3);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
             justify-content: space-between;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
         }
 
         .stretch-info {
@@ -680,25 +695,26 @@
         }
 
         .stretch-label {
-            color: #e2e8f0;
-            font-size: 0.9rem;
+            color: #1a1a1a;
+            font-size: 0.9375rem;
         }
 
         .exercise-progress-indicator {
-            font-size: 0.75rem;
-            color: #10b981;
+            font-size: 0.8125rem;
+            color: #4caf50;
             margin-bottom: 0.25rem;
         }
 
         /* Calendar Styles */
         .calendar-container {
-            background: rgba(15, 23, 42, 0.5);
-            backdrop-filter: blur(16px);
-            border: 1px solid rgba(71, 85, 105, 0.2);
-            border-radius: 20px;
-            padding: 2rem;
-            margin-bottom: 1.5rem;
-            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+            background: rgba(255, 255, 255, 0.65);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 24px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
         }
 
         .calendar-header {
@@ -712,29 +728,31 @@
 
         .calendar-nav-btn {
             padding: 0.75rem 1.25rem;
-            background: rgba(59, 130, 246, 0.15);
-            border: 1px solid rgba(59, 130, 246, 0.25);
-            border-radius: 12px;
-            color: #60a5fa;
+            background: rgba(255, 255, 255, 0.65);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 100px;
+            color: #4caf50;
             cursor: pointer;
-            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-            font-weight: 500;
+            transition: all 0.15s ease-out;
+            font-weight: 400;
             min-height: 44px;
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
         }
 
         .calendar-nav-btn:hover {
-            background: rgba(59, 130, 246, 0.25);
-            border-color: rgba(59, 130, 246, 0.4);
-            transform: translateY(-1px);
+            background: rgba(255, 255, 255, 0.85);
+            transform: scale(1.02);
         }
 
         .calendar-month-year {
-            font-size: 1.5rem;
-            font-weight: 600;
-            color: #f1f5f9;
+            font-size: 1.25rem;
+            font-weight: 400;
+            color: #1a1a1a;
             flex: 1;
             text-align: center;
         }
@@ -748,34 +766,36 @@
         .calendar-day-header {
             text-align: center;
             padding: 0.75rem 0.5rem;
-            color: #94a3b8;
-            font-weight: 600;
-            font-size: 0.875rem;
+            color: #6b6b6b;
+            font-weight: 500;
+            font-size: 0.8125rem;
             text-transform: uppercase;
             letter-spacing: 0.05em;
         }
 
         .calendar-day {
             aspect-ratio: 1;
-            background: rgba(15, 23, 42, 0.5);
-            border: 1px solid rgba(71, 85, 105, 0.2);
+            background: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
             border-radius: 12px;
             padding: 0.625rem;
             cursor: pointer;
-            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.15s ease-out;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             position: relative;
             min-height: 70px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
         }
 
         .calendar-day:hover {
-            background: rgba(59, 130, 246, 0.15);
-            border-color: rgba(59, 130, 246, 0.3);
+            background: rgba(255, 255, 255, 0.8);
             transform: scale(1.05);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
         }
 
         .calendar-day.other-month {
@@ -784,56 +804,57 @@
         }
 
         .calendar-day.today {
-            border-color: #06b6d4;
-            box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.3), 0 4px 12px rgba(6, 182, 212, 0.2);
+            border-color: #4caf50;
+            box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.3), 0 4px 12px rgba(76, 175, 80, 0.2);
         }
 
         .calendar-day.has-workout {
-            background: rgba(16, 185, 129, 0.15);
-            border-color: rgba(16, 185, 129, 0.4);
+            background: rgba(76, 175, 80, 0.15);
+            border-color: rgba(76, 175, 80, 0.4);
         }
 
         .calendar-day.scheduled {
-            background: rgba(59, 130, 246, 0.1);
-            border-color: rgba(59, 130, 246, 0.3);
+            background: rgba(76, 175, 80, 0.08);
+            border-color: rgba(76, 175, 80, 0.25);
         }
 
         .calendar-day.missed {
-            background: rgba(239, 68, 68, 0.1);
-            border-color: rgba(239, 68, 68, 0.35);
+            background: rgba(244, 67, 54, 0.1);
+            border-color: rgba(244, 67, 54, 0.35);
         }
 
         .calendar-day-number {
-            font-size: 1.125rem;
-            font-weight: 600;
-            color: #f1f5f9;
+            font-size: 1rem;
+            font-weight: 500;
+            color: #1a1a1a;
             margin-bottom: 0.375rem;
         }
 
         .calendar-day-label {
             font-size: 0.75rem;
-            color: #94a3b8;
+            color: #6b6b6b;
             text-align: center;
-            font-weight: 500;
+            font-weight: 400;
         }
 
-        .calendar-day-label.Upper { color: #10b981; }
-        .calendar-day-label.Lower { color: #f59e0b; }
-        .calendar-day-label.Push { color: #ef4444; }
-        .calendar-day-label.Pull { color: #3b82f6; }
-        .calendar-day-label.Legs { color: #8b5cf6; }
-        .calendar-day-label.Rest { color: #94a3b8; }
-        .calendar-day-label.Travel { color: #a855f7; }
-        .calendar-day-label.Sick { color: #f472b6; }
+        .calendar-day-label.Upper { color: #4caf50; }
+        .calendar-day-label.Lower { color: #ff9800; }
+        .calendar-day-label.Push { color: #f44336; }
+        .calendar-day-label.Pull { color: #2196f3; }
+        .calendar-day-label.Legs { color: #9c27b0; }
+        .calendar-day-label.Rest { color: #6b6b6b; }
+        .calendar-day-label.Travel { color: #ab47bc; }
+        .calendar-day-label.Sick { color: #ec407a; }
 
         .adherence-card {
-            background: rgba(15, 23, 42, 0.5);
-            backdrop-filter: blur(16px);
-            border: 1px solid rgba(71, 85, 105, 0.2);
-            border-radius: 20px;
-            padding: 2rem;
-            margin-bottom: 1.5rem;
-            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+            background: rgba(255, 255, 255, 0.65);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 24px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
         }
 
         .adherence-score {
@@ -842,12 +863,9 @@
         }
 
         .adherence-score-value {
-            font-size: 3.5rem;
-            font-weight: 700;
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            font-size: 2.5rem;
+            font-weight: 500;
+            color: #4caf50;
         }
 
         .adherence-stats {
@@ -858,51 +876,57 @@
 
         .adherence-stat {
             text-align: center;
-            padding: 1.25rem;
-            background: rgba(15, 23, 42, 0.5);
-            border-radius: 12px;
-            border: 1px solid rgba(71, 85, 105, 0.15);
-            transition: all 0.25s ease;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.15s ease-out;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
         }
 
         .adherence-stat:hover {
-            background: rgba(15, 23, 42, 0.7);
+            background: rgba(255, 255, 255, 0.7);
             transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
         }
 
         .adherence-stat-value {
-            font-size: 2rem;
-            font-weight: 700;
-            color: #f1f5f9;
+            font-size: 1.5rem;
+            font-weight: 500;
+            color: #1a1a1a;
             line-height: 1.2;
         }
 
         .adherence-stat-label {
-            font-size: 0.875rem;
-            color: #94a3b8;
+            font-size: 0.8125rem;
+            color: #6b6b6b;
             margin-top: 0.5rem;
-            font-weight: 500;
+            font-weight: 300;
         }
 
         .selected-day-workout {
-            background: rgba(15, 23, 42, 0.5);
-            backdrop-filter: blur(16px);
-            border: 1px solid rgba(71, 85, 105, 0.2);
-            border-radius: 20px;
-            padding: 2rem;
-            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+            background: rgba(255, 255, 255, 0.65);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 24px;
+            padding: 1.5rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
         }
 
         /* Nutrition Styles */
         .meal-card {
-            background: rgba(15, 23, 42, 0.5);
-            backdrop-filter: blur(16px);
-            border: 1px solid rgba(71, 85, 105, 0.2);
-            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.65);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 24px;
             padding: 1.5rem;
-            margin-bottom: 1.5rem;
-            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            margin-bottom: 1rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+            transition: all 0.15s ease-out;
         }
 
         .meal-header {
@@ -916,9 +940,9 @@
         }
 
         .meal-type {
-            font-size: 1.25rem;
-            font-weight: 600;
-            color: #f1f5f9;
+            font-size: 1.125rem;
+            font-weight: 500;
+            color: #1a1a1a;
             min-height: 44px;
             display: flex;
             align-items: center;
@@ -926,8 +950,8 @@
         }
 
         .meal-time {
-            color: #94a3b8;
-            font-size: 0.875rem;
+            color: #6b6b6b;
+            font-size: 0.8125rem;
             margin-top: 0.25rem;
         }
 
@@ -937,9 +961,12 @@
             justify-content: space-between;
             align-items: center;
             padding: 1rem;
-            background: rgba(15, 23, 42, 0.4);
-            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 16px;
             margin-top: 0.75rem;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
         }
 
         .meal-summary-stats {
@@ -955,21 +982,21 @@
         }
 
         .meal-summary-value {
-            font-size: 1.125rem;
-            font-weight: 700;
-            color: #f1f5f9;
+            font-size: 1rem;
+            font-weight: 500;
+            color: #1a1a1a;
         }
 
         .meal-summary-label {
             font-size: 0.75rem;
-            color: #94a3b8;
+            color: #6b6b6b;
             margin-top: 0.125rem;
         }
 
         .meal-collapse-icon {
             font-size: 1.25rem;
-            transition: transform 0.3s ease;
-            color: #94a3b8;
+            transition: transform 0.15s ease-out;
+            color: #6b6b6b;
         }
 
         .meal-card.collapsed .meal-collapse-icon {
@@ -996,21 +1023,23 @@
             align-items: center;
             gap: 0.5rem;
             padding: 0.75rem 1.25rem;
-            background: rgba(16, 185, 129, 0.15);
-            color: #10b981;
-            border: 1px solid rgba(16, 185, 129, 0.3);
-            border-radius: 12px;
-            font-weight: 500;
-            font-size: 0.875rem;
+            background: rgba(255, 255, 255, 0.65);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            color: #4caf50;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 100px;
+            font-weight: 400;
+            font-size: 0.9375rem;
             cursor: pointer;
-            transition: all 0.25s ease;
+            transition: all 0.15s ease-out;
             min-height: 44px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
         }
 
         .quick-add-food-btn:hover {
-            background: rgba(16, 185, 129, 0.25);
-            border-color: rgba(16, 185, 129, 0.4);
-            transform: translateY(-1px);
+            background: rgba(255, 255, 255, 0.85);
+            transform: scale(1.02);
         }
 
 
@@ -1026,19 +1055,19 @@
             min-width: 200px;
             padding: 0.875rem;
             min-height: 48px;
-            background: rgba(15, 23, 42, 0.6);
-            border: 1px solid rgba(71, 85, 105, 0.25);
+            background: rgba(255, 255, 255, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.4);
             border-radius: 12px;
-            color: #e2e8f0;
-            font-size: 1rem;
-            transition: all 0.25s ease;
+            color: #1a1a1a;
+            font-size: 0.9375rem;
+            transition: all 0.15s ease-out;
         }
 
         .food-input:focus {
             outline: none;
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
-            background: rgba(15, 23, 42, 0.8);
+            border-color: #4caf50;
+            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.15);
+            background: rgba(255, 255, 255, 0.9);
         }
 
         .macro-input-wrapper {
@@ -1048,9 +1077,9 @@
         }
 
         .macro-input-label {
-            color: #94a3b8;
+            color: #6b6b6b;
             font-size: 0.75rem;
-            font-weight: 600;
+            font-weight: 500;
             text-align: center;
             text-transform: uppercase;
             letter-spacing: 0.05em;
@@ -1060,20 +1089,20 @@
             width: 80px;
             padding: 0.875rem 0.5rem;
             min-height: 48px;
-            background: rgba(15, 23, 42, 0.6);
-            border: 1px solid rgba(71, 85, 105, 0.25);
+            background: rgba(255, 255, 255, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.4);
             border-radius: 12px;
-            color: #e2e8f0;
+            color: #1a1a1a;
             text-align: center;
-            font-size: 1rem;
-            transition: all 0.25s ease;
+            font-size: 0.9375rem;
+            transition: all 0.15s ease-out;
         }
 
         .macro-input:focus {
             outline: none;
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
-            background: rgba(15, 23, 42, 0.8);
+            border-color: #4caf50;
+            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.15);
+            background: rgba(255, 255, 255, 0.9);
         }
 
         .macro-inputs-grid {
@@ -1090,49 +1119,54 @@
         .macro-summary {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 1.25rem;
-            margin-top: 2rem;
-            padding-top: 2rem;
-            border-top: 1px solid rgba(71, 85, 105, 0.2);
+            gap: 1rem;
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.3);
         }
 
         .macro-item {
             text-align: center;
             padding: 1rem;
-            background: rgba(15, 23, 42, 0.4);
-            border-radius: 12px;
-            border: 1px solid rgba(71, 85, 105, 0.15);
-            transition: all 0.25s ease;
+            background: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.15s ease-out;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
         }
 
         .macro-item:hover {
-            background: rgba(15, 23, 42, 0.6);
+            background: rgba(255, 255, 255, 0.7);
             transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
         }
 
         .macro-value {
-            font-size: 1.75rem;
-            font-weight: 700;
-            color: #f1f5f9;
+            font-size: 1.5rem;
+            font-weight: 500;
+            color: #1a1a1a;
             line-height: 1.2;
         }
 
         .macro-label {
-            font-size: 0.875rem;
-            color: #94a3b8;
+            font-size: 0.8125rem;
+            color: #6b6b6b;
             margin-top: 0.5rem;
-            font-weight: 500;
+            font-weight: 300;
         }
 
         /* Body Metrics Styles */
         .weight-input-card {
-            background: rgba(15, 23, 42, 0.5);
-            backdrop-filter: blur(16px);
-            border: 1px solid rgba(71, 85, 105, 0.2);
-            border-radius: 20px;
-            padding: 2rem;
-            margin-bottom: 1.5rem;
-            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+            background: rgba(255, 255, 255, 0.65);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 24px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
         }
 
         .weight-input-row {
@@ -1144,49 +1178,45 @@
         .weight-input-field {
             flex: 1;
             padding: 0.875rem;
-            background: rgba(15, 23, 42, 0.6);
-            border: 1px solid rgba(71, 85, 105, 0.25);
+            background: rgba(255, 255, 255, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.4);
             border-radius: 12px;
-            color: #e2e8f0;
-            font-size: 1rem;
+            color: #1a1a1a;
+            font-size: 0.9375rem;
             text-align: center;
-            transition: all 0.25s ease;
+            transition: all 0.15s ease-out;
         }
 
         .weight-input-field:focus {
             outline: none;
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
-            background: rgba(15, 23, 42, 0.8);
-        }
-
-        .weight-input-field:focus {
-            outline: none;
-            border-color: #06b6d4;
-            box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.2);
+            border-color: #4caf50;
+            box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+            background: rgba(255, 255, 255, 0.9);
         }
 
         .photo-upload-card {
-            background: rgba(30, 41, 59, 0.4);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(71, 85, 105, 0.3);
-            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.65);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 20px;
             padding: 1.5rem;
-            margin-bottom: 1.5rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
         }
 
         .photo-upload-area {
-            border: 2px dashed rgba(71, 85, 105, 0.5);
-            border-radius: 12px;
+            border: 2px dashed rgba(76, 175, 80, 0.4);
+            border-radius: 16px;
             padding: 2rem;
             text-align: center;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.15s ease-out;
         }
 
         .photo-upload-area:hover {
-            border-color: #06b6d4;
-            background: rgba(6, 182, 212, 0.05);
+            border-color: #4caf50;
+            background: rgba(76, 175, 80, 0.08);
         }
 
         .photo-gallery {
@@ -1199,9 +1229,10 @@
         .photo-item {
             position: relative;
             aspect-ratio: 1;
-            border-radius: 8px;
+            border-radius: 12px;
             overflow: hidden;
-            border: 1px solid rgba(71, 85, 105, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
         }
 
         .photo-item img {
@@ -1229,13 +1260,13 @@
             padding: 0.5rem;
             min-width: 36px;
             min-height: 36px;
-            background: rgba(239, 68, 68, 0.9);
+            background: rgba(244, 67, 54, 0.9);
             color: white;
             border: none;
-            border-radius: 6px;
+            border-radius: 100px;
             cursor: pointer;
             font-size: 1rem;
-            transition: all 0.3s ease;
+            transition: all 0.15s ease-out;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -1243,7 +1274,8 @@
         }
 
         .btn-delete-photo:hover {
-            background: rgba(239, 68, 68, 1);
+            background: rgba(244, 67, 54, 1);
+            transform: scale(1.05);
             transform: scale(1.1);
         }
 
@@ -1460,10 +1492,12 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
             z-index: 999;
             opacity: 0;
-            transition: opacity 0.3s ease;
+            transition: opacity 0.2s ease-out;
         }
 
         .modal-backdrop.active {
@@ -1479,10 +1513,10 @@
 
         .modal-close-btn {
             padding: 0.5rem;
-            background: rgba(239, 68, 68, 0.2);
-            color: #ef4444;
+            background: rgba(244, 67, 54, 0.15);
+            color: #f44336;
             border: none;
-            border-radius: 8px;
+            border-radius: 100px;
             font-size: 1.5rem;
             cursor: pointer;
             min-width: 44px;
@@ -1490,33 +1524,36 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            transition: all 0.15s ease-out;
         }
 
         /* Saved Foods Styles */
         .saved-foods-panel {
-            background: rgba(30, 41, 59, 0.4);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(71, 85, 105, 0.3);
-            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 20px;
             padding: 1.5rem;
             margin-bottom: 0;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
         }
 
         .saved-food-search {
             width: 100%;
             padding: 0.75rem;
-            background: rgba(30, 41, 59, 0.8);
-            border: 1px solid rgba(71, 85, 105, 0.5);
-            border-radius: 8px;
-            color: white;
+            background: rgba(255, 255, 255, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 12px;
+            color: #1a1a1a;
             margin-bottom: 1rem;
-            font-size: 0.9rem;
+            font-size: 0.9375rem;
         }
 
         .saved-food-search:focus {
             outline: none;
-            border-color: #06b6d4;
-            box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.2);
+            border-color: #4caf50;
+            box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
         }
 
         .saved-food-list {
@@ -1527,20 +1564,25 @@
         }
 
         .saved-food-item {
-            background: rgba(15, 23, 42, 0.6);
-            border: 1px solid rgba(71, 85, 105, 0.3);
-            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 12px;
             padding: 1rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.15s ease-out;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
         }
 
         .saved-food-item:hover {
-            background: rgba(71, 85, 105, 0.3);
-            border-color: #06b6d4;
+            background: rgba(255, 255, 255, 0.8);
+            border-color: rgba(76, 175, 80, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
         }
 
         .saved-food-info {
@@ -1548,13 +1590,13 @@
         }
 
         .saved-food-name {
-            color: white;
+            color: #1a1a1a;
             font-weight: 500;
             margin-bottom: 0.25rem;
         }
 
         .saved-food-macros {
-            color: #94a3b8;
+            color: #6b6b6b;
             font-size: 0.75rem;
             display: flex;
             gap: 0.75rem;
@@ -1625,7 +1667,7 @@
         .empty-state {
             text-align: center;
             padding: 2rem;
-            color: #64748b;
+            color: #6b6b6b;
         }
 
         /* Meal Type Selection Modal */
@@ -1636,7 +1678,9 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.7);
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
             z-index: 1000;
             align-items: center;
             justify-content: center;
@@ -1647,18 +1691,21 @@
         }
 
         .modal-content {
-            background: rgba(15, 23, 42, 0.95);
-            border: 1px solid rgba(71, 85, 105, 0.5);
-            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 24px;
             padding: 2rem;
             max-width: 400px;
             width: 90%;
+            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.15);
         }
 
         .modal-title {
-            font-size: 1.5rem;
-            font-weight: 600;
-            color: white;
+            font-size: 1.25rem;
+            font-weight: 500;
+            color: #1a1a1a;
             margin-bottom: 1.5rem;
             text-align: center;
         }
@@ -1670,38 +1717,44 @@
 
         .meal-type-btn {
             padding: 1rem;
-            background: rgba(30, 41, 59, 0.8);
-            border: 2px solid rgba(71, 85, 105, 0.5);
-            border-radius: 12px;
-            color: white;
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 16px;
+            color: #1a1a1a;
             cursor: pointer;
-            font-size: 1.1rem;
-            font-weight: 500;
-            transition: all 0.3s ease;
+            font-size: 1rem;
+            font-weight: 400;
+            transition: all 0.15s ease-out;
             text-align: center;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
         }
 
         .meal-type-btn:hover {
-            background: rgba(59, 130, 246, 0.2);
-            border-color: #3b82f6;
+            background: #4caf50;
+            color: #ffffff;
+            border-color: transparent;
             transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(76, 175, 80, 0.3);
         }
 
         .modal-close {
             margin-top: 1rem;
             padding: 0.75rem;
-            background: rgba(239, 68, 68, 0.2);
-            border: 1px solid rgba(239, 68, 68, 0.3);
-            border-radius: 8px;
-            color: #ef4444;
+            background: rgba(244, 67, 54, 0.15);
+            border: 1px solid rgba(244, 67, 54, 0.3);
+            border-radius: 100px;
+            color: #f44336;
             cursor: pointer;
             width: 100%;
-            font-size: 1rem;
-            transition: all 0.3s ease;
+            font-size: 0.9375rem;
+            transition: all 0.15s ease-out;
         }
 
         .modal-close:hover {
-            background: rgba(239, 68, 68, 0.3);
+            background: rgba(244, 67, 54, 0.25);
+            transform: scale(1.02);
         }
 
         /* Exercise Substitution Styles */
@@ -1941,12 +1994,15 @@
 
         /* Travel Mode Styles */
         .travel-mode-banner {
-            background: linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(59, 130, 246, 0.2));
-            border: 1px solid rgba(168, 85, 247, 0.3);
-            border-radius: 12px;
+            background: rgba(171, 71, 188, 0.15);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(171, 71, 188, 0.3);
+            border-radius: 16px;
             padding: 1rem;
-            margin-bottom: 1.5rem;
+            margin-bottom: 1rem;
             display: none;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
         }
 
         .travel-mode-banner.active {
@@ -1954,11 +2010,14 @@
         }
 
         .travel-mode-controls {
-            background: rgba(30, 41, 59, 0.6);
-            border: 1px solid rgba(71, 85, 105, 0.3);
-            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.65);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 16px;
             padding: 1rem;
             margin-bottom: 1rem;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
         }
 
         .calendar-day.travel {
@@ -2383,8 +2442,8 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>Zach's Fitness Command Center</h1>
-            <p>Intelligent Workout Tracking & Performance Analytics</p>
+            <h1>Unison</h1>
+            <p>Body in unison.</p>
         </div>
 
         <div class="nav-tabs">
@@ -2424,13 +2483,13 @@
             <div class="workout-controls" style="display: flex; gap: 1rem; margin-bottom: 1.5rem; align-items: center; flex-wrap: wrap;">
                 <button class="btn" id="log-past-workout-btn" style="background: rgba(168, 85, 247, 0.2); color: #a855f7; border: 1px solid rgba(168, 85, 247, 0.3);">📅 Log Past Workout</button>
                 <div style="display: flex; align-items: center; gap: 0.5rem;">
-                    <label style="color: #94a3b8; font-size: 0.9rem;">Date:</label>
-                    <input type="date" id="workout-date-input" style="padding: 0.5rem; background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(71, 85, 105, 0.5); border-radius: 6px; color: white;">
+                    <label style="color: #6b6b6b; font-size: 0.9375rem;">Date:</label>
+                    <input type="date" id="workout-date-input" style="padding: 0.5rem; background: rgba(255, 255, 255, 0.7); border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 8px; color: #1a1a1a;">
                 </div>
             </div>
 
             <div class="intensity-inputs">
-                <h4 style="color: #06b6d4; margin-bottom: 1rem;">How are you feeling?</h4>
+                <h4 style="color: #4caf50; margin-bottom: 1rem;">How are you feeling?</h4>
                 <div class="intensity-row">
                     <span class="intensity-label">Energy:</span>
                     <div class="intensity-scale" id="energy-scale">
@@ -2473,7 +2532,7 @@
             </div>
 
             <div class="intensity-inputs">
-                <h4 style="color: #06b6d4; margin-bottom: 1rem;">How did the workout go?</h4>
+                <h4 style="color: #4caf50; margin-bottom: 1rem;">How did the workout go?</h4>
                 <div class="intensity-row">
                     <span class="intensity-label">Fatigue:</span>
                     <div class="intensity-scale" id="fatigue-scale">
@@ -2505,34 +2564,34 @@
         <div id="calendar-content" class="tab-content">
             <!-- Travel Mode Controls -->
             <div class="travel-mode-controls">
-                <h4 style="color: #a855f7; margin-bottom: 0.75rem;">✈️ Travel Mode</h4>
+                <h4 style="color: #ab47bc; margin-bottom: 0.75rem;">✈️ Travel Mode</h4>
                 <div style="display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap; margin-bottom: 0.75rem;">
                     <div style="flex: 1; min-width: 150px;">
-                        <label style="color: #94a3b8; font-size: 0.85rem; display: block; margin-bottom: 0.25rem;">Start Date</label>
-                        <input type="date" id="travel-start-date" style="width: 100%; padding: 0.5rem; background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(71, 85, 105, 0.5); border-radius: 6px; color: white;">
+                        <label style="color: #6b6b6b; font-size: 0.8125rem; display: block; margin-bottom: 0.25rem;">Start Date</label>
+                        <input type="date" id="travel-start-date" style="width: 100%; padding: 0.5rem; background: rgba(255, 255, 255, 0.7); border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 8px; color: #1a1a1a;">
                     </div>
                     <div style="flex: 1; min-width: 150px;">
-                        <label style="color: #94a3b8; font-size: 0.85rem; display: block; margin-bottom: 0.25rem;">End Date</label>
-                        <input type="date" id="travel-end-date" style="width: 100%; padding: 0.5rem; background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(71, 85, 105, 0.5); border-radius: 6px; color: white;">
+                        <label style="color: #6b6b6b; font-size: 0.8125rem; display: block; margin-bottom: 0.25rem;">End Date</label>
+                        <input type="date" id="travel-end-date" style="width: 100%; padding: 0.5rem; background: rgba(255, 255, 255, 0.7); border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 8px; color: #1a1a1a;">
                     </div>
-                    <button class="btn" onclick="enableTravelMode()" style="background: rgba(168, 85, 247, 0.2); color: #a855f7; border: 1px solid rgba(168, 85, 247, 0.3);">Set Travel Dates</button>
+                    <button class="btn" onclick="enableTravelMode()" style="background: rgba(171, 71, 188, 0.2); color: #ab47bc; border: 1px solid rgba(171, 71, 188, 0.3);">Set Travel Dates</button>
                 </div>
-                <div style="color: #64748b; font-size: 0.85rem; line-height: 1.5;">
+                <div style="color: #6b6b6b; font-size: 0.8125rem; line-height: 1.5;">
                     Travel mode pauses your workout schedule and excludes days from discipline scores. Your streak won't break during travel.
                 </div>
             </div>
 
             <!-- Sick Day Controls -->
             <div class="travel-mode-controls">
-                <h4 style="color: #f472b6; margin-bottom: 0.75rem;">🤒 Sick Day</h4>
+                <h4 style="color: #ec407a; margin-bottom: 0.75rem;">🤒 Sick Day</h4>
                 <div style="display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap; margin-bottom: 0.75rem;">
                     <div style="flex: 1; min-width: 150px;">
-                        <label style="color: #94a3b8; font-size: 0.85rem; display: block; margin-bottom: 0.25rem;">Select Date</label>
-                        <input type="date" id="sick-day-date" style="width: 100%; padding: 0.5rem; background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(71, 85, 105, 0.5); border-radius: 6px; color: white;">
+                        <label style="color: #6b6b6b; font-size: 0.8125rem; display: block; margin-bottom: 0.25rem;">Select Date</label>
+                        <input type="date" id="sick-day-date" style="width: 100%; padding: 0.5rem; background: rgba(255, 255, 255, 0.7); border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 8px; color: #1a1a1a;">
                     </div>
-                    <button class="btn" onclick="markSickDay()" style="background: rgba(244, 114, 182, 0.2); color: #f472b6; border: 1px solid rgba(244, 114, 182, 0.3);">Mark as Sick Day</button>
+                    <button class="btn" onclick="markSickDay()" style="background: rgba(236, 64, 122, 0.2); color: #ec407a; border: 1px solid rgba(236, 64, 122, 0.3);">Mark as Sick Day</button>
                 </div>
-                <div style="color: #64748b; font-size: 0.85rem; line-height: 1.5;">
+                <div style="color: #6b6b6b; font-size: 0.8125rem; line-height: 1.5;">
                     Mark a day as sick to cancel the scheduled workout. All remaining workouts will be pushed back by one day, maintaining the intended order.
                 </div>
             </div>
@@ -2598,8 +2657,8 @@
                     <div class="analytics-card">
                         <h3 class="analytics-title">🍎 Daily Nutrition</h3>
                         <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
-                            <label style="color: #94a3b8; font-size: 0.9rem;">Date:</label>
-                            <input type="date" id="nutrition-date-input" style="padding: 0.5rem; background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(71, 85, 105, 0.5); border-radius: 6px; color: white;">
+                            <label style="color: #6b6b6b; font-size: 0.9375rem;">Date:</label>
+                            <input type="date" id="nutrition-date-input" style="padding: 0.5rem; background: rgba(255, 255, 255, 0.7); border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 8px; color: #1a1a1a;">
                         </div>
                         <div class="macro-summary">
                             <div class="macro-item">
@@ -2821,8 +2880,8 @@
                 <div class="analytics-card">
                     <h3 class="analytics-title">🏆 PR Timeline</h3>
                     <div style="margin-bottom: 1rem;">
-                        <label for="exercise-selector" style="color: #94a3b8; font-size: 0.9rem; margin-right: 0.5rem;">Exercise:</label>
-                        <select id="exercise-selector" style="padding: 0.5rem; background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(71, 85, 105, 0.3); border-radius: 8px; color: white; font-size: 0.9rem;">
+                        <label for="exercise-selector" style="color: #6b6b6b; font-size: 0.9375rem; margin-right: 0.5rem;">Exercise:</label>
+                        <select id="exercise-selector" style="padding: 0.5rem; background: rgba(255, 255, 255, 0.7); border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 12px; color: #1a1a1a; font-size: 0.9375rem;">
                             <option value="">Select an exercise</option>
                         </select>
                     </div>
@@ -2834,8 +2893,8 @@
                 <div class="analytics-card">
                     <h3 class="analytics-title">📊 Session Comparison</h3>
                     <div style="margin-bottom: 1rem;">
-                        <label for="comparison-selector" style="color: #94a3b8; font-size: 0.9rem; margin-right: 0.5rem;">Workout Type:</label>
-                        <select id="comparison-selector" style="padding: 0.5rem; background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(71, 85, 105, 0.3); border-radius: 8px; color: white; font-size: 0.9rem;">
+                        <label for="comparison-selector" style="color: #6b6b6b; font-size: 0.9375rem; margin-right: 0.5rem;">Workout Type:</label>
+                        <select id="comparison-selector" style="padding: 0.5rem; background: rgba(255, 255, 255, 0.7); border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 12px; color: #1a1a1a; font-size: 0.9375rem;">
                             <option value="Upper">Upper</option>
                             <option value="Lower">Lower</option>
                             <option value="Push">Push</option>
@@ -2843,7 +2902,7 @@
                             <option value="Legs">Legs</option>
                         </select>
                     </div>
-                    <div id="session-comparison-content" style="color: #94a3b8; font-size: 0.9rem;">
+                    <div id="session-comparison-content" style="color: #6b6b6b; font-size: 0.9375rem;">
                         <p>Select a workout type to compare sessions</p>
                     </div>
                 </div>
@@ -2853,9 +2912,9 @@
             <div class="chart-grid">
                 <div class="analytics-card">
                     <h3 class="analytics-title">📈 Progression Snapshot</h3>
-                    <div id="progression-snapshot" style="color: #94a3b8; font-size: 0.9rem;">
+                    <div id="progression-snapshot" style="color: #6b6b6b; font-size: 0.9375rem;">
                         <div style="margin-bottom: 1rem;">
-                            <strong style="color: white;">Quick Wins:</strong>
+                            <strong style="color: #1a1a1a;">Quick Wins:</strong>
                             <div id="quick-wins">Complete at least 2 workouts to see recent PRs</div>
                         </div>
                         <div style="margin-bottom: 1rem;">
@@ -4580,10 +4639,10 @@
                 datasets.push({
                     label: 'Weight',
                     data: progression.map(p => ({ x: p.x, y: p.y })),
-                    borderColor: '#06b6d4',
-                    backgroundColor: 'rgba(6, 182, 212, 0.1)',
+                    borderColor: '#4caf50',
+                    backgroundColor: 'rgba(76, 175, 80, 0.15)',
                     pointRadius: 4,
-                    pointBackgroundColor: '#06b6d4',
+                    pointBackgroundColor: '#4caf50',
                     tension: 0.4,
                     fill: true
                 });
@@ -4594,8 +4653,8 @@
                 datasets.push({
                     label: 'PRs',
                     data: prPoints.map(p => ({ x: p.x, y: p.y })),
-                    borderColor: '#10b981',
-                    backgroundColor: '#10b981',
+                    borderColor: '#4caf50',
+                    backgroundColor: '#4caf50',
                     pointRadius: 8,
                     pointStyle: 'star',
                     showLine: false
@@ -4624,14 +4683,14 @@
                         x: {
                             type: 'time',
                             time: { unit: 'day' },
-                            ticks: { color: '#94a3b8' },
-                            grid: { color: 'rgba(71, 85, 105, 0.3)' }
+                            ticks: { color: '#6b6b6b' },
+                            grid: { color: 'rgba(0, 0, 0, 0.08)' }
                         },
                         y: {
                             beginAtZero: true,
-                            title: { display: true, text: 'Weight (lbs)', color: '#94a3b8' },
-                            ticks: { color: '#94a3b8' },
-                            grid: { color: 'rgba(71, 85, 105, 0.3)' }
+                            title: { display: true, text: 'Weight (lbs)', color: '#6b6b6b' },
+                            ticks: { color: '#6b6b6b' },
+                            grid: { color: 'rgba(0, 0, 0, 0.08)' }
                         }
                     }
                 }
@@ -6426,8 +6485,8 @@
                     datasets: [{
                         label: 'Weight (lbs)',
                         data: sortedWeights.map(w => w.weight),
-                        borderColor: '#06b6d4',
-                        backgroundColor: 'rgba(6, 182, 212, 0.1)',
+                        borderColor: '#4caf50',
+                        backgroundColor: 'rgba(76, 175, 80, 0.15)',
                         tension: 0.4,
                         fill: true
                     }]
