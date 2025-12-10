@@ -1152,20 +1152,21 @@
 
         .macro-label {
             font-size: 0.8125rem;
-            color: #94a3b8;
+            color: #6b6b6b;
             margin-top: 0.5rem;
-            font-weight: 500;
+            font-weight: 300;
         }
 
         /* Body Metrics Styles */
         .weight-input-card {
-            background: rgba(15, 23, 42, 0.5);
-            backdrop-filter: blur(16px);
-            border: 1px solid rgba(71, 85, 105, 0.2);
-            border-radius: 20px;
-            padding: 2rem;
-            margin-bottom: 1.5rem;
-            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+            background: rgba(255, 255, 255, 0.65);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 24px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
         }
 
         .weight-input-row {
@@ -1177,49 +1178,45 @@
         .weight-input-field {
             flex: 1;
             padding: 0.875rem;
-            background: rgba(15, 23, 42, 0.6);
-            border: 1px solid rgba(71, 85, 105, 0.25);
+            background: rgba(255, 255, 255, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.4);
             border-radius: 12px;
-            color: #e2e8f0;
-            font-size: 1rem;
+            color: #1a1a1a;
+            font-size: 0.9375rem;
             text-align: center;
-            transition: all 0.25s ease;
+            transition: all 0.15s ease-out;
         }
 
         .weight-input-field:focus {
             outline: none;
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
-            background: rgba(15, 23, 42, 0.8);
-        }
-
-        .weight-input-field:focus {
-            outline: none;
-            border-color: #06b6d4;
-            box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.2);
+            border-color: #4caf50;
+            box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+            background: rgba(255, 255, 255, 0.9);
         }
 
         .photo-upload-card {
-            background: rgba(30, 41, 59, 0.4);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(71, 85, 105, 0.3);
-            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.65);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 20px;
             padding: 1.5rem;
-            margin-bottom: 1.5rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
         }
 
         .photo-upload-area {
-            border: 2px dashed rgba(71, 85, 105, 0.5);
-            border-radius: 12px;
+            border: 2px dashed rgba(76, 175, 80, 0.4);
+            border-radius: 16px;
             padding: 2rem;
             text-align: center;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.15s ease-out;
         }
 
         .photo-upload-area:hover {
-            border-color: #06b6d4;
-            background: rgba(6, 182, 212, 0.05);
+            border-color: #4caf50;
+            background: rgba(76, 175, 80, 0.08);
         }
 
         .photo-gallery {
@@ -1232,9 +1229,10 @@
         .photo-item {
             position: relative;
             aspect-ratio: 1;
-            border-radius: 8px;
+            border-radius: 12px;
             overflow: hidden;
-            border: 1px solid rgba(71, 85, 105, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
         }
 
         .photo-item img {
@@ -1262,13 +1260,13 @@
             padding: 0.5rem;
             min-width: 36px;
             min-height: 36px;
-            background: rgba(239, 68, 68, 0.9);
+            background: rgba(244, 67, 54, 0.9);
             color: white;
             border: none;
-            border-radius: 6px;
+            border-radius: 100px;
             cursor: pointer;
             font-size: 1rem;
-            transition: all 0.3s ease;
+            transition: all 0.15s ease-out;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -1276,7 +1274,8 @@
         }
 
         .btn-delete-photo:hover {
-            background: rgba(239, 68, 68, 1);
+            background: rgba(244, 67, 54, 1);
+            transform: scale(1.05);
             transform: scale(1.1);
         }
 
@@ -2484,13 +2483,13 @@
             <div class="workout-controls" style="display: flex; gap: 1rem; margin-bottom: 1.5rem; align-items: center; flex-wrap: wrap;">
                 <button class="btn" id="log-past-workout-btn" style="background: rgba(168, 85, 247, 0.2); color: #a855f7; border: 1px solid rgba(168, 85, 247, 0.3);">📅 Log Past Workout</button>
                 <div style="display: flex; align-items: center; gap: 0.5rem;">
-                    <label style="color: #94a3b8; font-size: 0.9rem;">Date:</label>
-                    <input type="date" id="workout-date-input" style="padding: 0.5rem; background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(71, 85, 105, 0.5); border-radius: 6px; color: white;">
+                    <label style="color: #6b6b6b; font-size: 0.9375rem;">Date:</label>
+                    <input type="date" id="workout-date-input" style="padding: 0.5rem; background: rgba(255, 255, 255, 0.7); border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 8px; color: #1a1a1a;">
                 </div>
             </div>
 
             <div class="intensity-inputs">
-                <h4 style="color: #06b6d4; margin-bottom: 1rem;">How are you feeling?</h4>
+                <h4 style="color: #4caf50; margin-bottom: 1rem;">How are you feeling?</h4>
                 <div class="intensity-row">
                     <span class="intensity-label">Energy:</span>
                     <div class="intensity-scale" id="energy-scale">
@@ -2533,7 +2532,7 @@
             </div>
 
             <div class="intensity-inputs">
-                <h4 style="color: #06b6d4; margin-bottom: 1rem;">How did the workout go?</h4>
+                <h4 style="color: #4caf50; margin-bottom: 1rem;">How did the workout go?</h4>
                 <div class="intensity-row">
                     <span class="intensity-label">Fatigue:</span>
                     <div class="intensity-scale" id="fatigue-scale">
@@ -2565,34 +2564,34 @@
         <div id="calendar-content" class="tab-content">
             <!-- Travel Mode Controls -->
             <div class="travel-mode-controls">
-                <h4 style="color: #a855f7; margin-bottom: 0.75rem;">✈️ Travel Mode</h4>
+                <h4 style="color: #ab47bc; margin-bottom: 0.75rem;">✈️ Travel Mode</h4>
                 <div style="display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap; margin-bottom: 0.75rem;">
                     <div style="flex: 1; min-width: 150px;">
-                        <label style="color: #94a3b8; font-size: 0.85rem; display: block; margin-bottom: 0.25rem;">Start Date</label>
-                        <input type="date" id="travel-start-date" style="width: 100%; padding: 0.5rem; background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(71, 85, 105, 0.5); border-radius: 6px; color: white;">
+                        <label style="color: #6b6b6b; font-size: 0.8125rem; display: block; margin-bottom: 0.25rem;">Start Date</label>
+                        <input type="date" id="travel-start-date" style="width: 100%; padding: 0.5rem; background: rgba(255, 255, 255, 0.7); border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 8px; color: #1a1a1a;">
                     </div>
                     <div style="flex: 1; min-width: 150px;">
-                        <label style="color: #94a3b8; font-size: 0.85rem; display: block; margin-bottom: 0.25rem;">End Date</label>
-                        <input type="date" id="travel-end-date" style="width: 100%; padding: 0.5rem; background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(71, 85, 105, 0.5); border-radius: 6px; color: white;">
+                        <label style="color: #6b6b6b; font-size: 0.8125rem; display: block; margin-bottom: 0.25rem;">End Date</label>
+                        <input type="date" id="travel-end-date" style="width: 100%; padding: 0.5rem; background: rgba(255, 255, 255, 0.7); border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 8px; color: #1a1a1a;">
                     </div>
-                    <button class="btn" onclick="enableTravelMode()" style="background: rgba(168, 85, 247, 0.2); color: #a855f7; border: 1px solid rgba(168, 85, 247, 0.3);">Set Travel Dates</button>
+                    <button class="btn" onclick="enableTravelMode()" style="background: rgba(171, 71, 188, 0.2); color: #ab47bc; border: 1px solid rgba(171, 71, 188, 0.3);">Set Travel Dates</button>
                 </div>
-                <div style="color: #64748b; font-size: 0.85rem; line-height: 1.5;">
+                <div style="color: #6b6b6b; font-size: 0.8125rem; line-height: 1.5;">
                     Travel mode pauses your workout schedule and excludes days from discipline scores. Your streak won't break during travel.
                 </div>
             </div>
 
             <!-- Sick Day Controls -->
             <div class="travel-mode-controls">
-                <h4 style="color: #f472b6; margin-bottom: 0.75rem;">🤒 Sick Day</h4>
+                <h4 style="color: #ec407a; margin-bottom: 0.75rem;">🤒 Sick Day</h4>
                 <div style="display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap; margin-bottom: 0.75rem;">
                     <div style="flex: 1; min-width: 150px;">
-                        <label style="color: #94a3b8; font-size: 0.85rem; display: block; margin-bottom: 0.25rem;">Select Date</label>
-                        <input type="date" id="sick-day-date" style="width: 100%; padding: 0.5rem; background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(71, 85, 105, 0.5); border-radius: 6px; color: white;">
+                        <label style="color: #6b6b6b; font-size: 0.8125rem; display: block; margin-bottom: 0.25rem;">Select Date</label>
+                        <input type="date" id="sick-day-date" style="width: 100%; padding: 0.5rem; background: rgba(255, 255, 255, 0.7); border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 8px; color: #1a1a1a;">
                     </div>
-                    <button class="btn" onclick="markSickDay()" style="background: rgba(244, 114, 182, 0.2); color: #f472b6; border: 1px solid rgba(244, 114, 182, 0.3);">Mark as Sick Day</button>
+                    <button class="btn" onclick="markSickDay()" style="background: rgba(236, 64, 122, 0.2); color: #ec407a; border: 1px solid rgba(236, 64, 122, 0.3);">Mark as Sick Day</button>
                 </div>
-                <div style="color: #64748b; font-size: 0.85rem; line-height: 1.5;">
+                <div style="color: #6b6b6b; font-size: 0.8125rem; line-height: 1.5;">
                     Mark a day as sick to cancel the scheduled workout. All remaining workouts will be pushed back by one day, maintaining the intended order.
                 </div>
             </div>
@@ -2658,8 +2657,8 @@
                     <div class="analytics-card">
                         <h3 class="analytics-title">🍎 Daily Nutrition</h3>
                         <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
-                            <label style="color: #94a3b8; font-size: 0.9rem;">Date:</label>
-                            <input type="date" id="nutrition-date-input" style="padding: 0.5rem; background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(71, 85, 105, 0.5); border-radius: 6px; color: white;">
+                            <label style="color: #6b6b6b; font-size: 0.9375rem;">Date:</label>
+                            <input type="date" id="nutrition-date-input" style="padding: 0.5rem; background: rgba(255, 255, 255, 0.7); border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 8px; color: #1a1a1a;">
                         </div>
                         <div class="macro-summary">
                             <div class="macro-item">
@@ -2881,8 +2880,8 @@
                 <div class="analytics-card">
                     <h3 class="analytics-title">🏆 PR Timeline</h3>
                     <div style="margin-bottom: 1rem;">
-                        <label for="exercise-selector" style="color: #94a3b8; font-size: 0.9rem; margin-right: 0.5rem;">Exercise:</label>
-                        <select id="exercise-selector" style="padding: 0.5rem; background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(71, 85, 105, 0.3); border-radius: 8px; color: white; font-size: 0.9rem;">
+                        <label for="exercise-selector" style="color: #6b6b6b; font-size: 0.9375rem; margin-right: 0.5rem;">Exercise:</label>
+                        <select id="exercise-selector" style="padding: 0.5rem; background: rgba(255, 255, 255, 0.7); border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 12px; color: #1a1a1a; font-size: 0.9375rem;">
                             <option value="">Select an exercise</option>
                         </select>
                     </div>
@@ -2894,8 +2893,8 @@
                 <div class="analytics-card">
                     <h3 class="analytics-title">📊 Session Comparison</h3>
                     <div style="margin-bottom: 1rem;">
-                        <label for="comparison-selector" style="color: #94a3b8; font-size: 0.9rem; margin-right: 0.5rem;">Workout Type:</label>
-                        <select id="comparison-selector" style="padding: 0.5rem; background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(71, 85, 105, 0.3); border-radius: 8px; color: white; font-size: 0.9rem;">
+                        <label for="comparison-selector" style="color: #6b6b6b; font-size: 0.9375rem; margin-right: 0.5rem;">Workout Type:</label>
+                        <select id="comparison-selector" style="padding: 0.5rem; background: rgba(255, 255, 255, 0.7); border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 12px; color: #1a1a1a; font-size: 0.9375rem;">
                             <option value="Upper">Upper</option>
                             <option value="Lower">Lower</option>
                             <option value="Push">Push</option>
@@ -2903,7 +2902,7 @@
                             <option value="Legs">Legs</option>
                         </select>
                     </div>
-                    <div id="session-comparison-content" style="color: #94a3b8; font-size: 0.9rem;">
+                    <div id="session-comparison-content" style="color: #6b6b6b; font-size: 0.9375rem;">
                         <p>Select a workout type to compare sessions</p>
                     </div>
                 </div>
@@ -2913,9 +2912,9 @@
             <div class="chart-grid">
                 <div class="analytics-card">
                     <h3 class="analytics-title">📈 Progression Snapshot</h3>
-                    <div id="progression-snapshot" style="color: #94a3b8; font-size: 0.9rem;">
+                    <div id="progression-snapshot" style="color: #6b6b6b; font-size: 0.9375rem;">
                         <div style="margin-bottom: 1rem;">
-                            <strong style="color: white;">Quick Wins:</strong>
+                            <strong style="color: #1a1a1a;">Quick Wins:</strong>
                             <div id="quick-wins">Complete at least 2 workouts to see recent PRs</div>
                         </div>
                         <div style="margin-bottom: 1rem;">
@@ -4640,10 +4639,10 @@
                 datasets.push({
                     label: 'Weight',
                     data: progression.map(p => ({ x: p.x, y: p.y })),
-                    borderColor: '#06b6d4',
-                    backgroundColor: 'rgba(6, 182, 212, 0.1)',
+                    borderColor: '#4caf50',
+                    backgroundColor: 'rgba(76, 175, 80, 0.15)',
                     pointRadius: 4,
-                    pointBackgroundColor: '#06b6d4',
+                    pointBackgroundColor: '#4caf50',
                     tension: 0.4,
                     fill: true
                 });
@@ -4654,8 +4653,8 @@
                 datasets.push({
                     label: 'PRs',
                     data: prPoints.map(p => ({ x: p.x, y: p.y })),
-                    borderColor: '#10b981',
-                    backgroundColor: '#10b981',
+                    borderColor: '#4caf50',
+                    backgroundColor: '#4caf50',
                     pointRadius: 8,
                     pointStyle: 'star',
                     showLine: false
@@ -4684,14 +4683,14 @@
                         x: {
                             type: 'time',
                             time: { unit: 'day' },
-                            ticks: { color: '#94a3b8' },
-                            grid: { color: 'rgba(71, 85, 105, 0.3)' }
+                            ticks: { color: '#6b6b6b' },
+                            grid: { color: 'rgba(0, 0, 0, 0.08)' }
                         },
                         y: {
                             beginAtZero: true,
-                            title: { display: true, text: 'Weight (lbs)', color: '#94a3b8' },
-                            ticks: { color: '#94a3b8' },
-                            grid: { color: 'rgba(71, 85, 105, 0.3)' }
+                            title: { display: true, text: 'Weight (lbs)', color: '#6b6b6b' },
+                            ticks: { color: '#6b6b6b' },
+                            grid: { color: 'rgba(0, 0, 0, 0.08)' }
                         }
                     }
                 }
@@ -6486,8 +6485,8 @@
                     datasets: [{
                         label: 'Weight (lbs)',
                         data: sortedWeights.map(w => w.weight),
-                        borderColor: '#06b6d4',
-                        backgroundColor: 'rgba(6, 182, 212, 0.1)',
+                        borderColor: '#4caf50',
+                        backgroundColor: 'rgba(76, 175, 80, 0.15)',
                         tension: 0.4,
                         fill: true
                     }]
