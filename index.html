@@ -11,6 +11,39 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
     <style>
+        :root {
+            /* Color Palette - Warm Neutral Theme */
+            --color-bg: #FAF9F7;
+            --color-surface: #FFFFFF;
+            --color-text-primary: #1A1A1A;
+            --color-text-secondary: #6B6B6B;
+            --color-accent-primary: #4A5D4A;
+            --color-accent-secondary: #A8B5A0;
+            --color-border: #E8E6E3;
+            --color-success: #5D8A66;
+            --color-warning: #D4A84B;
+            --color-error: #C4736D;
+            
+            /* Semantic Colors */
+            --color-on-track: #5D8A66;
+            --color-off-track: #C4736D;
+            
+            /* Border Radius */
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --radius-xl: 24px;
+            --radius-full: 100px;
+            
+            /* Shadows */
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+            --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.08);
+            
+            /* Transitions */
+            --transition-base: all 0.15s ease-out;
+        }
+        
         * {
             margin: 0;
             padding: 0;
@@ -18,9 +51,9 @@
         }
 
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 50%, #a5d6a7 100%);
-            color: #1a1a1a;
+            font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'DM Sans', 'Segoe UI', sans-serif;
+            background: var(--color-bg);
+            color: var(--color-text-primary);
             min-height: 100vh;
             padding: 1.5rem;
             line-height: 1.5;
@@ -40,16 +73,18 @@
 
         .header h1 {
             font-size: 2rem;
-            font-weight: 300;
-            color: #1a1a1a;
+            font-weight: 500;
+            color: var(--color-text-primary);
             margin-bottom: 0.5rem;
-            letter-spacing: 0.05em;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
         }
 
         .header p {
-            color: #6b6b6b;
+            color: var(--color-text-secondary);
             font-size: 0.9375rem;
             font-weight: 300;
+            font-style: italic;
         }
 
         .nav-tabs {
@@ -58,12 +93,10 @@
             margin-bottom: 2rem;
             overflow-x: auto;
             padding: 0.5rem;
-            background: rgba(255, 255, 255, 0.65);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.4);
-            border-radius: 100px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-full);
+            box-shadow: var(--shadow-md);
             -webkit-overflow-scrolling: touch;
         }
 
@@ -72,23 +105,23 @@
         }
 
         .nav-tabs::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.2);
+            background: var(--color-border);
             border-radius: 2px;
         }
 
         .nav-tabs::-webkit-scrollbar-thumb {
-            background: rgba(76, 175, 80, 0.5);
+            background: var(--color-accent-secondary);
             border-radius: 2px;
         }
 
         .nav-tab {
             padding: 0.625rem 1.125rem;
             background: transparent;
-            border: none;
-            border-radius: 100px;
-            color: #6b6b6b;
+            border: 1px solid transparent;
+            border-radius: var(--radius-full);
+            color: var(--color-text-secondary);
             cursor: pointer;
-            transition: all 0.15s ease-out;
+            transition: var(--transition-base);
             white-space: nowrap;
             font-weight: 400;
             font-size: 0.9375rem;
@@ -100,14 +133,16 @@
         }
 
         .nav-tab.active {
-            background: #4caf50;
-            color: #ffffff;
-            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+            background: var(--color-text-primary);
+            color: var(--color-surface);
+            border-color: transparent;
+            box-shadow: var(--shadow-sm);
         }
 
         .nav-tab:hover:not(.active) {
-            background: rgba(76, 175, 80, 0.1);
-            color: #1a1a1a;
+            background: var(--color-bg);
+            color: var(--color-text-primary);
+            border-color: var(--color-border);
             transform: scale(1.02);
         }
 
@@ -129,43 +164,40 @@
 
         .day-btn {
             padding: 0.875rem 1.5rem;
-            background: rgba(255, 255, 255, 0.65);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.4);
-            border-radius: 100px;
-            color: #1a1a1a;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-full);
+            color: var(--color-text-primary);
             cursor: pointer;
-            transition: all 0.15s ease-out;
+            transition: var(--transition-base);
             white-space: nowrap;
             font-weight: 400;
             min-height: 44px;
             display: flex;
             align-items: center;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+            box-shadow: var(--shadow-sm);
         }
 
         .day-btn.active {
-            background: #4caf50;
-            color: #ffffff;
+            background: var(--color-accent-primary);
+            color: var(--color-surface);
             border-color: transparent;
-            box-shadow: 0 4px 16px rgba(76, 175, 80, 0.3);
+            box-shadow: var(--shadow-md);
         }
 
         .day-btn:hover:not(.active) {
-            background: rgba(255, 255, 255, 0.85);
+            background: var(--color-bg);
+            border-color: var(--color-accent-secondary);
             transform: scale(1.02);
         }
 
         .intelligence-panel {
-            background: rgba(255, 255, 255, 0.65);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.4);
-            border-radius: 24px;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-xl);
             padding: 1.5rem;
             margin-bottom: 1rem;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+            box-shadow: var(--shadow-md);
         }
 
         .intelligence-header {
@@ -176,7 +208,7 @@
         }
 
         .intelligence-header h3 {
-            color: #1a1a1a;
+            color: var(--color-text-primary);
             font-weight: 500;
             font-size: 1.125rem;
         }
@@ -184,12 +216,12 @@
         .ai-icon {
             width: 28px;
             height: 28px;
-            background: #4caf50;
-            border-radius: 8px;
+            background: var(--color-accent-primary);
+            border-radius: var(--radius-sm);
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #ffffff;
+            color: var(--color-surface);
             font-weight: 500;
             font-size: 0.875rem;
         }
@@ -201,24 +233,22 @@
         }
 
         .suggestion-card {
-            background: rgba(255, 255, 255, 0.5);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 16px;
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
             padding: 1rem;
-            transition: all 0.15s ease-out;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+            transition: var(--transition-base);
+            box-shadow: var(--shadow-sm);
         }
 
         .suggestion-card:hover {
-            background: rgba(255, 255, 255, 0.7);
+            background: var(--color-surface);
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+            box-shadow: var(--shadow-md);
         }
 
         .suggestion-type {
-            color: #4caf50;
+            color: var(--color-accent-primary);
             font-size: 0.8125rem;
             font-weight: 500;
             text-transform: uppercase;
@@ -227,26 +257,24 @@
         }
 
         .suggestion-text {
-            color: #1a1a1a;
+            color: var(--color-text-primary);
             font-size: 0.9375rem;
             line-height: 1.5;
         }
 
         .exercise-card {
-            background: rgba(255, 255, 255, 0.65);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.4);
-            border-radius: 24px;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-xl);
             padding: 1.5rem;
             margin-bottom: 1rem;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
-            transition: all 0.15s ease-out;
+            box-shadow: var(--shadow-md);
+            transition: var(--transition-base);
         }
 
         .exercise-card:hover {
             transform: translateY(-2px);
-            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
+            box-shadow: var(--shadow-lg);
         }
 
         .exercise-header {
@@ -260,19 +288,19 @@
         .exercise-name {
             font-size: 1.125rem;
             font-weight: 500;
-            color: #1a1a1a;
+            color: var(--color-text-primary);
             margin-bottom: 0.5rem;
         }
 
         .exercise-target {
             display: inline-block;
-            background: rgba(76, 175, 80, 0.15);
-            color: #4caf50;
+            background: rgba(168, 181, 160, 0.15);
+            color: var(--color-accent-primary);
             padding: 0.375rem 0.875rem;
-            border-radius: 100px;
+            border-radius: var(--radius-full);
             font-size: 0.8125rem;
             font-weight: 400;
-            border: 1px solid rgba(76, 175, 80, 0.3);
+            border: 1px solid var(--color-accent-secondary);
         }
 
         .exercise-intelligence {
@@ -281,43 +309,41 @@
         }
 
         .suggested-weight {
-            background: #4caf50;
-            color: white;
+            background: var(--color-accent-primary);
+            color: var(--color-surface);
             padding: 0.5rem 1rem;
-            border-radius: 100px;
+            border-radius: var(--radius-full);
             font-weight: 500;
             font-size: 0.9375rem;
             margin-bottom: 0.5rem;
             display: inline-block;
-            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+            box-shadow: var(--shadow-sm);
         }
 
         .pr-indicator {
-            color: #4caf50;
+            color: var(--color-success);
             font-size: 0.8125rem;
             font-weight: 400;
         }
 
         .progression-indicator {
-            color: #4caf50;
+            color: var(--color-success);
             font-size: 0.8125rem;
             font-weight: 400;
             margin-bottom: 0.25rem;
         }
 
         .previous-session {
-            background: rgba(255, 255, 255, 0.5);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 12px;
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
             padding: 0.75rem;
             margin-bottom: 1rem;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+            box-shadow: var(--shadow-sm);
         }
 
         .previous-header {
-            color: #4caf50;
+            color: var(--color-accent-primary);
             font-size: 0.8125rem;
             font-weight: 500;
             margin-bottom: 0.5rem;
@@ -330,22 +356,22 @@
         }
 
         .previous-set {
-            color: #4caf50;
+            color: var(--color-accent-primary);
             font-size: 0.8125rem;
             text-align: center;
             padding: 0.25rem;
-            background: rgba(76, 175, 80, 0.1);
-            border-radius: 6px;
+            background: rgba(168, 181, 160, 0.15);
+            border-radius: var(--radius-sm);
         }
 
         .previous-sets-compact {
-            color: #4caf50;
+            color: var(--color-accent-primary);
             font-size: 0.875rem;
             line-height: 1.5;
-            background: rgba(76, 175, 80, 0.08);
+            background: rgba(168, 181, 160, 0.08);
             padding: 0.5rem 0.75rem;
-            border-radius: 8px;
-            border: 1px solid rgba(76, 175, 80, 0.2);
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--color-accent-secondary);
             max-height: 4rem;
             overflow-y: auto;
             overflow-x: hidden;
@@ -356,28 +382,26 @@
         }
         
         .previous-sets-compact::-webkit-scrollbar-track {
-            background: rgba(76, 175, 80, 0.05);
+            background: rgba(168, 181, 160, 0.05);
             border-radius: 3px;
         }
         
         .previous-sets-compact::-webkit-scrollbar-thumb {
-            background: rgba(76, 175, 80, 0.3);
+            background: var(--color-accent-secondary);
             border-radius: 3px;
         }
         
         .previous-sets-compact::-webkit-scrollbar-thumb:hover {
-            background: rgba(76, 175, 80, 0.5);
+            background: var(--color-accent-primary);
         }
 
         .intensity-inputs {
-            background: rgba(255, 255, 255, 0.65);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.4);
-            border-radius: 20px;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
             padding: 1.5rem;
             margin-bottom: 1rem;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+            box-shadow: var(--shadow-sm);
         }
 
         .intensity-row {
@@ -392,7 +416,7 @@
         }
 
         .intensity-label {
-            color: #1a1a1a;
+            color: var(--color-text-primary);
             font-weight: 400;
             min-width: 100px;
             font-size: 0.9375rem;
@@ -406,27 +430,27 @@
         .intensity-btn {
             width: 2.5rem;
             height: 2.5rem;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            background: rgba(255, 255, 255, 0.5);
-            color: #6b6b6b;
-            border-radius: 8px;
+            border: 1px solid var(--color-border);
+            background: var(--color-bg);
+            color: var(--color-text-secondary);
+            border-radius: var(--radius-sm);
             cursor: pointer;
             font-size: 0.875rem;
             font-weight: 500;
-            transition: all 0.15s ease-out;
+            transition: var(--transition-base);
         }
 
         .intensity-btn:hover:not(.active) {
-            background: rgba(255, 255, 255, 0.8);
-            border-color: rgba(76, 175, 80, 0.3);
+            background: var(--color-surface);
+            border-color: var(--color-accent-secondary);
             transform: scale(1.02);
         }
 
         .intensity-btn.active {
-            background: #4caf50;
-            color: #ffffff;
+            background: var(--color-accent-primary);
+            color: var(--color-surface);
             border-color: transparent;
-            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+            box-shadow: var(--shadow-sm);
         }
 
         .set-input-grid {
@@ -438,18 +462,16 @@
             display: flex;
             align-items: center;
             gap: 0.75rem;
-            background: rgba(255, 255, 255, 0.5);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
+            background: var(--color-bg);
             padding: 0.75rem;
-            border-radius: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+            border-radius: var(--radius-md);
+            border: 1px solid var(--color-border);
+            box-shadow: var(--shadow-sm);
         }
 
         .set-number {
             width: 2rem;
-            color: #6b6b6b;
+            color: var(--color-text-secondary);
             font-weight: 500;
             text-align: center;
         }
@@ -457,47 +479,47 @@
         .weight-input, .reps-input {
             width: 4rem;
             padding: 0.5rem;
-            background: rgba(255, 255, 255, 0.7);
-            border: 1px solid rgba(255, 255, 255, 0.4);
-            border-radius: 8px;
-            color: #1a1a1a;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-sm);
+            color: var(--color-text-primary);
             text-align: center;
             font-weight: 400;
         }
 
         .weight-input:focus, .reps-input:focus {
             outline: none;
-            border-color: #4caf50;
-            box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+            border-color: var(--color-accent-primary);
+            box-shadow: 0 0 0 2px rgba(74, 93, 74, 0.2);
         }
 
         .notes-input {
             flex: 1;
             padding: 0.5rem;
-            background: rgba(255, 255, 255, 0.7);
-            border: 1px solid rgba(255, 255, 255, 0.4);
-            border-radius: 8px;
-            color: #1a1a1a;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-sm);
+            color: var(--color-text-primary);
             font-size: 0.9375rem;
         }
 
         .notes-input:focus {
             outline: none;
-            border-color: #4caf50;
-            box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+            border-color: var(--color-accent-primary);
+            box-shadow: 0 0 0 2px rgba(74, 93, 74, 0.2);
         }
 
         .notes-input::placeholder {
-            color: #6b6b6b;
+            color: var(--color-text-secondary);
         }
 
         .btn {
             padding: 0.75rem 1.25rem;
             border: none;
-            border-radius: 100px;
+            border-radius: var(--radius-full);
             cursor: pointer;
             font-weight: 400;
-            transition: all 0.15s ease-out;
+            transition: var(--transition-base);
             font-size: 0.9375rem;
             min-height: 44px;
             display: inline-flex;
@@ -511,40 +533,38 @@
         }
 
         .btn-copy {
-            background: #4caf50;
-            color: #ffffff;
-            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+            background: var(--color-accent-primary);
+            color: var(--color-surface);
+            box-shadow: var(--shadow-sm);
         }
 
         .btn-copy:hover {
-            box-shadow: 0 6px 16px rgba(76, 175, 80, 0.4);
+            box-shadow: var(--shadow-md);
         }
 
         .btn-add {
-            background: rgba(255, 255, 255, 0.65);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            color: #4caf50;
-            border: 1px solid rgba(255, 255, 255, 0.4);
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+            background: var(--color-surface);
+            color: var(--color-accent-primary);
+            border: 1px solid var(--color-border);
+            box-shadow: var(--shadow-sm);
         }
 
         .btn-add:hover {
-            background: rgba(255, 255, 255, 0.85);
-            border-color: rgba(76, 175, 80, 0.3);
+            background: var(--color-bg);
+            border-color: var(--color-accent-secondary);
         }
 
         .btn-complete {
             padding: 1rem 3rem;
-            background: #4caf50;
-            color: #ffffff;
+            background: var(--color-accent-primary);
+            color: var(--color-surface);
             border: none;
-            border-radius: 100px;
+            border-radius: var(--radius-full);
             font-size: 1.125rem;
             font-weight: 500;
             cursor: pointer;
-            transition: all 0.15s ease-out;
-            box-shadow: 0 8px 24px rgba(76, 175, 80, 0.3);
+            transition: var(--transition-base);
+            box-shadow: var(--shadow-md);
             display: block;
             margin: 2rem auto 0;
             min-height: 56px;
@@ -552,7 +572,7 @@
 
         .btn-complete:hover {
             transform: scale(1.02);
-            box-shadow: 0 10px 32px rgba(76, 175, 80, 0.4);
+            box-shadow: var(--shadow-lg);
         }
 
         .analytics-grid {
@@ -563,26 +583,24 @@
         }
 
         .analytics-card {
-            background: rgba(255, 255, 255, 0.65);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.4);
-            border-radius: 24px;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-xl);
             padding: 1.5rem;
             margin-bottom: 1rem;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
-            transition: all 0.15s ease-out;
+            box-shadow: var(--shadow-md);
+            transition: var(--transition-base);
         }
 
         .analytics-card:hover {
             transform: translateY(-2px);
-            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
+            box-shadow: var(--shadow-lg);
         }
 
         .analytics-title {
             font-size: 1.125rem;
             font-weight: 500;
-            color: #1a1a1a;
+            color: var(--color-text-primary);
             margin-bottom: 1rem;
             display: flex;
             align-items: center;
@@ -592,12 +610,12 @@
         .stat-value {
             font-size: 2rem;
             font-weight: 500;
-            color: #1a1a1a;
+            color: var(--color-text-primary);
             line-height: 1.2;
         }
 
         .stat-label {
-            color: #6b6b6b;
+            color: var(--color-text-secondary);
             font-size: 0.8125rem;
             margin-top: 0.5rem;
             font-weight: 300;
@@ -625,41 +643,39 @@
         .insight-item {
             padding: 0.75rem;
             margin-bottom: 0.5rem;
-            background: rgba(255, 255, 255, 0.5);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border-radius: 12px;
-            border-left: 4px solid #4caf50;
-            color: #1a1a1a;
+            background: var(--color-bg);
+            border-radius: var(--radius-md);
+            border-left: 4px solid var(--color-success);
+            color: var(--color-text-primary);
             font-size: 0.9375rem;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+            box-shadow: var(--shadow-sm);
         }
 
         .plateau-alert {
-            border-left-color: #ff9800;
-            background: rgba(255, 152, 0, 0.1);
+            border-left-color: var(--color-warning);
+            background: rgba(212, 168, 75, 0.1);
         }
 
         .progression-highlight {
-            border-left-color: #4caf50;
-            background: rgba(76, 175, 80, 0.1);
+            border-left-color: var(--color-success);
+            background: rgba(93, 138, 102, 0.1);
         }
 
         .stretch-checkbox {
             width: 1.25rem;
             height: 1.25rem;
-            background: rgba(255, 255, 255, 0.7);
-            border: 2px solid rgba(255, 255, 255, 0.4);
-            border-radius: 6px;
+            background: var(--color-surface);
+            border: 2px solid var(--color-border);
+            border-radius: var(--radius-sm);
             cursor: pointer;
             appearance: none;
             position: relative;
-            transition: all 0.15s ease-out;
+            transition: var(--transition-base);
         }
 
         .stretch-checkbox:checked {
-            background: #4caf50;
-            border-color: #4caf50;
+            background: var(--color-accent-primary);
+            border-color: var(--color-accent-primary);
         }
 
         .stretch-checkbox:checked::after {
@@ -668,7 +684,7 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            color: white;
+            color: var(--color-surface);
             font-weight: bold;
             font-size: 0.9rem;
         }
@@ -677,14 +693,12 @@
             display: flex;
             align-items: center;
             gap: 0.75rem;
-            background: rgba(255, 255, 255, 0.5);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
+            background: var(--color-bg);
             padding: 0.75rem;
-            border-radius: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: var(--radius-md);
+            border: 1px solid var(--color-border);
             justify-content: space-between;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+            box-shadow: var(--shadow-sm);
         }
 
         .stretch-info {
@@ -695,26 +709,24 @@
         }
 
         .stretch-label {
-            color: #1a1a1a;
+            color: var(--color-text-primary);
             font-size: 0.9375rem;
         }
 
         .exercise-progress-indicator {
             font-size: 0.8125rem;
-            color: #4caf50;
+            color: var(--color-success);
             margin-bottom: 0.25rem;
         }
 
         /* Calendar Styles */
         .calendar-container {
-            background: rgba(255, 255, 255, 0.65);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.4);
-            border-radius: 24px;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-xl);
             padding: 1.5rem;
             margin-bottom: 1rem;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+            box-shadow: var(--shadow-md);
         }
 
         .calendar-header {
@@ -728,31 +740,29 @@
 
         .calendar-nav-btn {
             padding: 0.75rem 1.25rem;
-            background: rgba(255, 255, 255, 0.65);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.4);
-            border-radius: 100px;
-            color: #4caf50;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-full);
+            color: var(--color-accent-primary);
             cursor: pointer;
-            transition: all 0.15s ease-out;
+            transition: var(--transition-base);
             font-weight: 400;
             min-height: 44px;
             display: flex;
             align-items: center;
             gap: 0.5rem;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+            box-shadow: var(--shadow-sm);
         }
 
         .calendar-nav-btn:hover {
-            background: rgba(255, 255, 255, 0.85);
+            background: var(--color-bg);
             transform: scale(1.02);
         }
 
         .calendar-month-year {
             font-size: 1.25rem;
             font-weight: 400;
-            color: #1a1a1a;
+            color: var(--color-text-primary);
             flex: 1;
             text-align: center;
         }
@@ -766,7 +776,7 @@
         .calendar-day-header {
             text-align: center;
             padding: 0.75rem 0.5rem;
-            color: #6b6b6b;
+            color: var(--color-text-secondary);
             font-weight: 500;
             font-size: 0.8125rem;
             text-transform: uppercase;
@@ -775,27 +785,25 @@
 
         .calendar-day {
             aspect-ratio: 1;
-            background: rgba(255, 255, 255, 0.5);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 12px;
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
             padding: 0.625rem;
             cursor: pointer;
-            transition: all 0.15s ease-out;
+            transition: var(--transition-base);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             position: relative;
             min-height: 70px;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+            box-shadow: var(--shadow-sm);
         }
 
         .calendar-day:hover {
-            background: rgba(255, 255, 255, 0.8);
+            background: var(--color-surface);
             transform: scale(1.05);
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+            box-shadow: var(--shadow-md);
         }
 
         .calendar-day.other-month {
@@ -1281,12 +1289,12 @@
 
         /* Body Goal Styles */
         .body-goal-card {
-            background: rgba(30, 41, 59, 0.4);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(71, 85, 105, 0.3);
-            border-radius: 16px;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-xl);
             padding: 1.5rem;
             margin-bottom: 1.5rem;
+            box-shadow: var(--shadow-md);
         }
 
         .goal-input-row {
@@ -1306,30 +1314,30 @@
         }
 
         .goal-input-label {
-            color: #94a3b8;
+            color: var(--color-text-secondary);
             font-size: 0.9rem;
             font-weight: 500;
         }
 
         .goal-select, .goal-input {
             padding: 0.75rem;
-            background: rgba(30, 41, 59, 0.8);
-            border: 1px solid rgba(71, 85, 105, 0.5);
-            border-radius: 8px;
-            color: white;
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-sm);
+            color: var(--color-text-primary);
             font-size: 1rem;
         }
 
         .goal-select:focus, .goal-input:focus {
             outline: none;
-            border-color: #06b6d4;
-            box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.2);
+            border-color: var(--color-accent-primary);
+            box-shadow: 0 0 0 2px rgba(74, 93, 74, 0.2);
         }
 
         .goal-display {
-            background: rgba(6, 182, 212, 0.1);
-            border: 1px solid rgba(6, 182, 212, 0.3);
-            border-radius: 8px;
+            background: rgba(168, 181, 160, 0.1);
+            border: 1px solid var(--color-accent-secondary);
+            border-radius: var(--radius-sm);
             padding: 1rem;
             margin-top: 1rem;
         }
@@ -1346,12 +1354,12 @@
         }
 
         .goal-display-label {
-            color: #94a3b8;
+            color: var(--color-text-secondary);
             font-size: 0.9rem;
         }
 
         .goal-display-value {
-            color: #06b6d4;
+            color: var(--color-accent-primary);
             font-size: 1rem;
             font-weight: 500;
         }
@@ -1361,30 +1369,30 @@
             align-items: center;
             gap: 0.5rem;
             padding: 0.75rem;
-            border-radius: 8px;
+            border-radius: var(--radius-sm);
             margin-top: 1rem;
             font-weight: 500;
         }
 
         .progress-indicator.on-track {
-            background: rgba(16, 185, 129, 0.1);
-            border: 1px solid rgba(16, 185, 129, 0.3);
-            color: #10b981;
+            background: rgba(93, 138, 102, 0.1);
+            border: 1px solid var(--color-on-track);
+            color: var(--color-on-track);
         }
 
         .progress-indicator.off-track {
-            background: rgba(251, 146, 60, 0.1);
-            border: 1px solid rgba(251, 146, 60, 0.3);
-            color: #fb923c;
+            background: rgba(196, 115, 109, 0.1);
+            border: 1px solid var(--color-off-track);
+            color: var(--color-off-track);
         }
 
         .calorie-target-card {
-            background: rgba(30, 41, 59, 0.4);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(71, 85, 105, 0.3);
-            border-radius: 16px;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-xl);
             padding: 1.5rem;
             margin-bottom: 1.5rem;
+            box-shadow: var(--shadow-md);
         }
 
         .calorie-breakdown {
@@ -1397,9 +1405,9 @@
         .calorie-item {
             flex: 1;
             min-width: 150px;
-            background: rgba(15, 23, 42, 0.6);
-            border: 1px solid rgba(71, 85, 105, 0.3);
-            border-radius: 8px;
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-sm);
             padding: 1rem;
             text-align: center;
         }
@@ -1407,12 +1415,12 @@
         .calorie-value {
             font-size: 1.5rem;
             font-weight: 600;
-            color: #06b6d4;
+            color: var(--color-accent-primary);
             margin-bottom: 0.25rem;
         }
 
         .calorie-label {
-            color: #94a3b8;
+            color: var(--color-text-secondary);
             font-size: 0.85rem;
         }
 
@@ -1444,21 +1452,21 @@
             bottom: 2rem;
             right: 2rem;
             padding: 1rem 1.5rem;
-            background: linear-gradient(135deg, #10b981, #059669);
-            color: white;
+            background: var(--color-accent-primary);
+            color: var(--color-surface);
             border: none;
-            border-radius: 50px;
+            border-radius: var(--radius-full);
             font-size: 1rem;
             font-weight: 600;
-            box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4);
+            box-shadow: var(--shadow-md);
             cursor: pointer;
             z-index: 100;
-            transition: all 0.3s ease;
+            transition: var(--transition-base);
         }
 
         .mobile-saved-foods-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 24px rgba(16, 185, 129, 0.5);
+            box-shadow: var(--shadow-lg);
         }
 
         /* Saved Foods Modal/Sheet for Mobile */
@@ -1468,17 +1476,16 @@
             bottom: 0;
             left: 0;
             right: 0;
-            background: rgba(10, 14, 26, 0.98);
-            backdrop-filter: blur(20px);
-            border-top-left-radius: 24px;
-            border-top-right-radius: 24px;
+            background: var(--color-surface);
+            border-top-left-radius: var(--radius-xl);
+            border-top-right-radius: var(--radius-xl);
             padding: 1.5rem;
             max-height: 80vh;
             overflow-y: auto;
             z-index: 1000;
             transform: translateY(100%);
             transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.4);
+            box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.1);
         }
 
         .saved-foods-modal.active {
@@ -1513,10 +1520,10 @@
 
         .modal-close-btn {
             padding: 0.5rem;
-            background: rgba(244, 67, 54, 0.15);
-            color: #f44336;
+            background: rgba(196, 115, 109, 0.15);
+            color: var(--color-error);
             border: none;
-            border-radius: 100px;
+            border-radius: var(--radius-full);
             font-size: 1.5rem;
             cursor: pointer;
             min-width: 44px;
@@ -1524,36 +1531,34 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.15s ease-out;
+            transition: var(--transition-base);
         }
 
         /* Saved Foods Styles */
         .saved-foods-panel {
-            background: rgba(255, 255, 255, 0.6);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.4);
-            border-radius: 20px;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
             padding: 1.5rem;
             margin-bottom: 0;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+            box-shadow: var(--shadow-md);
         }
 
         .saved-food-search {
             width: 100%;
             padding: 0.75rem;
-            background: rgba(255, 255, 255, 0.7);
-            border: 1px solid rgba(255, 255, 255, 0.4);
-            border-radius: 12px;
-            color: #1a1a1a;
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            color: var(--color-text-primary);
             margin-bottom: 1rem;
             font-size: 0.9375rem;
         }
 
         .saved-food-search:focus {
             outline: none;
-            border-color: #4caf50;
-            box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+            border-color: var(--color-accent-primary);
+            box-shadow: 0 0 0 2px rgba(74, 93, 74, 0.2);
         }
 
         .saved-food-list {
@@ -1564,25 +1569,23 @@
         }
 
         .saved-food-item {
-            background: rgba(255, 255, 255, 0.5);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 12px;
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
             padding: 1rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
             cursor: pointer;
-            transition: all 0.15s ease-out;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+            transition: var(--transition-base);
+            box-shadow: var(--shadow-sm);
         }
 
         .saved-food-item:hover {
-            background: rgba(255, 255, 255, 0.8);
-            border-color: rgba(76, 175, 80, 0.3);
+            background: var(--color-surface);
+            border-color: var(--color-accent-secondary);
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+            box-shadow: var(--shadow-md);
         }
 
         .saved-food-info {
@@ -1590,13 +1593,13 @@
         }
 
         .saved-food-name {
-            color: #1a1a1a;
+            color: var(--color-text-primary);
             font-weight: 500;
             margin-bottom: 0.25rem;
         }
 
         .saved-food-macros {
-            color: #6b6b6b;
+            color: var(--color-text-secondary);
             font-size: 0.75rem;
             display: flex;
             gap: 0.75rem;
@@ -1609,65 +1612,65 @@
 
         .btn-quick-add {
             padding: 0.5rem 1rem;
-            background: linear-gradient(135deg, #10b981, #059669);
-            color: white;
+            background: var(--color-success);
+            color: var(--color-surface);
             border: none;
-            border-radius: 6px;
+            border-radius: var(--radius-sm);
             cursor: pointer;
             font-size: 0.8rem;
             font-weight: 500;
-            transition: all 0.3s ease;
+            transition: var(--transition-base);
         }
 
         .btn-quick-add:hover {
             transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+            box-shadow: var(--shadow-sm);
         }
 
         .btn-delete-food {
             padding: 0.75rem;
             min-width: 44px;
             min-height: 44px;
-            background: rgba(239, 68, 68, 0.2);
-            color: #ef4444;
-            border: 1px solid rgba(239, 68, 68, 0.3);
-            border-radius: 6px;
+            background: rgba(196, 115, 109, 0.15);
+            color: var(--color-error);
+            border: 1px solid rgba(196, 115, 109, 0.3);
+            border-radius: var(--radius-sm);
             cursor: pointer;
             font-size: 1rem;
-            transition: all 0.3s ease;
+            transition: var(--transition-base);
             display: flex;
             align-items: center;
             justify-content: center;
         }
 
         .btn-delete-food:hover {
-            background: rgba(239, 68, 68, 0.3);
+            background: rgba(196, 115, 109, 0.25);
         }
 
         .btn-save-food {
             padding: 0.75rem 1rem;
             min-height: 44px;
-            background: rgba(59, 130, 246, 0.2);
-            color: #3b82f6;
-            border: 1px solid rgba(59, 130, 246, 0.3);
-            border-radius: 6px;
+            background: rgba(74, 93, 74, 0.15);
+            color: var(--color-accent-primary);
+            border: 1px solid var(--color-accent-secondary);
+            border-radius: var(--radius-sm);
             cursor: pointer;
             font-size: 0.9rem;
             font-weight: 500;
-            transition: all 0.3s ease;
+            transition: var(--transition-base);
             display: flex;
             align-items: center;
             justify-content: center;
         }
 
         .btn-save-food:hover {
-            background: rgba(59, 130, 246, 0.3);
+            background: rgba(74, 93, 74, 0.25);
         }
 
         .empty-state {
             text-align: center;
             padding: 2rem;
-            color: #6b6b6b;
+            color: var(--color-text-secondary);
         }
 
         /* Meal Type Selection Modal */
@@ -1691,21 +1694,19 @@
         }
 
         .modal-content {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.4);
-            border-radius: 24px;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-xl);
             padding: 2rem;
             max-width: 400px;
             width: 90%;
-            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.15);
+            box-shadow: var(--shadow-lg);
         }
 
         .modal-title {
             font-size: 1.25rem;
             font-weight: 500;
-            color: #1a1a1a;
+            color: var(--color-text-primary);
             margin-bottom: 1.5rem;
             text-align: center;
         }
@@ -1717,43 +1718,41 @@
 
         .meal-type-btn {
             padding: 1rem;
-            background: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.4);
-            border-radius: 16px;
-            color: #1a1a1a;
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            color: var(--color-text-primary);
             cursor: pointer;
             font-size: 1rem;
             font-weight: 400;
-            transition: all 0.15s ease-out;
+            transition: var(--transition-base);
             text-align: center;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+            box-shadow: var(--shadow-sm);
         }
 
         .meal-type-btn:hover {
-            background: #4caf50;
-            color: #ffffff;
+            background: var(--color-accent-primary);
+            color: var(--color-surface);
             border-color: transparent;
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(76, 175, 80, 0.3);
+            box-shadow: var(--shadow-md);
         }
 
         .modal-close {
             margin-top: 1rem;
             padding: 0.75rem;
-            background: rgba(244, 67, 54, 0.15);
-            border: 1px solid rgba(244, 67, 54, 0.3);
-            border-radius: 100px;
-            color: #f44336;
+            background: rgba(196, 115, 109, 0.15);
+            border: 1px solid rgba(196, 115, 109, 0.3);
+            border-radius: var(--radius-full);
+            color: var(--color-error);
             cursor: pointer;
             width: 100%;
             font-size: 0.9375rem;
-            transition: all 0.15s ease-out;
+            transition: var(--transition-base);
         }
 
         .modal-close:hover {
-            background: rgba(244, 67, 54, 0.25);
+            background: rgba(196, 115, 109, 0.25);
             transform: scale(1.02);
         }
 
@@ -1777,23 +1776,23 @@
 
         .approach-btn {
             padding: 0.25rem 0.75rem;
-            background: rgba(30, 41, 59, 0.8);
-            border: 1px solid rgba(71, 85, 105, 0.5);
-            border-radius: 6px;
-            color: #94a3b8;
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-sm);
+            color: var(--color-text-secondary);
             cursor: pointer;
             font-size: 0.8rem;
-            transition: all 0.3s ease;
+            transition: var(--transition-base);
         }
 
         .approach-btn.active {
-            background: rgba(168, 85, 247, 0.2);
-            color: #a855f7;
-            border-color: #a855f7;
+            background: rgba(168, 181, 160, 0.15);
+            color: var(--color-accent-primary);
+            border-color: var(--color-accent-primary);
         }
 
         .approach-btn:hover {
-            background: rgba(71, 85, 105, 0.5);
+            background: var(--color-surface);
         }
 
         /* Alternative Exercise History Styles */
@@ -1803,7 +1802,7 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0, 0, 0, 0.7);
+            background: rgba(0, 0, 0, 0.5);
             display: none;
             align-items: center;
             justify-content: center;
@@ -1816,16 +1815,15 @@
         }
 
         .alt-exercise-modal-content {
-            background: rgba(15, 23, 42, 0.95);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(71, 85, 105, 0.3);
-            border-radius: 20px;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-xl);
             padding: 2rem;
             max-width: 600px;
             width: 100%;
             max-height: 80vh;
             overflow-y: auto;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            box-shadow: var(--shadow-lg);
         }
 
         .alt-exercise-modal-header {
@@ -1838,22 +1836,22 @@
         .alt-exercise-modal-title {
             font-size: 1.5rem;
             font-weight: 600;
-            color: #f1f5f9;
+            color: var(--color-text-primary);
         }
 
         .alt-exercise-close-btn {
-            background: rgba(239, 68, 68, 0.2);
-            border: 1px solid rgba(239, 68, 68, 0.3);
-            color: #ef4444;
+            background: rgba(196, 115, 109, 0.15);
+            border: 1px solid rgba(196, 115, 109, 0.3);
+            color: var(--color-error);
             padding: 0.5rem 1rem;
-            border-radius: 8px;
+            border-radius: var(--radius-sm);
             cursor: pointer;
             font-weight: 500;
-            transition: all 0.3s ease;
+            transition: var(--transition-base);
         }
 
         .alt-exercise-close-btn:hover {
-            background: rgba(239, 68, 68, 0.3);
+            background: rgba(196, 115, 109, 0.25);
         }
 
         .alt-exercise-input-section {
@@ -1861,7 +1859,7 @@
         }
 
         .alt-exercise-input-label {
-            color: #94a3b8;
+            color: var(--color-text-secondary);
             font-size: 0.9rem;
             font-weight: 500;
             margin-bottom: 0.5rem;
@@ -1871,17 +1869,17 @@
         .alt-exercise-name-input {
             width: 100%;
             padding: 0.75rem;
-            background: rgba(30, 41, 59, 0.8);
-            border: 1px solid rgba(71, 85, 105, 0.5);
-            border-radius: 8px;
-            color: white;
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-sm);
+            color: var(--color-text-primary);
             font-size: 1rem;
         }
 
         .alt-exercise-name-input:focus {
             outline: none;
-            border-color: #a855f7;
-            box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.2);
+            border-color: var(--color-accent-primary);
+            box-shadow: 0 0 0 2px rgba(74, 93, 74, 0.2);
         }
 
         .alt-exercise-history-section {
@@ -1889,7 +1887,7 @@
         }
 
         .alt-exercise-history-title {
-            color: #94a3b8;
+            color: var(--color-text-secondary);
             font-size: 0.85rem;
             font-weight: 600;
             text-transform: uppercase;
@@ -1906,26 +1904,26 @@
         }
 
         .alt-exercise-history-item {
-            background: rgba(30, 41, 59, 0.6);
-            border: 1px solid rgba(71, 85, 105, 0.3);
-            border-radius: 8px;
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-sm);
             padding: 0.75rem;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: var(--transition-base);
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
 
         .alt-exercise-history-item:hover {
-            background: rgba(168, 85, 247, 0.15);
-            border-color: rgba(168, 85, 247, 0.5);
+            background: var(--color-surface);
+            border-color: var(--color-accent-secondary);
             transform: translateX(4px);
         }
 
         .alt-exercise-history-item-name {
             font-weight: 500;
-            color: #e2e8f0;
+            color: var(--color-text-primary);
             font-size: 1rem;
         }
 
@@ -1938,41 +1936,41 @@
 
         .alt-exercise-history-item-date {
             font-size: 0.75rem;
-            color: #94a3b8;
+            color: var(--color-text-secondary);
         }
 
         .alt-exercise-history-item-count {
             font-size: 0.7rem;
-            color: #a855f7;
-            background: rgba(168, 85, 247, 0.15);
+            color: var(--color-accent-primary);
+            background: rgba(168, 181, 160, 0.15);
             padding: 0.125rem 0.5rem;
-            border-radius: 4px;
+            border-radius: var(--radius-sm);
         }
 
         .alt-exercise-empty-state {
             text-align: center;
             padding: 2rem;
-            color: #64748b;
+            color: var(--color-text-secondary);
             font-style: italic;
         }
 
         .alt-exercise-confirm-btn {
             width: 100%;
             padding: 0.875rem;
-            background: linear-gradient(135deg, #a855f7, #8b5cf6);
-            color: white;
+            background: var(--color-accent-primary);
+            color: var(--color-surface);
             border: none;
-            border-radius: 12px;
+            border-radius: var(--radius-md);
             font-weight: 600;
             font-size: 1rem;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: var(--transition-base);
             margin-top: 1rem;
         }
 
         .alt-exercise-confirm-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(168, 85, 247, 0.4);
+            box-shadow: var(--shadow-md);
         }
 
         .alt-exercise-confirm-btn:disabled {
@@ -1982,13 +1980,13 @@
 
         .substitution-tag {
             display: inline-block;
-            background: rgba(168, 85, 247, 0.2);
-            color: #a855f7;
+            background: rgba(168, 181, 160, 0.15);
+            color: var(--color-accent-primary);
             padding: 0.25rem 0.625rem;
-            border-radius: 6px;
+            border-radius: var(--radius-sm);
             font-size: 0.75rem;
             font-weight: 600;
-            border: 1px solid rgba(168, 85, 247, 0.3);
+            border: 1px solid var(--color-accent-secondary);
             margin-left: 0.5rem;
         }
 
@@ -2447,20 +2445,20 @@
         </div>
 
         <div class="nav-tabs">
-            <div class="nav-tab active" id="workout-tab-btn">🏋️ Workout</div>
-            <div class="nav-tab" id="calendar-tab-btn">📅 Calendar</div>
-            <div class="nav-tab" id="nutrition-tab-btn">🍎 Nutrition</div>
-            <div class="nav-tab" id="body-metrics-tab-btn">⚖️ Body</div>
-            <div class="nav-tab" id="analytics-tab-btn">📊 Analytics</div>
-            <div class="nav-tab" id="progress-tab-btn">📈 Progress</div>
-            <div class="nav-tab" id="intelligence-tab-btn">🧠 Insights</div>
+            <div class="nav-tab active" id="workout-tab-btn">Workout</div>
+            <div class="nav-tab" id="calendar-tab-btn">Calendar</div>
+            <div class="nav-tab" id="nutrition-tab-btn">Nutrition</div>
+            <div class="nav-tab" id="body-metrics-tab-btn">Body</div>
+            <div class="nav-tab" id="analytics-tab-btn">Analytics</div>
+            <div class="nav-tab" id="progress-tab-btn">Progress</div>
+            <div class="nav-tab" id="intelligence-tab-btn">Insights</div>
         </div>
 
         <!-- Travel Mode Banner -->
         <div id="travel-mode-banner" class="travel-mode-banner">
             <div style="display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap;">
                 <div>
-                    <div style="color: #a855f7; font-weight: 600; font-size: 1.1rem; margin-bottom: 0.25rem;">✈️ Travel Mode Active</div>
+                    <div style="color: #a855f7; font-weight: 600; font-size: 1.1rem; margin-bottom: 0.25rem;">Travel Mode Active</div>
                     <div style="color: #94a3b8; font-size: 0.9rem;">
                         <span id="travel-mode-dates"></span>
                     </div>
@@ -2481,15 +2479,15 @@
             </div>
 
             <div class="workout-controls" style="display: flex; gap: 1rem; margin-bottom: 1.5rem; align-items: center; flex-wrap: wrap;">
-                <button class="btn" id="log-past-workout-btn" style="background: rgba(168, 85, 247, 0.2); color: #a855f7; border: 1px solid rgba(168, 85, 247, 0.3);">📅 Log Past Workout</button>
+                <button class="btn" id="log-past-workout-btn" style="background: rgba(168, 85, 247, 0.2); color: #a855f7; border: 1px solid rgba(168, 85, 247, 0.3);">Log Past Workout</button>
                 <div style="display: flex; align-items: center; gap: 0.5rem;">
                     <label style="color: #6b6b6b; font-size: 0.9375rem;">Date:</label>
-                    <input type="date" id="workout-date-input" style="padding: 0.5rem; background: rgba(255, 255, 255, 0.7); border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 8px; color: #1a1a1a;">
+                    <input type="date" id="workout-date-input" style="padding: 0.5rem; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-sm); color: var(--color-text-primary);">
                 </div>
             </div>
 
             <div class="intensity-inputs">
-                <h4 style="color: #4caf50; margin-bottom: 1rem;">How are you feeling?</h4>
+                <h4 style="color: var(--color-accent-primary); margin-bottom: 1rem;">How are you feeling?</h4>
                 <div class="intensity-row">
                     <span class="intensity-label">Energy:</span>
                     <div class="intensity-scale" id="energy-scale">
@@ -2597,7 +2595,7 @@
             </div>
 
             <div class="adherence-card">
-                <h3 class="analytics-title">📊 Workout Adherence</h3>
+                <h3 class="analytics-title">Workout Adherence</h3>
                 <div class="adherence-score">
                     <div class="adherence-score-value" id="adherence-score">0%</div>
                     <div class="stat-label">Discipline Score</div>
@@ -2655,7 +2653,7 @@
                 <!-- Main Content Area -->
                 <div class="nutrition-main-content">
                     <div class="analytics-card">
-                        <h3 class="analytics-title">🍎 Daily Nutrition</h3>
+                        <h3 class="analytics-title">Daily Nutrition</h3>
                         <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
                             <label style="color: #6b6b6b; font-size: 0.9375rem;">Date:</label>
                             <input type="date" id="nutrition-date-input" style="padding: 0.5rem; background: rgba(255, 255, 255, 0.7); border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 8px; color: #1a1a1a;">
@@ -2733,7 +2731,7 @@
         <!-- BODY METRICS TAB -->
         <div id="body-metrics-content" class="tab-content">
             <div class="weight-input-card">
-                <h3 class="analytics-title">⚖️ Weight Tracking</h3>
+                <h3 class="analytics-title">Weight Tracking</h3>
                 <div class="weight-input-row">
                     <input type="date" id="weight-date-input" class="weight-input-field" style="flex: 0.5;">
                     <input type="number" id="weight-value-input" class="weight-input-field" placeholder="Weight (lbs)" step="0.1">
@@ -2789,7 +2787,7 @@
             </div>
 
             <div class="analytics-card">
-                <h3 class="analytics-title">📈 Weight Progress</h3>
+                <h3 class="analytics-title">Weight Progress</h3>
                 <div class="chart-container">
                     <canvas id="weight-chart"></canvas>
                 </div>
@@ -2833,7 +2831,7 @@
                 </div>
 
                 <div class="analytics-card">
-                    <h3 class="analytics-title">🏋️ Lower Volume</h3>
+                    <h3 class="analytics-title">Lower Volume</h3>
                     <div class="stat-value" id="lower-record">0</div>
                     <div class="stat-label">Record: <span id="lower-record-lbs">0</span> lbs</div>
                     <div class="stat-label">Avg: <span id="lower-avg">0</span> lbs | <span id="lower-trend">→</span></div>
@@ -2891,7 +2889,7 @@
                 </div>
 
                 <div class="analytics-card">
-                    <h3 class="analytics-title">📊 Session Comparison</h3>
+                    <h3 class="analytics-title">Session Comparison</h3>
                     <div style="margin-bottom: 1rem;">
                         <label for="comparison-selector" style="color: #6b6b6b; font-size: 0.9375rem; margin-right: 0.5rem;">Workout Type:</label>
                         <select id="comparison-selector" style="padding: 0.5rem; background: rgba(255, 255, 255, 0.7); border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 12px; color: #1a1a1a; font-size: 0.9375rem;">
@@ -2911,7 +2909,7 @@
             <!-- Row 4: Analytics -->
             <div class="chart-grid">
                 <div class="analytics-card">
-                    <h3 class="analytics-title">📈 Progression Snapshot</h3>
+                    <h3 class="analytics-title">Progression Snapshot</h3>
                     <div id="progression-snapshot" style="color: #6b6b6b; font-size: 0.9375rem;">
                         <div style="margin-bottom: 1rem;">
                             <strong style="color: #1a1a1a;">Quick Wins:</strong>
@@ -2942,7 +2940,7 @@
         <!-- PROGRESS TAB -->
         <div id="progress-content" class="tab-content">
             <div class="analytics-card">
-                <h3 class="analytics-title">📈 Exercise Progression</h3>
+                <h3 class="analytics-title">Exercise Progression</h3>
                 <div id="exercise-progress-list">
                     <p style="color: #64748b;">Complete some workouts to see your detailed progression!</p>
                 </div>
@@ -2959,14 +2957,14 @@
         <!-- INTELLIGENCE TAB -->
         <div id="intelligence-content" class="tab-content">
             <div class="analytics-card">
-                <h3 class="analytics-title">🧠 AI Insights</h3>
+                <h3 class="analytics-title">AI Insights</h3>
                 <ul class="insights-list" id="insights-list">
                     <li class="insight-item">Complete some workouts to get personalized insights!</li>
                 </ul>
             </div>
 
             <div class="analytics-card">
-                <h3 class="analytics-title">🍎 Nutrition Analytics (Past 7 Days)</h3>
+                <h3 class="analytics-title">Nutrition Analytics (Past 7 Days)</h3>
                 <div id="nutrition-insights" style="color: #94a3b8; font-size: 0.9rem;">
                     <div style="margin-bottom: 1rem;">
                         <strong style="color: #06b6d4;">Workout Days vs Rest Days</strong>
@@ -2994,7 +2992,7 @@
     <!-- Meal Type Selection Modal -->
     <div class="modal-overlay" id="meal-type-modal">
         <div class="modal-content">
-            <h3 class="modal-title">🍽️ Select Meal Type</h3>
+            <h3 class="modal-title">Select Meal Type</h3>
             <div class="meal-type-buttons">
                 <button class="meal-type-btn" onclick="selectMealType('Breakfast')">🌅 Breakfast</button>
                 <button class="meal-type-btn" onclick="selectMealType('Lunch')">☀️ Lunch</button>
@@ -3009,7 +3007,7 @@
     <div class="alt-exercise-modal" id="alt-exercise-modal">
         <div class="alt-exercise-modal-content">
             <div class="alt-exercise-modal-header">
-                <div class="alt-exercise-modal-title">🔄 Alternative Exercise</div>
+                <div class="alt-exercise-modal-title">Alternative Exercise</div>
                 <button class="alt-exercise-close-btn" onclick="closeAltExerciseModal()">✕ Close</button>
             </div>
             
@@ -7210,11 +7208,11 @@
             const today = getTodayDateString();
             
             if (dateInput.value && dateInput.value !== today) {
-                logBtn.textContent = '📅 For ' + formatDateString(dateInput.value);
-                logBtn.style.background = 'rgba(16, 185, 129, 0.2)';
-                logBtn.style.color = '#10b981';
+                logBtn.textContent = 'For ' + formatDateString(dateInput.value);
+                logBtn.style.background = 'rgba(93, 138, 102, 0.15)';
+                logBtn.style.color = 'var(--color-success)';
             } else {
-                logBtn.textContent = '📅 Log Past Workout';
+                logBtn.textContent = 'Log Past Workout';
                 logBtn.style.background = 'rgba(168, 85, 247, 0.2)';
                 logBtn.style.color = '#a855f7';
             }
@@ -7284,12 +7282,12 @@
                 day: 'numeric'
             });
             
-            let exportText = '🏋️‍♂️ ' + currentDay + ' | ' + dateString + '\n';
+            let exportText = currentDay + ' | ' + dateString + '\n';
             exportText += '=========================\n';
             
             // Add intensity ratings if available
             if (workoutIntensity.preWorkout.energy || workoutIntensity.postWorkout.satisfaction) {
-                exportText += '\n📊 Session Intensity:\n';
+                exportText += '\nSession Intensity:\n';
                 if (workoutIntensity.preWorkout.energy) exportText += `Energy: ${workoutIntensity.preWorkout.energy}/5 `;
                 if (workoutIntensity.preWorkout.motivation) exportText += `| Motivation: ${workoutIntensity.preWorkout.motivation}/5\n`;
                 if (workoutIntensity.postWorkout.fatigue) exportText += `Fatigue: ${workoutIntensity.postWorkout.fatigue}/5 `;
