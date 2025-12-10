@@ -2034,8 +2034,8 @@
                 45deg,
                 rgba(168, 85, 247, 0.1),
                 rgba(168, 85, 247, 0.1) 10px,
-                rgba(59, 130, 246, 0.1) 10px,
-                rgba(59, 130, 246, 0.1) 20px
+                rgba(74, 93, 74, 0.1) 10px,
+                rgba(74, 93, 74, 0.1) 20px
             );
             border: 1px solid rgba(168, 85, 247, 0.5);
         }
@@ -2676,7 +2676,7 @@
                         <h3 class="analytics-title">Daily Nutrition</h3>
                         <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
                             <label style="color: var(--color-text-secondary); font-size: 0.9375rem;">Date:</label>
-                            <input type="date" id="nutrition-date-input" style="padding: 0.5rem; background: rgba(255, 255, 255, 0.7); border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 8px; color: #1a1a1a;">
+                            <input type="date" id="nutrition-date-input" style="padding: 0.5rem; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-sm); color: var(--color-text-primary);">
                         </div>
                         <div class="macro-summary">
                             <div class="macro-item">
@@ -2899,7 +2899,7 @@
                     <h3 class="analytics-title">🏆 PR Timeline</h3>
                     <div style="margin-bottom: 1rem;">
                         <label for="exercise-selector" style="color: var(--color-text-secondary); font-size: 0.9375rem; margin-right: 0.5rem;">Exercise:</label>
-                        <select id="exercise-selector" style="padding: 0.5rem; background: rgba(255, 255, 255, 0.7); border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 12px; color: #1a1a1a; font-size: 0.9375rem;">
+                        <select id="exercise-selector" style="padding: 0.5rem; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); color: var(--color-text-primary); font-size: 0.9375rem;">
                             <option value="">Select an exercise</option>
                         </select>
                     </div>
@@ -2912,7 +2912,7 @@
                     <h3 class="analytics-title">Session Comparison</h3>
                     <div style="margin-bottom: 1rem;">
                         <label for="comparison-selector" style="color: var(--color-text-secondary); font-size: 0.9375rem; margin-right: 0.5rem;">Workout Type:</label>
-                        <select id="comparison-selector" style="padding: 0.5rem; background: rgba(255, 255, 255, 0.7); border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 12px; color: #1a1a1a; font-size: 0.9375rem;">
+                        <select id="comparison-selector" style="padding: 0.5rem; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); color: var(--color-text-primary); font-size: 0.9375rem;">
                             <option value="Upper">Upper</option>
                             <option value="Lower">Lower</option>
                             <option value="Push">Push</option>
@@ -2987,7 +2987,7 @@
                 <h3 class="analytics-title">Nutrition Analytics (Past 7 Days)</h3>
                 <div id="nutrition-insights" style="color: var(--color-text-secondary); font-size: 0.9rem;">
                     <div style="margin-bottom: 1rem;">
-                        <strong style="color: #06b6d4;">Workout Days vs Rest Days</strong>
+                        <strong style="color: var(--color-accent-primary);">Workout Days vs Rest Days</strong>
                         <div id="nutrition-comparison" style="margin-top: 0.5rem;">
                             Log nutrition for at least 3 days to see insights
                         </div>
@@ -3058,7 +3058,7 @@
                     <div style="font-weight: 600;">Resume</div>
                     <div style="font-size: 0.75rem; opacity: 0.8; margin-top: 0.25rem;">Continue from where you left off</div>
                 </button>
-                <button class="meal-type-btn" onclick="resumeWorkoutProgram('restart')" style="background: rgba(59, 130, 246, 0.2); border-color: rgba(59, 130, 246, 0.3); color: #3b82f6;">
+                <button class="meal-type-btn" onclick="resumeWorkoutProgram('restart')" style="background: rgba(74, 93, 74, 0.2); border-color: rgba(74, 93, 74, 0.3); color: var(--color-accent-primary);">
                     <div style="font-size: 1.5rem; margin-bottom: 0.25rem;">🔄</div>
                     <div style="font-weight: 600;">Restart</div>
                     <div style="font-size: 0.75rem; opacity: 0.8; margin-top: 0.25rem;">Start the program from day 1</div>
@@ -3536,9 +3536,9 @@
             if (remaining < 0) {
                 remainingElement.style.color = 'var(--color-error)'; // red
             } else if (remaining < 200) {
-                remainingElement.style.color = '#fb923c'; // orange
+                remainingElement.style.color = 'var(--color-warning)'; // orange
             } else {
-                remainingElement.style.color = '#06b6d4'; // cyan
+                remainingElement.style.color = 'var(--color-accent-primary)'; // cyan
             }
         }
 
@@ -4936,7 +4936,7 @@
                 if (score < 4) return 'var(--color-error)';
                 if (score < 6) return 'var(--color-warning)';
                 if (score < 8) return 'var(--color-success)';
-                return '#06b6d4';
+                return 'var(--color-accent-primary)';
             };
             
             const heatmapHTML = `
@@ -5242,7 +5242,7 @@
                         calories: Math.round(restDayData.reduce((sum, date) => sum + dailyNutrition[date].calories, 0) / restDayData.length)
                     };
                     
-                    comparisonHtml += `<div style="margin-bottom: 0.5rem; color: #3b82f6;">`;
+                    comparisonHtml += `<div style="margin-bottom: 0.5rem; color: var(--color-accent-primary);">`;
                     comparisonHtml += `<strong>Rest Days (${restDayData.length}):</strong> `;
                     comparisonHtml += `${restAvg.protein}g protein, ${restAvg.carbs}g carbs, ${restAvg.fats}g fat, ${restAvg.calories} cal`;
                     comparisonHtml += `</div>`;
@@ -5303,7 +5303,7 @@
                 progressionContainer.innerHTML = sortedProgression.slice(0, 15).map(([exercise, data]) => {
                     const typeColors = {
                         strength: 'var(--color-success)',
-                        volume: '#3b82f6', 
+                        volume: 'var(--color-accent-primary)', 
                         total_volume: 'var(--color-warning)',
                         maintaining: 'var(--color-text-secondary)'
                     };
@@ -5447,7 +5447,7 @@
                 // Show intensity if available
                 if (workout.intensity) {
                     html += '<div style="background: rgba(15, 23, 42, 0.6); padding: 1rem; border-radius: 8px;">';
-                    html += '<h4 style="color: #06b6d4; margin-bottom: 0.5rem;">Session Intensity</h4>';
+                    html += '<h4 style="color: var(--color-accent-primary); margin-bottom: 0.5rem;">Session Intensity</h4>';
                     html += '<div style="display: flex; gap: 1rem; flex-wrap: wrap;">';
                     if (workout.intensity.energy) html += `<span style="color: var(--color-text-secondary);">Energy: ${workout.intensity.energy}/5</span>`;
                     if (workout.intensity.motivation) html += `<span style="color: var(--color-text-secondary);">Motivation: ${workout.intensity.motivation}/5</span>`;
@@ -5461,9 +5461,9 @@
                     html += '<div style="background: rgba(15, 23, 42, 0.6); padding: 1rem; border-radius: 8px;">';
                     html += `<h4 style="color: white; margin-bottom: 0.5rem;">${exercise.exercise}`;
                     if (exercise.substitution && exercise.originalExercise) {
-                        html += ` <span style="background: rgba(6, 182, 212, 0.2); color: #06b6d4; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: normal;">Alt for ${exercise.originalExercise}</span>`;
+                        html += ` <span style="background: rgba(74, 93, 74, 0.2); color: var(--color-accent-primary); padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: normal;">Alt for ${exercise.originalExercise}</span>`;
                     } else if (exercise.approach) {
-                        html += ` <span style="background: rgba(6, 182, 212, 0.2); color: #06b6d4; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: normal;">${exercise.approach}</span>`;
+                        html += ` <span style="background: rgba(74, 93, 74, 0.2); color: var(--color-accent-primary); padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: normal;">${exercise.approach}</span>`;
                     }
                     html += `</h4>`;
                     
@@ -5924,7 +5924,7 @@
             }
             
             element.style.transition = 'color 0.3s ease';
-            element.style.color = '#3b82f6';
+            element.style.color = 'var(--color-accent-primary)';
             
             // Simple direct update with highlight
             element.textContent = newValue + suffix;
