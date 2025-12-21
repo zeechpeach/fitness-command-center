@@ -1087,21 +1087,20 @@
         .food-input {
             flex: 2;
             min-width: 200px;
-            padding: 0.875rem;
+            padding: 0.5rem 0.75rem;
             min-height: 48px;
-            background: rgba(255, 255, 255, 0.7);
-            border: 1px solid rgba(255, 255, 255, 0.4);
-            border-radius: 12px;
-            color: #1a1a1a;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-sm);
+            color: var(--color-text-primary);
             font-size: 0.9375rem;
             transition: all 0.15s ease-out;
         }
 
         .food-input:focus {
             outline: none;
-            border-color: var(--color-success);
-            box-shadow: 0 0 0 3px rgba(93, 138, 102, 0.15);
-            background: rgba(255, 255, 255, 0.9);
+            border-color: var(--color-accent-primary);
+            box-shadow: var(--focus-shadow);
         }
 
         .macro-input-wrapper {
@@ -1121,12 +1120,12 @@
 
         .macro-input {
             width: 80px;
-            padding: 0.875rem 0.5rem;
+            padding: 0.5rem;
             min-height: 48px;
-            background: rgba(255, 255, 255, 0.7);
-            border: 1px solid rgba(255, 255, 255, 0.4);
-            border-radius: 12px;
-            color: #1a1a1a;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-sm);
+            color: var(--color-text-primary);
             text-align: center;
             font-size: 0.9375rem;
             transition: all 0.15s ease-out;
@@ -1134,9 +1133,8 @@
 
         .macro-input:focus {
             outline: none;
-            border-color: var(--color-success);
-            box-shadow: 0 0 0 3px rgba(93, 138, 102, 0.15);
-            background: rgba(255, 255, 255, 0.9);
+            border-color: var(--color-accent-primary);
+            box-shadow: var(--focus-shadow);
         }
 
         .macro-inputs-grid {
@@ -1211,21 +1209,19 @@
 
         .weight-input-field {
             flex: 1;
-            padding: 0.875rem;
-            background: rgba(255, 255, 255, 0.7);
-            border: 1px solid rgba(255, 255, 255, 0.4);
-            border-radius: 12px;
-            color: #1a1a1a;
-            font-size: 0.9375rem;
-            text-align: center;
+            padding: 0.75rem;
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-sm);
+            color: var(--color-text-primary);
+            font-size: 1rem;
             transition: all 0.15s ease-out;
         }
 
         .weight-input-field:focus {
             outline: none;
-            border-color: var(--color-success);
-            box-shadow: 0 0 0 2px rgba(93, 138, 102, 0.2);
-            background: rgba(255, 255, 255, 0.9);
+            border-color: var(--color-accent-primary);
+            box-shadow: var(--focus-shadow);
         }
 
         .photo-upload-card {
@@ -2955,7 +2951,6 @@
                         </div>
                     </div>
                     <div id="progress-indicator" class="progress-indicator on-track">
-                        <span>⏳</span>
                         <span id="progress-status-text">Set your goal to track progress</span>
                     </div>
                 </div>
@@ -2969,10 +2964,9 @@
             </div>
 
             <div class="photo-upload-card">
-                <h3 class="analytics-title">📸 Progress Photos</h3>
+                <h3 class="analytics-title">Progress Photos</h3>
                 <div class="photo-upload-area" onclick="document.getElementById('photo-input').click()">
                     <input type="file" id="photo-input" accept="image/*" style="display: none;" onchange="uploadProgressPhoto(event)">
-                    <div style="font-size: 3rem; margin-bottom: 0.5rem;">📷</div>
                     <div style="color: var(--color-text-secondary);">Click to upload a progress photo</div>
                 </div>
                 <div class="photo-gallery" id="photo-gallery">
@@ -3001,7 +2995,7 @@
                     <h3 class="analytics-title">Upper Volume</h3>
                     <div class="stat-value" id="upper-record">0</div>
                     <div class="stat-label">Record: <span id="upper-record-lbs">0</span> lbs</div>
-                    <div class="stat-label">Avg: <span id="upper-avg">0</span> lbs | <span id="upper-trend">→</span></div>
+                    <div class="stat-label">Avg: <span id="upper-avg">0</span> lbs | <span id="upper-trend"></span></div>
                     <div class="stat-label" style="font-size: 0.8rem; margin-top: 0.5rem;"><span id="upper-mom"></span></div>
                 </div>
 
@@ -3009,15 +3003,15 @@
                     <h3 class="analytics-title">Lower Volume</h3>
                     <div class="stat-value" id="lower-record">0</div>
                     <div class="stat-label">Record: <span id="lower-record-lbs">0</span> lbs</div>
-                    <div class="stat-label">Avg: <span id="lower-avg">0</span> lbs | <span id="lower-trend">→</span></div>
+                    <div class="stat-label">Avg: <span id="lower-avg">0</span> lbs | <span id="lower-trend"></span></div>
                     <div class="stat-label" style="font-size: 0.8rem; margin-top: 0.5rem;"><span id="lower-mom"></span></div>
                 </div>
 
                 <div class="analytics-card">
-                    <h3 class="analytics-title">🚀 Push Volume</h3>
+                    <h3 class="analytics-title">Push Volume</h3>
                     <div class="stat-value" id="push-record">0</div>
                     <div class="stat-label">Record: <span id="push-record-lbs">0</span> lbs</div>
-                    <div class="stat-label">Avg: <span id="push-avg">0</span> lbs | <span id="push-trend">→</span></div>
+                    <div class="stat-label">Avg: <span id="push-avg">0</span> lbs | <span id="push-trend"></span></div>
                     <div class="stat-label" style="font-size: 0.8rem; margin-top: 0.5rem;"><span id="push-mom"></span></div>
                 </div>
             </div>
@@ -3028,15 +3022,15 @@
                     <h3 class="analytics-title">Pull Volume</h3>
                     <div class="stat-value" id="pull-record">0</div>
                     <div class="stat-label">Record: <span id="pull-record-lbs">0</span> lbs</div>
-                    <div class="stat-label">Avg: <span id="pull-avg">0</span> lbs | <span id="pull-trend">→</span></div>
+                    <div class="stat-label">Avg: <span id="pull-avg">0</span> lbs | <span id="pull-trend"></span></div>
                     <div class="stat-label" style="font-size: 0.8rem; margin-top: 0.5rem;"><span id="pull-mom"></span></div>
                 </div>
 
                 <div class="analytics-card">
-                    <h3 class="analytics-title">🦵 Legs Volume</h3>
+                    <h3 class="analytics-title">Legs Volume</h3>
                     <div class="stat-value" id="legs-record">0</div>
                     <div class="stat-label">Record: <span id="legs-record-lbs">0</span> lbs</div>
-                    <div class="stat-label">Avg: <span id="legs-avg">0</span> lbs | <span id="legs-trend">→</span></div>
+                    <div class="stat-label">Avg: <span id="legs-avg">0</span> lbs | <span id="legs-trend"></span></div>
                     <div class="stat-label" style="font-size: 0.8rem; margin-top: 0.5rem;"><span id="legs-mom"></span></div>
                 </div>
 
@@ -3209,12 +3203,10 @@
             <p style="color: var(--color-text-secondary); margin-bottom: 1.5rem; text-align: center;">How would you like to resume your workout program?</p>
             <div class="meal-type-buttons">
                 <button class="meal-type-btn" onclick="resumeWorkoutProgram('resume')" style="background: rgba(93, 138, 102, 0.2); border-color: rgba(93, 138, 102, 0.3); color: var(--color-success);">
-                    <div style="font-size: 1.5rem; margin-bottom: 0.25rem;">▶️</div>
                     <div style="font-weight: 600;">Resume</div>
                     <div style="font-size: 0.75rem; opacity: 0.8; margin-top: 0.25rem;">Continue from where you left off</div>
                 </button>
                 <button class="meal-type-btn" onclick="resumeWorkoutProgram('restart')" style="background: rgba(74, 93, 74, 0.2); border-color: rgba(74, 93, 74, 0.3); color: var(--color-accent-primary);">
-                    <div style="font-size: 1.5rem; margin-bottom: 0.25rem;">🔄</div>
                     <div style="font-weight: 600;">Restart</div>
                     <div style="font-size: 0.75rem; opacity: 0.8; margin-top: 0.25rem;">Start the program from day 1</div>
                 </button>
@@ -4544,7 +4536,7 @@
         // Get trend direction for last 3 sessions
         function getTrendDirection(workoutType) {
             const workouts = getWorkoutsByType(workoutType).slice(0, 3);
-            if (workouts.length < 2) return '→';
+            if (workouts.length < 2) return '';
             
             const volumes = workouts.map(w => calculateWorkoutVolume(w)).reverse();
             
@@ -4557,9 +4549,9 @@
                 if (volumes[i] >= volumes[i - 1]) isDecreasing = false;
             }
             
-            if (isIncreasing) return '↗️';
-            if (isDecreasing) return '↘️';
-            return '→';
+            if (isIncreasing) return '(up)';
+            if (isDecreasing) return '(down)';
+            return '(flat)';
         }
 
         // Find exercises with recent PRs
@@ -5553,7 +5545,7 @@
                 
                 if (maxFreq - minFreq >= 2) {
                     const undertrainedTypes = Object.keys(typeFrequency).filter(type => typeFrequency[type] === minFreq);
-                    warnings.push(`💡 Consider adding more ${undertrainedTypes.join(' or ')} workouts to balance your training`);
+                    warnings.push(`Consider adding more ${undertrainedTypes.join(' or ')} workouts to balance your training`);
                 }
             }
             
@@ -6259,6 +6251,11 @@
                                 <input type="number" class="macro-input" value="${quantity}" placeholder="1" step="0.1" min="0.1" onchange="updateMealFood('${meal.id}', ${foodIndex}, 'quantity', this.value)">
                             </div>
                             <div class="macro-input-wrapper">
+                                <label class="macro-input-label">Calories</label>
+                                <input type="number" class="macro-input" value="${food.calories || 0}" placeholder="0" onchange="updateMealFood('${meal.id}', ${foodIndex}, 'calories', this.value)">
+                                ${quantity !== 1 ? `<div style="font-size: 0.7rem; color: var(--color-text-secondary); text-align: center; margin-top: 0.25rem;">${displayCalories}</div>` : ''}
+                            </div>
+                            <div class="macro-input-wrapper">
                                 <label class="macro-input-label">Protein</label>
                                 <input type="number" class="macro-input" value="${food.protein || 0}" placeholder="0" step="0.1" onchange="updateMealFood('${meal.id}', ${foodIndex}, 'protein', this.value)">
                                 ${quantity !== 1 ? `<div style="font-size: 0.7rem; color: var(--color-text-secondary); text-align: center; margin-top: 0.25rem;">${displayProtein}g</div>` : ''}
@@ -6272,11 +6269,6 @@
                                 <label class="macro-input-label">Fats</label>
                                 <input type="number" class="macro-input" value="${food.fats || 0}" placeholder="0" step="0.1" onchange="updateMealFood('${meal.id}', ${foodIndex}, 'fats', this.value)">
                                 ${quantity !== 1 ? `<div style="font-size: 0.7rem; color: var(--color-text-secondary); text-align: center; margin-top: 0.25rem;">${displayFats}g</div>` : ''}
-                            </div>
-                            <div class="macro-input-wrapper">
-                                <label class="macro-input-label">Calories</label>
-                                <input type="number" class="macro-input" value="${food.calories || 0}" placeholder="0" onchange="updateMealFood('${meal.id}', ${foodIndex}, 'calories', this.value)">
-                                ${quantity !== 1 ? `<div style="font-size: 0.7rem; color: var(--color-text-secondary); text-align: center; margin-top: 0.25rem;">${displayCalories}</div>` : ''}
                             </div>
                         </div>
                         <div class="food-action-buttons">
@@ -6661,12 +6653,6 @@
                         <div class="saved-food-info">
                             <div class="saved-food-name">${food.name}</div>
                             ${servingInfo ? `<div style="font-size: 0.75rem; color: var(--color-text-secondary); margin-top: 0.25rem;">${servingInfo}</div>` : ''}
-                            <div class="saved-food-macros">
-                                <span>P: ${food.protein}g</span>
-                                <span>C: ${food.carbs}g</span>
-                                <span>F: ${food.fats}g</span>
-                                <span>Cal: ${food.calories}</span>
-                            </div>
                         </div>
                         <div class="saved-food-actions">
                             <button class="btn-quick-add" onclick="quickAddFood('${food.id}'); closeSavedFoodsModal();">Quick Add</button>
