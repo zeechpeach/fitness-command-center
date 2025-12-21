@@ -3838,6 +3838,191 @@
             return null;
         }
 
+        // ============================================
+        // PROGRAM BUILDER FUNCTIONS
+        // ============================================
+        
+        // Settings Modal Functions
+        window.openSettings = function() {
+            document.getElementById('settings-modal').classList.add('active');
+            renderPrograms();
+        };
+        
+        window.closeSettings = function() {
+            document.getElementById('settings-modal').classList.remove('active');
+        };
+        
+        // Load programs from Firestore
+        async function loadPrograms() {
+            try {
+                const q = query(collection(db, "programs"));
+                const querySnapshot = await getDocs(q);
+                programs = [];
+                querySnapshot.forEach((doc) => {
+                    programs.push({ id: doc.id, ...doc.data() });
+                });
+                
+                console.log(`Loaded ${programs.length} programs`);
+                
+                // Find active program
+                activeProgram = programs.find(p => p.active) || null;
+                
+                // If no programs exist, migrate hardcoded program
+                if (programs.length === 0) {
+                    await migrateHardcodedProgram();
+                }
+                
+                return programs;
+            } catch (e) {
+                console.error("Error loading programs:", e);
+                return [];
+            }
+        }
+        
+        // Migrate hardcoded workoutPlans to new program structure
+        async function migrateHardcodedProgram() {
+            console.log('Migrating hardcoded ULPPL program...');
+            
+            const ulpplProgram = {
+                name: "ULPPL",
+                active: true,
+                createdAt: new Date().toISOString(),
+                schedule: {
+                    day1: "Upper",
+                    day2: "Lower",
+                    day3: "Rest",
+                    day4: "Push",
+                    day5: "Pull",
+                    day6: "Legs",
+                    day7: "Rest"
+                },
+                workouts: {
+                    Upper: workoutPlans.Upper,
+                    Lower: workoutPlans.Lower,
+                    Rest: workoutPlans.Rest,
+                    Push: workoutPlans.Push,
+                    Pull: workoutPlans.Pull,
+                    Legs: workoutPlans.Legs
+                }
+            };
+            
+            try {
+                const docRef = await addDoc(collection(db, "programs"), ulpplProgram);
+                const newProgram = { id: docRef.id, ...ulpplProgram };
+                programs.push(newProgram);
+                activeProgram = newProgram;
+                console.log('Successfully migrated ULPPL program');
+                return newProgram;
+            } catch (e) {
+                console.error("Error migrating program:", e);
+                return null;
+            }
+        }
+        
+        // Get active workouts (replaces direct workoutPlans usage)
+        function getActiveWorkouts() {
+            if (activeProgram && activeProgram.workouts) {
+                return activeProgram.workouts;
+            }
+            // Fallback to hardcoded if no active program
+            return workoutPlans;
+        }
+        
+        // Render programs list in settings
+        function renderPrograms() {
+            const container = document.getElementById('programs-list');
+            if (!container) return;
+            
+            let html = '';
+            if (programs.length === 0) {
+                html = '<p style="color: var(--color-text-secondary);">No programs yet. Create your first program!</p>';
+            } else {
+                programs.forEach(program => {
+                    const isActive = program.active;
+                    const cycleLength = Object.keys(program.schedule || {}).length;
+                    const createdDate = new Date(program.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+                    
+                    html += `
+                        <div class="program-card ${isActive ? 'active' : ''}">
+                            <div class="program-card-header">
+                                <div class="program-card-title">
+                                    <span class="program-name">${program.name}</span>
+                                    ${isActive ? '<span class="program-active-badge">Active</span>' : ''}
+                                </div>
+                                <div class="program-actions">
+                                    ${!isActive ? `<button class="btn" onclick="setActiveProgram('${program.id}')" style="font-size: 0.875rem; padding: 0.5rem 0.75rem;">Activate</button>` : ''}
+                                    <button class="btn" onclick="alert('Program editor coming soon!')" style="font-size: 0.875rem; padding: 0.5rem 0.75rem;">Edit</button>
+                                    ${!isActive ? `<button class="btn" onclick="deleteProgram('${program.id}')" style="font-size: 0.875rem; padding: 0.5rem 0.75rem; background: rgba(196, 115, 109, 0.15); color: var(--color-error); border-color: rgba(196, 115, 109, 0.3);">Delete</button>` : ''}
+                                </div>
+                            </div>
+                            <div class="program-meta">${cycleLength}-day cycle • Created ${createdDate}</div>
+                        </div>
+                    `;
+                });
+            }
+            
+            container.innerHTML = html;
+        }
+        
+        // Set active program
+        window.setActiveProgram = async function(programId) {
+            try {
+                // Deactivate all programs
+                for (const program of programs) {
+                    program.active = false;
+                    const docRef = doc(db, "programs", program.id);
+                    await updateDoc(docRef, { active: false });
+                }
+                
+                // Activate selected program
+                const program = programs.find(p => p.id === programId);
+                if (program) {
+                    program.active = true;
+                    const docRef = doc(db, "programs", programId);
+                    await updateDoc(docRef, { active: true });
+                    activeProgram = program;
+                    
+                    alert(`${program.name} is now your active program!`);
+                    renderPrograms();
+                    
+                    // Refresh workout view if on workout tab
+                    initializeWorkout();
+                }
+            } catch (e) {
+                console.error("Error setting active program:", e);
+                alert('Error activating program. Please try again.');
+            }
+        };
+        
+        // Delete program
+        window.deleteProgram = async function(programId) {
+            const program = programs.find(p => p.id === programId);
+            if (!program) return;
+            
+            if (!confirm(`Delete program "${program.name}"? This cannot be undone.`)) {
+                return;
+            }
+            
+            try {
+                const docRef = doc(db, "programs", programId);
+                await deleteDoc(docRef);
+                programs = programs.filter(p => p.id !== programId);
+                alert('Program deleted successfully');
+                renderPrograms();
+            } catch (e) {
+                console.error("Error deleting program:", e);
+                alert('Error deleting program. Please try again.');
+            }
+        };
+        
+        // Create new program (placeholder)
+        window.createNewProgram = function() {
+            const programName = prompt('Enter program name:', 'My Program');
+            if (!programName) return;
+            
+            alert('Program editor UI coming soon! For now, you can:\n\n1. Edit the hardcoded workoutPlans in the code\n2. Create a new program with that structure\n3. Save it to Firestore\n\nThis feature will be fully implemented in the next phase.');
+        };
+
         // Helper function to get what workout would have been scheduled on a special day (travel/sick)
         // This is used to show users what they're missing
         function getWouldBeScheduledWorkout(date) {
@@ -7022,6 +7207,11 @@
             
             // Set up UI immediately
             setupEventListeners();
+            
+            // Load programs first (needed for workout initialization)
+            await loadPrograms();
+            
+            // Initialize workout with active program
             initializeWorkout();
             
             // Load data in background
@@ -7221,7 +7411,8 @@
 
         function initializeWorkout() {
             currentWorkout = {};
-            const exercises = workoutPlans[currentDay];
+            const workouts = getActiveWorkouts();
+            const exercises = workouts[currentDay];
 
             exercises.forEach((exercise, index) => {
                 const isStretch = exercise.name.toLowerCase().includes('stretch');
@@ -7243,7 +7434,8 @@
         }
         function renderWorkout() {
             const container = document.getElementById('exercises-container');
-            const exercises = workoutPlans[currentDay];
+            const workouts = getActiveWorkouts();
+            const exercises = workouts[currentDay];
             const exerciseProgression = getExerciseProgression();
             
             let html = '';
