@@ -4906,9 +4906,6 @@
             }
         }
         
-        // Initialize on DOM load
-        document.addEventListener('DOMContentLoaded', initializeProgramNameInput);
-        
         // Update cycle length (add or remove days)
         window.updateCycleLength = function(delta) {
             if (!currentEditingProgram) return;
@@ -8525,6 +8522,9 @@
             
             // Set up UI immediately
             setupEventListeners();
+            
+            // Initialize program editor
+            initializeProgramNameInput();
             
             // Load programs first (needed for workout initialization)
             await loadPrograms();
