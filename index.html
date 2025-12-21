@@ -2964,10 +2964,9 @@
             </div>
 
             <div class="photo-upload-card">
-                <h3 class="analytics-title">📸 Progress Photos</h3>
+                <h3 class="analytics-title">Progress Photos</h3>
                 <div class="photo-upload-area" onclick="document.getElementById('photo-input').click()">
                     <input type="file" id="photo-input" accept="image/*" style="display: none;" onchange="uploadProgressPhoto(event)">
-                    <div style="font-size: 3rem; margin-bottom: 0.5rem;">📷</div>
                     <div style="color: var(--color-text-secondary);">Click to upload a progress photo</div>
                 </div>
                 <div class="photo-gallery" id="photo-gallery">
@@ -3208,7 +3207,6 @@
                     <div style="font-size: 0.75rem; opacity: 0.8; margin-top: 0.25rem;">Continue from where you left off</div>
                 </button>
                 <button class="meal-type-btn" onclick="resumeWorkoutProgram('restart')" style="background: rgba(74, 93, 74, 0.2); border-color: rgba(74, 93, 74, 0.3); color: var(--color-accent-primary);">
-                    <div style="font-size: 1.5rem; margin-bottom: 0.25rem;">🔄</div>
                     <div style="font-weight: 600;">Restart</div>
                     <div style="font-size: 0.75rem; opacity: 0.8; margin-top: 0.25rem;">Start the program from day 1</div>
                 </button>
@@ -5547,7 +5545,7 @@
                 
                 if (maxFreq - minFreq >= 2) {
                     const undertrainedTypes = Object.keys(typeFrequency).filter(type => typeFrequency[type] === minFreq);
-                    warnings.push(`💡 Consider adding more ${undertrainedTypes.join(' or ')} workouts to balance your training`);
+                    warnings.push(`Consider adding more ${undertrainedTypes.join(' or ')} workouts to balance your training`);
                 }
             }
             
