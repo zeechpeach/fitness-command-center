@@ -2144,6 +2144,687 @@
             gap: 0.5rem;
         }
 
+        /* Program Editor Modal Styles */
+        .program-editor-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--color-bg);
+            z-index: 3000;
+            display: none;
+            overflow-y: auto;
+        }
+
+        .program-editor-modal.active {
+            display: block;
+        }
+
+        .program-editor-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .program-editor-header {
+            position: sticky;
+            top: 0;
+            background: var(--color-surface);
+            border-bottom: 1px solid var(--color-border);
+            padding: 1rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            z-index: 10;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .program-editor-back {
+            background: none;
+            border: none;
+            color: var(--color-accent-primary);
+            cursor: pointer;
+            font-size: 0.9375rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 0.75rem;
+            border-radius: var(--radius-md);
+            transition: var(--transition-base);
+            font-weight: 400;
+        }
+
+        .program-editor-back:hover {
+            background: var(--color-bg);
+        }
+
+        .back-arrow {
+            font-size: 1.25rem;
+            line-height: 1;
+        }
+
+        .program-editor-title-section {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            justify-content: center;
+        }
+
+        .program-name-input {
+            font-size: 1.25rem;
+            font-weight: 500;
+            color: var(--color-text-primary);
+            border: 2px solid transparent;
+            background: transparent;
+            padding: 0.5rem 0.75rem;
+            border-radius: var(--radius-md);
+            text-align: center;
+            transition: var(--transition-base);
+            max-width: 300px;
+        }
+
+        .program-name-input:focus {
+            outline: none;
+            border-color: var(--color-accent-primary);
+            background: var(--color-surface);
+        }
+
+        .program-name-input:disabled {
+            opacity: 0.8;
+        }
+
+        .program-name-edit-btn {
+            background: none;
+            border: none;
+            font-size: 1rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: var(--radius-md);
+            transition: var(--transition-base);
+            opacity: 0.6;
+        }
+
+        .program-name-edit-btn:hover {
+            background: var(--color-bg);
+            opacity: 1;
+        }
+
+        .program-editor-actions {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .save-indicator {
+            font-size: 0.875rem;
+            color: var(--color-success);
+            padding: 0.5rem 0.75rem;
+            background: rgba(93, 138, 102, 0.1);
+            border-radius: var(--radius-full);
+            opacity: 0;
+            transition: opacity 0.3s ease-out;
+            white-space: nowrap;
+        }
+
+        .save-indicator.visible {
+            opacity: 1;
+        }
+
+        .program-delete-btn {
+            background: rgba(196, 115, 109, 0.15);
+            color: var(--color-error);
+            border: 1px solid rgba(196, 115, 109, 0.3);
+            border-radius: var(--radius-full);
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: var(--transition-base);
+            white-space: nowrap;
+        }
+
+        .program-delete-btn:hover {
+            background: rgba(196, 115, 109, 0.25);
+            transform: scale(1.02);
+        }
+
+        .program-delete-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .program-editor-content {
+            flex: 1;
+            padding: 2rem 1.5rem;
+        }
+
+        .program-section {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-xl);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--shadow-md);
+        }
+
+        .program-section h3 {
+            font-size: 1.125rem;
+            font-weight: 500;
+            color: var(--color-text-primary);
+            margin-bottom: 1rem;
+        }
+
+        .program-section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .program-section-header h3 {
+            margin-bottom: 0;
+        }
+
+        .cycle-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .cycle-btn {
+            width: 36px;
+            height: 36px;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-full);
+            color: var(--color-accent-primary);
+            cursor: pointer;
+            font-size: 1.25rem;
+            font-weight: 400;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition-base);
+        }
+
+        .cycle-btn:hover {
+            background: var(--color-bg);
+            transform: scale(1.05);
+        }
+
+        .cycle-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .cycle-length-display {
+            font-size: 0.9375rem;
+            color: var(--color-text-secondary);
+            white-space: nowrap;
+        }
+
+        .schedule-pills {
+            display: flex;
+            gap: 0.75rem;
+            overflow-x: auto;
+            padding: 0.5rem 0;
+            scrollbar-width: thin;
+            scrollbar-color: var(--color-border) transparent;
+        }
+
+        .schedule-pills::-webkit-scrollbar {
+            height: 6px;
+        }
+
+        .schedule-pills::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .schedule-pills::-webkit-scrollbar-thumb {
+            background: var(--color-border);
+            border-radius: 3px;
+        }
+
+        .schedule-pill {
+            flex-shrink: 0;
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-full);
+            padding: 0.75rem 1.25rem;
+            cursor: pointer;
+            transition: var(--transition-base);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.25rem;
+            min-width: 100px;
+        }
+
+        .schedule-pill:hover {
+            background: var(--color-surface);
+            border-color: var(--color-accent-secondary);
+            transform: translateY(-2px);
+        }
+
+        .schedule-pill-day {
+            font-size: 0.75rem;
+            color: var(--color-text-secondary);
+            font-weight: 500;
+        }
+
+        .schedule-pill-workout {
+            font-size: 0.9375rem;
+            color: var(--color-text-primary);
+            font-weight: 400;
+        }
+
+        .workout-accordion {
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            margin-bottom: 0.75rem;
+            overflow: hidden;
+        }
+
+        .workout-accordion-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 1.25rem;
+            background: var(--color-bg);
+            cursor: pointer;
+            transition: var(--transition-base);
+        }
+
+        .workout-accordion-header:hover {
+            background: var(--color-surface);
+        }
+
+        .workout-accordion-title {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .workout-accordion-name {
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--color-text-primary);
+        }
+
+        .workout-accordion-badge {
+            background: var(--color-accent-secondary);
+            color: var(--color-surface);
+            padding: 0.25rem 0.5rem;
+            border-radius: var(--radius-full);
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .workout-accordion-toggle {
+            font-size: 1.25rem;
+            color: var(--color-text-secondary);
+            transition: var(--transition-base);
+        }
+
+        .workout-accordion.expanded .workout-accordion-toggle {
+            transform: rotate(180deg);
+        }
+
+        .workout-accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+
+        .workout-accordion.expanded .workout-accordion-content {
+            max-height: 2000px;
+        }
+
+        .workout-accordion-body {
+            padding: 0 1.25rem 1rem 1.25rem;
+            background: var(--color-surface);
+        }
+
+        .exercise-row {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            margin-bottom: 0.5rem;
+            transition: var(--transition-base);
+        }
+
+        .exercise-row:hover {
+            border-color: var(--color-accent-secondary);
+        }
+
+        .exercise-drag-handle {
+            color: var(--color-text-secondary);
+            cursor: grab;
+            font-size: 1.25rem;
+            line-height: 1;
+        }
+
+        .exercise-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .exercise-name {
+            font-size: 0.9375rem;
+            color: var(--color-text-primary);
+            margin-bottom: 0.25rem;
+            font-weight: 400;
+        }
+
+        .exercise-details {
+            font-size: 0.8125rem;
+            color: var(--color-text-secondary);
+        }
+
+        .exercise-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .exercise-move-btn,
+        .exercise-edit-btn,
+        .exercise-delete-btn {
+            width: 32px;
+            height: 32px;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.875rem;
+            transition: var(--transition-base);
+        }
+
+        .exercise-move-btn:hover,
+        .exercise-edit-btn:hover {
+            background: var(--color-bg);
+            border-color: var(--color-accent-secondary);
+        }
+
+        .exercise-delete-btn {
+            color: var(--color-error);
+            border-color: rgba(196, 115, 109, 0.3);
+        }
+
+        .exercise-delete-btn:hover {
+            background: rgba(196, 115, 109, 0.15);
+        }
+
+        .add-exercise-btn {
+            width: 100%;
+            margin-top: 0.5rem;
+            padding: 0.75rem;
+            background: var(--color-surface);
+            border: 1px dashed var(--color-border);
+            border-radius: var(--radius-md);
+            color: var(--color-accent-primary);
+            cursor: pointer;
+            font-size: 0.9375rem;
+            transition: var(--transition-base);
+        }
+
+        .add-exercise-btn:hover {
+            background: var(--color-bg);
+            border-color: var(--color-accent-primary);
+            border-style: solid;
+        }
+
+        /* Exercise Panel (Slide-in) */
+        .exercise-panel {
+            position: fixed;
+            top: 0;
+            right: -400px;
+            width: 100%;
+            max-width: 400px;
+            height: 100vh;
+            background: var(--color-surface);
+            border-left: 1px solid var(--color-border);
+            box-shadow: var(--shadow-lg);
+            z-index: 4000;
+            display: flex;
+            flex-direction: column;
+            transition: right 0.3s ease-out;
+        }
+
+        .exercise-panel.active {
+            right: 0;
+        }
+
+        .exercise-panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .exercise-panel-header h3 {
+            font-size: 1.25rem;
+            font-weight: 500;
+            color: var(--color-text-primary);
+        }
+
+        .exercise-panel-close {
+            background: none;
+            border: none;
+            font-size: 2rem;
+            color: var(--color-text-secondary);
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: var(--radius-full);
+            transition: var(--transition-base);
+        }
+
+        .exercise-panel-close:hover {
+            background: var(--color-bg);
+            color: var(--color-text-primary);
+        }
+
+        .exercise-panel-content {
+            flex: 1;
+            padding: 1.5rem;
+            overflow-y: auto;
+        }
+
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--color-text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .form-input,
+        .form-textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            font-size: 0.9375rem;
+            color: var(--color-text-primary);
+            background: var(--color-surface);
+            transition: var(--transition-base);
+            font-family: inherit;
+        }
+
+        .form-input:focus,
+        .form-textarea:focus {
+            outline: none;
+            border-color: var(--color-accent-primary);
+            box-shadow: var(--focus-shadow);
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .exercise-panel-footer {
+            padding: 1.5rem;
+            border-top: 1px solid var(--color-border);
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .btn-primary {
+            flex: 1;
+            padding: 0.75rem 1.25rem;
+            background: var(--color-accent-primary);
+            color: var(--color-surface);
+            border: none;
+            border-radius: var(--radius-full);
+            font-size: 0.9375rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition-base);
+        }
+
+        .btn-primary:hover {
+            transform: scale(1.02);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-secondary {
+            padding: 0.75rem 1.25rem;
+            background: var(--color-surface);
+            color: var(--color-text-primary);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-full);
+            font-size: 0.9375rem;
+            cursor: pointer;
+            transition: var(--transition-base);
+        }
+
+        .btn-secondary:hover {
+            background: var(--color-bg);
+        }
+
+        .btn-danger {
+            padding: 0.75rem 1.25rem;
+            background: rgba(196, 115, 109, 0.15);
+            color: var(--color-error);
+            border: 1px solid rgba(196, 115, 109, 0.3);
+            border-radius: var(--radius-full);
+            font-size: 0.9375rem;
+            cursor: pointer;
+            transition: var(--transition-base);
+        }
+
+        .btn-danger:hover {
+            background: rgba(196, 115, 109, 0.25);
+            transform: scale(1.02);
+        }
+
+        /* Workout Type Selector (Dropdown alternative) */
+        .workout-type-selector {
+            position: absolute;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-lg);
+            padding: 0.5rem;
+            z-index: 100;
+            display: none;
+            min-width: 150px;
+        }
+
+        .workout-type-selector.active {
+            display: block;
+        }
+
+        .workout-type-option {
+            padding: 0.75rem 1rem;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: var(--transition-base);
+            font-size: 0.9375rem;
+            color: var(--color-text-primary);
+        }
+
+        .workout-type-option:hover {
+            background: var(--color-bg);
+            color: var(--color-accent-primary);
+        }
+
+        /* Mobile Responsiveness */
+        @media (max-width: 768px) {
+            .program-editor-header {
+                flex-wrap: wrap;
+                gap: 0.75rem;
+            }
+
+            .program-editor-title-section {
+                order: -1;
+                width: 100%;
+                justify-content: flex-start;
+            }
+
+            .program-name-input {
+                max-width: none;
+                text-align: left;
+            }
+
+            .program-editor-actions {
+                order: 1;
+                margin-left: auto;
+            }
+
+            .exercise-panel {
+                max-width: 100%;
+                right: -100%;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .schedule-pill {
+                min-width: 90px;
+            }
+
+            .exercise-panel-footer {
+                flex-wrap: wrap;
+            }
+
+            .btn-primary,
+            .btn-secondary,
+            .btn-danger {
+                flex: 1 1 auto;
+                min-width: 120px;
+            }
+        }
+
         /* Travel Mode Styles */
         .travel-mode-banner {
             background: rgba(171, 71, 188, 0.15);
@@ -3232,6 +3913,84 @@
         </div>
     </div>
 
+    <!-- Program Editor Modal -->
+    <div class="program-editor-modal" id="program-editor-modal">
+        <div class="program-editor-container">
+            <div class="program-editor-header">
+                <button class="program-editor-back" onclick="closeProgramEditor()">
+                    <span class="back-arrow">←</span>
+                    <span>Back to Settings</span>
+                </button>
+                <div class="program-editor-title-section">
+                    <input type="text" id="program-name-input" class="program-name-input" placeholder="Program Name">
+                    <button class="program-name-edit-btn" id="program-name-edit-btn" onclick="toggleProgramNameEdit()">✏️</button>
+                </div>
+                <div class="program-editor-actions">
+                    <span class="save-indicator" id="save-indicator">Saved</span>
+                    <button class="program-delete-btn" id="program-delete-btn" onclick="deleteProgramWithConfirmation()">Delete</button>
+                </div>
+            </div>
+            
+            <div class="program-editor-content">
+                <!-- Schedule Section -->
+                <div class="program-section">
+                    <div class="program-section-header">
+                        <h3>Schedule</h3>
+                        <div class="cycle-controls">
+                            <button class="cycle-btn" onclick="updateCycleLength(-1)">−</button>
+                            <span id="cycle-length-display" class="cycle-length-display">7-day cycle</span>
+                            <button class="cycle-btn" onclick="updateCycleLength(1)">+</button>
+                        </div>
+                    </div>
+                    <div class="schedule-pills" id="schedule-pills">
+                        <!-- Day pills rendered here -->
+                    </div>
+                </div>
+                
+                <!-- Workouts Section -->
+                <div class="program-section">
+                    <h3>Workouts</h3>
+                    <div id="workouts-accordion">
+                        <!-- Workout accordions rendered here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Exercise Panel -->
+    <div class="exercise-panel" id="exercise-panel">
+        <div class="exercise-panel-header">
+            <h3 id="exercise-panel-title">Add Exercise</h3>
+            <button class="exercise-panel-close" onclick="closeExercisePanel()">×</button>
+        </div>
+        <div class="exercise-panel-content">
+            <div class="form-group">
+                <label for="exercise-name-input">Exercise Name</label>
+                <input type="text" id="exercise-name-input" class="form-input" placeholder="e.g., Barbell Squat">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="exercise-sets-input">Sets</label>
+                    <input type="number" id="exercise-sets-input" class="form-input" placeholder="3" min="1">
+                </div>
+                <div class="form-group">
+                    <label for="exercise-reps-input">Reps</label>
+                    <input type="text" id="exercise-reps-input" class="form-input" placeholder="8-12 or AMRAP">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="exercise-notes-input">Notes (Optional)</label>
+                <textarea id="exercise-notes-input" class="form-textarea" placeholder="Coaching cues or additional instructions..." rows="3"></textarea>
+            </div>
+        </div>
+        <div class="exercise-panel-footer">
+            <button class="btn-secondary" onclick="closeExercisePanel()">Cancel</button>
+            <button class="btn-primary" onclick="saveExercise()">Save Exercise</button>
+            <button class="btn-danger" id="exercise-delete-btn" onclick="deleteCurrentExercise()" style="display: none;">Delete</button>
+        </div>
+    </div>
+
     <script type="module">
         // Firebase imports
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -3285,6 +4044,12 @@
         window.bodyGoalData = bodyGoalData;
         let alternativeExerciseHistory = {}; // Store alternative exercise history by original exercise name
         let currentAltExerciseIndex = null; // Track which exercise is being edited
+        
+        // Program Editor State
+        let currentEditingProgram = null; // Program being edited
+        let unsavedChanges = false; // Track if save needed
+        let saveTimeout = null; // For debounced saving
+        let currentExercisePanelContext = null; // { workoutType, exerciseIndex (null for new) }
 
         const workoutPlans = {
             Upper: [
@@ -3934,6 +4699,13 @@
                     const cycleLength = Object.keys(program.schedule || {}).length;
                     const createdDate = new Date(program.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
                     
+                    // Generate schedule preview
+                    const schedulePreview = Object.keys(program.schedule).slice(0, 7).map(key => {
+                        const workout = program.schedule[key];
+                        const abbrev = workout === 'Rest' ? 'R' : workout[0];
+                        return abbrev;
+                    }).join(' → ');
+                    
                     html += `
                         <div class="program-card ${isActive ? 'active' : ''}">
                             <div class="program-card-header">
@@ -3943,11 +4715,13 @@
                                 </div>
                                 <div class="program-actions">
                                     ${!isActive ? `<button class="btn" onclick="setActiveProgram('${program.id}')" style="font-size: 0.875rem; padding: 0.5rem 0.75rem;">Activate</button>` : ''}
-                                    <button class="btn" onclick="alert('Program editor coming soon!')" style="font-size: 0.875rem; padding: 0.5rem 0.75rem;">Edit</button>
+                                    <button class="btn" onclick="openProgramEditor('${program.id}')" style="font-size: 0.875rem; padding: 0.5rem 0.75rem;">Edit</button>
+                                    <button class="btn" onclick="duplicateProgram('${program.id}')" style="font-size: 0.875rem; padding: 0.5rem 0.75rem;">Duplicate</button>
                                     ${!isActive ? `<button class="btn" onclick="deleteProgram('${program.id}')" style="font-size: 0.875rem; padding: 0.5rem 0.75rem; background: rgba(196, 115, 109, 0.15); color: var(--color-error); border-color: rgba(196, 115, 109, 0.3);">Delete</button>` : ''}
                                 </div>
                             </div>
-                            <div class="program-meta">${cycleLength}-day cycle • Created ${createdDate}</div>
+                            <div class="program-meta">${cycleLength}-day cycle • ${schedulePreview}</div>
+                            <div class="program-meta" style="margin-top: 0.25rem;">Created ${createdDate}</div>
                         </div>
                     `;
                 });
@@ -4007,12 +4781,546 @@
             }
         };
         
-        // Create new program (placeholder)
-        window.createNewProgram = function() {
-            const programName = prompt('Enter program name:', 'My Program');
-            if (!programName) return;
+        // ========================================
+        // PROGRAM EDITOR FUNCTIONS
+        // ========================================
+        
+        // Open program editor for new or existing program
+        window.openProgramEditor = function(programId = null) {
+            if (programId) {
+                // Edit existing program
+                currentEditingProgram = JSON.parse(JSON.stringify(programs.find(p => p.id === programId)));
+                if (!currentEditingProgram) {
+                    alert('Program not found');
+                    return;
+                }
+            } else {
+                // Create new program with default structure
+                currentEditingProgram = {
+                    id: null, // Will be set when saved
+                    name: 'New Program',
+                    active: false,
+                    createdAt: new Date().toISOString(),
+                    schedule: {
+                        day1: 'Rest',
+                        day2: 'Rest',
+                        day3: 'Rest',
+                        day4: 'Rest',
+                        day5: 'Rest',
+                        day6: 'Rest',
+                        day7: 'Rest'
+                    },
+                    workouts: {
+                        Rest: [{ name: 'Rest Day Recovery', sets: 1, reps: 'Complete' }]
+                    }
+                };
+            }
             
-            alert('Program editor UI coming soon! For now, you can:\n\n1. Edit the hardcoded workoutPlans in the code\n2. Create a new program with that structure\n3. Save it to Firestore\n\nThis feature will be fully implemented in the next phase.');
+            // Close settings modal, open editor
+            closeSettings();
+            renderProgramEditor();
+            document.getElementById('program-editor-modal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        };
+        
+        // Close program editor
+        window.closeProgramEditor = function() {
+            if (unsavedChanges) {
+                if (!confirm('You have unsaved changes. Are you sure you want to close?')) {
+                    return;
+                }
+            }
+            
+            document.getElementById('program-editor-modal').classList.remove('active');
+            document.body.style.overflow = '';
+            currentEditingProgram = null;
+            unsavedChanges = false;
+            if (saveTimeout) {
+                clearTimeout(saveTimeout);
+                saveTimeout = null;
+            }
+            
+            // Reopen settings modal
+            openSettings();
+        };
+        
+        // Render the entire program editor UI
+        function renderProgramEditor() {
+            if (!currentEditingProgram) return;
+            
+            // Set program name
+            const nameInput = document.getElementById('program-name-input');
+            nameInput.value = currentEditingProgram.name;
+            nameInput.disabled = false;
+            
+            // Show/hide delete button based on whether this is a new program
+            const deleteBtn = document.getElementById('program-delete-btn');
+            if (currentEditingProgram.id && !currentEditingProgram.active) {
+                deleteBtn.style.display = 'block';
+                deleteBtn.disabled = false;
+            } else if (currentEditingProgram.active) {
+                deleteBtn.style.display = 'block';
+                deleteBtn.disabled = true;
+                deleteBtn.title = 'Cannot delete active program';
+            } else {
+                deleteBtn.style.display = 'none';
+            }
+            
+            // Render schedule and workouts
+            renderSchedulePills();
+            renderWorkoutsAccordion();
+        }
+        
+        // Toggle program name editing
+        window.toggleProgramNameEdit = function() {
+            const nameInput = document.getElementById('program-name-input');
+            nameInput.disabled = !nameInput.disabled;
+            if (!nameInput.disabled) {
+                nameInput.focus();
+                nameInput.select();
+            }
+        };
+        
+        // Handle program name change
+        document.addEventListener('DOMContentLoaded', function() {
+            const nameInput = document.getElementById('program-name-input');
+            if (nameInput) {
+                nameInput.addEventListener('input', function() {
+                    if (currentEditingProgram) {
+                        currentEditingProgram.name = this.value;
+                        markUnsavedChanges();
+                    }
+                });
+            }
+        });
+        
+        // Update cycle length (add or remove days)
+        window.updateCycleLength = function(delta) {
+            if (!currentEditingProgram) return;
+            
+            const schedule = currentEditingProgram.schedule;
+            const currentLength = Object.keys(schedule).length;
+            const newLength = currentLength + delta;
+            
+            // Validate length (min 1, max 14)
+            if (newLength < 1 || newLength > 14) {
+                alert('Cycle length must be between 1 and 14 days');
+                return;
+            }
+            
+            if (delta > 0) {
+                // Add new day
+                schedule[`day${newLength}`] = 'Rest';
+            } else {
+                // Remove last day
+                delete schedule[`day${currentLength}`];
+            }
+            
+            markUnsavedChanges();
+            renderSchedulePills();
+        };
+        
+        // Render schedule pills
+        function renderSchedulePills() {
+            if (!currentEditingProgram) return;
+            
+            const container = document.getElementById('schedule-pills');
+            const schedule = currentEditingProgram.schedule;
+            const length = Object.keys(schedule).length;
+            
+            // Update cycle length display
+            document.getElementById('cycle-length-display').textContent = `${length}-day cycle`;
+            
+            let html = '';
+            for (let i = 1; i <= length; i++) {
+                const dayKey = `day${i}`;
+                const workoutType = schedule[dayKey] || 'Rest';
+                html += `
+                    <div class="schedule-pill" onclick="selectWorkoutForDay(${i})">
+                        <span class="schedule-pill-day">Day ${i}</span>
+                        <span class="schedule-pill-workout">${workoutType}</span>
+                    </div>
+                `;
+            }
+            
+            container.innerHTML = html;
+        }
+        
+        // Select workout type for a specific day
+        window.selectWorkoutForDay = function(dayNumber) {
+            const workoutTypes = ['Rest', 'Upper', 'Lower', 'Push', 'Pull', 'Legs'];
+            const currentType = currentEditingProgram.schedule[`day${dayNumber}`];
+            
+            // Show selection dialog
+            const selectedType = prompt(
+                `Select workout for Day ${dayNumber}:\n\n` +
+                workoutTypes.map((t, i) => `${i + 1}. ${t}`).join('\n') +
+                `\n\nEnter number (1-${workoutTypes.length}):`,
+                (workoutTypes.indexOf(currentType) + 1).toString()
+            );
+            
+            if (!selectedType) return;
+            
+            const index = parseInt(selectedType) - 1;
+            if (index < 0 || index >= workoutTypes.length) {
+                alert('Invalid selection');
+                return;
+            }
+            
+            updateDayWorkout(dayNumber, workoutTypes[index]);
+        };
+        
+        // Update workout type for a day
+        function updateDayWorkout(dayNumber, workoutType) {
+            if (!currentEditingProgram) return;
+            
+            currentEditingProgram.schedule[`day${dayNumber}`] = workoutType;
+            
+            // Initialize workout if it doesn't exist
+            if (!currentEditingProgram.workouts[workoutType]) {
+                if (workoutType === 'Rest') {
+                    currentEditingProgram.workouts[workoutType] = [
+                        { name: 'Rest Day Recovery', sets: 1, reps: 'Complete' }
+                    ];
+                } else {
+                    currentEditingProgram.workouts[workoutType] = [];
+                }
+            }
+            
+            markUnsavedChanges();
+            renderSchedulePills();
+            renderWorkoutsAccordion();
+        }
+        
+        // Render workouts accordion
+        function renderWorkoutsAccordion() {
+            if (!currentEditingProgram) return;
+            
+            const container = document.getElementById('workouts-accordion');
+            const workouts = currentEditingProgram.workouts;
+            
+            // Get unique workout types from schedule
+            const workoutTypesInSchedule = new Set(Object.values(currentEditingProgram.schedule));
+            
+            let html = '';
+            workoutTypesInSchedule.forEach(workoutType => {
+                const exercises = workouts[workoutType] || [];
+                const exerciseCount = exercises.length;
+                
+                html += `
+                    <div class="workout-accordion" id="accordion-${workoutType}">
+                        <div class="workout-accordion-header" onclick="toggleWorkoutAccordion('${workoutType}')">
+                            <div class="workout-accordion-title">
+                                <span class="workout-accordion-name">${workoutType}</span>
+                                <span class="workout-accordion-badge">${exerciseCount} ${exerciseCount === 1 ? 'exercise' : 'exercises'}</span>
+                            </div>
+                            <span class="workout-accordion-toggle">▼</span>
+                        </div>
+                        <div class="workout-accordion-content">
+                            <div class="workout-accordion-body">
+                                ${renderExercisesList(workoutType, exercises)}
+                                <button class="add-exercise-btn" onclick="openAddExercisePanel('${workoutType}')">
+                                    + Add Exercise
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+        
+        // Render exercises list for a workout
+        function renderExercisesList(workoutType, exercises) {
+            if (!exercises || exercises.length === 0) {
+                return '<p style="color: var(--color-text-secondary); padding: 1rem 0;">No exercises yet. Add your first exercise!</p>';
+            }
+            
+            return exercises.map((exercise, index) => `
+                <div class="exercise-row">
+                    <span class="exercise-drag-handle">⋮⋮</span>
+                    <div class="exercise-info">
+                        <div class="exercise-name">${exercise.name}</div>
+                        <div class="exercise-details">${exercise.sets} × ${exercise.reps}</div>
+                    </div>
+                    <div class="exercise-actions">
+                        ${index > 0 ? `<button class="exercise-move-btn" onclick="moveExercise('${workoutType}', ${index}, -1)" title="Move up">↑</button>` : ''}
+                        ${index < exercises.length - 1 ? `<button class="exercise-move-btn" onclick="moveExercise('${workoutType}', ${index}, 1)" title="Move down">↓</button>` : ''}
+                        <button class="exercise-edit-btn" onclick="openEditExercisePanel('${workoutType}', ${index})" title="Edit">✏️</button>
+                        <button class="exercise-delete-btn" onclick="removeExercise('${workoutType}', ${index})" title="Delete">🗑</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // Toggle workout accordion
+        window.toggleWorkoutAccordion = function(workoutType) {
+            const accordion = document.getElementById(`accordion-${workoutType}`);
+            if (accordion) {
+                accordion.classList.toggle('expanded');
+            }
+        };
+        
+        // Open add exercise panel
+        window.openAddExercisePanel = function(workoutType) {
+            currentExercisePanelContext = { workoutType, exerciseIndex: null };
+            
+            // Clear form
+            document.getElementById('exercise-name-input').value = '';
+            document.getElementById('exercise-sets-input').value = '';
+            document.getElementById('exercise-reps-input').value = '';
+            document.getElementById('exercise-notes-input').value = '';
+            
+            // Update title and buttons
+            document.getElementById('exercise-panel-title').textContent = `Add Exercise to ${workoutType}`;
+            document.getElementById('exercise-delete-btn').style.display = 'none';
+            
+            // Show panel
+            document.getElementById('exercise-panel').classList.add('active');
+        };
+        
+        // Open edit exercise panel
+        window.openEditExercisePanel = function(workoutType, exerciseIndex) {
+            if (!currentEditingProgram) return;
+            
+            const exercise = currentEditingProgram.workouts[workoutType][exerciseIndex];
+            if (!exercise) return;
+            
+            currentExercisePanelContext = { workoutType, exerciseIndex };
+            
+            // Fill form with existing data
+            document.getElementById('exercise-name-input').value = exercise.name;
+            document.getElementById('exercise-sets-input').value = exercise.sets;
+            document.getElementById('exercise-reps-input').value = exercise.reps;
+            document.getElementById('exercise-notes-input').value = exercise.notes || '';
+            
+            // Update title and buttons
+            document.getElementById('exercise-panel-title').textContent = `Edit Exercise`;
+            document.getElementById('exercise-delete-btn').style.display = 'block';
+            
+            // Show panel
+            document.getElementById('exercise-panel').classList.add('active');
+        };
+        
+        // Close exercise panel
+        window.closeExercisePanel = function() {
+            document.getElementById('exercise-panel').classList.remove('active');
+            currentExercisePanelContext = null;
+        };
+        
+        // Save exercise (add or update)
+        window.saveExercise = function() {
+            if (!currentEditingProgram || !currentExercisePanelContext) return;
+            
+            const { workoutType, exerciseIndex } = currentExercisePanelContext;
+            
+            // Get form values
+            const name = document.getElementById('exercise-name-input').value.trim();
+            const sets = document.getElementById('exercise-sets-input').value;
+            const reps = document.getElementById('exercise-reps-input').value.trim();
+            const notes = document.getElementById('exercise-notes-input').value.trim();
+            
+            // Validate
+            if (!name) {
+                alert('Exercise name is required');
+                return;
+            }
+            if (!sets || sets < 1) {
+                alert('Sets must be at least 1');
+                return;
+            }
+            if (!reps) {
+                alert('Reps is required');
+                return;
+            }
+            
+            // Create exercise object
+            const exercise = { name, sets: parseInt(sets), reps };
+            if (notes) {
+                exercise.notes = notes;
+            }
+            
+            // Add or update
+            if (exerciseIndex === null) {
+                // Add new exercise
+                if (!currentEditingProgram.workouts[workoutType]) {
+                    currentEditingProgram.workouts[workoutType] = [];
+                }
+                currentEditingProgram.workouts[workoutType].push(exercise);
+            } else {
+                // Update existing exercise
+                currentEditingProgram.workouts[workoutType][exerciseIndex] = exercise;
+            }
+            
+            markUnsavedChanges();
+            renderWorkoutsAccordion();
+            closeExercisePanel();
+        };
+        
+        // Delete current exercise in panel
+        window.deleteCurrentExercise = function() {
+            if (!currentExercisePanelContext || currentExercisePanelContext.exerciseIndex === null) return;
+            
+            const { workoutType, exerciseIndex } = currentExercisePanelContext;
+            removeExercise(workoutType, exerciseIndex);
+            closeExercisePanel();
+        };
+        
+        // Remove exercise from workout
+        window.removeExercise = function(workoutType, exerciseIndex) {
+            if (!currentEditingProgram) return;
+            
+            const exercise = currentEditingProgram.workouts[workoutType][exerciseIndex];
+            if (!confirm(`Delete "${exercise.name}"?`)) return;
+            
+            currentEditingProgram.workouts[workoutType].splice(exerciseIndex, 1);
+            
+            markUnsavedChanges();
+            renderWorkoutsAccordion();
+        };
+        
+        // Move exercise up or down
+        window.moveExercise = function(workoutType, fromIndex, direction) {
+            if (!currentEditingProgram) return;
+            
+            const exercises = currentEditingProgram.workouts[workoutType];
+            const toIndex = fromIndex + direction;
+            
+            // Validate bounds
+            if (toIndex < 0 || toIndex >= exercises.length) return;
+            
+            // Swap exercises
+            [exercises[fromIndex], exercises[toIndex]] = [exercises[toIndex], exercises[fromIndex]];
+            
+            markUnsavedChanges();
+            renderWorkoutsAccordion();
+        };
+        
+        // Mark unsaved changes and trigger debounced save
+        function markUnsavedChanges() {
+            unsavedChanges = true;
+            
+            // Clear existing timeout
+            if (saveTimeout) {
+                clearTimeout(saveTimeout);
+            }
+            
+            // Set new timeout for auto-save (1 second debounce)
+            saveTimeout = setTimeout(() => {
+                saveProgramToFirestore();
+            }, 1000);
+        }
+        
+        // Save program to Firestore
+        async function saveProgramToFirestore() {
+            if (!currentEditingProgram) return;
+            
+            try {
+                // Validate program
+                if (!currentEditingProgram.name || currentEditingProgram.name.trim() === '') {
+                    console.error('Program name is required');
+                    return;
+                }
+                
+                // Prepare data
+                const programData = {
+                    name: currentEditingProgram.name,
+                    active: currentEditingProgram.active,
+                    schedule: currentEditingProgram.schedule,
+                    workouts: currentEditingProgram.workouts,
+                    createdAt: currentEditingProgram.createdAt
+                };
+                
+                if (currentEditingProgram.id) {
+                    // Update existing program
+                    const docRef = doc(db, "programs", currentEditingProgram.id);
+                    await updateDoc(docRef, programData);
+                    
+                    // Update in local array
+                    const index = programs.findIndex(p => p.id === currentEditingProgram.id);
+                    if (index !== -1) {
+                        programs[index] = { ...currentEditingProgram };
+                        if (currentEditingProgram.active) {
+                            activeProgram = programs[index];
+                        }
+                    }
+                } else {
+                    // Create new program
+                    const docRef = await addDoc(collection(db, "programs"), programData);
+                    currentEditingProgram.id = docRef.id;
+                    const newProgram = { ...currentEditingProgram };
+                    programs.push(newProgram);
+                }
+                
+                unsavedChanges = false;
+                showSaveIndicator();
+                console.log('Program saved successfully');
+                
+            } catch (e) {
+                console.error("Error saving program:", e);
+                alert('Error saving program. Please try again.');
+            }
+        }
+        
+        // Show save indicator briefly
+        function showSaveIndicator() {
+            const indicator = document.getElementById('save-indicator');
+            indicator.classList.add('visible');
+            setTimeout(() => {
+                indicator.classList.remove('visible');
+            }, 2000);
+        }
+        
+        // Delete program with confirmation
+        window.deleteProgramWithConfirmation = function() {
+            if (!currentEditingProgram || !currentEditingProgram.id) return;
+            
+            if (currentEditingProgram.active) {
+                alert('Cannot delete the active program. Please activate a different program first.');
+                return;
+            }
+            
+            if (!confirm(`Delete program "${currentEditingProgram.name}"? This cannot be undone.`)) {
+                return;
+            }
+            
+            deleteProgram(currentEditingProgram.id);
+            closeProgramEditor();
+        };
+        
+        // Duplicate program
+        window.duplicateProgram = async function(programId) {
+            const program = programs.find(p => p.id === programId);
+            if (!program) return;
+            
+            try {
+                const duplicatedProgram = {
+                    name: `Copy of ${program.name}`,
+                    active: false,
+                    schedule: { ...program.schedule },
+                    workouts: JSON.parse(JSON.stringify(program.workouts)),
+                    createdAt: new Date().toISOString()
+                };
+                
+                const docRef = await addDoc(collection(db, "programs"), duplicatedProgram);
+                const newProgram = { id: docRef.id, ...duplicatedProgram };
+                programs.push(newProgram);
+                
+                renderPrograms();
+                
+                // Open editor for new program
+                openProgramEditor(newProgram.id);
+                
+            } catch (e) {
+                console.error("Error duplicating program:", e);
+                alert('Error duplicating program. Please try again.');
+            }
+        };
+        
+        // Update createNewProgram to use editor
+        window.createNewProgram = function() {
+            openProgramEditor(null);
         };
 
         // Helper function to get what workout would have been scheduled on a special day (travel/sick)
