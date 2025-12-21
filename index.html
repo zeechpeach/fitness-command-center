@@ -2483,7 +2483,7 @@
         }
 
         .workout-accordion.expanded .workout-accordion-content {
-            max-height: 2000px;
+            max-height: 5000px; /* Large enough for most workout lists */
         }
 
         .workout-accordion-body {
@@ -4050,6 +4050,12 @@
         let unsavedChanges = false; // Track if save needed
         let saveTimeout = null; // For debounced saving
         let currentExercisePanelContext = null; // { workoutType, exerciseIndex (null for new) }
+        
+        // Program Editor Constants
+        const MAX_CYCLE_LENGTH = 14;
+        const MIN_CYCLE_LENGTH = 1;
+        const MAX_EXERCISE_SETS = 100;
+        const MAX_EXERCISE_REPS = 1000;
 
         const workoutPlans = {
             Upper: [
@@ -4789,11 +4795,13 @@
         window.openProgramEditor = function(programId = null) {
             if (programId) {
                 // Edit existing program
-                currentEditingProgram = JSON.parse(JSON.stringify(programs.find(p => p.id === programId)));
-                if (!currentEditingProgram) {
+                const program = programs.find(p => p.id === programId);
+                if (!program) {
                     alert('Program not found');
                     return;
                 }
+                // Deep clone to avoid modifying original until saved
+                currentEditingProgram = structuredClone ? structuredClone(program) : JSON.parse(JSON.stringify(program));
             } else {
                 // Create new program with default structure
                 currentEditingProgram = {
@@ -4881,8 +4889,11 @@
             }
         };
         
-        // Handle program name change
-        document.addEventListener('DOMContentLoaded', function() {
+        // Handle program name change (initialize once)
+        let programNameInputListenerAdded = false;
+        function initializeProgramNameInput() {
+            if (programNameInputListenerAdded) return;
+            
             const nameInput = document.getElementById('program-name-input');
             if (nameInput) {
                 nameInput.addEventListener('input', function() {
@@ -4891,8 +4902,12 @@
                         markUnsavedChanges();
                     }
                 });
+                programNameInputListenerAdded = true;
             }
-        });
+        }
+        
+        // Initialize on DOM load
+        document.addEventListener('DOMContentLoaded', initializeProgramNameInput);
         
         // Update cycle length (add or remove days)
         window.updateCycleLength = function(delta) {
@@ -4902,9 +4917,9 @@
             const currentLength = Object.keys(schedule).length;
             const newLength = currentLength + delta;
             
-            // Validate length (min 1, max 14)
-            if (newLength < 1 || newLength > 14) {
-                alert('Cycle length must be between 1 and 14 days');
+            // Validate length using constants
+            if (newLength < MIN_CYCLE_LENGTH || newLength > MAX_CYCLE_LENGTH) {
+                alert(`Cycle length must be between ${MIN_CYCLE_LENGTH} and ${MAX_CYCLE_LENGTH} days`);
                 return;
             }
             
@@ -5130,8 +5145,17 @@
                 alert('Sets must be at least 1');
                 return;
             }
+            if (sets > MAX_EXERCISE_SETS) {
+                alert(`Sets cannot exceed ${MAX_EXERCISE_SETS}`);
+                return;
+            }
             if (!reps) {
                 alert('Reps is required');
+                return;
+            }
+            // Allow text reps like "8-12" or "AMRAP", but validate numeric values
+            if (!isNaN(reps) && parseInt(reps) > MAX_EXERCISE_REPS) {
+                alert(`Numeric reps cannot exceed ${MAX_EXERCISE_REPS}`);
                 return;
             }
             
@@ -5219,7 +5243,7 @@
             try {
                 // Validate program
                 if (!currentEditingProgram.name || currentEditingProgram.name.trim() === '') {
-                    console.error('Program name is required');
+                    alert('Program name is required. Please enter a program name.');
                     return;
                 }
                 
@@ -5299,7 +5323,7 @@
                     name: `Copy of ${program.name}`,
                     active: false,
                     schedule: { ...program.schedule },
-                    workouts: JSON.parse(JSON.stringify(program.workouts)),
+                    workouts: structuredClone ? structuredClone(program.workouts) : JSON.parse(JSON.stringify(program.workouts)),
                     createdAt: new Date().toISOString()
                 };
                 
