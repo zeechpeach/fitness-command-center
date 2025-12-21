@@ -3635,6 +3635,32 @@
             if (hour < 17) return 'Snack';
             return 'Dinner';
         }
+        
+        function convertUnits(amount, fromUnit, toUnit) {
+            // Simple unit conversion for portion tracking
+            // Returns converted amount or null if conversion not possible
+            fromUnit = fromUnit.toLowerCase();
+            toUnit = toUnit.toLowerCase();
+            
+            if (fromUnit === toUnit) return amount;
+            
+            // g <-> oz conversion (1 oz = 28.35g)
+            if (fromUnit === 'g' && toUnit === 'oz') return amount / 28.35;
+            if (fromUnit === 'oz' && toUnit === 'g') return amount * 28.35;
+            
+            // ml treated as equivalent to g for simplicity (most liquids ≈ 1g/ml)
+            if (fromUnit === 'ml' && toUnit === 'g') return amount;
+            if (fromUnit === 'g' && toUnit === 'ml') return amount;
+            if (fromUnit === 'ml' && toUnit === 'oz') return amount / 28.35;
+            if (fromUnit === 'oz' && toUnit === 'ml') return amount * 28.35;
+            
+            // each and serving are equivalent
+            if ((fromUnit === 'each' || fromUnit === 'serving') && 
+                (toUnit === 'each' || toUnit === 'serving')) return amount;
+            
+            // Cannot convert between weight/volume and count
+            return null;
+        }
 
         // Helper function to get what workout would have been scheduled on a special day (travel/sick)
         // This is used to show users what they're missing
@@ -6136,6 +6162,23 @@
             const newFats = parseFloat(food.fats) || 0;
             const newCalories = parseFloat(food.calories) || 0;
             
+            // Prompt for serving size and unit
+            const servingSize = prompt('Enter serving size (e.g., "46" for 46g, "1" for 1 each):', '1');
+            if (servingSize === null) return; // User cancelled
+            const servingSizeNum = parseFloat(servingSize);
+            if (!servingSizeNum || servingSizeNum <= 0) {
+                alert('Please enter a valid serving size');
+                return;
+            }
+            
+            const servingUnit = prompt('Enter serving unit:\n  g = grams\n  oz = ounces\n  ml = milliliters\n  each = individual items\n  serving = generic serving', 'serving');
+            if (servingUnit === null) return; // User cancelled
+            const validUnits = ['g', 'oz', 'ml', 'each', 'serving'];
+            if (!validUnits.includes(servingUnit.toLowerCase())) {
+                alert('Please enter a valid unit (g, oz, ml, each, or serving)');
+                return;
+            }
+            
             // Check if food already exists (by name and nutritional values)
             const existingFood = savedFoods.find(f => {
                 const nameMatch = f.name.toLowerCase().trim() === food.name.toLowerCase().trim();
@@ -6148,17 +6191,21 @@
             });
             
             if (existingFood) {
-                // Exact duplicate found - just update lastUsed
+                // Exact duplicate found - just update lastUsed and serving info
                 try {
                     existingFood.lastUsed = new Date().toISOString();
                     existingFood.useCount = (existingFood.useCount || 0) + 1;
+                    existingFood.servingSize = servingSizeNum;
+                    existingFood.servingUnit = servingUnit.toLowerCase();
                     
                     const docRef = doc(db, "savedFoods", existingFood.id);
                     await updateDoc(docRef, {
                         lastUsed: existingFood.lastUsed,
-                        useCount: existingFood.useCount
+                        useCount: existingFood.useCount,
+                        servingSize: existingFood.servingSize,
+                        servingUnit: existingFood.servingUnit
                     });
-                    alert('This food is already saved in your library!');
+                    alert('Food updated in your library with serving information!');
                     renderSavedFoods();
                 } catch (e) {
                     console.error("Error updating food:", e);
@@ -6181,6 +6228,8 @@
                     carbs: newCarbs,
                     fats: newFats,
                     calories: newCalories,
+                    servingSize: servingSizeNum,
+                    servingUnit: servingUnit.toLowerCase(),
                     created: new Date().toISOString(),
                     lastUsed: new Date().toISOString(),
                     useCount: 0
@@ -6244,9 +6293,13 @@
                 html = '<div class="empty-state">No saved foods found. Save a food from a meal below!</div>';
             } else {
                 filteredFoods.forEach(food => {
+                    const servingInfo = food.servingSize && food.servingUnit 
+                        ? `(1 serving = ${food.servingSize}${food.servingUnit})` 
+                        : '';
                     html += `<div class="saved-food-item">
                         <div class="saved-food-info">
                             <div class="saved-food-name">${food.name}</div>
+                            ${servingInfo ? `<div style="font-size: 0.75rem; color: var(--color-text-secondary); margin-top: 0.25rem;">${servingInfo}</div>` : ''}
                             <div class="saved-food-macros">
                                 <span>P: ${food.protein}g</span>
                                 <span>C: ${food.carbs}g</span>
@@ -6314,14 +6367,86 @@
             const food = savedFoods.find(f => f.id === foodId);
             if (!food) return;
             
-            // Prompt for quantity
-            const quantityInput = prompt('How many servings?', '1');
-            if (quantityInput === null) return; // User cancelled
+            let quantity = 1;
             
-            const quantity = parseFloat(quantityInput) || 1;
-            if (quantity <= 0) {
-                alert('Please enter a positive quantity');
-                return;
+            // If food has serving size and unit, offer dual entry mode
+            if (food.servingSize && food.servingUnit) {
+                const choice = prompt(
+                    `${food.name}\n(1 serving = ${food.servingSize}${food.servingUnit})\n\n` +
+                    `Enter amount:\n` +
+                    `  • Type a number + unit (e.g., "120g", "3oz", "2each")\n` +
+                    `  • Or just a number for servings (e.g., "2" for 2 servings)`,
+                    '1'
+                );
+                
+                if (choice === null) return; // User cancelled
+                
+                const trimmed = choice.trim();
+                
+                // Check if input contains a unit
+                const unitMatch = trimmed.match(/^([0-9.]+)\s*(g|oz|ml|each|serving)s?$/i);
+                
+                if (unitMatch) {
+                    // User entered amount with unit - calculate servings
+                    const amount = parseFloat(unitMatch[1]);
+                    const inputUnit = unitMatch[2].toLowerCase();
+                    
+                    if (amount <= 0) {
+                        alert('Please enter a positive amount');
+                        return;
+                    }
+                    
+                    // Convert units if needed
+                    let amountInFoodUnit = amount;
+                    if (inputUnit !== food.servingUnit) {
+                        amountInFoodUnit = convertUnits(amount, inputUnit, food.servingUnit);
+                        if (amountInFoodUnit === null) {
+                            alert(`Cannot convert ${inputUnit} to ${food.servingUnit}. Please use ${food.servingUnit}.`);
+                            return;
+                        }
+                    }
+                    
+                    // Calculate servings
+                    quantity = amountInFoodUnit / food.servingSize;
+                    
+                    // Show confirmation with calculation
+                    const macros = {
+                        calories: Math.round(food.calories * quantity),
+                        protein: Math.round(food.protein * quantity * 10) / 10,
+                        carbs: Math.round(food.carbs * quantity * 10) / 10,
+                        fats: Math.round(food.fats * quantity * 10) / 10
+                    };
+                    
+                    const confirm = window.confirm(
+                        `${food.name}\n\n` +
+                        `${amount}${inputUnit} = ${quantity.toFixed(2)} servings\n\n` +
+                        `This will add:\n` +
+                        `  ${macros.calories} calories\n` +
+                        `  ${macros.protein}g protein\n` +
+                        `  ${macros.carbs}g carbs\n` +
+                        `  ${macros.fats}g fats\n\n` +
+                        `Add to meal?`
+                    );
+                    
+                    if (!confirm) return;
+                } else {
+                    // User entered plain number - treat as servings
+                    quantity = parseFloat(trimmed);
+                    if (isNaN(quantity) || quantity <= 0) {
+                        alert('Please enter a valid number');
+                        return;
+                    }
+                }
+            } else {
+                // Legacy mode: food doesn't have serving info, just ask for servings
+                const quantityInput = prompt('How many servings?', '1');
+                if (quantityInput === null) return; // User cancelled
+                
+                quantity = parseFloat(quantityInput) || 1;
+                if (quantity <= 0) {
+                    alert('Please enter a positive quantity');
+                    return;
+                }
             }
             
             let targetMeal;
@@ -6340,8 +6465,9 @@
                 const meals = nutritionData.filter(n => n.date === currentNutritionDate);
                 
                 if (meals.length === 0) {
-                    // No meals exist for today, create one
-                    const mealType = prompt('Enter meal type (Breakfast, Lunch, Dinner, or Snack):', 'Lunch');
+                    // No meals exist for today, create one with smart default
+                    const defaultMealType = getDefaultMealType();
+                    const mealType = prompt(`Enter meal type (Breakfast, Lunch, Dinner, or Snack):`, defaultMealType);
                     if (!mealType) return; // User cancelled
                     
                     const mealData = {
