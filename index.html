@@ -2326,7 +2326,8 @@
 
             .macro-item {
                 padding: 0.75rem;
-                background: rgba(15, 23, 42, 0.6);
+                background: var(--color-surface);
+                border: 1px solid var(--color-border);
                 border-radius: 8px;
             }
 
@@ -2614,13 +2615,13 @@
             <!-- Schedule Exceptions - Collapsible Section -->
             <div class="schedule-exceptions-section">
                 <div class="schedule-exceptions-header" onclick="toggleScheduleExceptions()" style="cursor: pointer; display: flex; align-items: center; justify-content: space-between; padding: 1rem; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); margin-top: 1rem;">
-                    <h4 style="color: var(--color-text-secondary); font-size: 0.9375rem; margin: 0;">📋 Schedule Exceptions</h4>
+                    <h4 style="color: var(--color-text-secondary); font-size: 0.9375rem; margin: 0;">Schedule Exceptions</h4>
                     <span id="schedule-exceptions-toggle" style="color: var(--color-text-secondary); font-size: 1.2rem;">▼</span>
                 </div>
                 <div id="schedule-exceptions-content" style="display: none; margin-top: 0.5rem;">
                     <!-- Travel Mode Controls -->
                     <div class="travel-mode-controls">
-                        <h4 style="color: var(--color-text-secondary); margin-bottom: 0.75rem;">✈️ Travel Mode</h4>
+                        <h4 style="color: var(--color-text-secondary); margin-bottom: 0.75rem;">Travel Mode</h4>
                         <div style="display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap; margin-bottom: 0.75rem;">
                             <div style="flex: 1; min-width: 150px;">
                                 <label style="color: var(--color-text-secondary); font-size: 0.8125rem; display: block; margin-bottom: 0.25rem;">Start Date</label>
@@ -2639,7 +2640,7 @@
 
                     <!-- Sick Day Controls -->
                     <div class="travel-mode-controls">
-                        <h4 style="color: var(--color-text-secondary); margin-bottom: 0.75rem;">🤒 Sick Day</h4>
+                        <h4 style="color: var(--color-text-secondary); margin-bottom: 0.75rem;">Sick Day</h4>
                         <div style="display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap; margin-bottom: 0.75rem;">
                             <div style="flex: 1; min-width: 150px;">
                                 <label style="color: var(--color-text-secondary); font-size: 0.8125rem; display: block; margin-bottom: 0.25rem;">Select Date</label>
@@ -2662,7 +2663,7 @@
                 <!-- Sidebar for Desktop/Tablet (>768px) -->
                 <aside class="nutrition-sidebar">
                     <div class="saved-foods-panel">
-                        <h3 class="analytics-title">⭐ Saved Foods</h3>
+                        <h3 class="analytics-title">Saved Foods</h3>
                         <input type="text" id="saved-food-search" class="saved-food-search" placeholder="Search saved foods...">
                         <div class="saved-food-list" id="saved-food-list">
                             <div class="empty-state">No saved foods yet. Save a food from a meal below!</div>
@@ -2699,7 +2700,7 @@
                     </div>
 
                     <div class="calorie-target-card" id="calorie-target-card" style="display: none;">
-                        <h3 class="analytics-title">🎯 Calorie Target</h3>
+                        <h3 class="analytics-title">Calorie Target</h3>
                         <div class="calorie-breakdown">
                             <div class="calorie-item">
                                 <div class="calorie-value" id="maintenance-calories">--</div>
@@ -2729,7 +2730,7 @@
 
             <!-- Mobile Saved Foods Button (< 768px) -->
             <button class="mobile-saved-foods-btn" onclick="openSavedFoodsModal()">
-                ⭐ Saved Foods
+                Saved Foods
             </button>
 
             <!-- Modal Backdrop for Mobile -->
@@ -2738,7 +2739,7 @@
             <!-- Mobile Saved Foods Modal/Bottom Sheet -->
             <div class="saved-foods-modal" id="saved-foods-modal">
                 <div class="modal-header">
-                    <h3 class="analytics-title" style="margin-bottom: 0;">⭐ Saved Foods</h3>
+                    <h3 class="analytics-title" style="margin-bottom: 0;">Saved Foods</h3>
                     <button class="modal-close-btn" onclick="closeSavedFoodsModal()">×</button>
                 </div>
                 <input type="text" id="saved-food-search-mobile" class="saved-food-search" placeholder="Search saved foods..." oninput="renderSavedFoods(this.value)">
@@ -2760,7 +2761,7 @@
             </div>
 
             <div class="body-goal-card">
-                <h3 class="analytics-title">🎯 Body Goal</h3>
+                <h3 class="analytics-title">Body Goal</h3>
                 <div class="goal-input-row">
                     <div class="goal-input-group">
                         <label class="goal-input-label">Goal Type</label>
@@ -2831,19 +2832,19 @@
             <!-- Row 1: Main Stats and Volume Cards -->
             <div class="analytics-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
                 <div class="analytics-card">
-                    <h3 class="analytics-title">🎯 Personal Records</h3>
+                    <h3 class="analytics-title">Personal Records</h3>
                     <div class="stat-value" id="pr-count">0</div>
                     <div class="stat-label">PRs set this week</div>
                 </div>
 
                 <div class="analytics-card">
-                    <h3 class="analytics-title">🔥 Workout Streak</h3>
+                    <h3 class="analytics-title">Workout Streak</h3>
                     <div class="stat-value" id="workout-streak">0</div>
                     <div class="stat-label">consecutive workouts</div>
                 </div>
 
                 <div class="analytics-card">
-                    <h3 class="analytics-title">💪 Upper Volume</h3>
+                    <h3 class="analytics-title">Upper Volume</h3>
                     <div class="stat-value" id="upper-record">0</div>
                     <div class="stat-label">Record: <span id="upper-record-lbs">0</span> lbs</div>
                     <div class="stat-label">Avg: <span id="upper-avg">0</span> lbs | <span id="upper-trend">→</span></div>
@@ -2870,7 +2871,7 @@
             <!-- Row 2: More Volume Cards -->
             <div class="analytics-grid" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
                 <div class="analytics-card">
-                    <h3 class="analytics-title">🎯 Pull Volume</h3>
+                    <h3 class="analytics-title">Pull Volume</h3>
                     <div class="stat-value" id="pull-record">0</div>
                     <div class="stat-label">Record: <span id="pull-record-lbs">0</span> lbs</div>
                     <div class="stat-label">Avg: <span id="pull-avg">0</span> lbs | <span id="pull-trend">→</span></div>
@@ -2886,7 +2887,7 @@
                 </div>
 
                 <div class="analytics-card">
-                    <h3 class="analytics-title">⚠️ Focus Areas</h3>
+                    <h3 class="analytics-title">Focus Areas</h3>
                     <div id="focus-areas-content" style="color: var(--color-text-secondary); font-size: 0.9rem;">
                         <p>Complete more workouts to see focus areas!</p>
                     </div>
@@ -2896,7 +2897,7 @@
             <!-- Row 3: Charts -->
             <div class="chart-grid">
                 <div class="analytics-card">
-                    <h3 class="analytics-title">🏆 PR Timeline</h3>
+                    <h3 class="analytics-title">PR Timeline</h3>
                     <div style="margin-bottom: 1rem;">
                         <label for="exercise-selector" style="color: var(--color-text-secondary); font-size: 0.9375rem; margin-right: 0.5rem;">Exercise:</label>
                         <select id="exercise-selector" style="padding: 0.5rem; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); color: var(--color-text-primary); font-size: 0.9375rem;">
@@ -2949,7 +2950,7 @@
                 </div>
 
                 <div class="analytics-card">
-                    <h3 class="analytics-title">🔥 Intensity Heatmap</h3>
+                    <h3 class="analytics-title">Intensity Heatmap</h3>
                     <div id="intensity-heatmap" style="color: var(--color-text-secondary); font-size: 0.9rem;">
                         <div id="heatmap-content"></div>
                     </div>
@@ -2967,7 +2968,7 @@
             </div>
 
             <div class="analytics-card">
-                <h3 class="analytics-title">🏆 Personal Records</h3>
+                <h3 class="analytics-title">Personal Records</h3>
                 <div id="progress-list">
                     <p style="color: var(--color-text-secondary);">Complete some workouts to see your strength progression!</p>
                 </div>
@@ -3014,10 +3015,10 @@
         <div class="modal-content">
             <h3 class="modal-title">Select Meal Type</h3>
             <div class="meal-type-buttons">
-                <button class="meal-type-btn" onclick="selectMealType('Breakfast')">🌅 Breakfast</button>
-                <button class="meal-type-btn" onclick="selectMealType('Lunch')">☀️ Lunch</button>
-                <button class="meal-type-btn" onclick="selectMealType('Dinner')">🌙 Dinner</button>
-                <button class="meal-type-btn" onclick="selectMealType('Snack')">🍪 Snack</button>
+                <button class="meal-type-btn" onclick="selectMealType('Breakfast')">Breakfast</button>
+                <button class="meal-type-btn" onclick="selectMealType('Lunch')">Lunch</button>
+                <button class="meal-type-btn" onclick="selectMealType('Dinner')">Dinner</button>
+                <button class="meal-type-btn" onclick="selectMealType('Snack')">Snack</button>
             </div>
             <button class="modal-close" onclick="closeMealTypeModal()">Cancel</button>
         </div>
@@ -3037,7 +3038,7 @@
             </div>
 
             <div class="alt-exercise-history-section" id="alt-exercise-history-section" style="display: none;">
-                <div class="alt-exercise-history-title">📋 Previously Used Alternatives</div>
+                <div class="alt-exercise-history-title">Previously Used Alternatives</div>
                 <div class="alt-exercise-history-list" id="alt-exercise-history-list"></div>
             </div>
 
@@ -3050,7 +3051,7 @@
     <!-- Post-Travel Resume Options Modal -->
     <div class="modal-overlay" id="post-travel-modal">
         <div class="modal-content">
-            <h3 class="modal-title">✈️ Welcome Back!</h3>
+            <h3 class="modal-title">Welcome Back!</h3>
             <p style="color: var(--color-text-secondary); margin-bottom: 1.5rem; text-align: center;">How would you like to resume your workout program?</p>
             <div class="meal-type-buttons">
                 <button class="meal-type-btn" onclick="resumeWorkoutProgram('resume')" style="background: rgba(93, 138, 102, 0.2); border-color: rgba(93, 138, 102, 0.3); color: var(--color-success);">
@@ -3419,21 +3420,21 @@
             if (bodyGoal === 'maintaining') {
                 const deviation = Math.abs(movingAverage - targetWeight);
                 if (deviation <= 3) {
-                    return { isOnTrack: true, message: `On Track ✅ (within ±3 lbs of target)` };
+                    return { isOnTrack: true, message: `On Track (within ±3 lbs of target)` };
                 } else {
-                    return { isOnTrack: false, message: `Off Track ⚠️ (${deviation.toFixed(1)} lbs from target)` };
+                    return { isOnTrack: false, message: `Off Track (${deviation.toFixed(1)} lbs from target)` };
                 }
             } else if (bodyGoal === 'cutting') {
                 if (movingAverage <= currentWeight) {
-                    return { isOnTrack: true, message: 'On Track ✅ (trending downward)' };
+                    return { isOnTrack: true, message: 'On Track (trending downward)' };
                 } else {
-                    return { isOnTrack: false, message: 'Off Track ⚠️ (not trending downward)' };
+                    return { isOnTrack: false, message: 'Off Track (not trending downward)' };
                 }
             } else if (bodyGoal === 'bulking') {
                 if (movingAverage >= currentWeight) {
-                    return { isOnTrack: true, message: 'On Track ✅ (trending upward)' };
+                    return { isOnTrack: true, message: 'On Track (trending upward)' };
                 } else {
-                    return { isOnTrack: false, message: 'Off Track ⚠️ (not trending upward)' };
+                    return { isOnTrack: false, message: 'Off Track (not trending upward)' };
                 }
             }
             
@@ -3609,6 +3610,30 @@
                 hour12: false
             });
             return formatter.format(now);
+        }
+        
+        function getCurrentHour() {
+            // Get current hour in user's timezone (0-23)
+            const now = new Date();
+            const timeString = now.toLocaleString('en-US', { 
+                timeZone: userTimezone, 
+                hour: 'numeric', 
+                hour12: false 
+            });
+            return parseInt(timeString);
+        }
+        
+        function getDefaultMealType() {
+            // Determine meal type based on current time in user's timezone
+            // Before 11am = Breakfast
+            // 11am-2pm = Lunch
+            // 2pm-5pm = Snack
+            // After 5pm = Dinner
+            const hour = getCurrentHour();
+            if (hour < 11) return 'Breakfast';
+            if (hour < 14) return 'Lunch';
+            if (hour < 17) return 'Snack';
+            return 'Dinner';
         }
 
         // Helper function to get what workout would have been scheduled on a special day (travel/sick)
@@ -4839,7 +4864,7 @@
                 if (plateauedExercises.length > 0) {
                     exerciseBreakdownHTML += `
                         <div style="margin-top: 1rem; padding: 0.75rem; background: rgba(212, 168, 75, 0.1); border-radius: 8px; border-left: 3px solid #D4A84B;">
-                            <div style="color: #D4A84B; font-weight: bold; margin-bottom: 0.5rem;">⚠️ Plateaued (3+ sessions)</div>
+                            <div style="color: #D4A84B; font-weight: bold; margin-bottom: 0.5rem;">Plateaued (3+ sessions)</div>
                             ${plateauedExercises.map(ex => 
                                 `<div style="font-size: 0.9rem; margin: 0.25rem 0;">• ${ex.name}: ${ex.value}</div>`
                             ).join('')}
@@ -4865,11 +4890,11 @@
                         </div>
                     </div>
                 </div>
-                <div style="margin-top: 1rem; padding: 1rem; background: rgba(15, 23, 42, 0.5); border-radius: 8px; border-left: 3px solid ${changeColor};">
+                <div style="margin-top: 1rem; padding: 1rem; background: ${isImproving ? 'rgba(93, 138, 102, 0.1)' : 'rgba(196, 115, 109, 0.1)'}; border-radius: 8px; border-left: 4px solid ${changeColor};">
                     <div style="color: ${changeColor}; font-weight: bold; font-size: 1.1rem;">
                         ${changeIcon} ${isImproving ? 'Improving' : 'Declining'}
                     </div>
-                    <div style="margin-top: 0.5rem;">
+                    <div style="margin-top: 0.5rem; color: var(--color-text-primary);">
                         Volume Change: <strong style="color: ${changeColor};">${volumeChange > 0 ? '+' : ''}${volumeChange.toLocaleString()} lbs (${volumeChangePercent > 0 ? '+' : ''}${volumeChangePercent}%)</strong>
                     </div>
                 </div>
@@ -5068,7 +5093,7 @@
             if (quickWinsElement) {
                 if (recentPRs.length > 0) {
                     const uniqueExercises = [...new Set(recentPRs.map(pr => pr.exercise))];
-                    quickWinsElement.innerHTML = `🏆 <strong>${uniqueExercises.length}</strong> exercise${uniqueExercises.length !== 1 ? 's' : ''} hit PRs this week!`;
+                    quickWinsElement.innerHTML = `<strong>${uniqueExercises.length}</strong> exercise${uniqueExercises.length !== 1 ? 's' : ''} hit PRs this week!`;
                     quickWinsElement.style.color = 'var(--color-success)';
                 } else {
                     quickWinsElement.innerHTML = 'No PRs this week yet. Keep pushing!';
@@ -5099,7 +5124,7 @@
                     ).join('<br>');
                     needsAttentionElement.style.color = 'var(--color-warning)';
                 } else {
-                    needsAttentionElement.innerHTML = 'All exercises progressing well! 💪';
+                    needsAttentionElement.innerHTML = 'All exercises progressing well!';
                     needsAttentionElement.style.color = 'var(--color-success)';
                 }
             }
@@ -5116,7 +5141,7 @@
             workoutTypes.forEach(type => {
                 const daysSince = getDaysSinceLastWorkout(type);
                 if (daysSince !== null && daysSince > 5) {
-                    warnings.push(`⚠️ It's been ${daysSince} days since your last ${type} workout`);
+                    warnings.push(`It's been ${daysSince} days since your last ${type} workout`);
                 }
             });
             
@@ -5149,7 +5174,7 @@
                 container.innerHTML = warnings.map(w => `<div style="margin-bottom: 0.5rem;">${w}</div>`).join('');
                 container.style.color = 'var(--color-warning)';
             } else {
-                container.innerHTML = '<div>✅ Your training is well balanced! Keep it up!</div>';
+                container.innerHTML = '<div>Your training is well balanced! Keep it up!</div>';
                 container.style.color = 'var(--color-success)';
             }
         }
@@ -5163,7 +5188,7 @@
             
             // Add plateau alerts first
             plateaus.slice(0, 2).forEach(plateau => {
-                html += `<li class="insight-item plateau-alert">⚠️ ${plateau.exercise} plateaued for ${plateau.sessions} sessions. ${plateau.suggestion}</li>`;
+                html += `<li class="insight-item plateau-alert">${plateau.exercise} plateaued for ${plateau.sessions} sessions. ${plateau.suggestion}</li>`;
             });
             
             // Add regular insights
@@ -5376,13 +5401,13 @@
                 } else if (isDateSickDay(dateStr)) {
                     // Priority 2: Sick day (only if no workout logged)
                     classes.push('sick');
-                    displayLabel = '🤒 Sick Day';
+                    displayLabel = 'Sick Day';
                     labelClass = 'Sick';
                 } else if (scheduledWorkout === 'Travel') {
                     // Priority 3: Travel day (only if no workout logged)
                     classes.push('travel');
                     const wouldBeWorkout = getWouldBeScheduledWorkout(dateStr);
-                    displayLabel = `✈️ Travel (${wouldBeWorkout})`;
+                    displayLabel = `Travel (${wouldBeWorkout})`;
                     labelClass = scheduledWorkout;
                 } else if (scheduledWorkout !== 'Rest' && scheduledWorkout !== 'Travel' && date < new Date()) {
                     classes.push('missed');
@@ -5785,7 +5810,7 @@
                     <div class="meal-header" onclick="toggleMealCollapse('${meal.id}')">
                         <div style="flex: 1;">
                             <div class="meal-type">
-                                ${meal.mealType === 'Breakfast' ? '🌅' : meal.mealType === 'Lunch' ? '☀️' : meal.mealType === 'Dinner' ? '🌙' : '🍪'} ${meal.mealType}
+                                ${meal.mealType}
                             </div>
                             <div class="meal-time">${meal.time || ''}</div>
                         </div>
@@ -5822,13 +5847,13 @@
                 
                 html += `<div class="meal-content">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; gap: 0.75rem; flex-wrap: wrap;">
-                        <select class="meal-type" style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(71, 85, 105, 0.25); border-radius: 12px; color: #e2e8f0; padding: 0.75rem; font-size: 1rem; font-weight: 500; cursor: pointer; min-height: 48px;" onchange="changeMealType('${meal.id}', this.value); event.stopPropagation();">
-                            <option value="Breakfast" ${meal.mealType === 'Breakfast' ? 'selected' : ''}>🌅 Breakfast</option>
-                            <option value="Lunch" ${meal.mealType === 'Lunch' ? 'selected' : ''}>☀️ Lunch</option>
-                            <option value="Dinner" ${meal.mealType === 'Dinner' ? 'selected' : ''}>🌙 Dinner</option>
-                            <option value="Snack" ${meal.mealType === 'Snack' ? 'selected' : ''}>🍪 Snack</option>
+                        <select class="meal-type" style="background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 12px; color: var(--color-text-primary); padding: 0.75rem; font-size: 1rem; font-weight: 500; cursor: pointer; min-height: 48px;" onchange="changeMealType('${meal.id}', this.value); event.stopPropagation();">
+                            <option value="Breakfast" ${meal.mealType === 'Breakfast' ? 'selected' : ''}>Breakfast</option>
+                            <option value="Lunch" ${meal.mealType === 'Lunch' ? 'selected' : ''}>Lunch</option>
+                            <option value="Dinner" ${meal.mealType === 'Dinner' ? 'selected' : ''}>Dinner</option>
+                            <option value="Snack" ${meal.mealType === 'Snack' ? 'selected' : ''}>Snack</option>
                         </select>
-                        <button class="btn" style="background: rgba(196, 115, 109, 0.15); color: var(--color-error); border: 1px solid rgba(196, 115, 109, 0.3); padding: 0.75rem 1rem; min-height: 48px; border-radius: 12px; font-weight: 500;" onclick="deleteMeal('${meal.id}'); event.stopPropagation();">🗑️ Delete</button>
+                        <button class="btn" style="background: rgba(196, 115, 109, 0.15); color: var(--color-error); border: 1px solid rgba(196, 115, 109, 0.3); padding: 0.75rem 1rem; min-height: 48px; border-radius: 12px; font-weight: 500;" onclick="deleteMeal('${meal.id}'); event.stopPropagation();">Delete</button>
                     </div>
                     <div id="meal-${meal.id}">`;
                 
@@ -5868,8 +5893,8 @@
                             </div>
                         </div>
                         <div class="food-action-buttons">
-                            <button class="btn-save-food" onclick="saveFoodToLibrary('${meal.id}', ${foodIndex})" title="Save to library">💾 Save</button>
-                            <button class="btn-delete-food" onclick="deleteFoodFromMeal('${meal.id}', ${foodIndex})" title="Delete food">🗑️ Delete</button>
+                            <button class="btn-save-food" onclick="saveFoodToLibrary('${meal.id}', ${foodIndex})" title="Save to library">Save</button>
+                            <button class="btn-delete-food" onclick="deleteFoodFromMeal('${meal.id}', ${foodIndex})" title="Delete food">Delete</button>
                         </div>
                     </div>`;
                 });
@@ -5877,7 +5902,7 @@
                 html += `</div>
                     <div style="display: flex; gap: 0.75rem; margin-top: 1rem; flex-wrap: wrap;">
                         <button class="quick-add-food-btn" onclick="addFoodToMeal('${meal.id}'); event.stopPropagation();">+ Add Food</button>
-                        ${meal.hasUnsavedChanges ? `<button class="btn" style="background: rgba(93, 138, 102, 0.2); color: var(--color-success); border: 1px solid rgba(93, 138, 102, 0.3); border-radius: 12px; padding: 0.75rem 1.25rem; font-weight: 500; min-height: 44px;" onclick="saveMealChanges('${meal.id}'); event.stopPropagation();">💾 Save Changes</button>` : ''}
+                        ${meal.hasUnsavedChanges ? `<button class="btn" style="background: rgba(93, 138, 102, 0.2); color: var(--color-success); border: 1px solid rgba(93, 138, 102, 0.3); border-radius: 12px; padding: 0.75rem 1.25rem; font-weight: 500; min-height: 44px;" onclick="saveMealChanges('${meal.id}'); event.stopPropagation();">Save Changes</button>` : ''}
                     </div>
                 </div>
                 </div>`;
@@ -5946,12 +5971,20 @@
         window.selectMealType = async function(mealType) {
             closeMealTypeModal();
             
+            const currentTime = getCurrentTimeString();
             const mealData = {
                 date: currentNutritionDate,
                 mealType: mealType,
-                time: getCurrentTimeString(),
+                time: currentTime,
                 foods: []
             };
+            
+            console.log('Adding meal:', {
+                date: currentNutritionDate,
+                mealType: mealType,
+                time: currentTime,
+                timezone: userTimezone
+            });
             
             try {
                 const docRef = await addDoc(collection(db, "nutrition"), mealData);
@@ -5959,10 +5992,12 @@
                 nutritionData.unshift(newMeal);
                 currentEditingMealId = newMeal.id; // Set context to the newly created meal
                 collapsedMeals[newMeal.id] = false; // Ensure new meal is expanded
+                console.log('Meal successfully added with ID:', docRef.id);
                 renderMeals();
             } catch (e) {
                 console.error("Error adding meal:", e);
                 alert('Error adding meal. Please check your connection and try again.');
+                throw e; // Re-throw for debugging
             }
         };
 
@@ -6008,17 +6043,30 @@
         
         window.saveMealChanges = async function(mealId) {
             const meal = nutritionData.find(m => m.id === mealId);
-            if (!meal) return;
+            if (!meal) {
+                console.error('Meal not found:', mealId);
+                return;
+            }
+            
+            console.log('Saving meal changes:', {
+                mealId: mealId,
+                date: meal.date,
+                mealType: meal.mealType,
+                foods: meal.foods,
+                timezone: userTimezone
+            });
             
             try {
                 const docRef = doc(db, "nutrition", mealId);
                 await updateDoc(docRef, { foods: meal.foods });
                 meal.hasUnsavedChanges = false;
-                alert('✅ Meal saved! Changes have been updated to the database and counted in daily calories.');
+                console.log('Meal changes saved successfully to Firestore');
+                alert('Meal saved! Changes have been updated to the database and counted in daily calories.');
                 renderMeals();
             } catch (e) {
                 console.error("Error saving meal:", e);
-                alert('❌ Error saving meal. Please try again.');
+                alert('Error saving meal. Please try again.');
+                throw e; // Re-throw for debugging
             }
         };
 
@@ -6208,7 +6256,7 @@
                         </div>
                         <div class="saved-food-actions">
                             <button class="btn-quick-add" onclick="quickAddFood('${food.id}'); closeSavedFoodsModal();">Quick Add</button>
-                            <button class="btn-delete-food" onclick="deleteSavedFood('${food.id}')">🗑️</button>
+                            <button class="btn-delete-food" onclick="deleteSavedFood('${food.id}')">Delete</button>
                         </div>
                     </div>`;
                 });
@@ -6601,7 +6649,7 @@
             window.photoData.forEach(photo => {
                 html += `<div class="photo-item">
                     <img src="${photo.dataUrl}" alt="Progress photo">
-                    <button class="btn-delete-photo" onclick="deleteProgressPhoto('${photo.id}')" title="Delete photo">🗑️</button>
+                    <button class="btn-delete-photo" onclick="deleteProgressPhoto('${photo.id}')" title="Delete photo">Delete</button>
                     <div class="photo-date">${formatDateString(photo.date)}</div>
                 </div>`;
             });
@@ -6611,7 +6659,7 @@
 
         // Utility function to wipe all nutrition data (call from console: window.wipeNutritionData())
         window.wipeNutritionData = async function() {
-            if (!confirm('⚠️ WARNING: This will delete ALL nutrition and food data from Firestore. This cannot be undone!\n\nAre you sure you want to continue?')) {
+            if (!confirm('WARNING: This will delete ALL nutrition and food data from Firestore. This cannot be undone!\n\nAre you sure you want to continue?')) {
                 return;
             }
             
@@ -6656,7 +6704,7 @@
                 renderMeals();
                 renderSavedFoods();
                 
-                alert(`✅ Data wipe complete!\n\nDeleted:\n- ${deletedCount} nutrition entries\n- ${savedFoodsDeleted} saved foods`);
+                alert(`Data wipe complete!\n\nDeleted:\n- ${deletedCount} nutrition entries\n- ${savedFoodsDeleted} saved foods`);
             } catch (e) {
                 console.error("Error wiping data:", e);
                 alert('Error wiping data: ' + e.message);
@@ -6743,8 +6791,8 @@
             // Complete workout
             document.getElementById('complete-workout-btn').addEventListener('click', completeWorkout);
             
-            // Initialize date input to today
-            const today = new Date().toISOString().split('T')[0];
+            // Initialize date input to today (timezone-aware)
+            const today = getTodayDateString();
             document.getElementById('workout-date-input').value = today;
 
             // Date input handling
@@ -6789,14 +6837,22 @@
                 });
             }
             
-            // Weight date input
-            const weightDateInput = document.getElementById('weight-date-input');
-            weightDateInput.value = new Date().toISOString().split('T')[0];
+            // Mobile saved food search
+            const savedFoodSearchMobile = document.getElementById('saved-food-search-mobile');
+            if (savedFoodSearchMobile) {
+                savedFoodSearchMobile.addEventListener('input', (e) => {
+                    renderSavedFoods(e.target.value);
+                });
+            }
             
-            // Goal start date input
+            // Weight date input (timezone-aware)
+            const weightDateInput = document.getElementById('weight-date-input');
+            weightDateInput.value = getTodayDateString();
+            
+            // Goal start date input (timezone-aware)
             const goalStartDateInput = document.getElementById('goal-start-date-input');
             if (goalStartDateInput && !goalStartDateInput.value) {
-                goalStartDateInput.value = new Date().toISOString().split('T')[0];
+                goalStartDateInput.value = getTodayDateString();
             }
             
             // Analytics dropdowns
@@ -7286,7 +7342,7 @@
                 // Export to clipboard
                 exportToClipboard();
                 
-                alert('💪 Workout saved to Firebase and copied to clipboard!');
+                alert('Workout saved to Firebase and copied to clipboard!');
                 
                 // Reset intensity inputs
                 workoutIntensity = {
