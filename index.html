@@ -4962,24 +4962,11 @@
         window.selectWorkoutForDay = function(dayNumber) {
             const workoutTypes = ['Rest', 'Upper', 'Lower', 'Push', 'Pull', 'Legs'];
             const currentType = currentEditingProgram.schedule[`day${dayNumber}`];
+            const currentIndex = workoutTypes.indexOf(currentType);
             
-            // Show selection dialog
-            const selectedType = prompt(
-                `Select workout for Day ${dayNumber}:\n\n` +
-                workoutTypes.map((t, i) => `${i + 1}. ${t}`).join('\n') +
-                `\n\nEnter number (1-${workoutTypes.length}):`,
-                (workoutTypes.indexOf(currentType) + 1).toString()
-            );
-            
-            if (!selectedType) return;
-            
-            const index = parseInt(selectedType) - 1;
-            if (index < 0 || index >= workoutTypes.length) {
-                alert('Invalid selection');
-                return;
-            }
-            
-            updateDayWorkout(dayNumber, workoutTypes[index]);
+            // Cycle to next workout type
+            const nextIndex = (currentIndex + 1) % workoutTypes.length;
+            updateDayWorkout(dayNumber, workoutTypes[nextIndex]);
         };
         
         // Update workout type for a day
@@ -5150,8 +5137,9 @@
                 alert('Reps is required');
                 return;
             }
-            // Allow text reps like "8-12" or "AMRAP", but validate numeric values
-            if (!isNaN(reps) && parseInt(reps) > MAX_EXERCISE_REPS) {
+            // Allow text reps like "8-12" or "AMRAP", but validate numeric-only values
+            const repsNum = parseFloat(reps);
+            if (!isNaN(repsNum) && repsNum > MAX_EXERCISE_REPS) {
                 alert(`Numeric reps cannot exceed ${MAX_EXERCISE_REPS}`);
                 return;
             }
