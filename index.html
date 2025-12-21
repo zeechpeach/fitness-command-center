@@ -70,6 +70,31 @@
             text-align: center;
             margin-bottom: 3rem;
             padding: 2rem 0;
+            position: relative;
+        }
+        
+        .settings-btn {
+            position: absolute;
+            top: 2rem;
+            right: 0;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-full);
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: var(--transition-base);
+            color: var(--color-text-secondary);
+            font-size: 1.25rem;
+        }
+        
+        .settings-btn:hover {
+            background: var(--color-bg);
+            color: var(--color-text-primary);
+            transform: rotate(45deg);
         }
 
         .header h1 {
@@ -1994,6 +2019,134 @@
             border: 1px solid var(--color-accent-secondary);
             margin-left: 0.5rem;
         }
+        
+        /* Settings Modal Styles */
+        .settings-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(8px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            padding: 1rem;
+        }
+        
+        .settings-modal.active {
+            display: flex;
+        }
+        
+        .settings-modal-content {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-xl);
+            padding: 2rem;
+            max-width: 800px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .settings-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+        
+        .settings-modal-title {
+            font-size: 1.5rem;
+            font-weight: 500;
+            color: var(--color-text-primary);
+        }
+        
+        .settings-modal-close {
+            background: none;
+            border: none;
+            font-size: 2rem;
+            color: var(--color-text-secondary);
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: var(--radius-full);
+            transition: var(--transition-base);
+        }
+        
+        .settings-modal-close:hover {
+            background: var(--color-bg);
+            color: var(--color-text-primary);
+        }
+        
+        .settings-section {
+            margin-bottom: 2rem;
+        }
+        
+        .settings-section-title {
+            font-size: 1.125rem;
+            font-weight: 500;
+            color: var(--color-text-primary);
+            margin-bottom: 1rem;
+        }
+        
+        .program-card {
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            transition: var(--transition-base);
+        }
+        
+        .program-card.active {
+            border-color: var(--color-accent-primary);
+            box-shadow: 0 0 0 2px rgba(74, 93, 74, 0.1);
+        }
+        
+        .program-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 0.75rem;
+        }
+        
+        .program-card-title {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .program-name {
+            font-size: 1.125rem;
+            font-weight: 500;
+            color: var(--color-text-primary);
+        }
+        
+        .program-active-badge {
+            background: var(--color-accent-primary);
+            color: var(--color-surface);
+            padding: 0.25rem 0.625rem;
+            border-radius: var(--radius-full);
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .program-meta {
+            font-size: 0.875rem;
+            color: var(--color-text-secondary);
+        }
+        
+        .program-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
 
         /* Travel Mode Styles */
         .travel-mode-banner {
@@ -2454,6 +2607,7 @@
         <div class="header">
             <h1>Unison</h1>
             <p>Body in unison.</p>
+            <button class="settings-btn" onclick="openSettings()" title="Settings">⚙</button>
         </div>
 
         <div class="nav-tabs">
@@ -3068,6 +3222,24 @@
         </div>
     </div>
 
+    <!-- Settings Modal -->
+    <div class="settings-modal" id="settings-modal">
+        <div class="settings-modal-content">
+            <div class="settings-modal-header">
+                <h2 class="settings-modal-title">Settings</h2>
+                <button class="settings-modal-close" onclick="closeSettings()">×</button>
+            </div>
+            
+            <div class="settings-section">
+                <h3 class="settings-section-title">Programs</h3>
+                <div id="programs-list">
+                    <!-- Programs will be rendered here -->
+                </div>
+                <button class="btn" onclick="createNewProgram()" style="margin-top: 1rem; width: 100%;">+ Create New Program</button>
+            </div>
+        </div>
+    </div>
+
     <script type="module">
         // Firebase imports
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -3106,6 +3278,10 @@
         let weightData = [];
         window.weightData = weightData;
         let photoData = [];
+        let programs = [];
+        let activeProgram = null;
+        window.programs = programs;
+        window.activeProgram = activeProgram;
         window.photoData = photoData;
         let savedFoods = [];
         let travelModeData = [];
