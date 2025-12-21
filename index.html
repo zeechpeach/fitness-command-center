@@ -4056,6 +4056,25 @@
         const MIN_CYCLE_LENGTH = 1;
         const MAX_EXERCISE_SETS = 100;
         const MAX_EXERCISE_REPS = 1000;
+        
+        // Utility: Deep clone object safely
+        function deepClone(obj) {
+            try {
+                // Use structuredClone if available (modern browsers)
+                if (typeof structuredClone === 'function') {
+                    return structuredClone(obj);
+                }
+            } catch (e) {
+                console.warn('structuredClone failed, falling back to JSON:', e);
+            }
+            // Fallback to JSON with error handling
+            try {
+                return JSON.parse(JSON.stringify(obj));
+            } catch (e) {
+                console.error('Deep clone failed:', e);
+                return obj; // Return original if all else fails
+            }
+        }
 
         const workoutPlans = {
             Upper: [
@@ -4801,7 +4820,7 @@
                     return;
                 }
                 // Deep clone to avoid modifying original until saved
-                currentEditingProgram = structuredClone ? structuredClone(program) : JSON.parse(JSON.stringify(program));
+                currentEditingProgram = deepClone(program);
             } else {
                 // Create new program with default structure
                 currentEditingProgram = {
@@ -5137,11 +5156,15 @@
                 alert('Reps is required');
                 return;
             }
-            // Allow text reps like "8-12" or "AMRAP", but validate numeric-only values
+            // Validate reps: allow text like "8-12", "AMRAP", etc.
+            // Only validate if it's a pure number (not a range or text)
             const repsNum = parseFloat(reps);
-            if (!isNaN(repsNum) && repsNum > MAX_EXERCISE_REPS) {
-                alert(`Numeric reps cannot exceed ${MAX_EXERCISE_REPS}`);
-                return;
+            if (!isNaN(repsNum) && reps.trim() === repsNum.toString()) {
+                // Pure numeric value - validate against max
+                if (repsNum > MAX_EXERCISE_REPS) {
+                    alert(`Numeric reps cannot exceed ${MAX_EXERCISE_REPS}`);
+                    return;
+                }
             }
             
             // Create exercise object
@@ -5308,7 +5331,7 @@
                     name: `Copy of ${program.name}`,
                     active: false,
                     schedule: { ...program.schedule },
-                    workouts: structuredClone ? structuredClone(program.workouts) : JSON.parse(JSON.stringify(program.workouts)),
+                    workouts: deepClone(program.workouts),
                     createdAt: new Date().toISOString()
                 };
                 
