@@ -4615,7 +4615,8 @@
                 ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
                 const dateThreshold = ninetyDaysAgo.toISOString().split('T')[0];
                 
-                // Query with date filter and single orderBy to avoid compound index requirement
+                // Query with date filter - using where and orderBy on same field (date)
+                // This doesn't require a compound index
                 const q = query(
                     collection(db, "workouts"),
                     where("date", ">=", dateThreshold),
@@ -9052,8 +9053,12 @@
             return typeof Chart !== 'undefined';
         }
 
+        // Chart.js loading configuration
+        const CHARTJS_WAIT_INTERVAL_MS = 100;
+        const CHARTJS_MAX_WAIT_ATTEMPTS = 50; // 5 seconds total
+
         // Helper function to wait for Chart.js to be loaded
-        function waitForChartJs(callback, maxAttempts = 50) {
+        function waitForChartJs(callback, maxAttempts = CHARTJS_MAX_WAIT_ATTEMPTS) {
             let attempts = 0;
             const checkInterval = setInterval(() => {
                 attempts++;
@@ -9064,7 +9069,7 @@
                     clearInterval(checkInterval);
                     console.error('Chart.js failed to load within timeout period');
                 }
-            }, 100);
+            }, CHARTJS_WAIT_INTERVAL_MS);
         }
 
         // Weight Functions
@@ -9473,19 +9478,20 @@
                 });
             }
             
-            if (tabName === 'body-metrics' && !weightLoaded) {
-                weightLoaded = true;
-                loadWeightData().then(() => {
-                    createWeightChart();
-                    updateBodyGoalDisplay();
-                });
-            }
-            
-            if (tabName === 'body-metrics' && !photosLoaded) {
-                photosLoaded = true;
-                loadPhotoData().then(() => {
-                    renderPhotos();
-                });
+            if (tabName === 'body-metrics') {
+                if (!weightLoaded) {
+                    weightLoaded = true;
+                    loadWeightData().then(() => {
+                        createWeightChart();
+                        updateBodyGoalDisplay();
+                    });
+                }
+                if (!photosLoaded) {
+                    photosLoaded = true;
+                    loadPhotoData().then(() => {
+                        renderPhotos();
+                    });
+                }
             }
             
             if (tabName === 'analytics' && !analyticsLoaded) {
