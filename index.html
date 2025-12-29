@@ -3537,6 +3537,14 @@
 
                 <!-- Main Content Area -->
                 <div class="nutrition-main-content">
+                    <!-- Food logging section - moved to top -->
+                    <div id="meals-container">
+                        <!-- Meals will be rendered here -->
+                    </div>
+
+                    <button class="btn btn-add" onclick="showAddFoodModal()" style="width: 100%; padding: 1rem; font-size: 1rem; margin-bottom: 1.5rem;">+ Add Food</button>
+
+                    <!-- Nutrition summary - de-prioritized -->
                     <div class="analytics-card">
                         <h3 class="analytics-title">Daily Nutrition</h3>
                         <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
@@ -3583,12 +3591,6 @@
                             <span id="calorie-update-notice">Calories update automatically when you log weight</span>
                         </div>
                     </div>
-
-                    <div id="meals-container">
-                        <!-- Meals will be rendered here -->
-                    </div>
-
-                    <button class="btn btn-add" onclick="addMeal()" style="width: 100%; padding: 1rem; font-size: 1rem;">+ Add Meal</button>
                 </div>
             </div>
 
@@ -3872,17 +3874,35 @@
         </div>
     </div>
 
-    <!-- Meal Type Selection Modal -->
-    <div class="modal-overlay" id="meal-type-modal">
+    <!-- Add Food Modal -->
+    <div class="modal-overlay" id="add-food-modal">
         <div class="modal-content">
-            <h3 class="modal-title">Select Meal Type</h3>
+            <h3 class="modal-title">Add Food</h3>
             <div class="meal-type-buttons">
-                <button class="meal-type-btn" onclick="selectMealType('Breakfast')">Breakfast</button>
-                <button class="meal-type-btn" onclick="selectMealType('Lunch')">Lunch</button>
-                <button class="meal-type-btn" onclick="selectMealType('Dinner')">Dinner</button>
-                <button class="meal-type-btn" onclick="selectMealType('Snack')">Snack</button>
+                <button class="meal-type-btn" onclick="addNewFood()">
+                    <div style="font-weight: 600;">New Food</div>
+                    <div style="font-size: 0.75rem; opacity: 0.8; margin-top: 0.25rem;">Enter macros manually</div>
+                </button>
+                <button class="meal-type-btn" onclick="showSavedFoodsForAdding()">
+                    <div style="font-weight: 600;">From Saved</div>
+                    <div style="font-size: 0.75rem; opacity: 0.8; margin-top: 0.25rem;">Choose from your library</div>
+                </button>
             </div>
-            <button class="modal-close" onclick="closeMealTypeModal()">Cancel</button>
+            <button class="modal-close" onclick="closeAddFoodModal()">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Meal Type Selection Modal (used after adding food) -->
+    <div class="modal-overlay" id="meal-tag-modal">
+        <div class="modal-content">
+            <h3 class="modal-title">Tag this food as:</h3>
+            <div class="meal-type-buttons">
+                <button class="meal-type-btn" onclick="tagFood('Breakfast')">Breakfast</button>
+                <button class="meal-type-btn" onclick="tagFood('Lunch')">Lunch</button>
+                <button class="meal-type-btn" onclick="tagFood('Dinner')">Dinner</button>
+                <button class="meal-type-btn" onclick="tagFood('Snack')">Snack</button>
+            </div>
+            <button class="modal-close" onclick="closeMealTagModal()">Cancel</button>
         </div>
     </div>
 
@@ -7712,49 +7732,92 @@
         }
 
         // Meal type selection modal functions
-        window.showMealTypeModal = function() {
-            document.getElementById('meal-type-modal').classList.add('active');
+        // New Food Logging Flow
+        let pendingFoodData = null; // Temporarily store food data before tagging
+
+        window.showAddFoodModal = function() {
+            document.getElementById('add-food-modal').classList.add('active');
         };
 
-        window.closeMealTypeModal = function() {
-            document.getElementById('meal-type-modal').classList.remove('active');
+        window.closeAddFoodModal = function() {
+            document.getElementById('add-food-modal').classList.remove('active');
         };
 
-        window.selectMealType = async function(mealType) {
-            closeMealTypeModal();
+        window.showMealTagModal = function() {
+            document.getElementById('meal-tag-modal').classList.add('active');
+        };
+
+        window.closeMealTagModal = function() {
+            document.getElementById('meal-tag-modal').classList.remove('active');
+            pendingFoodData = null;
+        };
+
+        window.addNewFood = function() {
+            closeAddFoodModal();
+            // Store a placeholder for new food
+            pendingFoodData = {
+                isNew: true,
+                food: { name: '', protein: 0, carbs: 0, fats: 0, calories: 0, quantity: 1 }
+            };
+            showMealTagModal();
+        };
+
+        window.showSavedFoodsForAdding = function() {
+            closeAddFoodModal();
+            // On mobile, show the saved foods modal
+            if (window.innerWidth < 768) {
+                openSavedFoodsModal();
+            } else {
+                // On desktop, the saved foods panel is already visible
+                alert('Select a food from the Saved Foods panel on the left');
+            }
+        };
+
+        window.tagFood = async function(mealTag) {
+            closeMealTagModal();
+            
+            if (!pendingFoodData) {
+                console.error('No pending food data');
+                return;
+            }
             
             const currentTime = getCurrentTimeString();
-            const mealData = {
+            
+            // Create or find meal group for this tag
+            const foodEntry = {
                 date: currentNutritionDate,
-                mealType: mealType,
+                mealType: mealTag,
                 time: currentTime,
-                foods: []
+                foods: [pendingFoodData.food]
             };
             
-            console.log('Adding meal:', {
+            console.log('Adding food:', {
                 date: currentNutritionDate,
-                mealType: mealType,
+                mealType: mealTag,
                 time: currentTime,
+                food: pendingFoodData.food,
                 timezone: userTimezone
             });
             
             try {
-                const docRef = await addDoc(collection(db, "nutrition"), mealData);
-                const newMeal = { id: docRef.id, ...mealData };
-                nutritionData.unshift(newMeal);
-                currentEditingMealId = newMeal.id; // Set context to the newly created meal
-                collapsedMeals[newMeal.id] = false; // Ensure new meal is expanded
-                console.log('Meal successfully added with ID:', docRef.id);
+                const docRef = await addDoc(collection(db, "nutrition"), foodEntry);
+                const newEntry = { id: docRef.id, ...foodEntry };
+                nutritionData.unshift(newEntry);
+                currentEditingMealId = newEntry.id;
+                collapsedMeals[newEntry.id] = false;
+                console.log('Food successfully added with ID:', docRef.id);
+                pendingFoodData = null;
                 renderMeals();
             } catch (e) {
-                console.error("Error adding meal:", e);
-                alert('Error adding meal. Please check your connection and try again.');
-                throw e; // Re-throw for debugging
+                console.error("Error adding food:", e);
+                alert('Error adding food. Please check your connection and try again.');
+                throw e;
             }
         };
 
+        // Keep old functions for compatibility with existing meal editing
         window.addMeal = function() {
-            showMealTypeModal();
+            showAddFoodModal();
         };
 
         window.addFoodToMeal = function(mealId) {
@@ -8145,7 +8208,7 @@
                         `  ${macros.protein}g protein\n` +
                         `  ${macros.carbs}g carbs\n` +
                         `  ${macros.fats}g fats\n\n` +
-                        `Add to meal?`
+                        `Add this food?`
                     );
                     
                     if (!confirm) return;
@@ -8169,87 +8232,33 @@
                 }
             }
             
-            let targetMeal;
-            
-            // If a meal is currently being edited, add food to that meal
-            if (currentEditingMealId) {
-                targetMeal = nutritionData.find(m => m.id === currentEditingMealId);
-                
-                if (!targetMeal) {
-                    alert('Could not find the meal you were editing. Please try again.');
-                    currentEditingMealId = null;
-                    return;
+            // Store food data and prompt for meal tag
+            pendingFoodData = {
+                isNew: false,
+                food: {
+                    name: food.name,
+                    protein: food.protein,
+                    carbs: food.carbs,
+                    fats: food.fats,
+                    calories: food.calories,
+                    quantity: quantity
                 }
-            } else {
-                // No meal is being edited, prompt user to select or create a meal
-                const meals = nutritionData.filter(n => n.date === currentNutritionDate);
-                
-                if (meals.length === 0) {
-                    // No meals exist for today, create one with smart default
-                    const defaultMealType = getDefaultMealType();
-                    const mealType = prompt(`Enter meal type (Breakfast, Lunch, Dinner, or Snack):`, defaultMealType);
-                    if (!mealType) return; // User cancelled
-                    
-                    const mealData = {
-                        date: currentNutritionDate,
-                        mealType: mealType,
-                        time: getCurrentTimeString(),
-                        foods: []
-                    };
-                    
-                    try {
-                        const docRef = await addDoc(collection(db, "nutrition"), mealData);
-                        targetMeal = { id: docRef.id, ...mealData };
-                        nutritionData.unshift(targetMeal);
-                        currentEditingMealId = targetMeal.id;
-                    } catch (e) {
-                        console.error("Error creating meal:", e);
-                        alert('Error creating meal');
-                        return;
-                    }
-                } else {
-                    // Meals exist, ask which one to add to
-                    alert('Please click "Add Food" on the specific meal you want to add to, then use Quick Add.');
-                    return;
-                }
-            }
+            };
             
-            // Add food to meal with quantity
-            if (!targetMeal.foods) targetMeal.foods = [];
-            targetMeal.foods.push({
-                name: food.name,
-                protein: food.protein,
-                carbs: food.carbs,
-                fats: food.fats,
-                calories: food.calories,
-                quantity: quantity
-            });
+            showMealTagModal();
             
-            // Update use count and last used
-            food.useCount = (food.useCount || 0) + 1;
-            food.lastUsed = new Date().toISOString();
-            
-            // Save to Firebase
+            // Update use count
             try {
-                // Update the meal with the new food
-                const mealDocRef = doc(db, "nutrition", targetMeal.id);
-                await updateDoc(mealDocRef, { foods: targetMeal.foods });
-                
-                // Update only this specific saved food's usage stats
-                const foodDocRef = doc(db, "savedFoods", food.id);
-                await updateDoc(foodDocRef, {
-                    useCount: food.useCount,
-                    lastUsed: food.lastUsed
+                food.lastUsed = new Date().toISOString();
+                food.useCount = (food.useCount || 0) + 1;
+                const docRef = doc(db, "savedFoods", food.id);
+                await updateDoc(docRef, {
+                    lastUsed: food.lastUsed,
+                    useCount: food.useCount
                 });
-                
-                // Clear unsaved changes flag since we just saved
-                targetMeal.hasUnsavedChanges = false;
-                
-                renderMeals();
                 renderSavedFoods();
             } catch (e) {
-                console.error("Error quick adding food:", e);
-                alert('Error adding food to meal. Please try again.');
+                console.error("Error updating food use count:", e);
             }
         };
 
