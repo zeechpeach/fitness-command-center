@@ -5040,32 +5040,6 @@
             return 'Dinner';
         }
         
-        function convertUnits(amount, fromUnit, toUnit) {
-            // Simple unit conversion for portion tracking
-            // Returns converted amount or null if conversion not possible
-            fromUnit = fromUnit.toLowerCase();
-            toUnit = toUnit.toLowerCase();
-            
-            if (fromUnit === toUnit) return amount;
-            
-            // g <-> oz conversion (1 oz = 28.35g)
-            if (fromUnit === 'g' && toUnit === 'oz') return amount / 28.35;
-            if (fromUnit === 'oz' && toUnit === 'g') return amount * 28.35;
-            
-            // ml treated as equivalent to g for simplicity (most liquids ≈ 1g/ml)
-            if (fromUnit === 'ml' && toUnit === 'g') return amount;
-            if (fromUnit === 'g' && toUnit === 'ml') return amount;
-            if (fromUnit === 'ml' && toUnit === 'oz') return amount / 28.35;
-            if (fromUnit === 'oz' && toUnit === 'ml') return amount * 28.35;
-            
-            // each and serving are equivalent
-            if ((fromUnit === 'each' || fromUnit === 'serving') && 
-                (toUnit === 'each' || toUnit === 'serving')) return amount;
-            
-            // Cannot convert between weight/volume and count
-            return null;
-        }
-
         // ============================================
         // PROGRAM BUILDER FUNCTIONS
         // ============================================
