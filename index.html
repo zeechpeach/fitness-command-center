@@ -4613,7 +4613,7 @@
                 // Load only last 90 days of workouts for better performance
                 // Use more robust date calculation
                 const ninetyDaysAgo = new Date();
-                ninetyDaysAgo.setTime(ninetyDaysAgo.getTime() - (90 * 24 * 60 * 60 * 1000));
+                ninetyDaysAgo.setTime(ninetyDaysAgo.getTime() - NINETY_DAYS_IN_MS);
                 const dateThreshold = ninetyDaysAgo.toISOString().split('T')[0];
                 
                 // Query with date filter - note: descending orderBy with where inequality
@@ -9058,6 +9058,9 @@
         const CHARTJS_WAIT_INTERVAL_MS = 100;
         const CHARTJS_MAX_WAIT_ATTEMPTS = 50; // 5 seconds total
 
+        // Date calculation constants
+        const NINETY_DAYS_IN_MS = 90 * 24 * 60 * 60 * 1000;
+
         // Helper function to wait for Chart.js to be loaded
         function waitForChartJs(callback, maxAttempts = CHARTJS_MAX_WAIT_ATTEMPTS) {
             let attempts = 0;
@@ -9065,7 +9068,11 @@
                 attempts++;
                 if (isChartJsReady()) {
                     clearInterval(checkInterval);
-                    callback();
+                    try {
+                        callback();
+                    } catch (err) {
+                        console.error('Error executing Chart.js callback:', err);
+                    }
                 } else if (attempts >= maxAttempts) {
                     clearInterval(checkInterval);
                     console.error('Chart.js failed to load within timeout period');
@@ -9281,6 +9288,7 @@
         let weightLoaded = false;
         let photosLoaded = false;
         let analyticsLoaded = false;
+        let progressLoaded = false;
 
         // Main app initialization
         document.addEventListener('DOMContentLoaded', async function() {
@@ -9526,7 +9534,8 @@
                 updateAnalytics();
             }
             
-            if (tabName === 'progress') {
+            if (tabName === 'progress' && !progressLoaded) {
+                progressLoaded = true;
                 updateProgress();
             }
             
