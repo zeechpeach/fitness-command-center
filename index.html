@@ -539,6 +539,39 @@
             color: var(--color-text-secondary);
         }
 
+        .reps-control-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .reps-increment-btn {
+            width: 2rem;
+            height: 2rem;
+            padding: 0;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-sm);
+            color: var(--color-text-primary);
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition-base);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+        }
+
+        .reps-increment-btn:hover {
+            background: var(--color-bg);
+            border-color: var(--color-accent-secondary);
+        }
+
+        .reps-increment-btn:active {
+            transform: scale(0.95);
+        }
+
         .btn {
             padding: 0.75rem 1.25rem;
             border: none;
@@ -3504,6 +3537,14 @@
 
                 <!-- Main Content Area -->
                 <div class="nutrition-main-content">
+                    <!-- Food logging section - moved to top -->
+                    <div id="meals-container">
+                        <!-- Meals will be rendered here -->
+                    </div>
+
+                    <button class="btn btn-add" onclick="showAddFoodModal()" style="width: 100%; padding: 1rem; font-size: 1rem; margin-bottom: 1.5rem;">+ Add Food</button>
+
+                    <!-- Nutrition summary - de-prioritized -->
                     <div class="analytics-card">
                         <h3 class="analytics-title">Daily Nutrition</h3>
                         <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
@@ -3550,12 +3591,6 @@
                             <span id="calorie-update-notice">Calories update automatically when you log weight</span>
                         </div>
                     </div>
-
-                    <div id="meals-container">
-                        <!-- Meals will be rendered here -->
-                    </div>
-
-                    <button class="btn btn-add" onclick="addMeal()" style="width: 100%; padding: 1rem; font-size: 1rem;">+ Add Meal</button>
                 </div>
             </div>
 
@@ -3839,17 +3874,35 @@
         </div>
     </div>
 
-    <!-- Meal Type Selection Modal -->
-    <div class="modal-overlay" id="meal-type-modal">
+    <!-- Add Food Modal -->
+    <div class="modal-overlay" id="add-food-modal">
         <div class="modal-content">
-            <h3 class="modal-title">Select Meal Type</h3>
+            <h3 class="modal-title">Add Food</h3>
             <div class="meal-type-buttons">
-                <button class="meal-type-btn" onclick="selectMealType('Breakfast')">Breakfast</button>
-                <button class="meal-type-btn" onclick="selectMealType('Lunch')">Lunch</button>
-                <button class="meal-type-btn" onclick="selectMealType('Dinner')">Dinner</button>
-                <button class="meal-type-btn" onclick="selectMealType('Snack')">Snack</button>
+                <button class="meal-type-btn" onclick="addNewFood()">
+                    <div style="font-weight: 600;">New Food</div>
+                    <div style="font-size: 0.75rem; opacity: 0.8; margin-top: 0.25rem;">Enter macros manually</div>
+                </button>
+                <button class="meal-type-btn" onclick="showSavedFoodsForAdding()">
+                    <div style="font-weight: 600;">From Saved</div>
+                    <div style="font-size: 0.75rem; opacity: 0.8; margin-top: 0.25rem;">Choose from your library</div>
+                </button>
             </div>
-            <button class="modal-close" onclick="closeMealTypeModal()">Cancel</button>
+            <button class="modal-close" onclick="closeAddFoodModal()">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Meal Type Selection Modal (used after adding food) -->
+    <div class="modal-overlay" id="meal-tag-modal">
+        <div class="modal-content">
+            <h3 class="modal-title">Tag this food as:</h3>
+            <div class="meal-type-buttons">
+                <button class="meal-type-btn" onclick="tagFood('Breakfast')">Breakfast</button>
+                <button class="meal-type-btn" onclick="tagFood('Lunch')">Lunch</button>
+                <button class="meal-type-btn" onclick="tagFood('Dinner')">Dinner</button>
+                <button class="meal-type-btn" onclick="tagFood('Snack')">Snack</button>
+            </div>
+            <button class="modal-close" onclick="closeMealTagModal()">Cancel</button>
         </div>
     </div>
 
@@ -7190,7 +7243,7 @@
                 
                 // Show intensity if available
                 if (workout.intensity) {
-                    html += '<div style="background: rgba(15, 23, 42, 0.6); padding: 1rem; border-radius: 8px;">';
+                    html += '<div style="background: var(--color-surface); border: 1px solid var(--color-border); padding: 1rem; border-radius: var(--radius-md); box-shadow: var(--shadow-sm);">';
                     html += '<h4 style="color: var(--color-accent-primary); margin-bottom: 0.5rem;">Session Intensity</h4>';
                     html += '<div style="display: flex; gap: 1rem; flex-wrap: wrap;">';
                     if (workout.intensity.energy) html += `<span style="color: var(--color-text-secondary);">Energy: ${workout.intensity.energy}/5</span>`;
@@ -7202,8 +7255,8 @@
                 
                 // Show exercises
                 Object.values(workout.exercises || {}).forEach(exercise => {
-                    html += '<div style="background: rgba(15, 23, 42, 0.6); padding: 1rem; border-radius: 8px;">';
-                    html += `<h4 style="color: white; margin-bottom: 0.5rem;">${exercise.exercise}`;
+                    html += '<div style="background: var(--color-surface); border: 1px solid var(--color-border); padding: 1rem; border-radius: var(--radius-md); box-shadow: var(--shadow-sm);">';
+                    html += `<h4 style="color: var(--color-text-primary); margin-bottom: 0.5rem;">${exercise.exercise}`;
                     if (exercise.substitution && exercise.originalExercise) {
                         html += ` <span style="background: rgba(74, 93, 74, 0.2); color: var(--color-accent-primary); padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: normal;">Alt for ${exercise.originalExercise}</span>`;
                     } else if (exercise.approach) {
@@ -7215,7 +7268,7 @@
                         if (set.completed) {
                             html += `<div style="color: var(--color-success); padding: 0.25rem;">✓ Completed</div>`;
                         } else if (set.weight || set.reps) {
-                            html += `<div style="color: #93c5fd; padding: 0.25rem;">Set ${idx + 1}: ${set.weight}lbs × ${set.reps} reps`;
+                            html += `<div style="color: var(--color-text-secondary); padding: 0.25rem;">Set ${idx + 1}: ${set.weight}lbs × ${set.reps} reps`;
                             if (set.notes) html += ` (${set.notes})`;
                             html += '</div>';
                         }
@@ -7497,133 +7550,134 @@
             renderMeals();
         };
 
-        function calculateMealTotals(meal) {
-            let calories = 0, protein = 0, carbs = 0, fats = 0, foodCount = 0;
-            (meal.foods || []).forEach(food => {
-                const quantity = food.quantity || 1;
-                calories += (parseFloat(food.calories) || 0) * quantity;
-                protein += (parseFloat(food.protein) || 0) * quantity;
-                carbs += (parseFloat(food.carbs) || 0) * quantity;
-                fats += (parseFloat(food.fats) || 0) * quantity;
-                if (food.name && food.name.trim()) foodCount++;
-            });
-            return { calories: Math.round(calories), protein: Math.round(protein), carbs: Math.round(carbs), fats: Math.round(fats), foodCount };
-        }
 
         function renderMeals() {
-            const meals = nutritionData.filter(n => n.date === currentNutritionDate);
+            const foodEntries = nutritionData.filter(n => n.date === currentNutritionDate);
             const container = document.getElementById('meals-container');
             
-            if (meals.length === 0) {
+            if (foodEntries.length === 0) {
                 container.innerHTML = '';
                 updateNutritionSummary();
                 return;
             }
             
+            // Group food entries by mealType
+            const mealGroups = {};
+            foodEntries.forEach(entry => {
+                const mealType = entry.mealType || 'Snack';
+                if (!mealGroups[mealType]) {
+                    mealGroups[mealType] = [];
+                }
+                mealGroups[mealType].push(entry);
+            });
+            
+            // Order meal types for display
+            const mealOrder = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
             let html = '';
-            meals.forEach((meal, mealIndex) => {
-                const isCollapsed = collapsedMeals[meal.id] === true; // Default to expanded (not collapsed)
-                const totals = calculateMealTotals(meal);
+            
+            mealOrder.forEach(mealType => {
+                if (!mealGroups[mealType]) return;
                 
-                html += `<div class="meal-card ${isCollapsed ? 'collapsed' : ''}" id="meal-card-${meal.id}">
-                    <div class="meal-header" onclick="toggleMealCollapse('${meal.id}')">
+                const entries = mealGroups[mealType];
+                const groupId = `${mealType}-${currentNutritionDate}`;
+                const isCollapsed = collapsedMeals[groupId] === true;
+                
+                // Calculate totals for all foods in this meal group
+                let totalCals = 0, totalProtein = 0, totalCarbs = 0, totalFats = 0, foodCount = 0;
+                entries.forEach(entry => {
+                    (entry.foods || []).forEach(food => {
+                        const quantity = food.quantity || 1;
+                        totalCals += (parseFloat(food.calories) || 0) * quantity;
+                        totalProtein += (parseFloat(food.protein) || 0) * quantity;
+                        totalCarbs += (parseFloat(food.carbs) || 0) * quantity;
+                        totalFats += (parseFloat(food.fats) || 0) * quantity;
+                        if (food.name && food.name.trim()) foodCount++;
+                    });
+                });
+                
+                html += `<div class="meal-card ${isCollapsed ? 'collapsed' : ''}" id="meal-card-${groupId}">
+                    <div class="meal-header" onclick="toggleMealCollapse('${groupId}')">
                         <div style="flex: 1;">
                             <div class="meal-type">
-                                ${meal.mealType}
+                                ${mealType}
                             </div>
-                            <div class="meal-time">${meal.time || ''}</div>
+                            <div class="meal-time">${foodCount} food${foodCount !== 1 ? 's' : ''}</div>
                         </div>
                         <span class="meal-collapse-icon">▼</span>
                     </div>`;
                 
                 // Show summary when collapsed
-                if (isCollapsed && totals.foodCount > 0) {
+                if (isCollapsed && foodCount > 0) {
                     html += `<div class="meal-summary">
                         <div class="meal-summary-stats">
                             <div class="meal-summary-stat">
-                                <span class="meal-summary-value">${totals.calories}</span>
+                                <span class="meal-summary-value">${Math.round(totalCals)}</span>
                                 <span class="meal-summary-label">Calories</span>
                             </div>
                             <div class="meal-summary-stat">
-                                <span class="meal-summary-value">${totals.protein}g</span>
+                                <span class="meal-summary-value">${Math.round(totalProtein)}g</span>
                                 <span class="meal-summary-label">Protein</span>
                             </div>
                             <div class="meal-summary-stat">
-                                <span class="meal-summary-value">${totals.carbs}g</span>
+                                <span class="meal-summary-value">${Math.round(totalCarbs)}g</span>
                                 <span class="meal-summary-label">Carbs</span>
                             </div>
                             <div class="meal-summary-stat">
-                                <span class="meal-summary-value">${totals.fats}g</span>
+                                <span class="meal-summary-value">${Math.round(totalFats)}g</span>
                                 <span class="meal-summary-label">Fats</span>
-                            </div>
-                            <div class="meal-summary-stat">
-                                <span class="meal-summary-value">${totals.foodCount}</span>
-                                <span class="meal-summary-label">Foods</span>
                             </div>
                         </div>
                     </div>`;
                 }
                 
-                html += `<div class="meal-content">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; gap: 0.75rem; flex-wrap: wrap;">
-                        <select class="meal-type" style="background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 12px; color: var(--color-text-primary); padding: 0.75rem; font-size: 1rem; font-weight: 500; cursor: pointer; min-height: 48px;" onchange="changeMealType('${meal.id}', this.value); event.stopPropagation();">
-                            <option value="Breakfast" ${meal.mealType === 'Breakfast' ? 'selected' : ''}>Breakfast</option>
-                            <option value="Lunch" ${meal.mealType === 'Lunch' ? 'selected' : ''}>Lunch</option>
-                            <option value="Dinner" ${meal.mealType === 'Dinner' ? 'selected' : ''}>Dinner</option>
-                            <option value="Snack" ${meal.mealType === 'Snack' ? 'selected' : ''}>Snack</option>
-                        </select>
-                        <button class="btn" style="background: rgba(196, 115, 109, 0.15); color: var(--color-error); border: 1px solid rgba(196, 115, 109, 0.3); padding: 0.75rem 1rem; min-height: 48px; border-radius: 12px; font-weight: 500;" onclick="deleteMeal('${meal.id}'); event.stopPropagation();">Delete</button>
-                    </div>
-                    <div id="meal-${meal.id}">`;
+                html += `<div class="meal-content">`;
                 
-                (meal.foods || []).forEach((food, foodIndex) => {
-                    const quantity = food.quantity || 1;
-                    const displayProtein = ((food.protein || 0) * quantity).toFixed(1);
-                    const displayCarbs = ((food.carbs || 0) * quantity).toFixed(1);
-                    const displayFats = ((food.fats || 0) * quantity).toFixed(1);
-                    const displayCalories = Math.round((food.calories || 0) * quantity);
-                    
-                    html += `<div class="food-input-row">
-                        <input type="text" class="food-input" value="${food.name}" placeholder="Food name" onchange="updateMealFood('${meal.id}', ${foodIndex}, 'name', this.value)">
-                        <div class="macro-inputs-grid">
-                            <div class="macro-input-wrapper">
-                                <label class="macro-input-label">Qty</label>
-                                <input type="number" class="macro-input" value="${quantity}" placeholder="1" step="0.1" min="0.1" onchange="updateMealFood('${meal.id}', ${foodIndex}, 'quantity', this.value)">
+                // Render all foods in this meal group
+                entries.forEach((entry, entryIndex) => {
+                    (entry.foods || []).forEach((food, foodIndex) => {
+                        const quantity = food.quantity || 1;
+                        const displayProtein = ((food.protein || 0) * quantity).toFixed(1);
+                        const displayCarbs = ((food.carbs || 0) * quantity).toFixed(1);
+                        const displayFats = ((food.fats || 0) * quantity).toFixed(1);
+                        const displayCalories = Math.round((food.calories || 0) * quantity);
+                        
+                        html += `<div class="food-input-row">
+                            <input type="text" class="food-input" value="${food.name}" placeholder="Food name" onchange="updateMealFood('${entry.id}', ${foodIndex}, 'name', this.value)">
+                            <div class="macro-inputs-grid">
+                                <div class="macro-input-wrapper">
+                                    <label class="macro-input-label">Qty</label>
+                                    <input type="number" class="macro-input" value="${quantity}" placeholder="1" step="0.1" min="0.1" onchange="updateMealFood('${entry.id}', ${foodIndex}, 'quantity', this.value)">
+                                </div>
+                                <div class="macro-input-wrapper">
+                                    <label class="macro-input-label">Calories</label>
+                                    <input type="number" class="macro-input" value="${food.calories || 0}" placeholder="0" onchange="updateMealFood('${entry.id}', ${foodIndex}, 'calories', this.value)">
+                                    ${quantity !== 1 ? `<div style="font-size: 0.7rem; color: var(--color-text-secondary); text-align: center; margin-top: 0.25rem;">${displayCalories}</div>` : ''}
+                                </div>
+                                <div class="macro-input-wrapper">
+                                    <label class="macro-input-label">Protein</label>
+                                    <input type="number" class="macro-input" value="${food.protein || 0}" placeholder="0" step="0.1" onchange="updateMealFood('${entry.id}', ${foodIndex}, 'protein', this.value)">
+                                    ${quantity !== 1 ? `<div style="font-size: 0.7rem; color: var(--color-text-secondary); text-align: center; margin-top: 0.25rem;">${displayProtein}g</div>` : ''}
+                                </div>
+                                <div class="macro-input-wrapper">
+                                    <label class="macro-input-label">Carbs</label>
+                                    <input type="number" class="macro-input" value="${food.carbs || 0}" placeholder="0" step="0.1" onchange="updateMealFood('${entry.id}', ${foodIndex}, 'carbs', this.value)">
+                                    ${quantity !== 1 ? `<div style="font-size: 0.7rem; color: var(--color-text-secondary); text-align: center; margin-top: 0.25rem;">${displayCarbs}g</div>` : ''}
+                                </div>
+                                <div class="macro-input-wrapper">
+                                    <label class="macro-input-label">Fats</label>
+                                    <input type="number" class="macro-input" value="${food.fats || 0}" placeholder="0" step="0.1" onchange="updateMealFood('${entry.id}', ${foodIndex}, 'fats', this.value)">
+                                    ${quantity !== 1 ? `<div style="font-size: 0.7rem; color: var(--color-text-secondary); text-align: center; margin-top: 0.25rem;">${displayFats}g</div>` : ''}
+                                </div>
                             </div>
-                            <div class="macro-input-wrapper">
-                                <label class="macro-input-label">Calories</label>
-                                <input type="number" class="macro-input" value="${food.calories || 0}" placeholder="0" onchange="updateMealFood('${meal.id}', ${foodIndex}, 'calories', this.value)">
-                                ${quantity !== 1 ? `<div style="font-size: 0.7rem; color: var(--color-text-secondary); text-align: center; margin-top: 0.25rem;">${displayCalories}</div>` : ''}
+                            <div class="food-action-buttons">
+                                <button class="btn-save-food" onclick="saveFoodToLibrary('${entry.id}', ${foodIndex})" title="Save to library">Save</button>
+                                <button class="btn-delete-food" onclick="deleteFoodFromMeal('${entry.id}', ${foodIndex})" title="Delete food">Delete</button>
                             </div>
-                            <div class="macro-input-wrapper">
-                                <label class="macro-input-label">Protein</label>
-                                <input type="number" class="macro-input" value="${food.protein || 0}" placeholder="0" step="0.1" onchange="updateMealFood('${meal.id}', ${foodIndex}, 'protein', this.value)">
-                                ${quantity !== 1 ? `<div style="font-size: 0.7rem; color: var(--color-text-secondary); text-align: center; margin-top: 0.25rem;">${displayProtein}g</div>` : ''}
-                            </div>
-                            <div class="macro-input-wrapper">
-                                <label class="macro-input-label">Carbs</label>
-                                <input type="number" class="macro-input" value="${food.carbs || 0}" placeholder="0" step="0.1" onchange="updateMealFood('${meal.id}', ${foodIndex}, 'carbs', this.value)">
-                                ${quantity !== 1 ? `<div style="font-size: 0.7rem; color: var(--color-text-secondary); text-align: center; margin-top: 0.25rem;">${displayCarbs}g</div>` : ''}
-                            </div>
-                            <div class="macro-input-wrapper">
-                                <label class="macro-input-label">Fats</label>
-                                <input type="number" class="macro-input" value="${food.fats || 0}" placeholder="0" step="0.1" onchange="updateMealFood('${meal.id}', ${foodIndex}, 'fats', this.value)">
-                                ${quantity !== 1 ? `<div style="font-size: 0.7rem; color: var(--color-text-secondary); text-align: center; margin-top: 0.25rem;">${displayFats}g</div>` : ''}
-                            </div>
-                        </div>
-                        <div class="food-action-buttons">
-                            <button class="btn-save-food" onclick="saveFoodToLibrary('${meal.id}', ${foodIndex})" title="Save to library">Save</button>
-                            <button class="btn-delete-food" onclick="deleteFoodFromMeal('${meal.id}', ${foodIndex})" title="Delete food">Delete</button>
-                        </div>
-                    </div>`;
+                        </div>`;
+                    });
                 });
                 
                 html += `</div>
-                    <div style="display: flex; gap: 0.75rem; margin-top: 1rem; flex-wrap: wrap;">
-                        <button class="quick-add-food-btn" onclick="addFoodToMeal('${meal.id}'); event.stopPropagation();">+ Add Food</button>
-                        ${meal.hasUnsavedChanges ? `<button class="btn" style="background: rgba(93, 138, 102, 0.2); color: var(--color-success); border: 1px solid rgba(93, 138, 102, 0.3); border-radius: 12px; padding: 0.75rem 1.25rem; font-weight: 500; min-height: 44px;" onclick="saveMealChanges('${meal.id}'); event.stopPropagation();">Save Changes</button>` : ''}
-                    </div>
-                </div>
                 </div>`;
             });
             
@@ -7679,49 +7733,93 @@
         }
 
         // Meal type selection modal functions
-        window.showMealTypeModal = function() {
-            document.getElementById('meal-type-modal').classList.add('active');
+        // New Food Logging Flow
+        let pendingFoodData = null; // Temporarily store food data before tagging
+
+        window.showAddFoodModal = function() {
+            document.getElementById('add-food-modal').classList.add('active');
         };
 
-        window.closeMealTypeModal = function() {
-            document.getElementById('meal-type-modal').classList.remove('active');
+        window.closeAddFoodModal = function() {
+            document.getElementById('add-food-modal').classList.remove('active');
         };
 
-        window.selectMealType = async function(mealType) {
-            closeMealTypeModal();
+        window.showMealTagModal = function() {
+            document.getElementById('meal-tag-modal').classList.add('active');
+        };
+
+        window.closeMealTagModal = function() {
+            document.getElementById('meal-tag-modal').classList.remove('active');
+            pendingFoodData = null;
+        };
+
+        window.addNewFood = function() {
+            closeAddFoodModal();
+            // Store a placeholder for new food
+            pendingFoodData = {
+                isNew: true,
+                food: { name: '', protein: 0, carbs: 0, fats: 0, calories: 0, quantity: 1 }
+            };
+            showMealTagModal();
+        };
+
+        window.showSavedFoodsForAdding = function() {
+            closeAddFoodModal();
+            // On mobile, show the saved foods modal
+            if (window.innerWidth < 768) {
+                openSavedFoodsModal();
+            } else {
+                // On desktop, the saved foods panel is already visible
+                alert('Select a food from the Saved Foods panel on the left');
+            }
+        };
+
+        window.tagFood = async function(mealTag) {
+            closeMealTagModal();
+            
+            if (!pendingFoodData) {
+                console.error('No pending food data');
+                return;
+            }
             
             const currentTime = getCurrentTimeString();
-            const mealData = {
+            
+            // Create or find meal group for this tag
+            const foodEntry = {
                 date: currentNutritionDate,
-                mealType: mealType,
+                mealType: mealTag,
                 time: currentTime,
-                foods: []
+                foods: [pendingFoodData.food]
             };
             
-            console.log('Adding meal:', {
+            console.log('Adding food:', {
                 date: currentNutritionDate,
-                mealType: mealType,
+                mealType: mealTag,
                 time: currentTime,
+                food: pendingFoodData.food,
                 timezone: userTimezone
             });
             
             try {
-                const docRef = await addDoc(collection(db, "nutrition"), mealData);
-                const newMeal = { id: docRef.id, ...mealData };
-                nutritionData.unshift(newMeal);
-                currentEditingMealId = newMeal.id; // Set context to the newly created meal
-                collapsedMeals[newMeal.id] = false; // Ensure new meal is expanded
-                console.log('Meal successfully added with ID:', docRef.id);
+                const docRef = await addDoc(collection(db, "nutrition"), foodEntry);
+                const newEntry = { id: docRef.id, ...foodEntry };
+                nutritionData.unshift(newEntry);
+                currentEditingMealId = newEntry.id;
+                const groupId = `${mealTag}-${currentNutritionDate}`;
+                collapsedMeals[groupId] = false;
+                console.log('Food successfully added with ID:', docRef.id);
+                pendingFoodData = null;
                 renderMeals();
             } catch (e) {
-                console.error("Error adding meal:", e);
-                alert('Error adding meal. Please check your connection and try again.');
-                throw e; // Re-throw for debugging
+                console.error("Error adding food:", e);
+                alert('Error adding food. Please check your connection and try again.');
+                throw e;
             }
         };
 
+        // Keep old functions for compatibility with existing meal editing
         window.addMeal = function() {
-            showMealTypeModal();
+            showAddFoodModal();
         };
 
         window.addFoodToMeal = function(mealId) {
@@ -8112,7 +8210,7 @@
                         `  ${macros.protein}g protein\n` +
                         `  ${macros.carbs}g carbs\n` +
                         `  ${macros.fats}g fats\n\n` +
-                        `Add to meal?`
+                        `Add this food?`
                     );
                     
                     if (!confirm) return;
@@ -8136,87 +8234,33 @@
                 }
             }
             
-            let targetMeal;
-            
-            // If a meal is currently being edited, add food to that meal
-            if (currentEditingMealId) {
-                targetMeal = nutritionData.find(m => m.id === currentEditingMealId);
-                
-                if (!targetMeal) {
-                    alert('Could not find the meal you were editing. Please try again.');
-                    currentEditingMealId = null;
-                    return;
+            // Store food data and prompt for meal tag
+            pendingFoodData = {
+                isNew: false,
+                food: {
+                    name: food.name,
+                    protein: food.protein,
+                    carbs: food.carbs,
+                    fats: food.fats,
+                    calories: food.calories,
+                    quantity: quantity
                 }
-            } else {
-                // No meal is being edited, prompt user to select or create a meal
-                const meals = nutritionData.filter(n => n.date === currentNutritionDate);
-                
-                if (meals.length === 0) {
-                    // No meals exist for today, create one with smart default
-                    const defaultMealType = getDefaultMealType();
-                    const mealType = prompt(`Enter meal type (Breakfast, Lunch, Dinner, or Snack):`, defaultMealType);
-                    if (!mealType) return; // User cancelled
-                    
-                    const mealData = {
-                        date: currentNutritionDate,
-                        mealType: mealType,
-                        time: getCurrentTimeString(),
-                        foods: []
-                    };
-                    
-                    try {
-                        const docRef = await addDoc(collection(db, "nutrition"), mealData);
-                        targetMeal = { id: docRef.id, ...mealData };
-                        nutritionData.unshift(targetMeal);
-                        currentEditingMealId = targetMeal.id;
-                    } catch (e) {
-                        console.error("Error creating meal:", e);
-                        alert('Error creating meal');
-                        return;
-                    }
-                } else {
-                    // Meals exist, ask which one to add to
-                    alert('Please click "Add Food" on the specific meal you want to add to, then use Quick Add.');
-                    return;
-                }
-            }
+            };
             
-            // Add food to meal with quantity
-            if (!targetMeal.foods) targetMeal.foods = [];
-            targetMeal.foods.push({
-                name: food.name,
-                protein: food.protein,
-                carbs: food.carbs,
-                fats: food.fats,
-                calories: food.calories,
-                quantity: quantity
-            });
+            showMealTagModal();
             
-            // Update use count and last used
-            food.useCount = (food.useCount || 0) + 1;
-            food.lastUsed = new Date().toISOString();
-            
-            // Save to Firebase
+            // Update use count
             try {
-                // Update the meal with the new food
-                const mealDocRef = doc(db, "nutrition", targetMeal.id);
-                await updateDoc(mealDocRef, { foods: targetMeal.foods });
-                
-                // Update only this specific saved food's usage stats
-                const foodDocRef = doc(db, "savedFoods", food.id);
-                await updateDoc(foodDocRef, {
-                    useCount: food.useCount,
-                    lastUsed: food.lastUsed
+                food.lastUsed = new Date().toISOString();
+                food.useCount = (food.useCount || 0) + 1;
+                const docRef = doc(db, "savedFoods", food.id);
+                await updateDoc(docRef, {
+                    lastUsed: food.lastUsed,
+                    useCount: food.useCount
                 });
-                
-                // Clear unsaved changes flag since we just saved
-                targetMeal.hasUnsavedChanges = false;
-                
-                renderMeals();
                 renderSavedFoods();
             } catch (e) {
-                console.error("Error quick adding food:", e);
-                alert('Error adding food to meal. Please try again.');
+                console.error("Error updating food use count:", e);
             }
         };
 
@@ -8819,8 +8863,7 @@
                         <div class="exercise-header">
                             <div>
                                 <div class="exercise-name">
-                                    ${exercise.name}
-                                    ${workoutExercise.substitution ? `<span class="substitution-tag">Alt for ${workoutExercise.originalExercise}</span>` : ''}
+                                    ${workoutExercise.substitution ? `${workoutExercise.substitution} <span style="color: var(--color-text-secondary); font-weight: 400;">→ ${workoutExercise.originalExercise}</span>` : exercise.name}
                                     ${workoutExercise.approach && !workoutExercise.substitution ? `<span class="substitution-tag">${workoutExercise.approach}</span>` : ''}
                                 </div>
                                 <div class="exercise-target">${exercise.sets} × ${exercise.reps}</div>
@@ -8877,9 +8920,13 @@
                                        value="${set.weight}" 
                                        onchange="updateSet(${exerciseIndex}, ${setIndex}, 'weight', this.value)">
                                 <span style="color: var(--color-text-secondary);">×</span>
-                                <input type="number" class="reps-input" placeholder="reps" 
-                                       value="${set.reps}" 
-                                       onchange="updateSet(${exerciseIndex}, ${setIndex}, 'reps', this.value)">
+                                <div class="reps-control-wrapper">
+                                    <button class="reps-increment-btn" onclick="adjustReps(${exerciseIndex}, ${setIndex}, -1); event.stopPropagation();" title="Decrease reps">−</button>
+                                    <input type="number" class="reps-input" placeholder="reps" 
+                                           value="${set.reps}" 
+                                           onchange="updateSet(${exerciseIndex}, ${setIndex}, 'reps', this.value)">
+                                    <button class="reps-increment-btn" onclick="adjustReps(${exerciseIndex}, ${setIndex}, 1); event.stopPropagation();" title="Increase reps">+</button>
+                                </div>
                                 <input type="text" class="notes-input" placeholder="notes" 
                                        value="${set.notes}" 
                                        onchange="updateSet(${exerciseIndex}, ${setIndex}, 'notes', this.value)">
@@ -8904,6 +8951,13 @@
         // Make functions globally available
         window.updateSet = function(exerciseIndex, setIndex, field, value) {
             currentWorkout[exerciseIndex].sets[setIndex][field] = value;
+        };
+
+        window.adjustReps = function(exerciseIndex, setIndex, delta) {
+            const currentReps = parseInt(currentWorkout[exerciseIndex].sets[setIndex].reps) || 0;
+            const newReps = Math.max(0, currentReps + delta);
+            currentWorkout[exerciseIndex].sets[setIndex].reps = newReps.toString();
+            renderWorkout();
         };
 
         window.addSet = function(exerciseIndex) {
