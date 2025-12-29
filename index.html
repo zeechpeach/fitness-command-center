@@ -7,9 +7,11 @@
     <link rel="icon" type="image/x-icon" href="favicon.ico">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://firestore.googleapis.com">
+    <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js" defer></script>
     <style>
         :root {
             /* Color Palette - Warm Neutral Theme */
@@ -4440,7 +4442,7 @@
     <script type="module">
         // Firebase imports
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, query, orderBy, where, limit, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDocs, query, orderBy, where, limit, deleteDoc, doc, updateDoc, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
         // Firebase config
         const firebaseConfig = {
@@ -4456,6 +4458,18 @@
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+
+        // Enable offline persistence for faster repeat visits
+        enableIndexedDbPersistence(db)
+            .catch((err) => {
+                if (err.code === 'failed-precondition') {
+                    console.log('Persistence failed: Multiple tabs open');
+                } else if (err.code === 'unimplemented') {
+                    console.log('Persistence not available in this browser');
+                } else {
+                    console.error('Persistence error:', err);
+                }
+            });
 
         // Global state
         let currentDay = 'Upper';
@@ -4596,7 +4610,18 @@
 
         async function loadWorkoutsFromFirebase() {
             try {
-                const q = query(collection(db, "workouts"), orderBy("timestamp", "desc"), limit(50));
+                // Load only last 90 days of workouts for better performance
+                const ninetyDaysAgo = new Date();
+                ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+                const dateThreshold = ninetyDaysAgo.toISOString().split('T')[0];
+                
+                const q = query(
+                    collection(db, "workouts"),
+                    where("date", ">=", dateThreshold),
+                    orderBy("date", "desc"),
+                    orderBy("timestamp", "desc"),
+                    limit(100)
+                );
                 const querySnapshot = await getDocs(q);
                 const workouts = [];
                 querySnapshot.forEach((doc) => {
@@ -4607,7 +4632,21 @@
                 return workouts;
             } catch (e) {
                 console.error("Error loading workouts:", e);
-                return [];
+                // Fallback to simpler query if date filtering fails
+                try {
+                    const q = query(collection(db, "workouts"), orderBy("timestamp", "desc"), limit(50));
+                    const querySnapshot = await getDocs(q);
+                    const workouts = [];
+                    querySnapshot.forEach((doc) => {
+                        workouts.push({ id: doc.id, ...doc.data() });
+                    });
+                    allWorkouts = workouts;
+                    console.log("Loaded workouts (fallback):", workouts.length);
+                    return workouts;
+                } catch (fallbackError) {
+                    console.error("Fallback query also failed:", fallbackError);
+                    return [];
+                }
             }
         }
 
@@ -9199,6 +9238,12 @@
             }
         };
 
+        // Tab loading flags for lazy loading
+        let nutritionLoaded = false;
+        let weightLoaded = false;
+        let photosLoaded = false;
+        let analyticsLoaded = false;
+
         // Main app initialization
         document.addEventListener('DOMContentLoaded', async function() {
             console.log('Initializing Fitness Command Center...');
@@ -9206,7 +9251,7 @@
             // Initialize timezone-aware current nutrition date
             currentNutritionDate = getTodayDateString();
             
-            // Set up UI immediately
+            // Set up UI immediately - no blocking
             setupEventListeners();
             
             // Initialize program editor
@@ -9218,34 +9263,26 @@
             // Initialize workout with active program
             initializeWorkout();
             
-            // Load data in background
-            await Promise.all([
-                loadWorkoutsFromFirebase(),
-                loadNutritionData(),
-                loadWeightData(),
-                loadPhotoData(),
-                loadSavedFoods(),
-                loadBodyGoalData(),
-                loadTravelModeData(),
-                loadSickDayData()
-            ]);
+            // UI is now interactive! Load remaining data in background without blocking
+            // Fire and forget - these will update UI when they complete
+            loadWorkoutsFromFirebase().then(() => {
+                updateSuggestions();
+                updateAnalytics();
+            });
             
-            // Update with real data
-            updateSuggestions();
-            updateAnalytics();
-            updateInsights();
-            updateProgress();
-            renderSavedFoods();
-            updateTravelModeBanner();
+            loadBodyGoalData();
+            loadTravelModeData();
+            loadSickDayData();
             
-            console.log('Fitness Command Center loaded successfully!');
+            // Don't load nutrition/weight/photo data yet - lazy load when tabs are opened
+            
+            console.log('Fitness Command Center ready! (data loading in background)');
         });
 
         function setupEventListeners() {
-            // Tab switching
+            // Tab switching - showTab handles lazy loading
             document.getElementById('workout-tab-btn').addEventListener('click', () => {
                 showTab('workout');
-                updateSuggestions();
             });
             document.getElementById('calendar-tab-btn').addEventListener('click', () => {
                 showTab('calendar');
@@ -9253,27 +9290,19 @@
             });
             document.getElementById('nutrition-tab-btn').addEventListener('click', () => {
                 showTab('nutrition');
-                renderMeals();
-                renderSavedFoods();
                 updateNutritionCalories();
             });
             document.getElementById('body-metrics-tab-btn').addEventListener('click', () => {
                 showTab('body-metrics');
-                createWeightChart();
-                renderPhotos();
-                updateBodyGoalDisplay();
             });
             document.getElementById('analytics-tab-btn').addEventListener('click', () => {
                 showTab('analytics');
-                updateAnalytics();
             });
             document.getElementById('progress-tab-btn').addEventListener('click', () => {
                 showTab('progress');
-                updateProgress();
             });
             document.getElementById('intelligence-tab-btn').addEventListener('click', () => {
                 showTab('intelligence');
-                updateInsights();
             });
 
             // Day selection
@@ -9400,6 +9429,45 @@
             // Show selected tab
             document.getElementById(tabName + '-content').classList.add('active');
             document.getElementById(tabName + '-tab-btn').classList.add('active');
+
+            // Lazy load data for tabs when first visited
+            if (tabName === 'nutrition' && !nutritionLoaded) {
+                nutritionLoaded = true;
+                loadNutritionData().then(() => {
+                    renderMeals();
+                });
+                loadSavedFoods().then(() => {
+                    renderSavedFoods();
+                });
+            }
+            
+            if (tabName === 'body-metrics' && !weightLoaded) {
+                weightLoaded = true;
+                loadWeightData().then(() => {
+                    createWeightChart();
+                    updateBodyGoalDisplay();
+                });
+            }
+            
+            if (tabName === 'body-metrics' && !photosLoaded) {
+                photosLoaded = true;
+                loadPhotoData().then(() => {
+                    renderPhotos();
+                });
+            }
+            
+            if (tabName === 'analytics' && !analyticsLoaded) {
+                analyticsLoaded = true;
+                updateAnalytics();
+            }
+            
+            if (tabName === 'progress') {
+                updateProgress();
+            }
+            
+            if (tabName === 'intelligence') {
+                updateInsights();
+            }
         }
 
         function selectDay(day) {
