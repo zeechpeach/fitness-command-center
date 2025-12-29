@@ -4615,11 +4615,11 @@
                 ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
                 const dateThreshold = ninetyDaysAgo.toISOString().split('T')[0];
                 
+                // Query with date filter and single orderBy to avoid compound index requirement
                 const q = query(
                     collection(db, "workouts"),
                     where("date", ">=", dateThreshold),
                     orderBy("date", "desc"),
-                    orderBy("timestamp", "desc"),
                     limit(100)
                 );
                 const querySnapshot = await getDocs(q);
@@ -6832,6 +6832,12 @@
             const ctx = document.getElementById('pr-timeline-chart');
             if (!ctx) return;
             
+            // Wait for Chart.js to load if deferred
+            if (!isChartJsReady()) {
+                waitForChartJs(() => createPRTimelineChart(exerciseName));
+                return;
+            }
+            
             if (charts.prTimeline) charts.prTimeline.destroy();
             
             if (!exerciseName) {
@@ -9041,6 +9047,26 @@
             return Array.from(foodMap.values());
         }
 
+        // Helper function to check if Chart.js is loaded
+        function isChartJsReady() {
+            return typeof Chart !== 'undefined';
+        }
+
+        // Helper function to wait for Chart.js to be loaded
+        function waitForChartJs(callback, maxAttempts = 50) {
+            let attempts = 0;
+            const checkInterval = setInterval(() => {
+                attempts++;
+                if (isChartJsReady()) {
+                    clearInterval(checkInterval);
+                    callback();
+                } else if (attempts >= maxAttempts) {
+                    clearInterval(checkInterval);
+                    console.error('Chart.js failed to load within timeout period');
+                }
+            }, 100);
+        }
+
         // Weight Functions
         window.logWeight = async function() {
             const date = document.getElementById('weight-date-input').value;
@@ -9079,6 +9105,12 @@
         function createWeightChart() {
             const ctx = document.getElementById('weight-chart');
             if (!ctx) return;
+            
+            // Wait for Chart.js to load if deferred
+            if (!isChartJsReady()) {
+                waitForChartJs(createWeightChart);
+                return;
+            }
             
             if (charts.weight) charts.weight.destroy();
             
