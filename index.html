@@ -539,6 +539,39 @@
             color: var(--color-text-secondary);
         }
 
+        .reps-control-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .reps-increment-btn {
+            width: 2rem;
+            height: 2rem;
+            padding: 0;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-sm);
+            color: var(--color-text-primary);
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition-base);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+        }
+
+        .reps-increment-btn:hover {
+            background: var(--color-bg);
+            border-color: var(--color-accent-secondary);
+        }
+
+        .reps-increment-btn:active {
+            transform: scale(0.95);
+        }
+
         .btn {
             padding: 0.75rem 1.25rem;
             border: none;
@@ -7190,7 +7223,7 @@
                 
                 // Show intensity if available
                 if (workout.intensity) {
-                    html += '<div style="background: rgba(15, 23, 42, 0.6); padding: 1rem; border-radius: 8px;">';
+                    html += '<div style="background: var(--color-surface); border: 1px solid var(--color-border); padding: 1rem; border-radius: var(--radius-md); box-shadow: var(--shadow-sm);">';
                     html += '<h4 style="color: var(--color-accent-primary); margin-bottom: 0.5rem;">Session Intensity</h4>';
                     html += '<div style="display: flex; gap: 1rem; flex-wrap: wrap;">';
                     if (workout.intensity.energy) html += `<span style="color: var(--color-text-secondary);">Energy: ${workout.intensity.energy}/5</span>`;
@@ -7202,8 +7235,8 @@
                 
                 // Show exercises
                 Object.values(workout.exercises || {}).forEach(exercise => {
-                    html += '<div style="background: rgba(15, 23, 42, 0.6); padding: 1rem; border-radius: 8px;">';
-                    html += `<h4 style="color: white; margin-bottom: 0.5rem;">${exercise.exercise}`;
+                    html += '<div style="background: var(--color-surface); border: 1px solid var(--color-border); padding: 1rem; border-radius: var(--radius-md); box-shadow: var(--shadow-sm);">';
+                    html += `<h4 style="color: var(--color-text-primary); margin-bottom: 0.5rem;">${exercise.exercise}`;
                     if (exercise.substitution && exercise.originalExercise) {
                         html += ` <span style="background: rgba(74, 93, 74, 0.2); color: var(--color-accent-primary); padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: normal;">Alt for ${exercise.originalExercise}</span>`;
                     } else if (exercise.approach) {
@@ -7215,7 +7248,7 @@
                         if (set.completed) {
                             html += `<div style="color: var(--color-success); padding: 0.25rem;">✓ Completed</div>`;
                         } else if (set.weight || set.reps) {
-                            html += `<div style="color: #93c5fd; padding: 0.25rem;">Set ${idx + 1}: ${set.weight}lbs × ${set.reps} reps`;
+                            html += `<div style="color: var(--color-text-secondary); padding: 0.25rem;">Set ${idx + 1}: ${set.weight}lbs × ${set.reps} reps`;
                             if (set.notes) html += ` (${set.notes})`;
                             html += '</div>';
                         }
@@ -8819,8 +8852,7 @@
                         <div class="exercise-header">
                             <div>
                                 <div class="exercise-name">
-                                    ${exercise.name}
-                                    ${workoutExercise.substitution ? `<span class="substitution-tag">Alt for ${workoutExercise.originalExercise}</span>` : ''}
+                                    ${workoutExercise.substitution ? `${workoutExercise.substitution} <span style="color: var(--color-text-secondary); font-weight: 400;">→ ${workoutExercise.originalExercise}</span>` : exercise.name}
                                     ${workoutExercise.approach && !workoutExercise.substitution ? `<span class="substitution-tag">${workoutExercise.approach}</span>` : ''}
                                 </div>
                                 <div class="exercise-target">${exercise.sets} × ${exercise.reps}</div>
@@ -8877,9 +8909,13 @@
                                        value="${set.weight}" 
                                        onchange="updateSet(${exerciseIndex}, ${setIndex}, 'weight', this.value)">
                                 <span style="color: var(--color-text-secondary);">×</span>
-                                <input type="number" class="reps-input" placeholder="reps" 
-                                       value="${set.reps}" 
-                                       onchange="updateSet(${exerciseIndex}, ${setIndex}, 'reps', this.value)">
+                                <div class="reps-control-wrapper">
+                                    <button class="reps-increment-btn" onclick="adjustReps(${exerciseIndex}, ${setIndex}, -1); event.stopPropagation();" title="Decrease reps">−</button>
+                                    <input type="number" class="reps-input" placeholder="reps" 
+                                           value="${set.reps}" 
+                                           onchange="updateSet(${exerciseIndex}, ${setIndex}, 'reps', this.value)">
+                                    <button class="reps-increment-btn" onclick="adjustReps(${exerciseIndex}, ${setIndex}, 1); event.stopPropagation();" title="Increase reps">+</button>
+                                </div>
                                 <input type="text" class="notes-input" placeholder="notes" 
                                        value="${set.notes}" 
                                        onchange="updateSet(${exerciseIndex}, ${setIndex}, 'notes', this.value)">
@@ -8904,6 +8940,13 @@
         // Make functions globally available
         window.updateSet = function(exerciseIndex, setIndex, field, value) {
             currentWorkout[exerciseIndex].sets[setIndex][field] = value;
+        };
+
+        window.adjustReps = function(exerciseIndex, setIndex, delta) {
+            const currentReps = parseInt(currentWorkout[exerciseIndex].sets[setIndex].reps) || 0;
+            const newReps = Math.max(0, currentReps + delta);
+            currentWorkout[exerciseIndex].sets[setIndex].reps = newReps.toString();
+            renderWorkout();
         };
 
         window.addSet = function(exerciseIndex) {
