@@ -8325,9 +8325,10 @@
             if (unit !== food.servingUnit) {
                 amountInFoodUnit = convertUnits(amount, unit, food.servingUnit);
                 if (amountInFoodUnit === null) {
-                    document.getElementById('calculated-servings').innerHTML = 
-                        `<span style="color: var(--color-error);">⚠️ Cannot convert ${unit} to ${food.servingUnit}</span>`;
-                    document.getElementById('calculated-servings').style.display = 'block';
+                    const calcElement = document.getElementById('calculated-servings');
+                    calcElement.textContent = `⚠️ Cannot convert ${unit} to ${food.servingUnit}`;
+                    calcElement.style.color = 'var(--color-error)';
+                    calcElement.style.display = 'block';
                     return;
                 }
             }
@@ -8336,8 +8337,10 @@
             const servings = amountInFoodUnit / food.servingSize;
             currentServings = servings;
             
+            const calcElement = document.getElementById('calculated-servings');
+            calcElement.style.color = '';
             document.getElementById('calculated-servings-value').textContent = servings.toFixed(2);
-            document.getElementById('calculated-servings').style.display = 'block';
+            calcElement.style.display = 'block';
         };
 
         // Unit conversion function
@@ -8347,7 +8350,7 @@
             // Conversion table (to grams)
             const toGrams = {
                 'g': 1,
-                'oz': 28.3495,
+                'oz': 28.35,
                 'ml': 1, // Assume same density as water
             };
             
