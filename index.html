@@ -1815,6 +1815,272 @@
             transform: scale(1.02);
         }
 
+        /* Bottom Sheet Modal Styles */
+        .bottom-sheet-modal {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--color-surface);
+            border-top-left-radius: var(--radius-xl);
+            border-top-right-radius: var(--radius-xl);
+            padding: 0;
+            max-height: 85vh;
+            z-index: 1001;
+            transform: translateY(100%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.15);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .bottom-sheet-modal.active {
+            transform: translateY(0);
+        }
+
+        .bottom-sheet-handle {
+            width: 40px;
+            height: 4px;
+            background: var(--color-border);
+            border-radius: 2px;
+            margin: 12px auto 8px;
+            flex-shrink: 0;
+        }
+
+        .bottom-sheet-header {
+            padding: 0 1.5rem 1rem;
+            border-bottom: 1px solid var(--color-border);
+            flex-shrink: 0;
+        }
+
+        .bottom-sheet-title {
+            font-size: 1.25rem;
+            font-weight: 500;
+            color: var(--color-text-primary);
+            margin: 0;
+        }
+
+        .bottom-sheet-content {
+            padding: 1.5rem;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        /* Tab Toggle Styles */
+        .tab-toggle {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            background: var(--color-bg);
+            padding: 0.25rem;
+            border-radius: var(--radius-lg);
+        }
+
+        .tab-toggle-btn {
+            flex: 1;
+            padding: 0.75rem;
+            background: transparent;
+            border: none;
+            border-radius: var(--radius-md);
+            color: var(--color-text-secondary);
+            cursor: pointer;
+            font-size: 0.9375rem;
+            font-weight: 500;
+            transition: var(--transition-base);
+            min-height: 44px;
+        }
+
+        .tab-toggle-btn.active {
+            background: var(--color-surface);
+            color: var(--color-text-primary);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .tab-toggle-btn:hover:not(.active) {
+            color: var(--color-text-primary);
+        }
+
+        /* Portion Input Modal Styles */
+        .portion-input-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .portion-input-section h4 {
+            color: var(--color-text-secondary);
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-bottom: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .servings-controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1.5rem;
+            padding: 1.5rem;
+            background: var(--color-bg);
+            border-radius: var(--radius-lg);
+        }
+
+        .serving-adjust-btn {
+            width: 48px;
+            height: 48px;
+            border-radius: var(--radius-full);
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            color: var(--color-text-primary);
+            font-size: 1.5rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition-base);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .serving-adjust-btn:hover {
+            background: var(--color-accent-primary);
+            color: var(--color-surface);
+            border-color: transparent;
+            transform: scale(1.05);
+        }
+
+        .serving-display {
+            font-size: 2rem;
+            font-weight: 500;
+            color: var(--color-text-primary);
+            min-width: 80px;
+            text-align: center;
+        }
+
+        .measured-inputs {
+            display: flex;
+            gap: 1rem;
+            align-items: flex-end;
+        }
+
+        .measured-input-group {
+            flex: 1;
+        }
+
+        .measured-input-group label {
+            display: block;
+            color: var(--color-text-secondary);
+            font-size: 0.875rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .measured-input-group input,
+        .measured-input-group select {
+            width: 100%;
+            padding: 0.75rem;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            color: var(--color-text-primary);
+            font-size: 1rem;
+            min-height: 48px;
+        }
+
+        .measured-input-group input:focus,
+        .measured-input-group select:focus {
+            outline: none;
+            border-color: var(--color-accent-primary);
+            box-shadow: var(--focus-shadow);
+        }
+
+        .calculated-servings {
+            text-align: center;
+            padding: 0.75rem;
+            background: rgba(93, 138, 102, 0.1);
+            border-radius: var(--radius-md);
+            color: var(--color-success);
+            font-size: 0.9375rem;
+            margin-top: 0.75rem;
+        }
+
+        .meal-tag-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .meal-tag-btn {
+            padding: 0.875rem;
+            background: var(--color-bg);
+            border: 2px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            color: var(--color-text-primary);
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 400;
+            transition: var(--transition-base);
+            text-align: center;
+            min-height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .meal-tag-btn:hover {
+            border-color: var(--color-accent-primary);
+            background: rgba(168, 181, 160, 0.1);
+        }
+
+        .meal-tag-btn.selected {
+            background: var(--color-accent-primary);
+            color: var(--color-surface);
+            border-color: transparent;
+        }
+
+        .btn-primary-action {
+            width: 100%;
+            padding: 1rem;
+            background: var(--color-accent-primary);
+            color: var(--color-surface);
+            border: none;
+            border-radius: var(--radius-full);
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition-base);
+            min-height: 56px;
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-primary-action:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .btn-primary-action:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .food-info-header {
+            text-align: center;
+            padding: 1rem 0;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .food-info-name {
+            font-size: 1.25rem;
+            font-weight: 500;
+            color: var(--color-text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .food-info-serving {
+            font-size: 0.9375rem;
+            color: var(--color-text-secondary);
+        }
+
         /* Exercise Substitution Styles */
         .substitution-tag {
             display: inline-block;
@@ -3537,12 +3803,13 @@
 
                 <!-- Main Content Area -->
                 <div class="nutrition-main-content">
-                    <!-- Food logging section - moved to top -->
+                    <!-- Add Food button at top for easy access -->
+                    <button class="btn btn-add" onclick="showAddFoodModal()" style="width: 100%; padding: 1rem; font-size: 1rem; margin-bottom: 1.5rem;">+ Add Food</button>
+
+                    <!-- Food logging section -->
                     <div id="meals-container">
                         <!-- Meals will be rendered here -->
                     </div>
-
-                    <button class="btn btn-add" onclick="showAddFoodModal()" style="width: 100%; padding: 1rem; font-size: 1rem; margin-bottom: 1.5rem;">+ Add Food</button>
 
                     <!-- Nutrition summary - de-prioritized -->
                     <div class="analytics-card">
@@ -3874,35 +4141,161 @@
         </div>
     </div>
 
-    <!-- Add Food Modal -->
-    <div class="modal-overlay" id="add-food-modal">
-        <div class="modal-content">
-            <h3 class="modal-title">Add Food</h3>
-            <div class="meal-type-buttons">
+    <!-- Add Food Modal - Bottom Sheet Style -->
+    <div class="modal-backdrop" id="add-food-backdrop" onclick="closeAddFoodModal()"></div>
+    <div class="bottom-sheet-modal" id="add-food-modal">
+        <div class="bottom-sheet-handle"></div>
+        <div class="bottom-sheet-header">
+            <h3 class="bottom-sheet-title">Add Food</h3>
+        </div>
+        <div class="bottom-sheet-content">
+            <div class="tab-toggle">
+                <button class="tab-toggle-btn active" id="new-food-tab" onclick="switchAddFoodTab('new')">📝 New</button>
+                <button class="tab-toggle-btn" id="saved-food-tab" onclick="switchAddFoodTab('saved')">⭐ Saved</button>
+            </div>
+            
+            <!-- New Food Panel -->
+            <div id="new-food-panel">
                 <button class="meal-type-btn" onclick="addNewFood()">
-                    <div style="font-weight: 600;">New Food</div>
+                    <div style="font-weight: 600;">Create New Food</div>
                     <div style="font-size: 0.75rem; opacity: 0.8; margin-top: 0.25rem;">Enter macros manually</div>
                 </button>
-                <button class="meal-type-btn" onclick="showSavedFoodsForAdding()">
-                    <div style="font-weight: 600;">From Saved</div>
-                    <div style="font-size: 0.75rem; opacity: 0.8; margin-top: 0.25rem;">Choose from your library</div>
-                </button>
             </div>
-            <button class="modal-close" onclick="closeAddFoodModal()">Cancel</button>
+            
+            <!-- Saved Foods Panel -->
+            <div id="saved-food-panel" style="display: none;">
+                <input type="text" id="saved-food-search-inline" class="saved-food-search" placeholder="🔍 Search saved foods..." oninput="renderInlineSavedFoods(this.value)">
+                <div class="saved-food-list" id="saved-food-list-inline" style="max-height: 400px;">
+                    <div class="empty-state">No saved foods yet. Save a food to your library!</div>
+                </div>
+            </div>
+            
+            <button class="modal-close" onclick="closeAddFoodModal()" style="margin-top: 1rem;">Cancel</button>
         </div>
     </div>
 
-    <!-- Meal Type Selection Modal (used after adding food) -->
+    <!-- Portion Input Modal - Bottom Sheet Style -->
+    <div class="modal-backdrop" id="portion-modal-backdrop" onclick="closePortionModal()"></div>
+    <div class="bottom-sheet-modal" id="portion-modal">
+        <div class="bottom-sheet-handle"></div>
+        <div class="bottom-sheet-header">
+            <div class="food-info-header">
+                <div class="food-info-name" id="portion-food-name">Food Name</div>
+                <div class="food-info-serving" id="portion-food-serving">1 serving = 46g</div>
+            </div>
+        </div>
+        <div class="bottom-sheet-content">
+            <div class="portion-input-section">
+                <h4>How much?</h4>
+                <div class="tab-toggle">
+                    <button class="tab-toggle-btn active" id="servings-mode-tab" onclick="switchPortionMode('servings')">Servings</button>
+                    <button class="tab-toggle-btn" id="measured-mode-tab" onclick="switchPortionMode('measured')">Measured</button>
+                </div>
+            </div>
+            
+            <!-- Servings Mode -->
+            <div id="servings-mode-panel">
+                <div class="servings-controls">
+                    <button class="serving-adjust-btn" onclick="adjustServings(-1)">−</button>
+                    <div class="serving-display" id="servings-display">1</div>
+                    <button class="serving-adjust-btn" onclick="adjustServings(1)">+</button>
+                </div>
+            </div>
+            
+            <!-- Measured Mode -->
+            <div id="measured-mode-panel" style="display: none;">
+                <div class="measured-inputs">
+                    <div class="measured-input-group" style="flex: 2;">
+                        <label>Amount</label>
+                        <input type="number" id="measured-amount-input" placeholder="135" step="0.1" min="0" oninput="calculateServingsFromMeasured()">
+                    </div>
+                    <div class="measured-input-group">
+                        <label>Unit</label>
+                        <select id="measured-unit-select" onchange="calculateServingsFromMeasured()">
+                            <option value="g">grams</option>
+                            <option value="oz">ounces</option>
+                            <option value="ml">milliliters</option>
+                            <option value="each">each</option>
+                            <option value="serving">serving</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="calculated-servings" id="calculated-servings" style="display: none;">
+                    = <span id="calculated-servings-value">0</span> servings
+                </div>
+            </div>
+            
+            <div class="portion-input-section">
+                <h4>Tag as:</h4>
+                <div class="meal-tag-buttons">
+                    <button class="meal-tag-btn" id="tag-breakfast" onclick="selectMealTag('Breakfast')">🍳 Breakfast</button>
+                    <button class="meal-tag-btn" id="tag-lunch" onclick="selectMealTag('Lunch')">☀️ Lunch</button>
+                    <button class="meal-tag-btn" id="tag-dinner" onclick="selectMealTag('Dinner')">🌙 Dinner</button>
+                    <button class="meal-tag-btn" id="tag-snack" onclick="selectMealTag('Snack')">🍪 Snack</button>
+                </div>
+            </div>
+            
+            <button class="btn-primary-action" id="add-to-log-btn" onclick="addFoodToLog()" disabled>✓ Add to Log</button>
+        </div>
+    </div>
+
+    <!-- Meal Type Selection Modal (legacy - for new food flow) -->
     <div class="modal-overlay" id="meal-tag-modal">
         <div class="modal-content">
             <h3 class="modal-title">Tag this food as:</h3>
             <div class="meal-type-buttons">
-                <button class="meal-type-btn" onclick="tagFood('Breakfast')">Breakfast</button>
-                <button class="meal-type-btn" onclick="tagFood('Lunch')">Lunch</button>
-                <button class="meal-type-btn" onclick="tagFood('Dinner')">Dinner</button>
-                <button class="meal-type-btn" onclick="tagFood('Snack')">Snack</button>
+                <button class="meal-type-btn" onclick="tagFood('Breakfast')">🍳 Breakfast</button>
+                <button class="meal-type-btn" onclick="tagFood('Lunch')">☀️ Lunch</button>
+                <button class="meal-type-btn" onclick="tagFood('Dinner')">🌙 Dinner</button>
+                <button class="meal-type-btn" onclick="tagFood('Snack')">🍪 Snack</button>
             </div>
             <button class="modal-close" onclick="closeMealTagModal()">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Save Food to Library Modal -->
+    <div class="modal-backdrop" id="save-food-backdrop" onclick="closeSaveFoodModal()"></div>
+    <div class="bottom-sheet-modal" id="save-food-modal">
+        <div class="bottom-sheet-handle"></div>
+        <div class="bottom-sheet-header">
+            <h3 class="bottom-sheet-title">Save to Library</h3>
+        </div>
+        <div class="bottom-sheet-content">
+            <div class="portion-input-section">
+                <label style="display: block; margin-bottom: 0.5rem; color: var(--color-text-secondary);">Food Name</label>
+                <input type="text" id="save-food-name" class="measured-input-group input" style="width: 100%; padding: 0.75rem; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface);" placeholder="Egg Whites">
+            </div>
+            
+            <div class="portion-input-section">
+                <h4>Serving Size</h4>
+                <div class="measured-inputs">
+                    <div class="measured-input-group" style="flex: 1;">
+                        <label>Size</label>
+                        <input type="number" id="save-serving-size" placeholder="46" step="0.1" min="0.1">
+                    </div>
+                    <div class="measured-input-group" style="flex: 1;">
+                        <label>Unit</label>
+                        <select id="save-serving-unit">
+                            <option value="g">grams</option>
+                            <option value="oz">ounces</option>
+                            <option value="ml">milliliters</option>
+                            <option value="each">each</option>
+                            <option value="serving">serving</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="portion-input-section">
+                <h4>Default portion input</h4>
+                <div class="tab-toggle">
+                    <button class="tab-toggle-btn" id="save-pref-servings" onclick="selectPortionPreference('servings')">Servings</button>
+                    <button class="tab-toggle-btn active" id="save-pref-measured" onclick="selectPortionPreference('measured')">Measured</button>
+                </div>
+            </div>
+            
+            <button class="btn-primary-action" onclick="confirmSaveFood()">💾 Save to Library</button>
+            <button class="modal-close" onclick="closeSaveFoodModal()" style="margin-top: 0.5rem;">Cancel</button>
         </div>
     </div>
 
@@ -7732,18 +8125,333 @@
             }, 300);
         }
 
-        // Meal type selection modal functions
-        // New Food Logging Flow
-        let pendingFoodData = null; // Temporarily store food data before tagging
 
+        // New Food Logging Flow with Bottom Sheet Modals
+        let pendingFoodData = null; // Temporarily store food data before tagging
+        let currentPortionMode = 'servings'; // 'servings' or 'measured'
+        let currentServings = 1;
+        let selectedMealTag = null;
+        let saveFoodPreference = 'measured';
+        let saveFoodContext = null; // {mealId, foodIndex}
+
+        // Add Food Modal Functions
         window.showAddFoodModal = function() {
-            document.getElementById('add-food-modal').classList.add('active');
+            const modal = document.getElementById('add-food-modal');
+            const backdrop = document.getElementById('add-food-backdrop');
+            
+            backdrop.style.display = 'block';
+            setTimeout(() => {
+                backdrop.classList.add('active');
+                modal.classList.add('active');
+            }, 10);
+            
+            // Reset to New tab
+            switchAddFoodTab('new');
+            document.body.style.overflow = 'hidden';
         };
 
         window.closeAddFoodModal = function() {
-            document.getElementById('add-food-modal').classList.remove('active');
+            const modal = document.getElementById('add-food-modal');
+            const backdrop = document.getElementById('add-food-backdrop');
+            
+            modal.classList.remove('active');
+            setTimeout(() => {
+                backdrop.classList.remove('active');
+                backdrop.style.display = 'none';
+                document.body.style.overflow = '';
+            }, 300);
         };
 
+        window.switchAddFoodTab = function(tab) {
+            const newTab = document.getElementById('new-food-tab');
+            const savedTab = document.getElementById('saved-food-tab');
+            const newPanel = document.getElementById('new-food-panel');
+            const savedPanel = document.getElementById('saved-food-panel');
+            
+            if (tab === 'new') {
+                newTab.classList.add('active');
+                savedTab.classList.remove('active');
+                newPanel.style.display = 'block';
+                savedPanel.style.display = 'none';
+            } else {
+                newTab.classList.remove('active');
+                savedTab.classList.add('active');
+                newPanel.style.display = 'none';
+                savedPanel.style.display = 'block';
+                renderInlineSavedFoods();
+            }
+        };
+
+        // Render saved foods inside the Add Food modal
+        function renderInlineSavedFoods(searchTerm = '') {
+            const container = document.getElementById('saved-food-list-inline');
+            
+            let filteredFoods = savedFoods;
+            if (searchTerm) {
+                filteredFoods = savedFoods.filter(food => 
+                    food.name.toLowerCase().includes(searchTerm.toLowerCase())
+                );
+            }
+            
+            filteredFoods.sort((a, b) => {
+                const dateA = new Date(a.lastUsed || 0);
+                const dateB = new Date(b.lastUsed || 0);
+                if (dateB - dateA !== 0) return dateB - dateA;
+                return (b.useCount || 0) - (a.useCount || 0);
+            });
+            
+            let html = '';
+            if (filteredFoods.length === 0) {
+                html = '<div class="empty-state">No saved foods found.</div>';
+            } else {
+                filteredFoods.forEach(food => {
+                    const servingInfo = food.servingSize && food.servingUnit 
+                        ? `1 serving = ${food.servingSize}${food.servingUnit}` 
+                        : '';
+                    html += `<div class="saved-food-item" onclick="selectSavedFood('${food.id}')">
+                        <div class="saved-food-info">
+                            <div class="saved-food-name">${food.name}</div>
+                            ${servingInfo ? `<div style="font-size: 0.75rem; color: var(--color-text-secondary); margin-top: 0.25rem;">${servingInfo}</div>` : ''}
+                        </div>
+                        <div style="font-size: 1.5rem; color: var(--color-accent-primary);">➕</div>
+                    </div>`;
+                });
+            }
+            
+            container.innerHTML = html;
+        }
+
+        // Select a saved food and show portion input
+        window.selectSavedFood = async function(foodId) {
+            const food = savedFoods.find(f => f.id === foodId);
+            if (!food) return;
+            
+            closeAddFoodModal();
+            showPortionModal(food);
+            
+            // Update use count
+            try {
+                food.lastUsed = new Date().toISOString();
+                food.useCount = (food.useCount || 0) + 1;
+                const docRef = doc(db, "savedFoods", food.id);
+                await updateDoc(docRef, {
+                    lastUsed: food.lastUsed,
+                    useCount: food.useCount
+                });
+                renderSavedFoods();
+            } catch (e) {
+                console.error("Error updating food use count:", e);
+            }
+        };
+
+        // Portion Modal Functions
+        window.showPortionModal = function(food) {
+            const modal = document.getElementById('portion-modal');
+            const backdrop = document.getElementById('portion-modal-backdrop');
+            
+            // Store food data
+            pendingFoodData = {
+                isNew: false,
+                food: food,
+                originalFood: food
+            };
+            
+            // Set food info
+            document.getElementById('portion-food-name').textContent = food.name;
+            const servingInfo = food.servingSize && food.servingUnit 
+                ? `1 serving = ${food.servingSize}${food.servingUnit}`
+                : '1 serving';
+            document.getElementById('portion-food-serving').textContent = servingInfo;
+            
+            // Reset inputs
+            currentServings = 1;
+            document.getElementById('servings-display').textContent = currentServings;
+            document.getElementById('measured-amount-input').value = '';
+            document.getElementById('measured-unit-select').value = food.servingUnit || 'g';
+            document.getElementById('calculated-servings').style.display = 'none';
+            selectedMealTag = null;
+            
+            // Reset meal tag buttons
+            ['breakfast', 'lunch', 'dinner', 'snack'].forEach(tag => {
+                document.getElementById(`tag-${tag}`).classList.remove('selected');
+            });
+            
+            // Set default mode based on food preference
+            const defaultMode = food.portionInputPreference || 'servings';
+            switchPortionMode(defaultMode);
+            
+            // Disable add button until meal tag is selected
+            document.getElementById('add-to-log-btn').disabled = true;
+            
+            backdrop.style.display = 'block';
+            setTimeout(() => {
+                backdrop.classList.add('active');
+                modal.classList.add('active');
+            }, 10);
+            
+            document.body.style.overflow = 'hidden';
+        };
+
+        window.closePortionModal = function() {
+            const modal = document.getElementById('portion-modal');
+            const backdrop = document.getElementById('portion-modal-backdrop');
+            
+            modal.classList.remove('active');
+            setTimeout(() => {
+                backdrop.classList.remove('active');
+                backdrop.style.display = 'none';
+                document.body.style.overflow = '';
+                pendingFoodData = null;
+                selectedMealTag = null;
+            }, 300);
+        };
+
+        window.switchPortionMode = function(mode) {
+            currentPortionMode = mode;
+            const servingsTab = document.getElementById('servings-mode-tab');
+            const measuredTab = document.getElementById('measured-mode-tab');
+            const servingsPanel = document.getElementById('servings-mode-panel');
+            const measuredPanel = document.getElementById('measured-mode-panel');
+            
+            if (mode === 'servings') {
+                servingsTab.classList.add('active');
+                measuredTab.classList.remove('active');
+                servingsPanel.style.display = 'block';
+                measuredPanel.style.display = 'none';
+            } else {
+                servingsTab.classList.remove('active');
+                measuredTab.classList.add('active');
+                servingsPanel.style.display = 'none';
+                measuredPanel.style.display = 'block';
+            }
+        };
+
+        window.adjustServings = function(delta) {
+            currentServings = Math.max(0.25, currentServings + (delta * 0.25));
+            document.getElementById('servings-display').textContent = currentServings;
+        };
+
+        window.calculateServingsFromMeasured = function() {
+            const amount = parseFloat(document.getElementById('measured-amount-input').value);
+            const unit = document.getElementById('measured-unit-select').value;
+            
+            if (!amount || amount <= 0 || !pendingFoodData || !pendingFoodData.originalFood) {
+                document.getElementById('calculated-servings').style.display = 'none';
+                return;
+            }
+            
+            const food = pendingFoodData.originalFood;
+            if (!food.servingSize || !food.servingUnit) {
+                document.getElementById('calculated-servings').style.display = 'none';
+                return;
+            }
+            
+            // Convert units if needed
+            let amountInFoodUnit = amount;
+            if (unit !== food.servingUnit) {
+                amountInFoodUnit = convertUnits(amount, unit, food.servingUnit);
+                if (amountInFoodUnit === null) {
+                    document.getElementById('calculated-servings').innerHTML = 
+                        `<span style="color: var(--color-error);">⚠️ Cannot convert ${unit} to ${food.servingUnit}</span>`;
+                    document.getElementById('calculated-servings').style.display = 'block';
+                    return;
+                }
+            }
+            
+            // Calculate servings
+            const servings = amountInFoodUnit / food.servingSize;
+            currentServings = servings;
+            
+            document.getElementById('calculated-servings-value').textContent = servings.toFixed(2);
+            document.getElementById('calculated-servings').style.display = 'block';
+        };
+
+        // Unit conversion function
+        function convertUnits(amount, fromUnit, toUnit) {
+            if (fromUnit === toUnit) return amount;
+            
+            // Conversion table (to grams)
+            const toGrams = {
+                'g': 1,
+                'oz': 28.3495,
+                'ml': 1, // Assume same density as water
+            };
+            
+            // Can't convert between weight/volume and count
+            const incompatible = ['each', 'serving'];
+            if (incompatible.includes(fromUnit) || incompatible.includes(toUnit)) {
+                return null;
+            }
+            
+            // Convert to grams, then to target unit
+            if (!toGrams[fromUnit] || !toGrams[toUnit]) {
+                return null;
+            }
+            
+            const grams = amount * toGrams[fromUnit];
+            return grams / toGrams[toUnit];
+        }
+
+        window.selectMealTag = function(tag) {
+            selectedMealTag = tag;
+            
+            // Update button states
+            ['breakfast', 'lunch', 'dinner', 'snack'].forEach(t => {
+                const btn = document.getElementById(`tag-${t.toLowerCase()}`);
+                if (t.toLowerCase() === tag.toLowerCase()) {
+                    btn.classList.add('selected');
+                } else {
+                    btn.classList.remove('selected');
+                }
+            });
+            
+            // Enable add button
+            document.getElementById('add-to-log-btn').disabled = false;
+        };
+
+        window.addFoodToLog = async function() {
+            if (!selectedMealTag || !pendingFoodData) {
+                alert('Please select a meal tag');
+                return;
+            }
+            
+            const food = pendingFoodData.originalFood;
+            const currentTime = getCurrentTimeString();
+            
+            const foodEntry = {
+                date: currentNutritionDate,
+                mealType: selectedMealTag,
+                time: currentTime,
+                foods: [{
+                    name: food.name,
+                    protein: food.protein,
+                    carbs: food.carbs,
+                    fats: food.fats,
+                    calories: food.calories,
+                    quantity: currentServings
+                }]
+            };
+            
+            try {
+                const docRef = await addDoc(collection(db, "nutrition"), foodEntry);
+                const newEntry = { id: docRef.id, ...foodEntry };
+                nutritionData.unshift(newEntry);
+                
+                // Auto-expand this meal group
+                const groupId = `${selectedMealTag}-${currentNutritionDate}`;
+                collapsedMeals[groupId] = false;
+                
+                closePortionModal();
+                renderMeals();
+                
+                console.log('Food logged successfully');
+            } catch (e) {
+                console.error("Error logging food:", e);
+                alert('Error logging food. Please try again.');
+            }
+        };
+
+        // Legacy meal tag modal (for new food flow)
         window.showMealTagModal = function() {
             document.getElementById('meal-tag-modal').classList.add('active');
         };
@@ -7764,14 +8472,8 @@
         };
 
         window.showSavedFoodsForAdding = function() {
-            closeAddFoodModal();
-            // On mobile, show the saved foods modal
-            if (window.innerWidth < 768) {
-                openSavedFoodsModal();
-            } else {
-                // On desktop, the saved foods panel is already visible
-                alert('Select a food from the Saved Foods panel on the left');
-            }
+            // This is now handled by the tab toggle
+            switchAddFoodTab('saved');
         };
 
         window.tagFood = async function(mealTag) {
@@ -7937,7 +8639,7 @@
         };
 
         // Saved Foods Functions
-        window.saveFoodToLibrary = async function(mealId, foodIndex) {
+        window.saveFoodToLibrary = function(mealId, foodIndex) {
             const meal = nutritionData.find(m => m.id === mealId);
             if (!meal || !meal.foods || !meal.foods[foodIndex]) return;
             
@@ -7948,31 +8650,87 @@
                 return;
             }
             
+            // Store context
+            saveFoodContext = { mealId, foodIndex, food };
+            
+            // Show save food modal
+            showSaveFoodModal(food);
+        };
+
+        window.showSaveFoodModal = function(food) {
+            const modal = document.getElementById('save-food-modal');
+            const backdrop = document.getElementById('save-food-backdrop');
+            
+            // Pre-fill food name
+            document.getElementById('save-food-name').value = food.name || '';
+            document.getElementById('save-serving-size').value = '1';
+            document.getElementById('save-serving-unit').value = 'serving';
+            
+            // Default to measured preference
+            selectPortionPreference('measured');
+            
+            backdrop.style.display = 'block';
+            setTimeout(() => {
+                backdrop.classList.add('active');
+                modal.classList.add('active');
+            }, 10);
+            
+            document.body.style.overflow = 'hidden';
+        };
+
+        window.closeSaveFoodModal = function() {
+            const modal = document.getElementById('save-food-modal');
+            const backdrop = document.getElementById('save-food-backdrop');
+            
+            modal.classList.remove('active');
+            setTimeout(() => {
+                backdrop.classList.remove('active');
+                backdrop.style.display = 'none';
+                document.body.style.overflow = '';
+                saveFoodContext = null;
+            }, 300);
+        };
+
+        window.selectPortionPreference = function(pref) {
+            saveFoodPreference = pref;
+            const servingsBtn = document.getElementById('save-pref-servings');
+            const measuredBtn = document.getElementById('save-pref-measured');
+            
+            if (pref === 'servings') {
+                servingsBtn.classList.add('active');
+                measuredBtn.classList.remove('active');
+            } else {
+                servingsBtn.classList.remove('active');
+                measuredBtn.classList.add('active');
+            }
+        };
+
+        window.confirmSaveFood = async function() {
+            if (!saveFoodContext) return;
+            
+            const foodName = document.getElementById('save-food-name').value.trim();
+            const servingSize = parseFloat(document.getElementById('save-serving-size').value);
+            const servingUnit = document.getElementById('save-serving-unit').value;
+            
+            if (!foodName) {
+                alert('Please enter a food name');
+                return;
+            }
+            
+            if (!servingSize || servingSize <= 0) {
+                alert('Please enter a valid serving size');
+                return;
+            }
+            
+            const food = saveFoodContext.food;
             const newProtein = parseFloat(food.protein) || 0;
             const newCarbs = parseFloat(food.carbs) || 0;
             const newFats = parseFloat(food.fats) || 0;
             const newCalories = parseFloat(food.calories) || 0;
             
-            // Prompt for serving size and unit
-            const servingSize = prompt('Enter serving size (e.g., "46" for 46g, "1" for 1 each):', '1');
-            if (servingSize === null) return; // User cancelled
-            const servingSizeNum = parseFloat(servingSize);
-            if (!servingSizeNum || servingSizeNum <= 0) {
-                alert('Please enter a valid serving size');
-                return;
-            }
-            
-            const servingUnit = prompt('Enter serving unit:\n  g = grams\n  oz = ounces\n  ml = milliliters\n  each = individual items\n  serving = generic serving', 'serving');
-            if (servingUnit === null) return; // User cancelled
-            const validUnits = ['g', 'oz', 'ml', 'each', 'serving'];
-            if (!validUnits.includes(servingUnit.toLowerCase())) {
-                alert('Please enter a valid unit (g, oz, ml, each, or serving)');
-                return;
-            }
-            
             // Check if food already exists (by name and nutritional values)
             const existingFood = savedFoods.find(f => {
-                const nameMatch = f.name.toLowerCase().trim() === food.name.toLowerCase().trim();
+                const nameMatch = f.name.toLowerCase().trim() === foodName.toLowerCase();
                 const proteinMatch = (parseFloat(f.protein) || 0) === newProtein;
                 const carbsMatch = (parseFloat(f.carbs) || 0) === newCarbs;
                 const fatsMatch = (parseFloat(f.fats) || 0) === newFats;
@@ -7986,17 +8744,21 @@
                 try {
                     existingFood.lastUsed = new Date().toISOString();
                     existingFood.useCount = (existingFood.useCount || 0) + 1;
-                    existingFood.servingSize = servingSizeNum;
+                    existingFood.servingSize = servingSize;
                     existingFood.servingUnit = servingUnit.toLowerCase();
+                    existingFood.portionInputPreference = saveFoodPreference;
                     
                     const docRef = doc(db, "savedFoods", existingFood.id);
                     await updateDoc(docRef, {
                         lastUsed: existingFood.lastUsed,
                         useCount: existingFood.useCount,
                         servingSize: existingFood.servingSize,
-                        servingUnit: existingFood.servingUnit
+                        servingUnit: existingFood.servingUnit,
+                        portionInputPreference: existingFood.portionInputPreference
                     });
-                    alert('Food updated in your library with serving information!');
+                    
+                    closeSaveFoodModal();
+                    alert('Food updated in your library!');
                     renderSavedFoods();
                 } catch (e) {
                     console.error("Error updating food:", e);
@@ -8004,23 +8766,24 @@
                 }
             } else {
                 // Check if food with same name but different nutritional values exists
-                const sameName = savedFoods.find(f => f.name.toLowerCase().trim() === food.name.toLowerCase().trim());
+                const sameName = savedFoods.find(f => f.name.toLowerCase().trim() === foodName.toLowerCase());
                 
                 if (sameName) {
-                    if (!confirm(`"${food.name}" already exists in saved foods with different nutritional values. Save as a new entry?`)) {
+                    if (!confirm(`"${foodName}" already exists in saved foods with different nutritional values. Save as a new entry?`)) {
                         return;
                     }
                 }
                 
                 // Add new food
                 const savedFood = {
-                    name: food.name.trim(),
+                    name: foodName,
                     protein: newProtein,
                     carbs: newCarbs,
                     fats: newFats,
                     calories: newCalories,
-                    servingSize: servingSizeNum,
+                    servingSize: servingSize,
                     servingUnit: servingUnit.toLowerCase(),
+                    portionInputPreference: saveFoodPreference,
                     created: new Date().toISOString(),
                     lastUsed: new Date().toISOString(),
                     useCount: 0
@@ -8029,6 +8792,8 @@
                 try {
                     const docRef = await addDoc(collection(db, "savedFoods"), savedFood);
                     savedFoods.unshift({ id: docRef.id, ...savedFood });
+                    
+                    closeSaveFoodModal();
                     alert('Food saved to library!');
                     renderSavedFoods();
                 } catch (e) {
@@ -8093,7 +8858,7 @@
                             ${servingInfo ? `<div style="font-size: 0.75rem; color: var(--color-text-secondary); margin-top: 0.25rem;">${servingInfo}</div>` : ''}
                         </div>
                         <div class="saved-food-actions">
-                            <button class="btn-quick-add" onclick="quickAddFood('${food.id}'); closeSavedFoodsModal();">Quick Add</button>
+                            <button class="btn-quick-add" onclick="selectSavedFood('${food.id}'); closeSavedFoodsModal();">Add</button>
                             <button class="btn-delete-food" onclick="deleteSavedFood('${food.id}')">Delete</button>
                         </div>
                     </div>`;
@@ -8148,120 +8913,9 @@
         };
 
 
-        window.quickAddFood = async function(foodId) {
-            const food = savedFoods.find(f => f.id === foodId);
-            if (!food) return;
-            
-            let quantity = 1;
-            
-            // If food has serving size and unit, offer dual entry mode
-            if (food.servingSize && food.servingUnit) {
-                const choice = prompt(
-                    `${food.name}\n(1 serving = ${food.servingSize}${food.servingUnit})\n\n` +
-                    `Enter amount:\n` +
-                    `  • Type a number + unit (e.g., "120g", "3oz", "2each")\n` +
-                    `  • Or just a number for servings (e.g., "2" for 2 servings)`,
-                    '1'
-                );
-                
-                if (choice === null) return; // User cancelled
-                
-                const trimmed = choice.trim();
-                
-                // Check if input contains a unit
-                const unitMatch = trimmed.match(/^([0-9.]+)\s*(g|oz|ml|each|serving)s?$/i);
-                
-                if (unitMatch) {
-                    // User entered amount with unit - calculate servings
-                    const amount = parseFloat(unitMatch[1]);
-                    const inputUnit = unitMatch[2].toLowerCase();
-                    
-                    if (amount <= 0) {
-                        alert('Please enter a positive amount');
-                        return;
-                    }
-                    
-                    // Convert units if needed
-                    let amountInFoodUnit = amount;
-                    if (inputUnit !== food.servingUnit) {
-                        amountInFoodUnit = convertUnits(amount, inputUnit, food.servingUnit);
-                        if (amountInFoodUnit === null) {
-                            alert(`Cannot convert ${inputUnit} to ${food.servingUnit}. Please use ${food.servingUnit}.`);
-                            return;
-                        }
-                    }
-                    
-                    // Calculate servings
-                    quantity = amountInFoodUnit / food.servingSize;
-                    
-                    // Show confirmation with calculation
-                    const macros = {
-                        calories: Math.round(food.calories * quantity),
-                        protein: Math.round(food.protein * quantity * 10) / 10,
-                        carbs: Math.round(food.carbs * quantity * 10) / 10,
-                        fats: Math.round(food.fats * quantity * 10) / 10
-                    };
-                    
-                    const confirm = window.confirm(
-                        `${food.name}\n\n` +
-                        `${amount}${inputUnit} = ${quantity.toFixed(2)} servings\n\n` +
-                        `This will add:\n` +
-                        `  ${macros.calories} calories\n` +
-                        `  ${macros.protein}g protein\n` +
-                        `  ${macros.carbs}g carbs\n` +
-                        `  ${macros.fats}g fats\n\n` +
-                        `Add this food?`
-                    );
-                    
-                    if (!confirm) return;
-                } else {
-                    // User entered plain number - treat as servings
-                    quantity = parseFloat(trimmed);
-                    if (isNaN(quantity) || quantity <= 0) {
-                        alert('Please enter a valid number');
-                        return;
-                    }
-                }
-            } else {
-                // Legacy mode: food doesn't have serving info, just ask for servings
-                const quantityInput = prompt('How many servings?', '1');
-                if (quantityInput === null) return; // User cancelled
-                
-                quantity = parseFloat(quantityInput) || 1;
-                if (quantity <= 0) {
-                    alert('Please enter a positive quantity');
-                    return;
-                }
-            }
-            
-            // Store food data and prompt for meal tag
-            pendingFoodData = {
-                isNew: false,
-                food: {
-                    name: food.name,
-                    protein: food.protein,
-                    carbs: food.carbs,
-                    fats: food.fats,
-                    calories: food.calories,
-                    quantity: quantity
-                }
-            };
-            
-            showMealTagModal();
-            
-            // Update use count
-            try {
-                food.lastUsed = new Date().toISOString();
-                food.useCount = (food.useCount || 0) + 1;
-                const docRef = doc(db, "savedFoods", food.id);
-                await updateDoc(docRef, {
-                    lastUsed: food.lastUsed,
-                    useCount: food.useCount
-                });
-                renderSavedFoods();
-            } catch (e) {
-                console.error("Error updating food use count:", e);
-            }
+        // Legacy quickAddFood - now redirects to new flow
+        window.quickAddFood = function(foodId) {
+            selectSavedFood(foodId);
         };
 
         window.deleteSavedFood = async function(foodId) {
