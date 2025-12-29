@@ -4611,12 +4611,13 @@
         async function loadWorkoutsFromFirebase() {
             try {
                 // Load only last 90 days of workouts for better performance
+                // Use more robust date calculation
                 const ninetyDaysAgo = new Date();
-                ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+                ninetyDaysAgo.setTime(ninetyDaysAgo.getTime() - (90 * 24 * 60 * 60 * 1000));
                 const dateThreshold = ninetyDaysAgo.toISOString().split('T')[0];
                 
-                // Query with date filter - using where and orderBy on same field (date)
-                // This doesn't require a compound index
+                // Query with date filter - note: descending orderBy with where inequality
+                // may require a Firestore index. Falls back to simpler query if needed.
                 const q = query(
                     collection(db, "workouts"),
                     where("date", ">=", dateThreshold),
@@ -9302,14 +9303,19 @@
             
             // UI is now interactive! Load remaining data in background without blocking
             // Fire and forget - these will update UI when they complete
-            loadWorkoutsFromFirebase().then(() => {
-                updateSuggestions();
-                updateAnalytics();
-            });
+            loadWorkoutsFromFirebase()
+                .then(() => {
+                    updateSuggestions();
+                    updateAnalytics();
+                })
+                .catch(err => {
+                    console.error('Failed to load workouts in background:', err);
+                    // UI remains functional, just without workout history
+                });
             
-            loadBodyGoalData();
-            loadTravelModeData();
-            loadSickDayData();
+            loadBodyGoalData().catch(err => console.error('Failed to load body goal data:', err));
+            loadTravelModeData().catch(err => console.error('Failed to load travel mode data:', err));
+            loadSickDayData().catch(err => console.error('Failed to load sick day data:', err));
             
             // Don't load nutrition/weight/photo data yet - lazy load when tabs are opened
             
@@ -9470,27 +9476,48 @@
             // Lazy load data for tabs when first visited
             if (tabName === 'nutrition' && !nutritionLoaded) {
                 nutritionLoaded = true;
-                loadNutritionData().then(() => {
-                    renderMeals();
-                });
-                loadSavedFoods().then(() => {
-                    renderSavedFoods();
-                });
+                loadNutritionData()
+                    .then(() => renderMeals())
+                    .catch(err => {
+                        console.error('Failed to load nutrition data:', err);
+                        // Show user-friendly message
+                        const container = document.getElementById('meals-container');
+                        if (container) {
+                            container.innerHTML = '<p style="color: var(--color-error); text-align: center; padding: 2rem;">Failed to load nutrition data. Please refresh the page.</p>';
+                        }
+                    });
+                loadSavedFoods()
+                    .then(() => renderSavedFoods())
+                    .catch(err => console.error('Failed to load saved foods:', err));
             }
             
             if (tabName === 'body-metrics') {
                 if (!weightLoaded) {
                     weightLoaded = true;
-                    loadWeightData().then(() => {
-                        createWeightChart();
-                        updateBodyGoalDisplay();
-                    });
+                    loadWeightData()
+                        .then(() => {
+                            createWeightChart();
+                            updateBodyGoalDisplay();
+                        })
+                        .catch(err => {
+                            console.error('Failed to load weight data:', err);
+                            const container = document.getElementById('weight-chart');
+                            if (container && container.parentElement) {
+                                container.parentElement.innerHTML = '<p style="color: var(--color-error); text-align: center; padding: 2rem;">Failed to load weight data. Please refresh the page.</p>';
+                            }
+                        });
                 }
                 if (!photosLoaded) {
                     photosLoaded = true;
-                    loadPhotoData().then(() => {
-                        renderPhotos();
-                    });
+                    loadPhotoData()
+                        .then(() => renderPhotos())
+                        .catch(err => {
+                            console.error('Failed to load photo data:', err);
+                            const container = document.getElementById('photo-gallery');
+                            if (container) {
+                                container.innerHTML = '<p style="color: var(--color-error); text-align: center; padding: 2rem;">Failed to load photos. Please refresh the page.</p>';
+                            }
+                        });
                 }
             }
             
