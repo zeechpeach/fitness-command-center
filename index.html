@@ -1708,6 +1708,25 @@
             background: rgba(196, 115, 109, 0.25);
         }
 
+        .btn-edit-food {
+            padding: 0.5rem 1rem;
+            background: rgba(74, 93, 74, 0.15);
+            color: var(--color-accent-primary);
+            border: 1px solid var(--color-accent-secondary);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 500;
+            transition: var(--transition-base);
+            white-space: nowrap;
+            min-width: 70px;
+        }
+
+        .btn-edit-food:hover {
+            background: rgba(74, 93, 74, 0.25);
+            transform: translateY(-1px);
+        }
+
         .btn-save-food {
             padding: 0.75rem 1rem;
             min-height: 44px;
@@ -4298,6 +4317,135 @@
             
             <button class="btn-primary-action" onclick="confirmSaveFood()">💾 Save to Library</button>
             <button class="modal-close" onclick="closeSaveFoodModal()" style="margin-top: 0.5rem;">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Create New Food Modal -->
+    <div class="modal-backdrop" id="create-food-backdrop" onclick="closeCreateFoodModal()"></div>
+    <div class="bottom-sheet-modal" id="create-food-modal">
+        <div class="bottom-sheet-handle"></div>
+        <div class="bottom-sheet-header">
+            <h3 class="bottom-sheet-title">Create New Food</h3>
+        </div>
+        <div class="bottom-sheet-content">
+            <div class="portion-input-section">
+                <label style="display: block; margin-bottom: 0.5rem; color: var(--color-text-secondary);">Food Name</label>
+                <input type="text" id="create-food-name" class="measured-input-group input" style="width: 100%; padding: 0.75rem; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface);" placeholder="e.g., Egg Whites">
+            </div>
+            
+            <div class="portion-input-section">
+                <h4>Nutritional Information (per serving)</h4>
+                <div class="macro-inputs-grid">
+                    <div class="macro-input-wrapper">
+                        <label class="macro-input-label">Calories</label>
+                        <input type="number" id="create-food-calories" class="macro-input" placeholder="0" step="1" min="0">
+                    </div>
+                    <div class="macro-input-wrapper">
+                        <label class="macro-input-label">Protein (g)</label>
+                        <input type="number" id="create-food-protein" class="macro-input" placeholder="0" step="0.1" min="0">
+                    </div>
+                    <div class="macro-input-wrapper">
+                        <label class="macro-input-label">Carbs (g)</label>
+                        <input type="number" id="create-food-carbs" class="macro-input" placeholder="0" step="0.1" min="0">
+                    </div>
+                    <div class="macro-input-wrapper">
+                        <label class="macro-input-label">Fats (g)</label>
+                        <input type="number" id="create-food-fats" class="macro-input" placeholder="0" step="0.1" min="0">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="portion-input-section">
+                <h4>Serving Size</h4>
+                <div class="measured-inputs">
+                    <div class="measured-input-group" style="flex: 1;">
+                        <label>Size</label>
+                        <input type="number" id="create-food-serving-size" placeholder="46" step="0.1" min="0.1">
+                    </div>
+                    <div class="measured-input-group" style="flex: 1;">
+                        <label>Unit</label>
+                        <select id="create-food-serving-unit">
+                            <option value="g">grams</option>
+                            <option value="oz">ounces</option>
+                            <option value="ml">milliliters</option>
+                            <option value="each">each</option>
+                            <option value="serving">serving</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="portion-input-section">
+                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                    <input type="checkbox" id="create-food-save-to-library" checked style="width: 1.25rem; height: 1.25rem;">
+                    <span style="color: var(--color-text-primary);">Save to my food library for future use</span>
+                </label>
+            </div>
+            
+            <button class="btn-primary-action" onclick="confirmCreateFood()">✓ Create & Add to Meal</button>
+            <button class="modal-close" onclick="closeCreateFoodModal()" style="margin-top: 0.5rem;">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Edit Food Modal -->
+    <div class="modal-backdrop" id="edit-food-backdrop" onclick="closeEditFoodModal()"></div>
+    <div class="bottom-sheet-modal" id="edit-food-modal">
+        <div class="bottom-sheet-handle"></div>
+        <div class="bottom-sheet-header">
+            <h3 class="bottom-sheet-title">Edit Food</h3>
+        </div>
+        <div class="bottom-sheet-content">
+            <input type="hidden" id="edit-food-id">
+            
+            <div class="portion-input-section">
+                <label style="display: block; margin-bottom: 0.5rem; color: var(--color-text-secondary);">Food Name</label>
+                <input type="text" id="edit-food-name" class="measured-input-group input" style="width: 100%; padding: 0.75rem; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface);" placeholder="e.g., Egg Whites">
+            </div>
+            
+            <div class="portion-input-section">
+                <h4>Nutritional Information (per serving)</h4>
+                <div class="macro-inputs-grid">
+                    <div class="macro-input-wrapper">
+                        <label class="macro-input-label">Calories</label>
+                        <input type="number" id="edit-food-calories" class="macro-input" placeholder="0" step="1" min="0">
+                    </div>
+                    <div class="macro-input-wrapper">
+                        <label class="macro-input-label">Protein (g)</label>
+                        <input type="number" id="edit-food-protein" class="macro-input" placeholder="0" step="0.1" min="0">
+                    </div>
+                    <div class="macro-input-wrapper">
+                        <label class="macro-input-label">Carbs (g)</label>
+                        <input type="number" id="edit-food-carbs" class="macro-input" placeholder="0" step="0.1" min="0">
+                    </div>
+                    <div class="macro-input-wrapper">
+                        <label class="macro-input-label">Fats (g)</label>
+                        <input type="number" id="edit-food-fats" class="macro-input" placeholder="0" step="0.1" min="0">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="portion-input-section">
+                <h4>Serving Size</h4>
+                <div class="measured-inputs">
+                    <div class="measured-input-group" style="flex: 1;">
+                        <label>Size</label>
+                        <input type="number" id="edit-food-serving-size" placeholder="46" step="0.1" min="0.1">
+                    </div>
+                    <div class="measured-input-group" style="flex: 1;">
+                        <label>Unit</label>
+                        <select id="edit-food-serving-unit">
+                            <option value="g">grams</option>
+                            <option value="oz">ounces</option>
+                            <option value="ml">milliliters</option>
+                            <option value="each">each</option>
+                            <option value="serving">serving</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <button class="btn-primary-action" onclick="confirmEditFood()">💾 Save Changes</button>
+            <button class="modal-close" onclick="closeEditFoodModal()" style="margin-top: 0.5rem;">Cancel</button>
         </div>
     </div>
 
@@ -8487,12 +8635,98 @@
 
         window.addNewFood = function() {
             closeAddFoodModal();
-            // Store a placeholder for new food
-            pendingFoodData = {
-                isNew: true,
-                food: { name: '', protein: 0, carbs: 0, fats: 0, calories: 0, quantity: 1 }
+            showCreateFoodModal();
+        };
+
+        window.showCreateFoodModal = function() {
+            const modal = document.getElementById('create-food-modal');
+            const backdrop = document.getElementById('create-food-backdrop');
+            
+            // Reset all fields
+            document.getElementById('create-food-name').value = '';
+            document.getElementById('create-food-calories').value = '';
+            document.getElementById('create-food-protein').value = '';
+            document.getElementById('create-food-carbs').value = '';
+            document.getElementById('create-food-fats').value = '';
+            document.getElementById('create-food-serving-size').value = '1';
+            document.getElementById('create-food-serving-unit').value = 'serving';
+            document.getElementById('create-food-save-to-library').checked = true;
+            
+            backdrop.style.display = 'block';
+            setTimeout(() => {
+                backdrop.classList.add('active');
+                modal.classList.add('active');
+            }, 10);
+            
+            document.body.style.overflow = 'hidden';
+        };
+
+        window.closeCreateFoodModal = function() {
+            const modal = document.getElementById('create-food-modal');
+            const backdrop = document.getElementById('create-food-backdrop');
+            
+            modal.classList.remove('active');
+            setTimeout(() => {
+                backdrop.classList.remove('active');
+                backdrop.style.display = 'none';
+                document.body.style.overflow = '';
+            }, 300);
+        };
+
+        window.confirmCreateFood = async function() {
+            const name = document.getElementById('create-food-name').value.trim();
+            const calories = parseFloat(document.getElementById('create-food-calories').value) || 0;
+            const protein = parseFloat(document.getElementById('create-food-protein').value) || 0;
+            const carbs = parseFloat(document.getElementById('create-food-carbs').value) || 0;
+            const fats = parseFloat(document.getElementById('create-food-fats').value) || 0;
+            const servingSize = parseFloat(document.getElementById('create-food-serving-size').value) || 1;
+            const servingUnit = document.getElementById('create-food-serving-unit').value;
+            const saveToLibrary = document.getElementById('create-food-save-to-library').checked;
+            
+            if (!name) {
+                alert('Please enter a food name');
+                return;
+            }
+            
+            if (calories === 0 && protein === 0 && carbs === 0 && fats === 0) {
+                alert('Please enter at least one nutritional value');
+                return;
+            }
+            
+            const newFood = {
+                name: name,
+                protein: protein,
+                carbs: carbs,
+                fats: fats,
+                calories: calories,
+                servingSize: servingSize,
+                servingUnit: servingUnit.toLowerCase(),
+                portionInputPreference: 'measured'
             };
-            showMealTagModal();
+            
+            // Save to library if checked
+            if (saveToLibrary) {
+                try {
+                    const savedFood = {
+                        ...newFood,
+                        created: new Date().toISOString(),
+                        lastUsed: new Date().toISOString(),
+                        useCount: 0
+                    };
+                    
+                    const docRef = await addDoc(collection(db, "savedFoods"), savedFood);
+                    savedFoods.unshift({ id: docRef.id, ...savedFood });
+                    renderSavedFoods();
+                    console.log('Food saved to library');
+                } catch (e) {
+                    console.error("Error saving food to library:", e);
+                    alert('Error saving food to library, but will still add to meal');
+                }
+            }
+            
+            // Close the create modal and show portion modal to add to meal
+            closeCreateFoodModal();
+            showPortionModal(newFood);
         };
 
         window.showSavedFoodsForAdding = function() {
@@ -8883,6 +9117,7 @@
                         </div>
                         <div class="saved-food-actions">
                             <button class="btn-quick-add" onclick="selectSavedFood('${food.id}'); closeSavedFoodsModal();">Add</button>
+                            <button class="btn-edit-food" onclick="editSavedFood('${food.id}')">Edit</button>
                             <button class="btn-delete-food" onclick="deleteSavedFood('${food.id}')">Delete</button>
                         </div>
                     </div>`;
@@ -8940,6 +9175,102 @@
         // Legacy quickAddFood - now redirects to new flow
         window.quickAddFood = function(foodId) {
             selectSavedFood(foodId);
+        };
+
+        window.editSavedFood = function(foodId) {
+            const food = savedFoods.find(f => f.id === foodId);
+            if (!food) {
+                console.error('Food not found:', foodId);
+                return;
+            }
+            
+            showEditFoodModal(food);
+        };
+
+        window.showEditFoodModal = function(food) {
+            const modal = document.getElementById('edit-food-modal');
+            const backdrop = document.getElementById('edit-food-backdrop');
+            
+            // Fill in the form with current values
+            document.getElementById('edit-food-id').value = food.id;
+            document.getElementById('edit-food-name').value = food.name || '';
+            document.getElementById('edit-food-calories').value = food.calories || 0;
+            document.getElementById('edit-food-protein').value = food.protein || 0;
+            document.getElementById('edit-food-carbs').value = food.carbs || 0;
+            document.getElementById('edit-food-fats').value = food.fats || 0;
+            document.getElementById('edit-food-serving-size').value = food.servingSize || 1;
+            document.getElementById('edit-food-serving-unit').value = food.servingUnit || 'serving';
+            
+            backdrop.style.display = 'block';
+            setTimeout(() => {
+                backdrop.classList.add('active');
+                modal.classList.add('active');
+            }, 10);
+            
+            document.body.style.overflow = 'hidden';
+        };
+
+        window.closeEditFoodModal = function() {
+            const modal = document.getElementById('edit-food-modal');
+            const backdrop = document.getElementById('edit-food-backdrop');
+            
+            modal.classList.remove('active');
+            setTimeout(() => {
+                backdrop.classList.remove('active');
+                backdrop.style.display = 'none';
+                document.body.style.overflow = '';
+            }, 300);
+        };
+
+        window.confirmEditFood = async function() {
+            const foodId = document.getElementById('edit-food-id').value;
+            const name = document.getElementById('edit-food-name').value.trim();
+            const calories = parseFloat(document.getElementById('edit-food-calories').value) || 0;
+            const protein = parseFloat(document.getElementById('edit-food-protein').value) || 0;
+            const carbs = parseFloat(document.getElementById('edit-food-carbs').value) || 0;
+            const fats = parseFloat(document.getElementById('edit-food-fats').value) || 0;
+            const servingSize = parseFloat(document.getElementById('edit-food-serving-size').value) || 1;
+            const servingUnit = document.getElementById('edit-food-serving-unit').value;
+            
+            if (!name) {
+                alert('Please enter a food name');
+                return;
+            }
+            
+            try {
+                // Update in Firebase
+                const docRef = doc(db, "savedFoods", foodId);
+                await updateDoc(docRef, {
+                    name: name,
+                    calories: calories,
+                    protein: protein,
+                    carbs: carbs,
+                    fats: fats,
+                    servingSize: servingSize,
+                    servingUnit: servingUnit.toLowerCase()
+                });
+                
+                // Update local state
+                const food = savedFoods.find(f => f.id === foodId);
+                if (food) {
+                    food.name = name;
+                    food.calories = calories;
+                    food.protein = protein;
+                    food.carbs = carbs;
+                    food.fats = fats;
+                    food.servingSize = servingSize;
+                    food.servingUnit = servingUnit.toLowerCase();
+                }
+                
+                closeEditFoodModal();
+                renderSavedFoods();
+                alert('Food updated successfully!');
+                
+                console.log(`Updated saved food ${foodId}`);
+            } catch (e) {
+                console.error("Error updating saved food:", e);
+                alert('Error updating food. Please try again.');
+            }
         };
 
         window.deleteSavedFood = async function(foodId) {
@@ -9291,7 +9622,7 @@
         let progressLoaded = false;
 
         // Main app initialization
-        document.addEventListener('DOMContentLoaded', async function() {
+        document.addEventListener('DOMContentLoaded', function() {
             console.log('Initializing Fitness Command Center...');
             
             // Initialize timezone-aware current nutrition date
@@ -9303,11 +9634,21 @@
             // Initialize program editor
             initializeProgramNameInput();
             
-            // Load programs first (needed for workout initialization)
-            await loadPrograms();
-            
-            // Initialize workout with active program
+            // Initialize workout with default program (will update when programs load)
             initializeWorkout();
+            
+            console.log('Fitness Command Center ready! UI is interactive.');
+            
+            // Load programs in background, then update workout display
+            loadPrograms()
+                .then(() => {
+                    // Re-initialize workout with loaded programs
+                    initializeWorkout();
+                })
+                .catch(err => {
+                    console.error('Failed to load programs:', err);
+                    // UI remains functional with default workout structure
+                });
             
             // UI is now interactive! Load remaining data in background without blocking
             // Fire and forget - these will update UI when they complete
@@ -9326,8 +9667,6 @@
             loadSickDayData().catch(err => console.error('Failed to load sick day data:', err));
             
             // Don't load nutrition/weight/photo data yet - lazy load when tabs are opened
-            
-            console.log('Fitness Command Center ready! (data loading in background)');
         });
 
         function setupEventListeners() {
