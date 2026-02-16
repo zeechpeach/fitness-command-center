@@ -5661,7 +5661,7 @@ function selectDay(dayKey) {
 
     // Update day buttons
     document.querySelectorAll('.day-btn').forEach(btn => btn.classList.remove('active'));
-    const activeBtn = document.getElementById(dayKey.toLowerCase() + '-btn');
+    const activeBtn = document.getElementById(dayKey + '-btn');
     if (activeBtn) {
         activeBtn.classList.add('active');
     }
@@ -5697,7 +5697,7 @@ function initializeWorkout(workoutType = null) {
     
     // Handle case where workout type doesn't exist
     if (!exercises || !Array.isArray(exercises)) {
-        console.warn(`No exercises found for workout type: ${workoutType}`);
+        console.warn(`No exercises found for workout type: ${workoutType} (day: ${currentDay})`);
         renderWorkout(workoutType);
         return;
     }
@@ -5747,7 +5747,10 @@ function renderWorkout(workoutType = null) {
 
     exercises.forEach((exercise, exerciseIndex) => {
         const workoutExercise = currentWorkout[exerciseIndex];
-        if (!workoutExercise) return; // Skip if not initialized
+        if (!workoutExercise) {
+            console.warn(`Exercise at index ${exerciseIndex} not initialized`);
+            return; // Skip if not initialized
+        }
         
         // Get last workout matching current exercise's approach
         const currentApproach = workoutExercise.approach || 'standard';
