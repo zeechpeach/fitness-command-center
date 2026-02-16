@@ -30,3 +30,4 @@ test-screenshots/
 .env
 .env.local
 .env.*.local
+test-accordion-logic.html
