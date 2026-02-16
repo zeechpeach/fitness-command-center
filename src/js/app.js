@@ -4238,7 +4238,17 @@ window.confirmCreateFood = async function () {
         calories: calories,
         servingSize: servingSize,
         servingUnit: servingUnit.toLowerCase(),
-        portionInputPreference: 'measured'
+        portionInputPreference: 'measured',
+        // NEW: Baseline serving for proportional calculations
+        baselineServingSize: servingSize,
+        baselineServingUnit: servingUnit.toLowerCase(),
+        // Store nutrition values as baseline (per the serving size entered)
+        baselineNutrition: {
+            calories: calories,
+            protein: protein,
+            carbs: carbs,
+            fats: fats
+        }
     };
 
     // Save to library if checked
@@ -4775,7 +4785,7 @@ window.confirmEditFood = async function () {
     }
 
     try {
-        // Update in Firebase
+        // Update in Firebase with baseline fields
         const docRef = doc(db, "savedFoods", foodId);
         await updateDoc(docRef, {
             name: name,
@@ -4784,7 +4794,16 @@ window.confirmEditFood = async function () {
             carbs: carbs,
             fats: fats,
             servingSize: servingSize,
-            servingUnit: servingUnit.toLowerCase()
+            servingUnit: servingUnit.toLowerCase(),
+            // NEW: Add baseline serving fields for proportional calculations
+            baselineServingSize: servingSize,
+            baselineServingUnit: servingUnit.toLowerCase(),
+            baselineNutrition: {
+                calories: calories,
+                protein: protein,
+                carbs: carbs,
+                fats: fats
+            }
         });
 
         // Update local state
@@ -4797,6 +4816,14 @@ window.confirmEditFood = async function () {
             food.fats = fats;
             food.servingSize = servingSize;
             food.servingUnit = servingUnit.toLowerCase();
+            food.baselineServingSize = servingSize;
+            food.baselineServingUnit = servingUnit.toLowerCase();
+            food.baselineNutrition = {
+                calories: calories,
+                protein: protein,
+                carbs: carbs,
+                fats: fats
+            };
         }
 
         closeEditFoodModal();
@@ -4916,6 +4943,32 @@ async function deduplicateSavedFoods(foods) {
     // Return deduplicated list
     return Array.from(foodMap.values());
 }
+
+// Calculate proportional nutrition based on baseline serving size
+function calculateProportionalNutrition(food, actualAmount) {
+    // If food has baseline nutrition info, calculate proportionally
+    if (food.baselineNutrition && food.baselineServingSize) {
+        const baselineAmount = parseFloat(food.baselineServingSize);
+        const multiplier = actualAmount / baselineAmount;
+        
+        return {
+            calories: Math.round(food.baselineNutrition.calories * multiplier),
+            protein: Math.round(food.baselineNutrition.protein * multiplier * 10) / 10,
+            carbs: Math.round(food.baselineNutrition.carbs * multiplier * 10) / 10,
+            fats: Math.round(food.baselineNutrition.fats * multiplier * 10) / 10
+        };
+    }
+    
+    // Fallback: return original values multiplied by quantity
+    return {
+        calories: Math.round((food.calories || 0) * actualAmount),
+        protein: Math.round((food.protein || 0) * actualAmount * 10) / 10,
+        carbs: Math.round((food.carbs || 0) * actualAmount * 10) / 10,
+        fats: Math.round((food.fats || 0) * actualAmount * 10) / 10
+    };
+}
+
+// Note: editSavedFood function already exists below - see line 4727
 
 // Helper function to check if Chart.js is loaded
 function isChartJsReady() {
