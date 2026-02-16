@@ -571,12 +571,38 @@ function calculateTotalCalories() {
 }
 
 // Workout Schedule Cycle: upper/lower/rest/push/pull/legs/rest
-// Workout cycle: 7-day repeating cycle
+// NOTE: This is kept for backward compatibility with ULPPL program
+// New programs use their own schedule defined in program.schedule
 const workoutSchedule = ['Upper', 'Lower', 'Rest', 'Push', 'Pull', 'Legs', 'Rest'];
 
 // Reference date for schedule calculation when no completed workouts exist
 // 2025-01-01 maps to workoutSchedule[0] = 'Upper'
 const SCHEDULE_REFERENCE_DATE = '2025-01-01';
+
+// Helper: Get schedule array from a program
+function getProgramScheduleArray(program) {
+    if (!program || !program.schedule) {
+        // For backward compatibility, return ULPPL schedule if no program schedule defined
+        return workoutSchedule;
+    }
+    
+    const schedule = program.schedule;
+    const scheduleArray = [];
+    
+    // Sort by day number and extract workout types
+    const dayKeys = Object.keys(schedule).sort((a, b) => {
+        const numA = parseInt(a.replace('day', ''));
+        const numB = parseInt(b.replace('day', ''));
+        return numA - numB;
+    });
+    
+    dayKeys.forEach(dayKey => {
+        const workoutType = getWorkoutTypeForDay(program, dayKey);
+        scheduleArray.push(workoutType);
+    });
+    
+    return scheduleArray;
+}
 
 // Configuration for schedule calculation
 const MIN_SCHEDULE_DAYS = 14; // Minimum days to schedule ahead for missed workout queue
@@ -764,6 +790,7 @@ async function migrateHardcodedProgram() {
         name: "ULPPL",
         active: true,
         createdAt: new Date().toISOString(),
+        activatedAt: new Date().toISOString(), // NEW: Track when program was activated
         schedule: {
             day1: { workoutType: "Upper", customName: "" },
             day2: { workoutType: "Lower", customName: "" },
@@ -865,8 +892,13 @@ window.setActiveProgram = async function (programId) {
         const program = programs.find(p => p.id === programId);
         if (program) {
             program.active = true;
+            program.activatedAt = new Date().toISOString(); // NEW: Track when program was activated
+            
             const docRef = doc(db, "programs", programId);
-            await updateDoc(docRef, { active: true });
+            await updateDoc(docRef, { 
+                active: true,
+                activatedAt: program.activatedAt
+            });
             activeProgram = program;
 
             alert(`${program.name} is now your active program!`);
@@ -1214,11 +1246,16 @@ function renderWorkoutsAccordion() {
             return `Day ${d.dayNumber}`;
         }).join(', ');
         
+        // Only show workout type in parentheses if no custom names are used for this workout type
+        // Check that ALL days with this workout type use custom names, not just some
+        const hasCustomNames = days.every(d => d.displayName !== workoutType);
+        const headerName = hasCustomNames ? dayLabels : `${dayLabels} (${workoutType})`;
+        
         html += `
                     <div class="workout-accordion" id="accordion-${workoutType}">
                         <div class="workout-accordion-header" onclick="toggleWorkoutAccordion('${workoutType}')">
                             <div class="workout-accordion-title">
-                                <span class="workout-accordion-name">${dayLabels} (${workoutType})</span>
+                                <span class="workout-accordion-name">${headerName}</span>
                                 <span class="workout-accordion-badge">${exerciseCount} ${exerciseCount === 1 ? 'exercise' : 'exercises'}</span>
                             </div>
                             <span class="workout-accordion-toggle">▼</span>
@@ -1556,6 +1593,9 @@ function getWouldBeScheduledWorkout(date) {
         return actualWorkout.day;
     }
 
+    // Get the schedule array for the active program
+    const scheduleArray = activeProgram ? getProgramScheduleArray(activeProgram) : workoutSchedule;
+
     // Calculate what workout would be here if we ignored travel/sick days
     const todayStr = getTodayDateString();
     const todayDate = new Date(todayStr + 'T00:00:00.000Z');
@@ -1571,7 +1611,7 @@ function getWouldBeScheduledWorkout(date) {
         const mostRecentType = mostRecent.day;
 
         // Find the index of the most recent workout type in the schedule
-        const lastIndex = workoutSchedule.indexOf(mostRecentType);
+        const lastIndex = scheduleArray.indexOf(mostRecentType);
 
         // Count all days (including travel/sick) from most recent to query date
         let daysSince = 0;
@@ -1581,9 +1621,9 @@ function getWouldBeScheduledWorkout(date) {
             d = new Date(d.getTime() + 24 * 60 * 60 * 1000);
         }
 
-        // Project forward in the 7-day cycle
-        const scheduleIndex = (lastIndex + daysSince) % workoutSchedule.length;
-        return workoutSchedule[scheduleIndex];
+        // Project forward in the cycle
+        const scheduleIndex = (lastIndex + daysSince) % scheduleArray.length;
+        return scheduleArray[scheduleIndex];
     } else {
         // No workouts yet, use default schedule from reference date
         const referenceDate = new Date(SCHEDULE_REFERENCE_DATE + 'T00:00:00.000Z');
@@ -1593,8 +1633,8 @@ function getWouldBeScheduledWorkout(date) {
             allDays++;
             d = new Date(d.getTime() + 24 * 60 * 60 * 1000);
         }
-        const scheduleIndex = ((allDays % workoutSchedule.length) + workoutSchedule.length) % workoutSchedule.length;
-        return workoutSchedule[scheduleIndex];
+        const scheduleIndex = ((allDays % scheduleArray.length) + scheduleArray.length) % scheduleArray.length;
+        return scheduleArray[scheduleIndex];
     }
 }
 
@@ -1656,8 +1696,12 @@ function getScheduledWorkout(date) {
         return 'Travel';
     }
 
+    // Get the schedule array for the active program
+    // Falls back to ULPPL schedule if no active program
+    const scheduleArray = activeProgram ? getProgramScheduleArray(activeProgram) : workoutSchedule;
+
     // Calendar-day-based advancement approach:
-    // Find the most recent completed non-Rest workout, then advance through the 7-day cycle
+    // Find the most recent completed non-Rest workout, then advance through the cycle
     // by counting calendar days (not skipping Rest/Sick/Travel)
 
     const lastCompleted = getMostRecentCompletedNonRestWorkoutBefore(date);
@@ -1668,19 +1712,19 @@ function getScheduledWorkout(date) {
         const daysDiff = daysBetween(lastCompleted.date, date);
 
         // Find the index of the last completed workout in the schedule
-        const lastCompletedIndex = workoutSchedule.indexOf(lastCompleted.day);
+        const lastCompletedIndex = scheduleArray.indexOf(lastCompleted.day);
 
-        // Advance by daysDiff positions in the 7-day cycle
-        const scheduleIndex = (lastCompletedIndex + daysDiff) % workoutSchedule.length;
-        return workoutSchedule[scheduleIndex];
+        // Advance by daysDiff positions in the cycle
+        const scheduleIndex = (lastCompletedIndex + daysDiff) % scheduleArray.length;
+        return scheduleArray[scheduleIndex];
     } else {
         // No completed non-Rest workouts found
         // Fall back to deterministic reference date (defined at top of file)
         const daysDiff = daysBetween(SCHEDULE_REFERENCE_DATE, date);
 
         // Handle negative modulo safely
-        const scheduleIndex = ((daysDiff % workoutSchedule.length) + workoutSchedule.length) % workoutSchedule.length;
-        return workoutSchedule[scheduleIndex];
+        const scheduleIndex = ((daysDiff % scheduleArray.length) + scheduleArray.length) % scheduleArray.length;
+        return scheduleArray[scheduleIndex];
     }
 }
 
@@ -1695,12 +1739,25 @@ function getWorkoutForDate(dateString) {
 function calculateAdherence() {
     const today = new Date();
     const thirtyDaysAgo = new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000));
+    
+    // Use program activation date as the starting point if available
+    // This ensures discipline score starts fresh for new programs
+    let startDate;
+    if (activeProgram && activeProgram.activatedAt) {
+        const activationDate = new Date(activeProgram.activatedAt);
+        
+        // Use the more recent of activation date or 30 days ago
+        startDate = activationDate > thirtyDaysAgo ? activationDate : thirtyDaysAgo;
+    } else {
+        // Fallback to 30-day window if no activation date
+        startDate = thirtyDaysAgo;
+    }
 
     let scheduled = 0;
     let completed = 0;
     let missed = 0;
 
-    for (let d = new Date(thirtyDaysAgo); d <= today; d.setDate(d.getDate() + 1)) {
+    for (let d = new Date(startDate); d <= today; d.setDate(d.getDate() + 1)) {
         const dateStr = d.toISOString().split('T')[0];
         const scheduledWorkout = getScheduledWorkout(dateStr);
         const actualWorkout = getWorkoutForDate(dateStr);
