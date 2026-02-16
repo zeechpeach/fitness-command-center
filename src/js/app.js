@@ -581,7 +581,10 @@ const SCHEDULE_REFERENCE_DATE = '2025-01-01';
 
 // Helper: Get schedule array from a program
 function getProgramScheduleArray(program) {
-    if (!program || !program.schedule) return ['Rest'];
+    if (!program || !program.schedule) {
+        // For backward compatibility, return ULPPL schedule if no program schedule defined
+        return workoutSchedule;
+    }
     
     const schedule = program.schedule;
     const scheduleArray = [];
@@ -1244,7 +1247,8 @@ function renderWorkoutsAccordion() {
         }).join(', ');
         
         // Only show workout type in parentheses if no custom names are used for this workout type
-        const hasCustomNames = days.some(d => d.displayName !== workoutType);
+        // Check that ALL days with this workout type use custom names, not just some
+        const hasCustomNames = days.every(d => d.displayName !== workoutType);
         const headerName = hasCustomNames ? dayLabels : `${dayLabels} (${workoutType})`;
         
         html += `
@@ -1734,19 +1738,19 @@ function getWorkoutForDate(dateString) {
 
 function calculateAdherence() {
     const today = new Date();
+    const thirtyDaysAgo = new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000));
     
     // Use program activation date as the starting point if available
     // This ensures discipline score starts fresh for new programs
     let startDate;
     if (activeProgram && activeProgram.activatedAt) {
         const activationDate = new Date(activeProgram.activatedAt);
-        const thirtyDaysAgo = new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000));
         
         // Use the more recent of activation date or 30 days ago
         startDate = activationDate > thirtyDaysAgo ? activationDate : thirtyDaysAgo;
     } else {
         // Fallback to 30-day window if no activation date
-        startDate = new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000));
+        startDate = thirtyDaysAgo;
     }
 
     let scheduled = 0;
