@@ -3112,6 +3112,7 @@
             .program-editor-header {
                 flex-wrap: wrap;
                 gap: 0.75rem;
+                padding: 0.75rem 1rem;
             }
 
             .program-editor-title-section {
@@ -3123,11 +3124,57 @@
             .program-name-input {
                 max-width: none;
                 text-align: left;
+                font-size: 1.125rem;
             }
 
             .program-editor-actions {
                 order: 1;
                 margin-left: auto;
+            }
+            
+            .program-editor-content {
+                padding: 1rem;
+            }
+            
+            .program-section {
+                padding: 0;
+            }
+            
+            .workout-accordion-header {
+                padding: 0.875rem 1rem;
+            }
+            
+            .workout-accordion-name {
+                font-size: 0.9375rem;
+                line-height: 1.4;
+            }
+            
+            .workout-accordion-body {
+                padding: 0 1rem 0.875rem 1rem;
+            }
+            
+            .exercise-row {
+                gap: 0.5rem;
+                padding: 0.625rem;
+            }
+            
+            .exercise-name {
+                font-size: 0.9375rem;
+            }
+            
+            .exercise-details {
+                font-size: 0.8125rem;
+            }
+            
+            .exercise-actions {
+                gap: 0.25rem;
+            }
+            
+            .exercise-move-btn,
+            .exercise-edit-btn,
+            .exercise-delete-btn {
+                padding: 0.375rem 0.5rem;
+                font-size: 0.875rem;
             }
 
             .exercise-panel {

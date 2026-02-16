@@ -1108,6 +1108,7 @@ window.editProgramDayName = function (dayNumber) {
         currentEditingProgram.schedule[dayKey].customName = newName.trim();
         markUnsavedChanges();
         renderSchedulePills();
+        renderWorkoutsAccordion(); // Update accordion to reflect new day name
     }
 }
 
@@ -1158,24 +1159,66 @@ function renderWorkoutsAccordion() {
 
     const container = document.getElementById('workouts-accordion');
     const workouts = currentEditingProgram.workouts;
+    const schedule = currentEditingProgram.schedule;
 
-    // Get unique workout types from schedule
-    const workoutTypesInSchedule = new Set();
-    Object.values(currentEditingProgram.schedule).forEach(dayValue => {
-        const workoutType = typeof dayValue === 'string' ? dayValue : dayValue.workoutType;
-        workoutTypesInSchedule.add(workoutType);
+    // Get sorted day keys (day1, day2, etc.)
+    const dayKeys = Object.keys(schedule).sort((a, b) => {
+        const numA = parseInt(a.replace('day', ''));
+        const numB = parseInt(b.replace('day', ''));
+        return numA - numB;
+    });
+
+    // Group days by workout type while preserving day order
+    const workoutTypeMap = new Map(); // workoutType -> Array<{dayKey: string, dayNumber: number, displayName: string}>
+    
+    dayKeys.forEach(dayKey => {
+        const dayNumber = parseInt(dayKey.replace('day', ''));
+        const workoutType = getWorkoutTypeForDay(currentEditingProgram, dayKey);
+        const displayName = getDisplayNameForDay(currentEditingProgram, dayKey);
+        
+        // Skip Rest days
+        if (workoutType === 'Rest') return;
+        
+        if (!workoutTypeMap.has(workoutType)) {
+            workoutTypeMap.set(workoutType, []);
+        }
+        
+        workoutTypeMap.get(workoutType).push({ dayKey, dayNumber, displayName });
     });
 
     let html = '';
-    workoutTypesInSchedule.forEach(workoutType => {
+    
+    // Get workout types in the order they first appear in the schedule
+    const seenWorkoutTypes = new Set();
+    const orderedWorkoutTypes = [];
+    
+    dayKeys.forEach(dayKey => {
+        const workoutType = getWorkoutTypeForDay(currentEditingProgram, dayKey);
+        if (workoutType !== 'Rest' && !seenWorkoutTypes.has(workoutType)) {
+            seenWorkoutTypes.add(workoutType);
+            orderedWorkoutTypes.push(workoutType);
+        }
+    });
+    
+    // Render accordion for each workout type in order of first appearance
+    orderedWorkoutTypes.forEach(workoutType => {
+        const days = workoutTypeMap.get(workoutType);
         const exercises = workouts[workoutType] || [];
         const exerciseCount = exercises.length;
-
+        
+        // Create header showing all days that use this workout type
+        const dayLabels = days.map(d => {
+            if (d.displayName !== workoutType) {
+                return `Day ${d.dayNumber}: ${d.displayName}`;
+            }
+            return `Day ${d.dayNumber}`;
+        }).join(', ');
+        
         html += `
                     <div class="workout-accordion" id="accordion-${workoutType}">
                         <div class="workout-accordion-header" onclick="toggleWorkoutAccordion('${workoutType}')">
                             <div class="workout-accordion-title">
-                                <span class="workout-accordion-name">${workoutType}</span>
+                                <span class="workout-accordion-name">${dayLabels} (${workoutType})</span>
                                 <span class="workout-accordion-badge">${exerciseCount} ${exerciseCount === 1 ? 'exercise' : 'exercises'}</span>
                             </div>
                             <span class="workout-accordion-toggle">▼</span>
