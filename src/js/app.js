@@ -1075,7 +1075,7 @@ function renderSchedulePills() {
                     <div class="schedule-pill" onclick="selectWorkoutForDay(${i})">
                         <span class="schedule-pill-day">Day ${i}</span>
                         <span class="schedule-pill-workout">${displayName}</span>
-                        <button class="schedule-pill-edit" onclick="event.stopPropagation(); editDayName(${i})" title="Edit day name">✏️</button>
+                        <button class="schedule-pill-edit" onclick="event.stopPropagation(); editProgramDayName(${i})" title="Edit day name">✏️</button>
                     </div>
                 `;
     }
@@ -1084,7 +1084,8 @@ function renderSchedulePills() {
 }
 
 // Edit day name
-window.editDayName = function (dayNumber) {
+// Edit day name for a program day
+window.editProgramDayName = function (dayNumber) {
     if (!currentEditingProgram) return;
     
     const dayKey = `day${dayNumber}`;
@@ -4968,7 +4969,7 @@ function calculateProportionalNutrition(food, actualAmount) {
     };
 }
 
-// Note: editSavedFood function already exists below - see line 4727
+// Note: editSavedFood, closeEditFoodModal, and confirmEditFood functions already exist below
 
 // Helper function to check if Chart.js is loaded
 function isChartJsReady() {
