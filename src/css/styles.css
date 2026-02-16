@@ -2709,6 +2709,7 @@
             align-items: center;
             gap: 0.25rem;
             min-width: 100px;
+            position: relative;
         }
 
         .schedule-pill:hover {
@@ -2727,6 +2728,30 @@
             font-size: 0.9375rem;
             color: var(--color-text-primary);
             font-weight: 400;
+        }
+
+        .schedule-pill-edit {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            background: transparent;
+            border: none;
+            font-size: 0.75rem;
+            cursor: pointer;
+            padding: 2px 4px;
+            opacity: 0;
+            transition: var(--transition-base);
+            color: var(--color-accent-primary);
+        }
+
+        .schedule-pill:hover .schedule-pill-edit {
+            opacity: 1;
+        }
+
+        .schedule-pill-edit:hover {
+            opacity: 1 !important;
+            background: rgba(168, 181, 160, 0.15);
+            border-radius: 4px;
         }
 
         .workout-accordion {

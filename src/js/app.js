@@ -185,10 +185,15 @@ async function loadWorkoutsFromFirebase() {
         const querySnapshot = await getDocs(q);
         const workouts = [];
         querySnapshot.forEach((doc) => {
-            workouts.push({ id: doc.id, ...doc.data() });
+            const workout = { id: doc.id, ...doc.data() };
+            // Filter by active program if one is set
+            // Include workouts with no programId (legacy data) or matching programId
+            if (!activeProgram || !workout.programId || workout.programId === activeProgram.id) {
+                workouts.push(workout);
+            }
         });
         allWorkouts = workouts;
-        console.log("Loaded workouts:", workouts.length);
+        console.log(`Loaded ${workouts.length} workouts for active program`);
         return workouts;
     } catch (e) {
         console.error("Error loading workouts:", e);
@@ -198,10 +203,14 @@ async function loadWorkoutsFromFirebase() {
             const querySnapshot = await getDocs(q);
             const workouts = [];
             querySnapshot.forEach((doc) => {
-                workouts.push({ id: doc.id, ...doc.data() });
+                const workout = { id: doc.id, ...doc.data() };
+                // Filter by active program
+                if (!activeProgram || !workout.programId || workout.programId === activeProgram.id) {
+                    workouts.push(workout);
+                }
             });
             allWorkouts = workouts;
-            console.log("Loaded workouts (fallback):", workouts.length);
+            console.log(`Loaded ${workouts.length} workouts (fallback) for active program`);
             return workouts;
         } catch (fallbackError) {
             console.error("Fallback query also failed:", fallbackError);
@@ -660,7 +669,10 @@ async function loadPrograms() {
         const querySnapshot = await getDocs(q);
         programs = [];
         querySnapshot.forEach((doc) => {
-            programs.push({ id: doc.id, ...doc.data() });
+            const program = { id: doc.id, ...doc.data() };
+            // Migrate old schedule format to new format
+            migrateScheduleFormat(program);
+            programs.push(program);
         });
 
         console.log(`Loaded ${programs.length} programs`);
@@ -680,6 +692,70 @@ async function loadPrograms() {
     }
 }
 
+// Migrate old schedule format (string) to new format (object with customName)
+function migrateScheduleFormat(program) {
+    if (!program.schedule) return;
+    
+    let needsMigration = false;
+    const migratedSchedule = {};
+    
+    Object.keys(program.schedule).forEach(dayKey => {
+        const dayValue = program.schedule[dayKey];
+        if (typeof dayValue === 'string') {
+            // Old format: day1: "Upper"
+            needsMigration = true;
+            migratedSchedule[dayKey] = {
+                workoutType: dayValue,
+                customName: ''
+            };
+        } else {
+            // Already new format or handle object format
+            migratedSchedule[dayKey] = dayValue;
+        }
+    });
+    
+    if (needsMigration) {
+        program.schedule = migratedSchedule;
+        console.log(`Migrated schedule format for program: ${program.name}`);
+    }
+    
+    // Ensure exerciseVariations exists
+    if (!program.exerciseVariations) {
+        program.exerciseVariations = {};
+    }
+}
+
+// Helper: Get workout type for a day (handles both old and new formats)
+function getWorkoutTypeForDay(program, dayKey) {
+    if (!program || !program.schedule || !program.schedule[dayKey]) {
+        return 'Rest';
+    }
+    const dayValue = program.schedule[dayKey];
+    if (typeof dayValue === 'string') {
+        return dayValue; // Old format
+    }
+    return dayValue.workoutType || 'Rest'; // New format
+}
+
+// Helper: Get custom name for a day
+function getCustomNameForDay(program, dayKey) {
+    if (!program || !program.schedule || !program.schedule[dayKey]) {
+        return '';
+    }
+    const dayValue = program.schedule[dayKey];
+    if (typeof dayValue === 'object') {
+        return dayValue.customName || '';
+    }
+    return ''; // Old format has no custom names
+}
+
+// Helper: Get display name for a day (custom name or workout type)
+function getDisplayNameForDay(program, dayKey) {
+    const customName = getCustomNameForDay(program, dayKey);
+    if (customName) return customName;
+    return getWorkoutTypeForDay(program, dayKey);
+}
+
 // Migrate hardcoded workoutPlans to new program structure
 async function migrateHardcodedProgram() {
     console.log('Migrating hardcoded ULPPL program...');
@@ -689,13 +765,13 @@ async function migrateHardcodedProgram() {
         active: true,
         createdAt: new Date().toISOString(),
         schedule: {
-            day1: "Upper",
-            day2: "Lower",
-            day3: "Rest",
-            day4: "Push",
-            day5: "Pull",
-            day6: "Legs",
-            day7: "Rest"
+            day1: { workoutType: "Upper", customName: "" },
+            day2: { workoutType: "Lower", customName: "" },
+            day3: { workoutType: "Rest", customName: "" },
+            day4: { workoutType: "Push", customName: "" },
+            day5: { workoutType: "Pull", customName: "" },
+            day6: { workoutType: "Legs", customName: "" },
+            day7: { workoutType: "Rest", customName: "" }
         },
         workouts: {
             Upper: workoutPlans.Upper,
@@ -704,7 +780,8 @@ async function migrateHardcodedProgram() {
             Push: workoutPlans.Push,
             Pull: workoutPlans.Pull,
             Legs: workoutPlans.Legs
-        }
+        },
+        exerciseVariations: {}
     };
 
     try {
@@ -745,8 +822,8 @@ function renderPrograms() {
 
             // Generate schedule preview
             const schedulePreview = Object.keys(program.schedule).slice(0, 7).map(key => {
-                const workout = program.schedule[key];
-                const abbrev = workout === 'Rest' ? 'R' : workout[0];
+                const workoutType = getWorkoutTypeForDay(program, key);
+                const abbrev = workoutType === 'Rest' ? 'R' : workoutType[0];
                 return abbrev;
             }).join(' → ');
 
@@ -795,8 +872,13 @@ window.setActiveProgram = async function (programId) {
             alert(`${program.name} is now your active program!`);
             renderPrograms();
 
+            // Reload workouts to show only workouts from this program
+            await loadWorkoutsFromFirebase();
+
             // Refresh workout view if on workout tab
             initializeWorkout();
+            updateSuggestions();
+            updateAnalytics();
         }
     } catch (e) {
         console.error("Error setting active program:", e);
@@ -848,17 +930,18 @@ window.openProgramEditor = function (programId = null) {
             active: false,
             createdAt: new Date().toISOString(),
             schedule: {
-                day1: 'Rest',
-                day2: 'Rest',
-                day3: 'Rest',
-                day4: 'Rest',
-                day5: 'Rest',
-                day6: 'Rest',
-                day7: 'Rest'
+                day1: { workoutType: 'Rest', customName: '' },
+                day2: { workoutType: 'Rest', customName: '' },
+                day3: { workoutType: 'Rest', customName: '' },
+                day4: { workoutType: 'Rest', customName: '' },
+                day5: { workoutType: 'Rest', customName: '' },
+                day6: { workoutType: 'Rest', customName: '' },
+                day7: { workoutType: 'Rest', customName: '' }
             },
             workouts: {
                 Rest: [{ name: 'Rest Day Recovery', sets: 1, reps: 'Complete' }]
-            }
+            },
+            exerciseVariations: {} // New: program-level exercise variations
         };
     }
 
@@ -959,8 +1042,8 @@ window.updateCycleLength = function (delta) {
     }
 
     if (delta > 0) {
-        // Add new day
-        schedule[`day${newLength}`] = 'Rest';
+        // Add new day with new format
+        schedule[`day${newLength}`] = { workoutType: 'Rest', customName: '' };
     } else {
         // Remove last day
         delete schedule[`day${currentLength}`];
@@ -984,11 +1067,15 @@ function renderSchedulePills() {
     let html = '';
     for (let i = 1; i <= length; i++) {
         const dayKey = `day${i}`;
-        const workoutType = schedule[dayKey] || 'Rest';
+        const workoutType = getWorkoutTypeForDay(currentEditingProgram, dayKey);
+        const customName = getCustomNameForDay(currentEditingProgram, dayKey);
+        const displayName = customName || workoutType;
+        
         html += `
                     <div class="schedule-pill" onclick="selectWorkoutForDay(${i})">
                         <span class="schedule-pill-day">Day ${i}</span>
-                        <span class="schedule-pill-workout">${workoutType}</span>
+                        <span class="schedule-pill-workout">${displayName}</span>
+                        <button class="schedule-pill-edit" onclick="event.stopPropagation(); editProgramDayName(${i})" title="Edit day name">✏️</button>
                     </div>
                 `;
     }
@@ -996,10 +1083,39 @@ function renderSchedulePills() {
     container.innerHTML = html;
 }
 
+// Edit day name
+// Edit day name for a program day
+window.editProgramDayName = function (dayNumber) {
+    if (!currentEditingProgram) return;
+    
+    const dayKey = `day${dayNumber}`;
+    const currentCustomName = getCustomNameForDay(currentEditingProgram, dayKey);
+    const workoutType = getWorkoutTypeForDay(currentEditingProgram, dayKey);
+    
+    const newName = prompt(
+        `Enter custom name for Day ${dayNumber} (${workoutType}):\n\nLeave blank to use default "${workoutType}"`,
+        currentCustomName
+    );
+    
+    if (newName !== null) { // User didn't cancel
+        // Ensure schedule entry is an object
+        if (typeof currentEditingProgram.schedule[dayKey] === 'string') {
+            currentEditingProgram.schedule[dayKey] = {
+                workoutType: currentEditingProgram.schedule[dayKey],
+                customName: ''
+            };
+        }
+        currentEditingProgram.schedule[dayKey].customName = newName.trim();
+        markUnsavedChanges();
+        renderSchedulePills();
+    }
+}
+
 // Select workout type for a specific day
 window.selectWorkoutForDay = function (dayNumber) {
     const workoutTypes = ['Rest', 'Upper', 'Lower', 'Push', 'Pull', 'Legs'];
-    const currentType = currentEditingProgram.schedule[`day${dayNumber}`];
+    const dayKey = `day${dayNumber}`;
+    const currentType = getWorkoutTypeForDay(currentEditingProgram, dayKey);
     const currentIndex = workoutTypes.indexOf(currentType);
 
     // Cycle to next workout type
@@ -1010,8 +1126,15 @@ window.selectWorkoutForDay = function (dayNumber) {
 // Update workout type for a day
 function updateDayWorkout(dayNumber, workoutType) {
     if (!currentEditingProgram) return;
-
-    currentEditingProgram.schedule[`day${dayNumber}`] = workoutType;
+    
+    const dayKey = `day${dayNumber}`;
+    const currentCustomName = getCustomNameForDay(currentEditingProgram, dayKey);
+    
+    // Update with new format
+    currentEditingProgram.schedule[dayKey] = {
+        workoutType: workoutType,
+        customName: currentCustomName // Preserve custom name
+    };
 
     // Initialize workout if it doesn't exist
     if (!currentEditingProgram.workouts[workoutType]) {
@@ -1037,7 +1160,11 @@ function renderWorkoutsAccordion() {
     const workouts = currentEditingProgram.workouts;
 
     // Get unique workout types from schedule
-    const workoutTypesInSchedule = new Set(Object.values(currentEditingProgram.schedule));
+    const workoutTypesInSchedule = new Set();
+    Object.values(currentEditingProgram.schedule).forEach(dayValue => {
+        const workoutType = typeof dayValue === 'string' ? dayValue : dayValue.workoutType;
+        workoutTypesInSchedule.add(workoutType);
+    });
 
     let html = '';
     workoutTypesInSchedule.forEach(workoutType => {
@@ -1280,7 +1407,8 @@ async function saveProgramToFirestore() {
             active: currentEditingProgram.active,
             schedule: currentEditingProgram.schedule,
             workouts: currentEditingProgram.workouts,
-            createdAt: currentEditingProgram.createdAt
+            createdAt: currentEditingProgram.createdAt,
+            exerciseVariations: currentEditingProgram.exerciseVariations || {}
         };
 
         if (currentEditingProgram.id) {
@@ -4111,7 +4239,17 @@ window.confirmCreateFood = async function () {
         calories: calories,
         servingSize: servingSize,
         servingUnit: servingUnit.toLowerCase(),
-        portionInputPreference: 'measured'
+        portionInputPreference: 'measured',
+        // NEW: Baseline serving for proportional calculations
+        baselineServingSize: servingSize,
+        baselineServingUnit: servingUnit.toLowerCase(),
+        // Store nutrition values as baseline (per the serving size entered)
+        baselineNutrition: {
+            calories: calories,
+            protein: protein,
+            carbs: carbs,
+            fats: fats
+        }
     };
 
     // Save to library if checked
@@ -4648,7 +4786,7 @@ window.confirmEditFood = async function () {
     }
 
     try {
-        // Update in Firebase
+        // Update in Firebase with baseline fields
         const docRef = doc(db, "savedFoods", foodId);
         await updateDoc(docRef, {
             name: name,
@@ -4657,7 +4795,16 @@ window.confirmEditFood = async function () {
             carbs: carbs,
             fats: fats,
             servingSize: servingSize,
-            servingUnit: servingUnit.toLowerCase()
+            servingUnit: servingUnit.toLowerCase(),
+            // NEW: Add baseline serving fields for proportional calculations
+            baselineServingSize: servingSize,
+            baselineServingUnit: servingUnit.toLowerCase(),
+            baselineNutrition: {
+                calories: calories,
+                protein: protein,
+                carbs: carbs,
+                fats: fats
+            }
         });
 
         // Update local state
@@ -4670,6 +4817,14 @@ window.confirmEditFood = async function () {
             food.fats = fats;
             food.servingSize = servingSize;
             food.servingUnit = servingUnit.toLowerCase();
+            food.baselineServingSize = servingSize;
+            food.baselineServingUnit = servingUnit.toLowerCase();
+            food.baselineNutrition = {
+                calories: calories,
+                protein: protein,
+                carbs: carbs,
+                fats: fats
+            };
         }
 
         closeEditFoodModal();
@@ -4789,6 +4944,32 @@ async function deduplicateSavedFoods(foods) {
     // Return deduplicated list
     return Array.from(foodMap.values());
 }
+
+// Calculate proportional nutrition based on baseline serving size
+function calculateProportionalNutrition(food, actualAmount) {
+    // If food has baseline nutrition info, calculate proportionally
+    if (food.baselineNutrition && food.baselineServingSize) {
+        const baselineAmount = parseFloat(food.baselineServingSize);
+        const multiplier = actualAmount / baselineAmount;
+        
+        return {
+            calories: Math.round(food.baselineNutrition.calories * multiplier),
+            protein: Math.round(food.baselineNutrition.protein * multiplier * 10) / 10,
+            carbs: Math.round(food.baselineNutrition.carbs * multiplier * 10) / 10,
+            fats: Math.round(food.baselineNutrition.fats * multiplier * 10) / 10
+        };
+    }
+    
+    // Fallback: return original values multiplied by quantity
+    return {
+        calories: Math.round((food.calories || 0) * actualAmount),
+        protein: Math.round((food.protein || 0) * actualAmount * 10) / 10,
+        carbs: Math.round((food.carbs || 0) * actualAmount * 10) / 10,
+        fats: Math.round((food.fats || 0) * actualAmount * 10) / 10
+    };
+}
+
+// Note: editSavedFood, closeEditFoodModal, and confirmEditFood functions already exist below
 
 // Helper function to check if Chart.js is loaded
 function isChartJsReady() {
@@ -5734,7 +5915,8 @@ async function completeWorkout() {
             motivation: workoutIntensity.preWorkout.motivation,
             fatigue: workoutIntensity.postWorkout.fatigue,
             satisfaction: workoutIntensity.postWorkout.satisfaction
-        }
+        },
+        programId: activeProgram ? activeProgram.id : null // NEW: Track which program this workout belongs to
     };
 
     try {
