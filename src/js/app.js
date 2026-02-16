@@ -5585,27 +5585,40 @@ function renderWorkoutDaySelector() {
     const container = document.getElementById('workout-day-selector');
     if (!container) return;
     
-    // If no active program, show default ULPPL buttons
+    // If no active program, use default ULPPL structure
     if (!activeProgram || !activeProgram.schedule) {
-        container.innerHTML = `
-            <button class="day-btn active" id="day1-btn">Upper</button>
-            <button class="day-btn" id="day2-btn">Lower</button>
-            <button class="day-btn" id="day3-btn">Rest</button>
-            <button class="day-btn" id="day4-btn">Push</button>
-            <button class="day-btn" id="day5-btn">Pull</button>
-            <button class="day-btn" id="day6-btn">Legs</button>
-        `;
+        // Default ULPPL program mapping
+        const defaultDays = [
+            { key: 'Upper', label: 'Upper' },
+            { key: 'Lower', label: 'Lower' },
+            { key: 'Rest', label: 'Rest' },
+            { key: 'Push', label: 'Push' },
+            { key: 'Pull', label: 'Pull' },
+            { key: 'Legs', label: 'Legs' }
+        ];
+        
+        let html = '';
+        defaultDays.forEach((day, index) => {
+            const isFirst = index === 0;
+            html += `<button class="day-btn ${isFirst ? 'active' : ''}" id="${day.key.toLowerCase()}-btn">${day.label}</button>`;
+        });
+        
+        container.innerHTML = html;
         
         // Attach event listeners for default buttons
-        for (let i = 1; i <= 6; i++) {
-            const btn = document.getElementById(`day${i}-btn`);
+        defaultDays.forEach(day => {
+            const btn = document.getElementById(`${day.key.toLowerCase()}-btn`);
             if (btn) {
-                btn.addEventListener('click', () => selectDay(`day${i}`));
+                btn.addEventListener('click', () => selectDay(day.key));
             }
+        });
+        
+        // Set current day to first day if not valid
+        const validKeys = defaultDays.map(d => d.key);
+        if (!validKeys.includes(currentDay)) {
+            currentDay = defaultDays[0].key;
         }
         
-        // Select first day by default
-        selectDay('day1');
         return;
     }
     
@@ -5648,13 +5661,20 @@ function selectDay(dayKey) {
 
     // Update day buttons
     document.querySelectorAll('.day-btn').forEach(btn => btn.classList.remove('active'));
-    const activeBtn = document.getElementById(dayKey + '-btn');
+    const activeBtn = document.getElementById(dayKey.toLowerCase() + '-btn');
     if (activeBtn) {
         activeBtn.classList.add('active');
     }
 
     // Get workout type for the selected day
-    const workoutType = getWorkoutTypeForDay(activeProgram, dayKey);
+    // If no active program, dayKey is already the workout type (Upper, Lower, etc.)
+    // If there's an active program, get the workout type from the schedule
+    let workoutType;
+    if (activeProgram && activeProgram.schedule) {
+        workoutType = getWorkoutTypeForDay(activeProgram, dayKey);
+    } else {
+        workoutType = dayKey; // For default workoutPlans, dayKey is the workout type
+    }
     
     initializeWorkout(workoutType);
     updateSuggestions();
@@ -5666,7 +5686,11 @@ function initializeWorkout(workoutType = null) {
     
     // If no workoutType provided, try to get it from currentDay
     if (!workoutType) {
-        workoutType = getWorkoutTypeForDay(activeProgram, currentDay);
+        if (activeProgram && activeProgram.schedule) {
+            workoutType = getWorkoutTypeForDay(activeProgram, currentDay);
+        } else {
+            workoutType = currentDay; // For default workoutPlans, currentDay is the workout type
+        }
     }
     
     const exercises = workouts[workoutType];
@@ -5702,7 +5726,11 @@ function renderWorkout(workoutType = null) {
     
     // If no workoutType provided, try to get it from currentDay
     if (!workoutType) {
-        workoutType = getWorkoutTypeForDay(activeProgram, currentDay);
+        if (activeProgram && activeProgram.schedule) {
+            workoutType = getWorkoutTypeForDay(activeProgram, currentDay);
+        } else {
+            workoutType = currentDay; // For default workoutPlans, currentDay is the workout type
+        }
     }
     
     const exercises = workouts[workoutType];
