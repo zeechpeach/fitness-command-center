@@ -1169,7 +1169,7 @@ function renderWorkoutsAccordion() {
     });
 
     // Group days by workout type while preserving day order
-    const workoutTypeMap = new Map(); // workoutType -> [{dayKey, dayNumber, displayName}]
+    const workoutTypeMap = new Map(); // workoutType -> Array<{dayKey: string, dayNumber: number, displayName: string}>
     
     dayKeys.forEach(dayKey => {
         const dayNumber = parseInt(dayKey.replace('day', ''));

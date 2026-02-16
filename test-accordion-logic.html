@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Accordion Logic</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .test-section {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        .test-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        .result {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .workout-accordion {
+            border: 1px solid #ccc;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .workout-accordion-header {
+            background: #f0f0f0;
+            padding: 10px;
+            cursor: pointer;
+        }
+        .workout-accordion-name {
+            font-weight: 500;
+        }
+        .workout-accordion-badge {
+            background: #4a5d4a;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            margin-left: 8px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test Workout Accordion Logic</h1>
+    
+    <div class="test-section">
+        <div class="test-title">Test 1: Default ULPPL Schedule (no custom names)</div>
+        <div id="test1-output"></div>
+    </div>
+    
+    <div class="test-section">
+        <div class="test-title">Test 2: Schedule with Custom Names</div>
+        <div id="test2-output"></div>
+    </div>
+    
+    <div class="test-section">
+        <div class="test-title">Test 3: Schedule with Duplicate Workout Types</div>
+        <div id="test3-output"></div>
+    </div>
+
+    <script>
+        // Helper functions
+        function getWorkoutTypeForDay(program, dayKey) {
+            if (!program || !program.schedule || !program.schedule[dayKey]) {
+                return 'Rest';
+            }
+            const dayValue = program.schedule[dayKey];
+            if (typeof dayValue === 'string') {
+                return dayValue;
+            }
+            return dayValue.workoutType || 'Rest';
+        }
+
+        function getCustomNameForDay(program, dayKey) {
+            if (!program || !program.schedule || !program.schedule[dayKey]) {
+                return '';
+            }
+            const dayValue = program.schedule[dayKey];
+            if (typeof dayValue === 'object') {
+                return dayValue.customName || '';
+            }
+            return '';
+        }
+
+        function getDisplayNameForDay(program, dayKey) {
+            const customName = getCustomNameForDay(program, dayKey);
+            if (customName) return customName;
+            return getWorkoutTypeForDay(program, dayKey);
+        }
+
+        // Test accordion rendering logic
+        function renderWorkoutsAccordionTest(program) {
+            const schedule = program.schedule;
+            const workouts = program.workouts;
+
+            // Get sorted day keys
+            const dayKeys = Object.keys(schedule).sort((a, b) => {
+                const numA = parseInt(a.replace('day', ''));
+                const numB = parseInt(b.replace('day', ''));
+                return numA - numB;
+            });
+
+            // Group days by workout type while preserving day order
+            const workoutTypeMap = new Map();
+            
+            dayKeys.forEach(dayKey => {
+                const dayNumber = parseInt(dayKey.replace('day', ''));
+                const workoutType = getWorkoutTypeForDay(program, dayKey);
+                const displayName = getDisplayNameForDay(program, dayKey);
+                
+                if (workoutType === 'Rest') return;
+                
+                if (!workoutTypeMap.has(workoutType)) {
+                    workoutTypeMap.set(workoutType, []);
+                }
+                
+                workoutTypeMap.get(workoutType).push({ dayKey, dayNumber, displayName });
+            });
+
+            let html = '';
+            
+            // Get workout types in order of first appearance
+            const seenWorkoutTypes = new Set();
+            const orderedWorkoutTypes = [];
+            
+            dayKeys.forEach(dayKey => {
+                const workoutType = getWorkoutTypeForDay(program, dayKey);
+                if (workoutType !== 'Rest' && !seenWorkoutTypes.has(workoutType)) {
+                    seenWorkoutTypes.add(workoutType);
+                    orderedWorkoutTypes.push(workoutType);
+                }
+            });
+            
+            // Render accordion for each workout type
+            orderedWorkoutTypes.forEach(workoutType => {
+                const days = workoutTypeMap.get(workoutType);
+                const exercises = workouts[workoutType] || [];
+                const exerciseCount = exercises.length;
+                
+                const dayLabels = days.map(d => {
+                    if (d.displayName !== workoutType) {
+                        return `Day ${d.dayNumber}: ${d.displayName}`;
+                    }
+                    return `Day ${d.dayNumber}`;
+                }).join(', ');
+                
+                html += `
+                    <div class="workout-accordion">
+                        <div class="workout-accordion-header">
+                            <span class="workout-accordion-name">${dayLabels} (${workoutType})</span>
+                            <span class="workout-accordion-badge">${exerciseCount} exercise${exerciseCount === 1 ? '' : 's'}</span>
+                        </div>
+                    </div>
+                `;
+            });
+
+            return html;
+        }
+
+        // Test 1: Default ULPPL schedule
+        const test1Program = {
+            name: "ULPPL",
+            schedule: {
+                day1: { workoutType: "Upper", customName: "" },
+                day2: { workoutType: "Lower", customName: "" },
+                day3: { workoutType: "Rest", customName: "" },
+                day4: { workoutType: "Push", customName: "" },
+                day5: { workoutType: "Pull", customName: "" },
+                day6: { workoutType: "Legs", customName: "" },
+                day7: { workoutType: "Rest", customName: "" }
+            },
+            workouts: {
+                Upper: [{ name: "Bench Press" }, { name: "Rows" }],
+                Lower: [{ name: "Squat" }],
+                Push: [{ name: "Overhead Press" }],
+                Pull: [{ name: "Pull Ups" }],
+                Legs: [{ name: "Leg Press" }]
+            }
+        };
+        document.getElementById('test1-output').innerHTML = renderWorkoutsAccordionTest(test1Program);
+
+        // Test 2: Schedule with custom names
+        const test2Program = {
+            name: "Custom Program",
+            schedule: {
+                day1: { workoutType: "Upper", customName: "Chest Focus" },
+                day2: { workoutType: "Lower", customName: "" },
+                day3: { workoutType: "Rest", customName: "" },
+                day4: { workoutType: "Push", customName: "Shoulders" },
+                day5: { workoutType: "Pull", customName: "Back Day" },
+            },
+            workouts: {
+                Upper: [{ name: "Bench Press" }, { name: "Rows" }],
+                Lower: [{ name: "Squat" }],
+                Push: [{ name: "Overhead Press" }],
+                Pull: [{ name: "Pull Ups" }]
+            }
+        };
+        document.getElementById('test2-output').innerHTML = renderWorkoutsAccordionTest(test2Program);
+
+        // Test 3: Schedule with duplicate workout types
+        const test3Program = {
+            name: "PPL x2",
+            schedule: {
+                day1: { workoutType: "Push", customName: "Heavy Push" },
+                day2: { workoutType: "Pull", customName: "" },
+                day3: { workoutType: "Legs", customName: "" },
+                day4: { workoutType: "Push", customName: "Light Push" },
+                day5: { workoutType: "Pull", customName: "Back Focus" },
+                day6: { workoutType: "Legs", customName: "" },
+                day7: { workoutType: "Rest", customName: "" }
+            },
+            workouts: {
+                Push: [{ name: "Bench Press" }, { name: "Overhead Press" }],
+                Pull: [{ name: "Pull Ups" }, { name: "Rows" }],
+                Legs: [{ name: "Squat" }, { name: "Leg Press" }]
+            }
+        };
+        document.getElementById('test3-output').innerHTML = renderWorkoutsAccordionTest(test3Program);
+    </script>
+</body>
+</html>
