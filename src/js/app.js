@@ -1168,29 +1168,57 @@ function renderWorkoutsAccordion() {
         return numA - numB;
     });
 
-    let html = '';
+    // Group days by workout type while preserving day order
+    const workoutTypeMap = new Map(); // workoutType -> [{dayKey, dayNumber, displayName}]
     
-    // Iterate through days in order
     dayKeys.forEach(dayKey => {
         const dayNumber = parseInt(dayKey.replace('day', ''));
         const workoutType = getWorkoutTypeForDay(currentEditingProgram, dayKey);
-        const customName = getCustomNameForDay(currentEditingProgram, dayKey);
         const displayName = getDisplayNameForDay(currentEditingProgram, dayKey);
         
         // Skip Rest days
         if (workoutType === 'Rest') return;
         
+        if (!workoutTypeMap.has(workoutType)) {
+            workoutTypeMap.set(workoutType, []);
+        }
+        
+        workoutTypeMap.get(workoutType).push({ dayKey, dayNumber, displayName });
+    });
+
+    let html = '';
+    
+    // Get workout types in the order they first appear in the schedule
+    const seenWorkoutTypes = new Set();
+    const orderedWorkoutTypes = [];
+    
+    dayKeys.forEach(dayKey => {
+        const workoutType = getWorkoutTypeForDay(currentEditingProgram, dayKey);
+        if (workoutType !== 'Rest' && !seenWorkoutTypes.has(workoutType)) {
+            seenWorkoutTypes.add(workoutType);
+            orderedWorkoutTypes.push(workoutType);
+        }
+    });
+    
+    // Render accordion for each workout type in order of first appearance
+    orderedWorkoutTypes.forEach(workoutType => {
+        const days = workoutTypeMap.get(workoutType);
         const exercises = workouts[workoutType] || [];
         const exerciseCount = exercises.length;
         
-        // Create a unique ID for this accordion combining day and workout type
-        const accordionId = `accordion-day${dayNumber}-${workoutType}`;
+        // Create header showing all days that use this workout type
+        const dayLabels = days.map(d => {
+            if (d.displayName !== workoutType) {
+                return `Day ${d.dayNumber}: ${d.displayName}`;
+            }
+            return `Day ${d.dayNumber}`;
+        }).join(', ');
         
         html += `
-                    <div class="workout-accordion" id="${accordionId}">
-                        <div class="workout-accordion-header" onclick="toggleWorkoutAccordion('day${dayNumber}-${workoutType}')">
+                    <div class="workout-accordion" id="accordion-${workoutType}">
+                        <div class="workout-accordion-header" onclick="toggleWorkoutAccordion('${workoutType}')">
                             <div class="workout-accordion-title">
-                                <span class="workout-accordion-name">Day ${dayNumber}: ${displayName}</span>
+                                <span class="workout-accordion-name">${dayLabels} (${workoutType})</span>
                                 <span class="workout-accordion-badge">${exerciseCount} ${exerciseCount === 1 ? 'exercise' : 'exercises'}</span>
                             </div>
                             <span class="workout-accordion-toggle">▼</span>
