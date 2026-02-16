@@ -5597,10 +5597,16 @@ function renderWorkoutDaySelector() {
             { key: 'Legs', label: 'Legs' }
         ];
         
+        // Set current day to first day if not valid
+        const validKeys = defaultDays.map(d => d.key);
+        if (!validKeys.includes(currentDay)) {
+            currentDay = defaultDays[0].key;
+        }
+        
         let html = '';
-        defaultDays.forEach((day, index) => {
-            const isFirst = index === 0;
-            html += `<button class="day-btn ${isFirst ? 'active' : ''}" id="${day.key.toLowerCase()}-btn">${day.label}</button>`;
+        defaultDays.forEach((day) => {
+            const isActive = currentDay === day.key;
+            html += `<button class="day-btn ${isActive ? 'active' : ''}" id="${day.key.toLowerCase()}-btn">${day.label}</button>`;
         });
         
         container.innerHTML = html;
@@ -5613,12 +5619,6 @@ function renderWorkoutDaySelector() {
             }
         });
         
-        // Set current day to first day if not valid
-        const validKeys = defaultDays.map(d => d.key);
-        if (!validKeys.includes(currentDay)) {
-            currentDay = defaultDays[0].key;
-        }
-        
         return;
     }
     
@@ -5626,11 +5626,16 @@ function renderWorkoutDaySelector() {
     const schedule = activeProgram.schedule;
     const dayKeys = Object.keys(schedule).sort(); // day1, day2, etc.
     
+    // Select first day by default if currentDay is not set or invalid
+    if (!dayKeys.includes(currentDay)) {
+        currentDay = dayKeys[0];
+    }
+    
     let html = '';
-    dayKeys.forEach((dayKey, index) => {
+    dayKeys.forEach((dayKey) => {
         const displayName = getDisplayNameForDay(activeProgram, dayKey);
-        const isFirst = index === 0;
-        html += `<button class="day-btn ${isFirst ? 'active' : ''}" id="${dayKey}-btn">${displayName}</button>`;
+        const isActive = currentDay === dayKey;
+        html += `<button class="day-btn ${isActive ? 'active' : ''}" id="${dayKey}-btn">${displayName}</button>`;
     });
     
     container.innerHTML = html;
@@ -5642,18 +5647,7 @@ function renderWorkoutDaySelector() {
             btn.addEventListener('click', () => selectDay(dayKey));
         }
     });
-    
-    // Select first day by default if currentDay is not set or invalid
-    if (!dayKeys.includes(currentDay)) {
-        currentDay = dayKeys[0];
-    }
-    
-    // Update active button state
-    document.querySelectorAll('.day-btn').forEach(btn => btn.classList.remove('active'));
-    const activeBtn = document.getElementById(`${currentDay}-btn`);
-    if (activeBtn) {
-        activeBtn.classList.add('active');
-    }
+}
 }
 
 function selectDay(dayKey) {
