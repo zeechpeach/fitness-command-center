@@ -1243,11 +1243,15 @@ function renderWorkoutsAccordion() {
             return `Day ${d.dayNumber}`;
         }).join(', ');
         
+        // Only show workout type in parentheses if no custom names are used for this workout type
+        const hasCustomNames = days.some(d => d.displayName !== workoutType);
+        const headerName = hasCustomNames ? dayLabels : `${dayLabels} (${workoutType})`;
+        
         html += `
                     <div class="workout-accordion" id="accordion-${workoutType}">
                         <div class="workout-accordion-header" onclick="toggleWorkoutAccordion('${workoutType}')">
                             <div class="workout-accordion-title">
-                                <span class="workout-accordion-name">${dayLabels} (${workoutType})</span>
+                                <span class="workout-accordion-name">${headerName}</span>
                                 <span class="workout-accordion-badge">${exerciseCount} ${exerciseCount === 1 ? 'exercise' : 'exercises'}</span>
                             </div>
                             <span class="workout-accordion-toggle">▼</span>
