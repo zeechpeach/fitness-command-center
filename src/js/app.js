@@ -1,6 +1,6 @@
 // Firebase imports
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, query, orderBy, where, limit, deleteDoc, doc, updateDoc, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, query, orderBy, where, limit, deleteDoc, doc, updateDoc, enableIndexedDbPersistence, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 // Firebase config
 const firebaseConfig = {
@@ -4962,7 +4962,7 @@ window.deleteSavedFood = async function (foodId) {
 
 async function loadSavedFoods() {
     try {
-        const q = query(collection(db, "savedFoods"), orderBy("lastUsed", "desc"));
+        const q = query(collection(db, "savedFoods"), orderBy("lastUsed", "desc"), limit(100));
         const querySnapshot = await getDocs(q);
 
         const allFoods = [];
@@ -4972,11 +4972,7 @@ async function loadSavedFoods() {
 
         console.log(`Loaded ${allFoods.length} saved foods from database`);
 
-        // Deduplicate foods based on name and nutritional values
-        const deduplicatedFoods = await deduplicateSavedFoods(allFoods);
-        savedFoods = deduplicatedFoods;
-
-        console.log(`After deduplication: ${savedFoods.length} unique saved foods`);
+        savedFoods = allFoods;
     } catch (e) {
         console.error("Error loading saved foods:", e);
         // Initialize with empty array if error
@@ -4987,6 +4983,7 @@ async function loadSavedFoods() {
 /**
  * Deduplicates saved foods based on name and nutritional values.
  * If duplicates exist, keeps the most recently used one and deletes others from Firebase.
+ * NOTE: This is a utility function for one-time cleanup, not called during normal app initialization.
  */
 async function deduplicateSavedFoods(foods) {
     if (!foods || foods.length === 0) return [];
@@ -5027,17 +5024,26 @@ async function deduplicateSavedFoods(foods) {
         }
     }
 
-    // Delete duplicates from Firebase
+    // Delete duplicates from Firebase using batch operations
     if (duplicatesToDelete.length > 0) {
         console.log(`Found ${duplicatesToDelete.length} duplicate saved foods to clean up`);
 
-        for (const foodId of duplicatesToDelete) {
-            try {
+        // Process deletions in batches of 500 (Firestore limit)
+        const batchSize = 500;
+        for (let i = 0; i < duplicatesToDelete.length; i += batchSize) {
+            const batch = writeBatch(db);
+            const batchIds = duplicatesToDelete.slice(i, i + batchSize);
+            
+            for (const foodId of batchIds) {
                 const docRef = doc(db, "savedFoods", foodId);
-                await deleteDoc(docRef);
-                console.log(`Deleted duplicate saved food ${foodId}`);
+                batch.delete(docRef);
+            }
+
+            try {
+                await batch.commit();
+                console.log(`Deleted batch of ${batchIds.length} duplicate saved foods`);
             } catch (e) {
-                console.error(`Error deleting duplicate food ${foodId}:`, e);
+                console.error(`Error deleting batch of duplicate foods:`, e);
             }
         }
 
@@ -5530,6 +5536,8 @@ function showTab(tabName) {
                     container.innerHTML = '<p style="color: var(--color-error); text-align: center; padding: 2rem;">Failed to load nutrition data. Please refresh the page.</p>';
                 }
             });
+        // Render empty state immediately, then load data in background
+        renderSavedFoods();
         loadSavedFoods()
             .then(() => renderSavedFoods())
             .catch(err => console.error('Failed to load saved foods:', err));
