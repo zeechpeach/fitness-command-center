@@ -5321,8 +5321,8 @@ let photosLoaded = false;
 let analyticsLoaded = false;
 let progressLoaded = false;
 
-// Main app initialization
-document.addEventListener('DOMContentLoaded', function () {
+// Main app initialization function
+function initializeFitnessApp() {
     // Hide loading overlay
     const loadingOverlay = document.getElementById('app-loading');
     if (loadingOverlay) loadingOverlay.style.display = 'none';
@@ -5375,7 +5375,16 @@ document.addEventListener('DOMContentLoaded', function () {
     loadSickDayData().catch(err => console.error('Failed to load sick day data:', err));
 
     // Don't load nutrition/weight/photo data yet - lazy load when tabs are opened
-});
+}
+
+// Handle both cases: DOM already loaded (ES module loaded late) or still loading
+if (document.readyState === 'loading') {
+    // DOM not ready yet, wait for DOMContentLoaded
+    document.addEventListener('DOMContentLoaded', initializeFitnessApp);
+} else {
+    // DOM already loaded, initialize immediately
+    initializeFitnessApp();
+}
 
 function setupEventListeners() {
     // Tab switching - showTab handles lazy loading
@@ -5655,7 +5664,6 @@ function renderWorkoutDaySelector() {
             btn.addEventListener('click', () => selectDay(dayKey));
         }
     });
-}
 }
 
 function selectDay(dayKey) {
