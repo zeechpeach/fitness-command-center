@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Dynamic Day Selector</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .workout-day-selector {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+        .day-btn {
+            padding: 0.75rem 1.5rem;
+            background: #2a2a2a;
+            border: 1px solid #444;
+            border-radius: 4px;
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .day-btn:hover {
+            background: #333;
+        }
+        .day-btn.active {
+            background: #4a9eff;
+            border-color: #4a9eff;
+        }
+        .test-section {
+            margin: 2rem 0;
+            padding: 1rem;
+            background: #2a2a2a;
+            border-radius: 4px;
+        }
+        button {
+            padding: 0.5rem 1rem;
+            margin: 0.5rem;
+            background: #4a9eff;
+            border: none;
+            border-radius: 4px;
+            color: #fff;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #3a8eef;
+        }
+        .info {
+            margin: 1rem 0;
+            padding: 1rem;
+            background: #333;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Dynamic Day Selector Test</h1>
+        
+        <div class="test-section">
+            <h2>Test 1: Default ULPPL Program (No Active Program)</h2>
+            <div class="workout-day-selector" id="test1-selector"></div>
+            <div class="info" id="test1-info"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>Test 2: Custom Aesthetics Program</h2>
+            <div class="workout-day-selector" id="test2-selector"></div>
+            <div class="info" id="test2-info"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>Test 3: Program Switching</h2>
+            <button onclick="switchToDefault()">Switch to Default ULPPL</button>
+            <button onclick="switchToCustom()">Switch to Aesthetics</button>
+            <div class="workout-day-selector" id="test3-selector"></div>
+            <div class="info" id="test3-info"></div>
+        </div>
+    </div>
+
+    <script>
+        // Simulated state
+        let activeProgram = null;
+        let currentDay = 'Upper';
+        
+        // Helper functions
+        function getWorkoutTypeForDay(program, dayKey) {
+            if (!program || !program.schedule || !program.schedule[dayKey]) {
+                return 'Rest';
+            }
+            const dayValue = program.schedule[dayKey];
+            if (typeof dayValue === 'string') {
+                return dayValue;
+            }
+            return dayValue.workoutType || 'Rest';
+        }
+        
+        function getCustomNameForDay(program, dayKey) {
+            if (!program || !program.schedule || !program.schedule[dayKey]) {
+                return '';
+            }
+            const dayValue = program.schedule[dayKey];
+            if (typeof dayValue === 'object') {
+                return dayValue.customName || '';
+            }
+            return '';
+        }
+        
+        function getDisplayNameForDay(program, dayKey) {
+            const customName = getCustomNameForDay(program, dayKey);
+            if (customName) return customName;
+            return getWorkoutTypeForDay(program, dayKey);
+        }
+        
+        // Render function
+        function renderWorkoutDaySelector(containerId, updateInfoId) {
+            const container = document.getElementById(containerId);
+            const infoDiv = document.getElementById(updateInfoId);
+            if (!container) return;
+            
+            if (!activeProgram || !activeProgram.schedule) {
+                const defaultDays = [
+                    { key: 'Upper', label: 'Upper' },
+                    { key: 'Lower', label: 'Lower' },
+                    { key: 'Rest', label: 'Rest' },
+                    { key: 'Push', label: 'Push' },
+                    { key: 'Pull', label: 'Pull' },
+                    { key: 'Legs', label: 'Legs' }
+                ];
+                
+                let html = '';
+                defaultDays.forEach((day, index) => {
+                    const isActive = (index === 0 && currentDay === '') || currentDay === day.key;
+                    html += `<button class="day-btn ${isActive ? 'active' : ''}" id="${containerId}-${day.key.toLowerCase()}-btn" data-day="${day.key}">${day.label}</button>`;
+                });
+                
+                container.innerHTML = html;
+                
+                defaultDays.forEach(day => {
+                    const btn = document.getElementById(`${containerId}-${day.key.toLowerCase()}-btn`);
+                    if (btn) {
+                        btn.addEventListener('click', () => {
+                            selectDay(day.key, containerId, updateInfoId);
+                        });
+                    }
+                });
+                
+                if (infoDiv) {
+                    infoDiv.innerHTML = `<strong>Program:</strong> Default ULPPL<br><strong>Current Day:</strong> ${currentDay}<br><strong>Workout Type:</strong> ${currentDay}`;
+                }
+            } else {
+                const schedule = activeProgram.schedule;
+                const dayKeys = Object.keys(schedule).sort();
+                
+                let html = '';
+                dayKeys.forEach((dayKey, index) => {
+                    const displayName = getDisplayNameForDay(activeProgram, dayKey);
+                    const isActive = (index === 0 && !dayKeys.includes(currentDay)) || currentDay === dayKey;
+                    html += `<button class="day-btn ${isActive ? 'active' : ''}" id="${containerId}-${dayKey}-btn" data-day="${dayKey}">${displayName}</button>`;
+                });
+                
+                container.innerHTML = html;
+                
+                dayKeys.forEach(dayKey => {
+                    const btn = document.getElementById(`${containerId}-${dayKey}-btn`);
+                    if (btn) {
+                        btn.addEventListener('click', () => {
+                            selectDay(dayKey, containerId, updateInfoId);
+                        });
+                    }
+                });
+                
+                const workoutType = getWorkoutTypeForDay(activeProgram, currentDay);
+                const displayName = getDisplayNameForDay(activeProgram, currentDay);
+                if (infoDiv) {
+                    infoDiv.innerHTML = `<strong>Program:</strong> ${activeProgram.name}<br><strong>Current Day:</strong> ${currentDay}<br><strong>Display Name:</strong> ${displayName}<br><strong>Workout Type:</strong> ${workoutType}`;
+                }
+            }
+        }
+        
+        function selectDay(dayKey, containerId, updateInfoId) {
+            currentDay = dayKey;
+            
+            // Update buttons
+            const container = document.getElementById(containerId);
+            container.querySelectorAll('.day-btn').forEach(btn => btn.classList.remove('active'));
+            const activeBtn = container.querySelector(`[data-day="${dayKey}"]`);
+            if (activeBtn) {
+                activeBtn.classList.add('active');
+            }
+            
+            // Update info
+            const infoDiv = document.getElementById(updateInfoId);
+            if (activeProgram && activeProgram.schedule) {
+                const workoutType = getWorkoutTypeForDay(activeProgram, dayKey);
+                const displayName = getDisplayNameForDay(activeProgram, dayKey);
+                infoDiv.innerHTML = `<strong>Program:</strong> ${activeProgram.name}<br><strong>Current Day:</strong> ${dayKey}<br><strong>Display Name:</strong> ${displayName}<br><strong>Workout Type:</strong> ${workoutType}`;
+            } else {
+                infoDiv.innerHTML = `<strong>Program:</strong> Default ULPPL<br><strong>Current Day:</strong> ${dayKey}<br><strong>Workout Type:</strong> ${dayKey}`;
+            }
+        }
+        
+        // Test data
+        const aestheticsProgram = {
+            name: "Aesthetics",
+            schedule: {
+                day1: { workoutType: "Pull", customName: "Pull & Push" },
+                day2: { workoutType: "Upper", customName: "Shoulders & Arms 1" },
+                day3: { workoutType: "Rest", customName: "Abs" },
+                day4: { workoutType: "Lower", customName: "Legs 1" },
+                day5: { workoutType: "Push", customName: "Chest & Back" },
+                day6: { workoutType: "Upper", customName: "Shoulders & Arms 2" },
+                day7: { workoutType: "Lower", customName: "Legs 2" }
+            }
+        };
+        
+        // Test 1: Default program
+        currentDay = 'Upper';
+        renderWorkoutDaySelector('test1-selector', 'test1-info');
+        
+        // Test 2: Custom program
+        activeProgram = aestheticsProgram;
+        currentDay = 'day1';
+        renderWorkoutDaySelector('test2-selector', 'test2-info');
+        
+        // Test 3: Switching
+        activeProgram = null;
+        currentDay = 'Upper';
+        renderWorkoutDaySelector('test3-selector', 'test3-info');
+        
+        function switchToDefault() {
+            activeProgram = null;
+            currentDay = 'Upper';
+            renderWorkoutDaySelector('test3-selector', 'test3-info');
+        }
+        
+        function switchToCustom() {
+            activeProgram = aestheticsProgram;
+            currentDay = 'day1';
+            renderWorkoutDaySelector('test3-selector', 'test3-info');
+        }
+    </script>
+</body>
+</html>

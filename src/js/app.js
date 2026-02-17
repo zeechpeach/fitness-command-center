@@ -907,6 +907,9 @@ window.setActiveProgram = async function (programId) {
             // Reload workouts to show only workouts from this program
             await loadWorkoutsFromFirebase();
 
+            // Re-render day selector for new program
+            renderWorkoutDaySelector();
+            
             // Refresh workout view if on workout tab
             initializeWorkout();
             updateSuggestions();
@@ -5329,6 +5332,9 @@ document.addEventListener('DOMContentLoaded', function () {
     // Initialize program editor
     initializeProgramNameInput();
 
+    // Render workout day selector with default program
+    renderWorkoutDaySelector();
+    
     // Initialize workout with default program (will update when programs load)
     initializeWorkout();
 
@@ -5337,7 +5343,8 @@ document.addEventListener('DOMContentLoaded', function () {
     // Load programs in background, then update workout display
     loadPrograms()
         .then(() => {
-            // Re-initialize workout with loaded programs
+            // Re-render day selector and re-initialize workout with loaded programs
+            renderWorkoutDaySelector();
             initializeWorkout();
         })
         .catch(err => {
@@ -5390,13 +5397,8 @@ function setupEventListeners() {
         showTab('intelligence');
     });
 
-    // Day selection
-    document.getElementById('upper-btn').addEventListener('click', () => selectDay('Upper'));
-    document.getElementById('lower-btn').addEventListener('click', () => selectDay('Lower'));
-    document.getElementById('rest-btn').addEventListener('click', () => selectDay('Rest'));
-    document.getElementById('push-btn').addEventListener('click', () => selectDay('Push'));
-    document.getElementById('pull-btn').addEventListener('click', () => selectDay('Pull'));
-    document.getElementById('legs-btn').addEventListener('click', () => selectDay('Legs'));
+    // Day selection - now handled by renderWorkoutDaySelector()
+    // Event listeners are attached dynamically when buttons are rendered
 
     // Complete workout
     document.getElementById('complete-workout-btn').addEventListener('click', completeWorkout);
@@ -5578,25 +5580,135 @@ function showTab(tabName) {
     }
 }
 
-function selectDay(day) {
-    currentDay = day;
+// Render dynamic workout day selector based on active program schedule
+function renderWorkoutDaySelector() {
+    const container = document.getElementById('workout-day-selector');
+    if (!container) return;
+    
+    // If no active program, use default ULPPL structure
+    if (!activeProgram || !activeProgram.schedule) {
+        // Default ULPPL program mapping
+        const defaultDays = [
+            { key: 'Upper', label: 'Upper' },
+            { key: 'Lower', label: 'Lower' },
+            { key: 'Rest', label: 'Rest' },
+            { key: 'Push', label: 'Push' },
+            { key: 'Pull', label: 'Pull' },
+            { key: 'Legs', label: 'Legs' }
+        ];
+        
+        // Set current day to first day if not valid
+        const validKeys = defaultDays.map(d => d.key);
+        if (!validKeys.includes(currentDay)) {
+            currentDay = defaultDays[0].key;
+        }
+        
+        let html = '';
+        defaultDays.forEach((day) => {
+            const isActive = currentDay === day.key;
+            html += `<button class="day-btn ${isActive ? 'active' : ''}" id="${day.key.toLowerCase()}-btn">${day.label}</button>`;
+        });
+        
+        container.innerHTML = html;
+        
+        // Attach event listeners for default buttons
+        defaultDays.forEach(day => {
+            const btn = document.getElementById(`${day.key.toLowerCase()}-btn`);
+            if (btn) {
+                btn.addEventListener('click', () => selectDay(day.key));
+            }
+        });
+        
+        return;
+    }
+    
+    // Build buttons from active program schedule
+    const schedule = activeProgram.schedule;
+    const dayKeys = Object.keys(schedule).sort(); // day1, day2, etc.
+    
+    // Select first day by default if currentDay is not set or invalid
+    if (!dayKeys.includes(currentDay)) {
+        currentDay = dayKeys[0];
+    }
+    
+    let html = '';
+    dayKeys.forEach((dayKey) => {
+        const displayName = getDisplayNameForDay(activeProgram, dayKey);
+        const isActive = currentDay === dayKey;
+        html += `<button class="day-btn ${isActive ? 'active' : ''}" id="${dayKey}-btn">${displayName}</button>`;
+    });
+    
+    container.innerHTML = html;
+    
+    // Attach event listeners to all buttons
+    dayKeys.forEach(dayKey => {
+        const btn = document.getElementById(`${dayKey}-btn`);
+        if (btn) {
+            btn.addEventListener('click', () => selectDay(dayKey));
+        }
+    });
+}
+}
+
+function selectDay(dayKey) {
+    currentDay = dayKey;
 
     // Update day buttons
     document.querySelectorAll('.day-btn').forEach(btn => btn.classList.remove('active'));
-    document.getElementById(day.toLowerCase() + '-btn').classList.add('active');
+    
+    // Construct button ID based on whether we're using default days or program schedule
+    // Default days use lowercase IDs (Upper -> upper-btn), program days use as-is (day1 -> day1-btn)
+    let buttonId;
+    if (activeProgram && activeProgram.schedule) {
+        buttonId = dayKey + '-btn'; // Program schedule: day1-btn, day2-btn, etc.
+    } else {
+        buttonId = dayKey.toLowerCase() + '-btn'; // Default: upper-btn, lower-btn, etc.
+    }
+    
+    const activeBtn = document.getElementById(buttonId);
+    if (activeBtn) {
+        activeBtn.classList.add('active');
+    }
 
-    initializeWorkout();
+    // Get workout type for the selected day
+    // If no active program, dayKey is already the workout type (Upper, Lower, etc.)
+    // If there's an active program, get the workout type from the schedule
+    let workoutType;
+    if (activeProgram && activeProgram.schedule) {
+        workoutType = getWorkoutTypeForDay(activeProgram, dayKey);
+    } else {
+        workoutType = dayKey; // For default workoutPlans, dayKey is the workout type
+    }
+    
+    initializeWorkout(workoutType);
     updateSuggestions();
 }
 
-function initializeWorkout() {
+function initializeWorkout(workoutType = null) {
     currentWorkout = {};
     const workouts = getActiveWorkouts();
-    const exercises = workouts[currentDay];
+    
+    // If no workoutType provided, try to get it from currentDay
+    if (!workoutType) {
+        if (activeProgram && activeProgram.schedule) {
+            workoutType = getWorkoutTypeForDay(activeProgram, currentDay);
+        } else {
+            workoutType = currentDay; // For default workoutPlans, currentDay is the workout type
+        }
+    }
+    
+    const exercises = workouts[workoutType];
+    
+    // Handle case where workout type doesn't exist
+    if (!exercises || !Array.isArray(exercises)) {
+        console.warn(`No exercises found for workout type: ${workoutType} (day: ${currentDay})`);
+        renderWorkout(workoutType);
+        return;
+    }
 
     exercises.forEach((exercise, index) => {
         const isStretch = exercise.name.toLowerCase().includes('stretch');
-        const isRest = currentDay === 'Rest';
+        const isRest = workoutType === 'Rest';
 
         currentWorkout[index] = {
             exercise: exercise.name,
@@ -5610,18 +5722,40 @@ function initializeWorkout() {
         };
     });
 
-    renderWorkout();
+    renderWorkout(workoutType);
 }
-function renderWorkout() {
+function renderWorkout(workoutType = null) {
     const container = document.getElementById('exercises-container');
     const workouts = getActiveWorkouts();
-    const exercises = workouts[currentDay];
+    
+    // If no workoutType provided, try to get it from currentDay
+    if (!workoutType) {
+        if (activeProgram && activeProgram.schedule) {
+            workoutType = getWorkoutTypeForDay(activeProgram, currentDay);
+        } else {
+            workoutType = currentDay; // For default workoutPlans, currentDay is the workout type
+        }
+    }
+    
+    const exercises = workouts[workoutType];
+    
+    // Handle case where workout type doesn't exist
+    if (!exercises || !Array.isArray(exercises)) {
+        container.innerHTML = '<p style="color: var(--color-text-secondary); text-align: center; padding: 2rem;">No exercises found for this day.</p>';
+        return;
+    }
+    
     const exerciseProgression = getExerciseProgression();
 
     let html = '';
 
     exercises.forEach((exercise, exerciseIndex) => {
         const workoutExercise = currentWorkout[exerciseIndex];
+        if (!workoutExercise) {
+            console.warn(`Exercise at index ${exerciseIndex} not initialized`);
+            return; // Skip if not initialized
+        }
+        
         // Get last workout matching current exercise's approach
         const currentApproach = workoutExercise.approach || 'standard';
         const lastWorkout = getLastWorkoutForDay(currentDay, currentApproach);
@@ -5629,7 +5763,7 @@ function renderWorkout() {
 
         // Check if this is a stretch exercise or rest day
         const isStretch = exercise.name.toLowerCase().includes('stretch');
-        const isRest = currentDay === 'Rest';
+        const isRest = workoutType === 'Rest';
 
         // Calculate suggested weight and get progression info
         let suggestedWeight = '';
