@@ -5655,7 +5655,17 @@ function selectDay(dayKey) {
 
     // Update day buttons
     document.querySelectorAll('.day-btn').forEach(btn => btn.classList.remove('active'));
-    const activeBtn = document.getElementById(dayKey + '-btn');
+    
+    // Construct button ID based on whether we're using default days or program schedule
+    // Default days use lowercase IDs (Upper -> upper-btn), program days use as-is (day1 -> day1-btn)
+    let buttonId;
+    if (activeProgram && activeProgram.schedule) {
+        buttonId = dayKey + '-btn'; // Program schedule: day1-btn, day2-btn, etc.
+    } else {
+        buttonId = dayKey.toLowerCase() + '-btn'; // Default: upper-btn, lower-btn, etc.
+    }
+    
+    const activeBtn = document.getElementById(buttonId);
     if (activeBtn) {
         activeBtn.classList.add('active');
     }
