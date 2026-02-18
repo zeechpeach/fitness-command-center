@@ -1120,11 +1120,13 @@ window.editProgramDayName = function (dayNumber) {
     if (!currentEditingProgram) return;
     
     const dayKey = `day${dayNumber}`;
-    const currentName = getDisplayNameForDay(currentEditingProgram, dayKey);
+    const workoutType = getWorkoutTypeForDay(currentEditingProgram, dayKey);
+    // Don't show "(click to name)" placeholder as default value
+    const defaultValue = workoutType || '';
     
     const newName = prompt(
         `Enter name for Day ${dayNumber}:`,
-        currentName
+        defaultValue
     );
     
     if (newName !== null && newName.trim() !== '') { // User didn't cancel and provided a name
@@ -1207,7 +1209,7 @@ function renderWorkoutsAccordion() {
         const displayName = getDisplayNameForDay(currentEditingProgram, dayKey);
         
         // Skip unnamed days or empty workout types
-        if (!workoutType || workoutType === '') return;
+        if (!workoutType) return;
         
         if (!workoutTypeMap.has(workoutType)) {
             workoutTypeMap.set(workoutType, []);
@@ -1224,7 +1226,7 @@ function renderWorkoutsAccordion() {
     
     dayKeys.forEach(dayKey => {
         const workoutType = getWorkoutTypeForDay(currentEditingProgram, dayKey);
-        if (workoutType && workoutType !== '' && !seenWorkoutTypes.has(workoutType)) {
+        if (workoutType && !seenWorkoutTypes.has(workoutType)) {
             seenWorkoutTypes.add(workoutType);
             orderedWorkoutTypes.push(workoutType);
         }
