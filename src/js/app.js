@@ -1,6 +1,7 @@
 // Firebase imports
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, collection, addDoc, getDocs, query, orderBy, where, limit, deleteDoc, doc, updateDoc, enableIndexedDbPersistence, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 // Firebase config
 const firebaseConfig = {
@@ -16,6 +17,7 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const auth = getAuth(app);
 
 // Enable offline persistence for faster repeat visits
 enableIndexedDbPersistence(db)
@@ -28,6 +30,9 @@ enableIndexedDbPersistence(db)
             console.error('Persistence error:', err);
         }
     });
+
+// Authentication state
+let currentUser = null;
 
 // Global state
 let currentDay = 'Upper';
@@ -5401,14 +5406,56 @@ async function initializeFitnessApp() {
     // Don't load nutrition/weight/photo data yet - lazy load when tabs are opened
 }
 
+// Authentication state observer - initializes app after authentication
+onAuthStateChanged(auth, async (user) => {
+    if (user) {
+        currentUser = user;
+        console.log('User authenticated:', user.uid);
+        
+        // Initialize app after authentication
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeFitnessApp);
+        } else {
+            initializeFitnessApp();
+        }
+    } else {
+        // No user is signed in, sign in anonymously
+        console.log('No user authenticated, signing in anonymously...');
+        try {
+            const result = await signInAnonymously(auth);
+            console.log('Anonymous sign-in successful:', result.user.uid);
+        } catch (error) {
+            console.error('Error signing in anonymously:', error);
+            
+            // Hide loading overlay and show error
+            const loadingOverlay = document.getElementById('app-loading');
+            if (loadingOverlay) {
+                loadingOverlay.innerHTML = `
+                    <div style="color: var(--color-danger); font-weight: 500;">
+                        Authentication Failed
+                    </div>
+                    <div style="font-size: 0.9rem; color: var(--color-text-secondary); margin-top: 0.5rem;">
+                        ${error.message}
+                    </div>
+                    <button onclick="location.reload()" style="margin-top: 1rem; padding: 0.5rem 1rem; background: var(--color-accent-primary); color: white; border: none; border-radius: 4px; cursor: pointer;">
+                        Retry
+                    </button>
+                `;
+            }
+        }
+    }
+});
+
 // Handle both cases: DOM already loaded (ES module loaded late) or still loading
-if (document.readyState === 'loading') {
-    // DOM not ready yet, wait for DOMContentLoaded
-    document.addEventListener('DOMContentLoaded', initializeFitnessApp);
-} else {
-    // DOM already loaded, initialize immediately
-    initializeFitnessApp();
-}
+// Note: Actual initialization is now handled by onAuthStateChanged above
+// This is kept as fallback but shouldn't normally be used
+// if (document.readyState === 'loading') {
+//     // DOM not ready yet, wait for DOMContentLoaded
+//     document.addEventListener('DOMContentLoaded', initializeFitnessApp);
+// } else {
+//     // DOM already loaded, initialize immediately
+//     initializeFitnessApp();
+// }
 
 window.setWorkoutDate = function () {
     const dateInput = document.getElementById('workout-date-input');
