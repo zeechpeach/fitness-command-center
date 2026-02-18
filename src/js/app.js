@@ -6065,6 +6065,10 @@ window.selectAltExerciseFromHistory = function (altExerciseName) {
     nameInput.value = altExerciseName;
 };
 
+// Expose nutrition search functions to window for HTML oninput attributes
+window.renderSavedFoods = renderSavedFoods;
+window.renderInlineSavedFoods = renderInlineSavedFoods;
+
 async function loadAltExerciseHistory(originalExerciseName) {
     try {
         const q = query(
