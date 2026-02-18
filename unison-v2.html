@@ -1015,6 +1015,18 @@
                 </div>
 
                 <div class="card">
+                    <div class="card-header">Quick Start Templates (Optional)</div>
+                    <div class="text-secondary text-small mb-1">
+                        Use these as starting points to customize, or create your own program from scratch
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                        <button class="btn btn-secondary btn-small" onclick="loadTemplate('PPL')">Load PPL Template</button>
+                        <button class="btn btn-secondary btn-small" onclick="loadTemplate('Upper Lower')">Load Upper/Lower Template</button>
+                        <button class="btn btn-secondary btn-small" onclick="loadTemplate('Full Body')">Load Full Body Template</button>
+                    </div>
+                </div>
+
+                <div class="card">
                     <div class="card-header">Saved Foods</div>
                     <input type="text" id="foodSearchInput" placeholder="Search foods..." class="search-box">
                     <div id="savedFoodsList"></div>
@@ -1056,13 +1068,17 @@
                 <button class="modal-close" id="closeProgramEditor">&times;</button>
             </div>
             <div class="modal-body">
+                <div class="text-secondary text-small mb-1">
+                    Build your program completely from scratch. Define your own cycle length, day names, and exercises.
+                </div>
                 <div class="form-group">
                     <label>Program Name</label>
-                    <input type="text" id="programName">
+                    <input type="text" id="programName" placeholder="e.g., My Custom Program">
                 </div>
                 <div class="form-group">
                     <label>Cycle Length (days)</label>
-                    <input type="number" id="cycleLength" min="1" max="14" value="4">
+                    <input type="number" id="cycleLength" min="1" max="14" placeholder="e.g., 4">
+                    <div class="text-secondary text-small">How many days before the cycle repeats</div>
                 </div>
                 <div id="programDays"></div>
                 <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
@@ -1503,7 +1519,7 @@
         function openProgramEditor(program = null) {
             document.getElementById('programEditorTitle').textContent = program ? 'Edit Program' : 'Create Program';
             document.getElementById('programName').value = program?.name || '';
-            document.getElementById('cycleLength').value = program?.cycleLength || 4;
+            document.getElementById('cycleLength').value = program?.cycleLength || '';
             
             if (program) {
                 window.editingProgramId = program.id;
@@ -1518,20 +1534,28 @@
         }
 
         function renderProgramDays() {
-            const cycleLength = parseInt(document.getElementById('cycleLength').value) || 4;
+            const cycleLength = parseInt(document.getElementById('cycleLength').value);
             const container = document.getElementById('programDays');
+            
+            // Only render days if cycle length is valid
+            if (!cycleLength || cycleLength < 1) {
+                container.innerHTML = '<div class="text-secondary text-small">Enter a cycle length to configure days</div>';
+                return;
+            }
+            
             const existingData = window.editingProgramData?.schedule || {};
             
             container.innerHTML = '';
             for (let i = 1; i <= cycleLength; i++) {
-                const dayData = existingData[`day${i}`] || { name: `Day ${i}`, exercises: [] };
+                // Start with completely blank day data unless editing existing program
+                const dayData = existingData[`day${i}`] || { name: '', exercises: [] };
                 const dayDiv = document.createElement('div');
                 dayDiv.className = 'card';
                 dayDiv.innerHTML = `
                     <div class="card-header">Day ${i}</div>
                     <div class="form-group">
                         <label>Day Name</label>
-                        <input type="text" class="day-name-input" data-day="${i}" value="${dayData.name}">
+                        <input type="text" class="day-name-input" data-day="${i}" value="${dayData.name}" placeholder="e.g., Upper Body, Push, Rest">
                     </div>
                     <div class="day-exercises" data-day="${i}">
                         ${dayData.exercises.map((ex, idx) => `
@@ -1567,17 +1591,22 @@
             exerciseDiv.innerHTML = `
                 <div class="form-group">
                     <label>Exercise Name</label>
-                    <input type="text" class="exercise-name-input">
+                    <input type="text" class="exercise-name-input" placeholder="e.g., Bench Press">
                 </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 0.5rem;">
                     <div class="form-group">
                         <label>Sets</label>
-                        <input type="number" class="exercise-sets-input" value="3" min="1">
+                        <input type="number" class="exercise-sets-input" placeholder="e.g., 3" min="1">
                     </div>
                     <div class="form-group">
                         <label>Reps</label>
-                        <input type="text" class="exercise-reps-input" value="10">
+                        <input type="text" class="exercise-reps-input" placeholder="e.g., 8-10">
                     </div>
+                    <button class="btn btn-small btn-danger" style="margin-top: 1.5rem;" onclick="this.parentElement.parentElement.remove()">Delete</button>
+                </div>
+            `;
+            container.appendChild(exerciseDiv);
+        };
                     <button class="btn btn-small btn-danger" style="margin-top: 1.5rem;" onclick="this.parentElement.parentElement.remove()">Delete</button>
                 </div>
             `;
@@ -3365,6 +3394,24 @@
             window.editingProgramData = template;
             renderProgramDays();
         }
+
+        // Load template and open editor (from Settings)
+        window.loadTemplate = function(templateKey) {
+            const template = workoutTemplates[templateKey];
+            if (!template) return;
+            
+            // Create a copy of the template to edit
+            window.editingProgramId = null;
+            window.editingProgramData = JSON.parse(JSON.stringify(template));
+            
+            document.getElementById('programEditorTitle').textContent = `Customize ${template.name}`;
+            document.getElementById('programName').value = template.name;
+            document.getElementById('cycleLength').value = template.cycleLength;
+            
+            renderProgramDays();
+            closeModal('settingsModal');
+            openModal('programEditorModal');
+        };
 
         // Exercise Substitutions Database
         const exerciseSubstitutions = {
