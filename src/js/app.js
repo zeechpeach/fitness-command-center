@@ -1094,19 +1094,22 @@ function renderSchedulePills() {
     document.getElementById('cycle-length-display').textContent = `${length}-day cycle`;
 
     let html = '';
-    for (let i = 1; i <= length; i++) {
-        const dayKey = `day${i}`;
-        const workoutType = getWorkoutTypeForDay(currentEditingProgram, dayKey);
-        const customName = getCustomNameForDay(currentEditingProgram, dayKey);
-        const displayName = customName || workoutType;
-        
-        html += `
-                    <div class="schedule-pill" onclick="selectWorkoutForDay(${i})">
-                        <span class="schedule-pill-day">Day ${i}</span>
-                        <span class="schedule-pill-workout">${displayName}</span>
-                        <button class="schedule-pill-edit" onclick="event.stopPropagation(); editProgramDayName(${i})" title="Edit day name">✏️</button>
-                    </div>
-                `;
+    
+    if (length === 0) {
+        html = '<div style="padding: 2rem; text-align: center; color: var(--color-text-secondary);">Click "+" below to add your first day</div>';
+    } else {
+        for (let i = 1; i <= length; i++) {
+            const dayKey = `day${i}`;
+            const displayName = getDisplayNameForDay(currentEditingProgram, dayKey);
+            
+            html += `
+                        <div class="schedule-pill" onclick="selectWorkoutForDay(${i})">
+                            <span class="schedule-pill-day">Day ${i}</span>
+                            <span class="schedule-pill-workout">${displayName}</span>
+                            <button class="schedule-pill-edit" onclick="event.stopPropagation(); editProgramDayName(${i})" title="Edit day name">✏️</button>
+                        </div>
+                    `;
+        }
     }
 
     container.innerHTML = html;
@@ -1266,6 +1269,11 @@ function renderWorkoutsAccordion() {
                     </div>
                 `;
     });
+    
+    // Show helpful message if no workout types defined yet
+    if (orderedWorkoutTypes.length === 0) {
+        html = '<div style="padding: 2rem; text-align: center; color: var(--color-text-secondary);">Add days above and name them to define your workout types. Then you can add exercises here.</div>';
+    }
 
     container.innerHTML = html;
 }
