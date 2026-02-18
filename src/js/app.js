@@ -5438,7 +5438,6 @@ onAuthStateChanged(auth, async (user) => {
                         ${error.message}
                     </div>
                     <button onclick="location.reload()" 
-                            aria-label="Retry authentication and reload the application"
                             style="margin-top: 1rem; padding: 0.5rem 1rem; background: var(--color-accent-primary); color: white; border: none; border-radius: 4px; cursor: pointer;">
                         Retry
                     </button>
