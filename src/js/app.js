@@ -5380,7 +5380,7 @@ async function initializeFitnessApp() {
     const loadingOverlay = document.getElementById('app-loading');
     if (loadingOverlay) loadingOverlay.style.display = 'none';
 
-    console.log('Fitness Command Center ready! UI is interactive.');
+    console.log('Fitness Command Center initialized! UI is ready (loading workout history in background)...');
 
     // Load remaining data in background without blocking
     // Fire and forget - these will update UI when they complete
