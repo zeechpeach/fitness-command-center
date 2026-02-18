@@ -90,18 +90,24 @@
            if (authContainer) authContainer.style.display = 'block';
            if (appContainer) appContainer.style.display = 'none';
            
-           // Initialize Firebase UI (loaded via script tag, available as global)
-           const ui = firebaseui.auth.AuthUI.getInstance() || 
-                     new firebaseui.auth.AuthUI(auth);
-           
-           ui.start('#firebaseui-auth-container', {
-               signInOptions: [
-                   EmailAuthProvider.PROVIDER_ID,
-                   GoogleAuthProvider.PROVIDER_ID
-               ],
-               signInSuccessUrl: '/',
-               privacyPolicyUrl: '/privacy'
-           });
+           // Initialize Firebase UI
+           // Note: firebaseui is a global variable loaded via script tag in step 2
+           // Check that it's available before use
+           if (typeof firebaseui !== 'undefined') {
+               const ui = firebaseui.auth.AuthUI.getInstance() || 
+                         new firebaseui.auth.AuthUI(auth);
+               
+               ui.start('#firebaseui-auth-container', {
+                   signInOptions: [
+                       EmailAuthProvider.PROVIDER_ID,
+                       GoogleAuthProvider.PROVIDER_ID
+                   ],
+                   signInSuccessUrl: '/',
+                   privacyPolicyUrl: '/privacy'
+               });
+           } else {
+               console.error('Firebase UI not loaded. Ensure script tag is present in HTML.');
+           }
        }
    });
    ```
@@ -395,8 +401,7 @@ async function migrateDataToIncludeUserId(userId) {
 
 ```javascript
 // Add to app.js after Firebase initialization
-import { getAnalytics, logEvent } from 
-    "https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js";
+import { getAnalytics, logEvent } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js";
 
 const analytics = getAnalytics(app);
 
