@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fitness Tracking Application</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <h1>Fitness Tracker</h1>
+        <nav>
+            <ul>
+                <li><a href="#program-management">Program Management</a></li>
+                <li><a href="#saved-foods">Saved Foods</a></li>
+                <li><a href="#exercise-tracker">Exercise Tracker</a></li>
+                <li><a href="#progress-reports">Progress Reports</a></li>
+                <li><a href="#account-settings">Account Settings</a></li>
+                <li><a href="#about">About</a></li>
+                <li><a href="#contact">Contact</a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <section id="program-management">
+            <h2>Program Management</h2>
+            <p>Manage your fitness programs here.</p>
+        </section>
+        <section id="saved-foods">
+            <h2>Saved Foods</h2>
+            <p>Here are your saved foods:</p>
+            <ul>
+                <li>Apple - 1 serving (95 calories)</li>
+                <li>Banana - 1 serving (105 calories)</li>
+            </ul>
+        </section>
+        <section id="exercise-tracker">
+            <h2>Exercise Tracker</h2>
+            <p>Track your exercises and monitor your progress.</p>
+        </section>
+        <section id="progress-reports">
+            <h2>Progress Reports</h2>
+            <p>View your progress over time.</p>
+        </section>
+        <section id="account-settings">
+            <h2>Account Settings</h2>
+            <p>Manage your account settings here.</p>
+        </section>
+        <section id="about">
+            <h2>About</h2>
+            <p>Learn more about the Fitness Tracker application.</p>
+        </section>
+        <section id="contact">
+            <h2>Contact</h2>
+            <p>Contact us for more information.</p>
+        </section>
+    </main>
+    <footer>
+        <p>&copy; 2026 Fitness Tracker. All rights reserved.</p>
+    </footer>
+</body>
+</html>
