@@ -63,8 +63,7 @@
    
    ```javascript
    // Import auth providers at the top of app.js
-   import { EmailAuthProvider, GoogleAuthProvider } from 
-       "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+   import { EmailAuthProvider, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
    
    // In the onAuthStateChanged callback:
    onAuthStateChanged(auth, async (user) => {
@@ -73,8 +72,10 @@
            console.log('User authenticated:', user.email || user.uid);
            
            // Hide auth UI, show app
-           document.getElementById('auth-container').style.display = 'none';
-           document.getElementById('app').style.display = 'block';
+           const authContainer = document.getElementById('auth-container');
+           const appContainer = document.getElementById('app');
+           if (authContainer) authContainer.style.display = 'none';
+           if (appContainer) appContainer.style.display = 'block';
            
            // Initialize app
            if (document.readyState === 'loading') {
@@ -84,10 +85,12 @@
            }
        } else {
            // Show auth UI
-           document.getElementById('auth-container').style.display = 'block';
-           document.getElementById('app').style.display = 'none';
+           const authContainer = document.getElementById('auth-container');
+           const appContainer = document.getElementById('app');
+           if (authContainer) authContainer.style.display = 'block';
+           if (appContainer) appContainer.style.display = 'none';
            
-           // Initialize Firebase UI (requires compat library loaded via script tag)
+           // Initialize Firebase UI (loaded via script tag, available as global)
            const ui = firebaseui.auth.AuthUI.getInstance() || 
                      new firebaseui.auth.AuthUI(auth);
            
