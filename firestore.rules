@@ -21,15 +21,19 @@ service cloud.firestore {
     
     // PRODUCTION RULES (uncomment and update above after migration):
     // match /workouts/{document} {
-    //   allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
+    //   allow read: if request.auth != null && request.auth.uid == resource.data.userId;
     //   allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+    //   allow update, delete: if request.auth != null && request.auth.uid == resource.data.userId 
+    //                         && request.auth.uid == request.resource.data.userId;
     // }
-    // 
+    //
     // match /nutrition/{document} {
-    //   allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
+    //   allow read: if request.auth != null && request.auth.uid == resource.data.userId;
     //   allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+    //   allow update, delete: if request.auth != null && request.auth.uid == resource.data.userId 
+    //                         && request.auth.uid == request.resource.data.userId;
     // }
-    // 
+    //
     // ... (repeat for all collections: weight, photos, programs, savedFoods, travelMode, sickDays, bodyGoal, altExerciseHistory)
   }
 }

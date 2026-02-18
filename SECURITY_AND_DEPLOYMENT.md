@@ -59,20 +59,14 @@
 
 3. **Update Authentication Logic in app.js**
 
-   First, add the Firebase UI import at the top (note: Firebase UI requires the compat library):
+   Replace the anonymous sign-in section in the `onAuthStateChanged` callback with:
    
    ```javascript
-   // After existing Firebase imports, add Firebase UI compat for authentication UI
-   import 'https://www.gstatic.com/firebasejs/ui/6.0.2/firebase-ui-auth.js';
-   ```
-   
-   Then replace the anonymous sign-in section with:
-   
-   ```javascript
-   // Import auth providers for Firebase UI
+   // Import auth providers at the top of app.js
    import { EmailAuthProvider, GoogleAuthProvider } from 
        "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
    
+   // In the onAuthStateChanged callback:
    onAuthStateChanged(auth, async (user) => {
        if (user) {
            currentUser = user;
@@ -114,13 +108,12 @@
    Add after the `<body>` tag:
    
    ```html
-   <div id="auth-container" style="display: none; 
-                                    position: fixed; 
-                                    top: 0; 
-                                    left: 0; 
-                                    right: 0; 
-                                    bottom: 0; 
-                                    background: white; 
+   <div id="auth-container" style="position: fixed;
+                                    top: 0;
+                                    left: 0;
+                                    right: 0;
+                                    bottom: 0;
+                                    background: white;
                                     z-index: 10000;
                                     display: flex;
                                     align-items: center;
@@ -130,7 +123,14 @@
            <div id="firebaseui-auth-container"></div>
        </div>
    </div>
+   
+   <!-- Add this style to initially hide the main app -->
+   <style>
+       #app { display: none; }
+   </style>
    ```
+   
+   Note: The JavaScript will toggle visibility between `auth-container` and the main `app` div based on authentication state.
 
 ### Phase 2: Add User ID to All Operations
 
