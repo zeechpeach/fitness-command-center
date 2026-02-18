@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test - Dynamic Workout Types</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 900px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+            line-height: 1.6;
+            color: #333;
+        }
+        h1 { color: #2563eb; }
+        h2 { color: #1e40af; margin-top: 2rem; }
+        h3 { color: #3730a3; margin-top: 1.5rem; }
+        .test-section {
+            background: #f8fafc;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            border-left: 4px solid #3b82f6;
+        }
+        .success { background: #f0fdf4; border-left-color: #22c55e; }
+        .info { background: #eff6ff; border-left-color: #3b82f6; }
+        code {
+            background: #e5e7eb;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+        pre {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 1rem;
+            border-radius: 6px;
+            overflow-x: auto;
+        }
+        .feature-list {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        .feature-list li {
+            padding: 0.5rem 0;
+            padding-left: 1.5rem;
+            position: relative;
+        }
+        .feature-list li:before {
+            content: "✓";
+            color: #22c55e;
+            font-weight: bold;
+            position: absolute;
+            left: 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Dynamic Workout Types - Implementation Test</h1>
+    <p><strong>Date:</strong> February 18, 2026</p>
+    <p>This document demonstrates the implementation of fully customizable workout programs where workout types are determined by user-defined day names.</p>
+
+    <div class="test-section success">
+        <h2>✓ Core Changes Implemented</h2>
+        <ul class="feature-list">
+            <li>Removed hardcoded workout type cycling (Upper, Lower, Push, Pull, Legs, Rest)</li>
+            <li>New programs now start with completely blank slate</li>
+            <li>Workout type automatically set to day name</li>
+            <li>Home page displays dynamic buttons: "Day X (DayName)"</li>
+            <li>Clicking schedule pills prompts for day name (no cycling)</li>
+        </ul>
+    </div>
+
+    <div class="test-section info">
+        <h2>1. New Program Creation</h2>
+        <h3>Before (Old Behavior):</h3>
+        <pre>
+New Program {
+  schedule: {
+    day1: { workoutType: 'Rest', customName: '' },
+    day2: { workoutType: 'Rest', customName: '' },
+    day3: { workoutType: 'Rest', customName: '' },
+    day4: { workoutType: 'Rest', customName: '' },
+    day5: { workoutType: 'Rest', customName: '' },
+    day6: { workoutType: 'Rest', customName: '' },
+    day7: { workoutType: 'Rest', customName: '' }
+  },
+  workouts: {
+    Rest: [{ name: 'Rest Day Recovery', sets: 1, reps: 'Complete' }]
+  }
+}</pre>
+
+        <h3>After (New Behavior):</h3>
+        <pre>
+New Program {
+  schedule: {},  // Completely blank!
+  workouts: {}   // No preset workouts!
+}</pre>
+        <p><strong>Result:</strong> Users must define their own days and workout types from scratch.</p>
+    </div>
+
+    <div class="test-section info">
+        <h2>2. Adding Days and Naming Them</h2>
+        <h3>User Action:</h3>
+        <ol>
+            <li>Click "+" to add a day (e.g., Day 1)</li>
+            <li>Click on the day pill or edit button</li>
+            <li>Enter name: "Chest & Triceps"</li>
+        </ol>
+
+        <h3>Result:</h3>
+        <pre>
+schedule: {
+  day1: {
+    workoutType: 'Chest & Triceps',  // = day name
+    customName: 'Chest & Triceps'    // = day name
+  }
+},
+workouts: {
+  'Chest & Triceps': []  // Ready for exercises
+}</pre>
+        <p><strong>Key Change:</strong> No separate type selection - the name IS the type!</p>
+    </div>
+
+    <div class="test-section info">
+        <h2>3. Home Page Dynamic Buttons</h2>
+        <h3>Example Program:</h3>
+        <pre>
+schedule: {
+  day1: { workoutType: 'Chest Day', customName: 'Chest Day' },
+  day2: { workoutType: 'Back Day', customName: 'Back Day' },
+  day3: { workoutType: 'Leg Day', customName: 'Leg Day' },
+  day4: { workoutType: 'Rest', customName: 'Rest' }
+}</pre>
+
+        <h3>Home Page Displays:</h3>
+        <pre>
+┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐
+│ Day 1           │  │ Day 2           │  │ Day 3           │  │ Day 4           │
+│ (Chest Day)     │  │ (Back Day)      │  │ (Leg Day)       │  │ (Rest)          │
+└─────────────────┘  └─────────────────┘  └─────────────────┘  └─────────────────┘</pre>
+        <p><strong>Dynamic:</strong> Button labels automatically generated from program structure!</p>
+    </div>
+
+    <div class="test-section info">
+        <h2>4. Workout Logging Flow</h2>
+        <h3>When User Selects "Day 1 (Chest Day)":</h3>
+        <ol>
+            <li>System reads: <code>day1.workoutType = 'Chest Day'</code></li>
+            <li>Loads exercises from: <code>workouts['Chest Day']</code></li>
+            <li>When workout is saved, <code>workoutType: 'Chest Day'</code> is stored</li>
+        </ol>
+        <p><strong>No Manual Selection:</strong> Workout type is automatically determined!</p>
+    </div>
+
+    <div class="test-section info">
+        <h2>5. Example Custom Programs</h2>
+        
+        <h3>Example 1: 3-Day Split</h3>
+        <pre>
+Program: "My 3-Day Split"
+├─ Day 1: "Full Body A"
+│  └─ Exercises: Squats, Bench Press, Rows
+├─ Day 2: "Cardio & Abs"
+│  └─ Exercises: Running, Planks, Crunches
+└─ Day 3: "Full Body B"
+   └─ Exercises: Deadlifts, OHP, Pull-ups</pre>
+
+        <h3>Example 2: Custom Split</h3>
+        <pre>
+Program: "Beach Body Program"
+├─ Day 1: "Arms & Shoulders"
+├─ Day 2: "Core"
+├─ Day 3: "Chest Focus"
+├─ Day 4: "Back & Bi's"
+└─ Day 5: "Legs & Glutes"</pre>
+
+        <p><strong>Flexibility:</strong> Any naming scheme works - no forced types!</p>
+    </div>
+
+    <div class="test-section success">
+        <h2>6. Backward Compatibility</h2>
+        <p>Existing programs (like ULPPL) continue to work:</p>
+        <pre>
+schedule: {
+  day1: { workoutType: 'Upper', customName: '' },
+  day2: { workoutType: 'Lower', customName: '' },
+  ...
+}
+workouts: {
+  'Upper': [...exercises...],
+  'Lower': [...exercises...],
+  ...
+}</pre>
+        <p><strong>Migration:</strong> Old programs function normally. Users can edit them to add custom names if desired.</p>
+    </div>
+
+    <div class="test-section info">
+        <h2>7. Code Changes Summary</h2>
+        
+        <h3>Modified Functions:</h3>
+        <ul>
+            <li><code>openProgramEditor()</code> - Initialize with empty schedule/workouts</li>
+            <li><code>updateCycleLength()</code> - New days start with empty name</li>
+            <li><code>editProgramDayName()</code> - Sets both workoutType and customName to same value</li>
+            <li><code>selectWorkoutForDay()</code> - Now calls editProgramDayName instead of cycling</li>
+            <li><code>getWorkoutTypeForDay()</code> - Returns empty string instead of 'Rest' default</li>
+            <li><code>getDisplayNameForDay()</code> - Shows "(click to name)" for unnamed days</li>
+            <li><code>renderWorkoutDaySelector()</code> - Formats as "Day X (DayName)"</li>
+            <li><code>renderSchedulePills()</code> - Shows helpful message for empty programs</li>
+            <li><code>renderWorkoutsAccordion()</code> - Skips unnamed days, shows message if empty</li>
+        </ul>
+
+        <h3>Removed Hardcoding:</h3>
+        <ul>
+            <li>Removed: <code>const workoutTypes = ['Rest', 'Upper', 'Lower', 'Push', 'Pull', 'Legs']</code></li>
+            <li>Removed: Cycling through predefined types</li>
+            <li>Removed: Default 7-day Rest schedule for new programs</li>
+        </ul>
+    </div>
+
+    <div class="test-section success">
+        <h2>Testing Checklist</h2>
+        <h3>To Test:</h3>
+        <ol>
+            <li>Open Settings → Programs</li>
+            <li>Click "Create New Program"</li>
+            <li>Verify: No days shown initially (0-day cycle)</li>
+            <li>Click "+" to add Day 1</li>
+            <li>Click on Day 1 pill - should prompt for name</li>
+            <li>Enter "Chest & Triceps"</li>
+            <li>Verify: Day 1 shows "Chest & Triceps"</li>
+            <li>Click "+ Add Exercise" under that workout type</li>
+            <li>Add exercises</li>
+            <li>Save program and set as active</li>
+            <li>Return to home page</li>
+            <li>Verify: Button shows "Day 1 (Chest & Triceps)"</li>
+            <li>Click button and log workout</li>
+            <li>Verify: Workout saved with workoutType = "Chest & Triceps"</li>
+        </ol>
+    </div>
+
+    <div class="test-section info">
+        <h2>8. Benefits</h2>
+        <ul class="feature-list">
+            <li>Complete flexibility in program design</li>
+            <li>No forced workout type categories</li>
+            <li>Intuitive: what you name it is what it becomes</li>
+            <li>Dynamic UI adapts to user's program structure</li>
+            <li>Supports any program length (1-14 days)</li>
+            <li>Clean slate for new programs</li>
+            <li>Backward compatible with existing programs</li>
+        </ul>
+    </div>
+
+    <footer style="margin-top: 3rem; padding-top: 2rem; border-top: 1px solid #e5e7eb; color: #6b7280;">
+        <p><strong>Implementation Status:</strong> ✓ Complete</p>
+        <p><strong>Files Modified:</strong> src/js/app.js</p>
+        <p><strong>Lines Changed:</strong> ~100 lines</p>
+    </footer>
+</body>
+</html>
