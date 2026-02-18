@@ -5437,11 +5437,16 @@ onAuthStateChanged(auth, async (user) => {
                     <div style="font-size: 0.9rem; color: var(--color-text-secondary); margin-top: 0.5rem;">
                         ${error.message}
                     </div>
-                    <button onclick="location.reload()" 
-                            style="margin-top: 1rem; padding: 0.5rem 1rem; background: var(--color-accent-primary); color: white; border: none; border-radius: 4px; cursor: pointer;">
+                    <button id="auth-retry-btn" style="margin-top: 1rem; padding: 0.5rem 1rem; background: var(--color-accent-primary); color: white; border: none; border-radius: 4px; cursor: pointer;">
                         Retry
                     </button>
                 `;
+                
+                // Use addEventListener for consistency (inline onclick acceptable for error recovery)
+                const retryBtn = document.getElementById('auth-retry-btn');
+                if (retryBtn) {
+                    retryBtn.addEventListener('click', () => location.reload());
+                }
             }
         }
     }

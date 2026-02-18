@@ -228,7 +228,8 @@ async function migrateDataToIncludeUserId(userId) {
         const batch = writeBatch(db);
         
         snapshot.docs.forEach(doc => {
-            if (!doc.data().userId) {
+            const data = doc.data();
+            if (data && !data.userId) {
                 batch.update(doc.ref, { userId: userId });
             }
         });

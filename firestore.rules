@@ -23,6 +23,7 @@ service cloud.firestore {
     // match /workouts/{document} {
     //   allow read: if request.auth != null && request.auth.uid == resource.data.userId;
     //   allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+    //   // Update/delete: User must own document AND userId field must remain unchanged
     //   allow update, delete: if request.auth != null 
     //                         && request.auth.uid == resource.data.userId
     //                         && request.resource.data.userId == resource.data.userId;
@@ -31,6 +32,7 @@ service cloud.firestore {
     // match /nutrition/{document} {
     //   allow read: if request.auth != null && request.auth.uid == resource.data.userId;
     //   allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+    //   // Update/delete: User must own document AND userId field must remain unchanged
     //   allow update, delete: if request.auth != null 
     //                         && request.auth.uid == resource.data.userId
     //                         && request.resource.data.userId == resource.data.userId;
