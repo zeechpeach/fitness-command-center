@@ -1258,6 +1258,9 @@
         import { getFirestore, collection, addDoc, getDocs, query, where, orderBy, deleteDoc, doc, updateDoc, getDoc, setDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
         // Firebase Configuration
+        // Note: Firebase API keys are designed to be public in client-side apps.
+        // Security is enforced through Firebase Security Rules and domain restrictions.
+        // Ensure proper security rules are configured in Firebase Console.
         const firebaseConfig = {
             apiKey: "AIzaSyBouZ7KMUMSf8RdBKudMW2qEXI_FHgchIU",
             authDomain: "fitness-command-center.firebaseapp.com",
@@ -2780,17 +2783,16 @@
         function calculateBMI() {
             if (weightLogs.length === 0) return null;
             
-            const weightKg = weightLogs[0].weight * 0.453592;
-            const heightM = 1.75; // Default height, should be made configurable
-            const bmi = (weightKg / (heightM * heightM)).toFixed(1);
+            // Note: BMI calculation requires height input
+            // For now, this returns null until height tracking is implemented
+            // Future enhancement: Add height field to body goal settings
+            return null;
             
-            let category = '';
-            if (bmi < 18.5) category = 'Underweight';
-            else if (bmi < 25) category = 'Normal';
-            else if (bmi < 30) category = 'Overweight';
-            else category = 'Obese';
-            
-            return { bmi, category };
+            // Example calculation when height is available:
+            // const weightKg = weightLogs[0].weight * 0.453592;
+            // const heightM = userHeight; // From settings
+            // const bmi = (weightKg / (heightM * heightM)).toFixed(1);
+            // return { bmi, category };
         }
 
         // Workout Recommendations
@@ -3219,9 +3221,36 @@
                             { name: 'Calf Raises', sets: 4, reps: '15-20' }
                         ]
                     },
-                    day4: { name: 'Push', exercises: [] },
-                    day5: { name: 'Pull', exercises: [] },
-                    day6: { name: 'Legs', exercises: [] }
+                    day4: {
+                        name: 'Push',
+                        exercises: [
+                            { name: 'Bench Press', sets: 4, reps: '8-10' },
+                            { name: 'Overhead Press', sets: 3, reps: '8-10' },
+                            { name: 'Incline Dumbbell Press', sets: 3, reps: '10-12' },
+                            { name: 'Lateral Raises', sets: 3, reps: '12-15' },
+                            { name: 'Tricep Pushdowns', sets: 3, reps: '12-15' }
+                        ]
+                    },
+                    day5: {
+                        name: 'Pull',
+                        exercises: [
+                            { name: 'Deadlift', sets: 4, reps: '6-8' },
+                            { name: 'Pull-ups', sets: 3, reps: '8-10' },
+                            { name: 'Barbell Rows', sets: 3, reps: '8-10' },
+                            { name: 'Face Pulls', sets: 3, reps: '15-20' },
+                            { name: 'Bicep Curls', sets: 3, reps: '10-12' }
+                        ]
+                    },
+                    day6: {
+                        name: 'Legs',
+                        exercises: [
+                            { name: 'Squats', sets: 4, reps: '8-10' },
+                            { name: 'Romanian Deadlifts', sets: 3, reps: '10-12' },
+                            { name: 'Leg Press', sets: 3, reps: '12-15' },
+                            { name: 'Leg Curls', sets: 3, reps: '12-15' },
+                            { name: 'Calf Raises', sets: 4, reps: '15-20' }
+                        ]
+                    }
                 }
             },
             'Upper Lower': {
@@ -3249,8 +3278,27 @@
                             { name: 'Calf Raises', sets: 4, reps: '12-15' }
                         ]
                     },
-                    day3: { name: 'Upper', exercises: [] },
-                    day4: { name: 'Lower', exercises: [] }
+                    day3: {
+                        name: 'Upper',
+                        exercises: [
+                            { name: 'Bench Press', sets: 4, reps: '6-8' },
+                            { name: 'Barbell Rows', sets: 4, reps: '6-8' },
+                            { name: 'Overhead Press', sets: 3, reps: '8-10' },
+                            { name: 'Pull-ups', sets: 3, reps: '8-10' },
+                            { name: 'Bicep Curls', sets: 3, reps: '10-12' },
+                            { name: 'Tricep Extensions', sets: 3, reps: '10-12' }
+                        ]
+                    },
+                    day4: {
+                        name: 'Lower',
+                        exercises: [
+                            { name: 'Squats', sets: 4, reps: '6-8' },
+                            { name: 'Romanian Deadlifts', sets: 3, reps: '8-10' },
+                            { name: 'Leg Press', sets: 3, reps: '10-12' },
+                            { name: 'Leg Curls', sets: 3, reps: '10-12' },
+                            { name: 'Calf Raises', sets: 4, reps: '12-15' }
+                        ]
+                    }
                 }
             },
             'Full Body': {
