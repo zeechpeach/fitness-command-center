@@ -5350,43 +5350,39 @@ let analyticsLoaded = false;
 let progressLoaded = false;
 
 // Main app initialization function
-function initializeFitnessApp() {
-    // Hide loading overlay
-    const loadingOverlay = document.getElementById('app-loading');
-    if (loadingOverlay) loadingOverlay.style.display = 'none';
-
+async function initializeFitnessApp() {
     console.log('Initializing Fitness Command Center...');
 
     // Initialize timezone-aware current nutrition date
     currentNutritionDate = getTodayDateString();
 
-    // Set up UI immediately - no blocking
+    // Set up UI event listeners immediately (non-blocking)
     setupEventListeners();
 
     // Initialize program editor
     initializeProgramNameInput();
 
-    // Render workout day selector with default program
+    // CRITICAL FIX: Load programs BEFORE rendering any UI
+    // This ensures activeProgram is set before any rendering functions are called
+    try {
+        await loadPrograms();
+        console.log('Programs loaded successfully, activeProgram:', activeProgram?.name || 'none');
+    } catch (err) {
+        console.error('Failed to load programs:', err);
+        // Continue with default workout structure as fallback
+    }
+
+    // Now render UI with loaded programs
     renderWorkoutDaySelector();
-    
-    // Initialize workout with default program (will update when programs load)
     initializeWorkout();
 
-    console.log('Fitness Command Center ready! UI is interactive.');
+    // Hide loading overlay after programs are loaded and UI is rendered
+    const loadingOverlay = document.getElementById('app-loading');
+    if (loadingOverlay) loadingOverlay.style.display = 'none';
 
-    // Load programs in background, then update workout display
-    loadPrograms()
-        .then(() => {
-            // Re-render day selector and re-initialize workout with loaded programs
-            renderWorkoutDaySelector();
-            initializeWorkout();
-        })
-        .catch(err => {
-            console.error('Failed to load programs:', err);
-            // UI remains functional with default workout structure
-        });
+    console.log('Fitness Command Center initialized! UI is ready (loading workout history in background)...');
 
-    // UI is now interactive! Load remaining data in background without blocking
+    // Load remaining data in background without blocking
     // Fire and forget - these will update UI when they complete
     loadWorkoutsFromFirebase()
         .then(() => {
