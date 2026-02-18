@@ -754,13 +754,13 @@ function migrateScheduleFormat(program) {
 // Helper: Get workout type for a day (handles both old and new formats)
 function getWorkoutTypeForDay(program, dayKey) {
     if (!program || !program.schedule || !program.schedule[dayKey]) {
-        return 'Rest';
+        return '';
     }
     const dayValue = program.schedule[dayKey];
     if (typeof dayValue === 'string') {
         return dayValue; // Old format
     }
-    return dayValue.workoutType || 'Rest'; // New format
+    return dayValue.workoutType || ''; // New format - returns empty string if not set
 }
 
 // Helper: Get custom name for a day
@@ -779,7 +779,10 @@ function getCustomNameForDay(program, dayKey) {
 function getDisplayNameForDay(program, dayKey) {
     const customName = getCustomNameForDay(program, dayKey);
     if (customName) return customName;
-    return getWorkoutTypeForDay(program, dayKey);
+    const workoutType = getWorkoutTypeForDay(program, dayKey);
+    if (workoutType) return workoutType;
+    // If no name set yet, prompt user to set one
+    return '(click to name)';
 }
 
 // Migrate hardcoded workoutPlans to new program structure
@@ -958,24 +961,15 @@ window.openProgramEditor = function (programId = null) {
         // Deep clone to avoid modifying original until saved
         currentEditingProgram = deepClone(program);
     } else {
-        // Create new program with default structure
+        // Create new program with completely blank slate
+        // Users define their own workout days with custom names
         currentEditingProgram = {
             id: null, // Will be set when saved
             name: 'New Program',
             active: false,
             createdAt: new Date().toISOString(),
-            schedule: {
-                day1: { workoutType: 'Rest', customName: '' },
-                day2: { workoutType: 'Rest', customName: '' },
-                day3: { workoutType: 'Rest', customName: '' },
-                day4: { workoutType: 'Rest', customName: '' },
-                day5: { workoutType: 'Rest', customName: '' },
-                day6: { workoutType: 'Rest', customName: '' },
-                day7: { workoutType: 'Rest', customName: '' }
-            },
-            workouts: {
-                Rest: [{ name: 'Rest Day Recovery', sets: 1, reps: 'Complete' }]
-            },
+            schedule: {},
+            workouts: {},
             exerciseVariations: {} // New: program-level exercise variations
         };
     }
@@ -1077,8 +1071,8 @@ window.updateCycleLength = function (delta) {
     }
 
     if (delta > 0) {
-        // Add new day with new format
-        schedule[`day${newLength}`] = { workoutType: 'Rest', customName: '' };
+        // Add new day - user will define the name
+        schedule[`day${newLength}`] = { workoutType: '', customName: '' };
     } else {
         // Remove last day
         delete schedule[`day${currentLength}`];
@@ -1100,63 +1094,66 @@ function renderSchedulePills() {
     document.getElementById('cycle-length-display').textContent = `${length}-day cycle`;
 
     let html = '';
-    for (let i = 1; i <= length; i++) {
-        const dayKey = `day${i}`;
-        const workoutType = getWorkoutTypeForDay(currentEditingProgram, dayKey);
-        const customName = getCustomNameForDay(currentEditingProgram, dayKey);
-        const displayName = customName || workoutType;
-        
-        html += `
-                    <div class="schedule-pill" onclick="selectWorkoutForDay(${i})">
-                        <span class="schedule-pill-day">Day ${i}</span>
-                        <span class="schedule-pill-workout">${displayName}</span>
-                        <button class="schedule-pill-edit" onclick="event.stopPropagation(); editProgramDayName(${i})" title="Edit day name">✏️</button>
-                    </div>
-                `;
+    
+    if (length === 0) {
+        html = '<div style="padding: 2rem; text-align: center; color: var(--color-text-secondary);">Click "+" below to add your first day</div>';
+    } else {
+        for (let i = 1; i <= length; i++) {
+            const dayKey = `day${i}`;
+            const displayName = getDisplayNameForDay(currentEditingProgram, dayKey);
+            
+            html += `
+                        <div class="schedule-pill" onclick="selectWorkoutForDay(${i})">
+                            <span class="schedule-pill-day">Day ${i}</span>
+                            <span class="schedule-pill-workout">${displayName}</span>
+                            <button class="schedule-pill-edit" onclick="event.stopPropagation(); editProgramDayName(${i})" title="Edit day name">✏️</button>
+                        </div>
+                    `;
+        }
     }
 
     container.innerHTML = html;
 }
 
-// Edit day name
 // Edit day name for a program day
 window.editProgramDayName = function (dayNumber) {
     if (!currentEditingProgram) return;
     
     const dayKey = `day${dayNumber}`;
-    const currentCustomName = getCustomNameForDay(currentEditingProgram, dayKey);
     const workoutType = getWorkoutTypeForDay(currentEditingProgram, dayKey);
+    // Don't show "(click to name)" placeholder as default value
+    const defaultValue = workoutType || '';
     
     const newName = prompt(
-        `Enter custom name for Day ${dayNumber} (${workoutType}):\n\nLeave blank to use default "${workoutType}"`,
-        currentCustomName
+        `Enter name for Day ${dayNumber}:`,
+        defaultValue
     );
     
-    if (newName !== null) { // User didn't cancel
-        // Ensure schedule entry is an object
-        if (typeof currentEditingProgram.schedule[dayKey] === 'string') {
-            currentEditingProgram.schedule[dayKey] = {
-                workoutType: currentEditingProgram.schedule[dayKey],
-                customName: ''
-            };
+    if (newName !== null && newName.trim() !== '') { // User didn't cancel and provided a name
+        const trimmedName = newName.trim();
+        
+        // Set both customName and workoutType to the same value
+        // This makes the workout type equal to the day name
+        currentEditingProgram.schedule[dayKey] = {
+            workoutType: trimmedName,
+            customName: trimmedName
+        };
+        
+        // Initialize workout if it doesn't exist
+        if (!currentEditingProgram.workouts[trimmedName]) {
+            currentEditingProgram.workouts[trimmedName] = [];
         }
-        currentEditingProgram.schedule[dayKey].customName = newName.trim();
+        
         markUnsavedChanges();
         renderSchedulePills();
         renderWorkoutsAccordion(); // Update accordion to reflect new day name
     }
 }
 
-// Select workout type for a specific day
+// Select workout type for a specific day - now just prompts for name
 window.selectWorkoutForDay = function (dayNumber) {
-    const workoutTypes = ['Rest', 'Upper', 'Lower', 'Push', 'Pull', 'Legs'];
-    const dayKey = `day${dayNumber}`;
-    const currentType = getWorkoutTypeForDay(currentEditingProgram, dayKey);
-    const currentIndex = workoutTypes.indexOf(currentType);
-
-    // Cycle to next workout type
-    const nextIndex = (currentIndex + 1) % workoutTypes.length;
-    updateDayWorkout(dayNumber, workoutTypes[nextIndex]);
+    // Instead of cycling through hardcoded types, prompt user to name the day
+    editProgramDayName(dayNumber);
 };
 
 // Update workout type for a day
@@ -1211,8 +1208,8 @@ function renderWorkoutsAccordion() {
         const workoutType = getWorkoutTypeForDay(currentEditingProgram, dayKey);
         const displayName = getDisplayNameForDay(currentEditingProgram, dayKey);
         
-        // Skip Rest days
-        if (workoutType === 'Rest') return;
+        // Skip unnamed days or empty workout types
+        if (!workoutType) return;
         
         if (!workoutTypeMap.has(workoutType)) {
             workoutTypeMap.set(workoutType, []);
@@ -1229,7 +1226,7 @@ function renderWorkoutsAccordion() {
     
     dayKeys.forEach(dayKey => {
         const workoutType = getWorkoutTypeForDay(currentEditingProgram, dayKey);
-        if (workoutType !== 'Rest' && !seenWorkoutTypes.has(workoutType)) {
+        if (workoutType && !seenWorkoutTypes.has(workoutType)) {
             seenWorkoutTypes.add(workoutType);
             orderedWorkoutTypes.push(workoutType);
         }
@@ -1274,6 +1271,11 @@ function renderWorkoutsAccordion() {
                     </div>
                 `;
     });
+    
+    // Show helpful message if no workout types defined yet
+    if (orderedWorkoutTypes.length === 0) {
+        html = '<div style="padding: 2rem; text-align: center; color: var(--color-text-secondary);">Add days above and name them to define your workout types. Then you can add exercises here.</div>';
+    }
 
     container.innerHTML = html;
 }
@@ -5650,9 +5652,14 @@ function renderWorkoutDaySelector() {
     
     let html = '';
     dayKeys.forEach((dayKey) => {
+        const dayNumber = parseInt(dayKey.replace('day', ''));
         const displayName = getDisplayNameForDay(activeProgram, dayKey);
         const isActive = currentDay === dayKey;
-        html += `<button class="day-btn ${isActive ? 'active' : ''}" id="${dayKey}-btn">${displayName}</button>`;
+        // Format: "Day X (DayName)" or just "Day X" if no name
+        const buttonLabel = displayName && displayName !== '(click to name)' 
+            ? `Day ${dayNumber} (${displayName})` 
+            : `Day ${dayNumber}`;
+        html += `<button class="day-btn ${isActive ? 'active' : ''}" id="${dayKey}-btn">${buttonLabel}</button>`;
     });
     
     container.innerHTML = html;
