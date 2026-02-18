@@ -1507,6 +1507,9 @@ async function saveProgramToFirestore() {
                 programs[index] = { ...currentEditingProgram };
                 if (currentEditingProgram.active) {
                     activeProgram = programs[index];
+                    // Re-render day selector for updated active program
+                    renderWorkoutDaySelector();
+                    initializeWorkout();
                 }
             }
         } else {
