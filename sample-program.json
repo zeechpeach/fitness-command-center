@@ -1,0 +1,224 @@
+{
+  "name": "Push Pull Legs (6-Day Split)",
+  "cycleLength": 7,
+  "structure": {
+    "Day 1": [
+      {
+        "name": "Barbell Bench Press",
+        "sets": 4,
+        "reps": "8-12"
+      },
+      {
+        "name": "Incline Dumbbell Press",
+        "sets": 3,
+        "reps": "10-12"
+      },
+      {
+        "name": "Cable Flyes",
+        "sets": 3,
+        "reps": "12-15"
+      },
+      {
+        "name": "Overhead Press",
+        "sets": 4,
+        "reps": "8-10"
+      },
+      {
+        "name": "Lateral Raises",
+        "sets": 3,
+        "reps": "12-15"
+      },
+      {
+        "name": "Tricep Pushdowns",
+        "sets": 3,
+        "reps": "12-15"
+      },
+      {
+        "name": "Overhead Tricep Extension",
+        "sets": 3,
+        "reps": "10-12"
+      }
+    ],
+    "Day 2": [
+      {
+        "name": "Deadlifts",
+        "sets": 4,
+        "reps": "6-8"
+      },
+      {
+        "name": "Pull-ups",
+        "sets": 4,
+        "reps": "8-12"
+      },
+      {
+        "name": "Barbell Rows",
+        "sets": 4,
+        "reps": "8-10"
+      },
+      {
+        "name": "Lat Pulldowns",
+        "sets": 3,
+        "reps": "10-12"
+      },
+      {
+        "name": "Face Pulls",
+        "sets": 3,
+        "reps": "15-20"
+      },
+      {
+        "name": "Barbell Curl",
+        "sets": 3,
+        "reps": "10-12"
+      },
+      {
+        "name": "Hammer Curls",
+        "sets": 3,
+        "reps": "12-15"
+      }
+    ],
+    "Day 3": [
+      {
+        "name": "Squats",
+        "sets": 4,
+        "reps": "8-12"
+      },
+      {
+        "name": "Romanian Deadlifts",
+        "sets": 4,
+        "reps": "10-12"
+      },
+      {
+        "name": "Leg Press",
+        "sets": 3,
+        "reps": "12-15"
+      },
+      {
+        "name": "Leg Curls",
+        "sets": 3,
+        "reps": "12-15"
+      },
+      {
+        "name": "Calf Raises",
+        "sets": 4,
+        "reps": "15-20"
+      },
+      {
+        "name": "Hanging Leg Raises",
+        "sets": 3,
+        "reps": "12-15"
+      }
+    ],
+    "Day 4": [
+      {
+        "name": "Incline Barbell Press",
+        "sets": 4,
+        "reps": "8-10"
+      },
+      {
+        "name": "Dumbbell Bench Press",
+        "sets": 3,
+        "reps": "10-12"
+      },
+      {
+        "name": "Pec Deck",
+        "sets": 3,
+        "reps": "12-15"
+      },
+      {
+        "name": "Arnold Press",
+        "sets": 3,
+        "reps": "10-12"
+      },
+      {
+        "name": "Cable Lateral Raises",
+        "sets": 3,
+        "reps": "15-20"
+      },
+      {
+        "name": "Close-Grip Bench Press",
+        "sets": 3,
+        "reps": "8-10"
+      },
+      {
+        "name": "Skull Crushers",
+        "sets": 3,
+        "reps": "10-12"
+      }
+    ],
+    "Day 5": [
+      {
+        "name": "Weighted Pull-ups",
+        "sets": 4,
+        "reps": "6-8"
+      },
+      {
+        "name": "T-Bar Rows",
+        "sets": 4,
+        "reps": "8-10"
+      },
+      {
+        "name": "Seated Cable Rows",
+        "sets": 3,
+        "reps": "10-12"
+      },
+      {
+        "name": "Single-Arm Dumbbell Rows",
+        "sets": 3,
+        "reps": "10-12"
+      },
+      {
+        "name": "Reverse Flyes",
+        "sets": 3,
+        "reps": "12-15"
+      },
+      {
+        "name": "Preacher Curls",
+        "sets": 3,
+        "reps": "10-12"
+      },
+      {
+        "name": "Cable Curls",
+        "sets": 3,
+        "reps": "12-15"
+      }
+    ],
+    "Day 6": [
+      {
+        "name": "Front Squats",
+        "sets": 4,
+        "reps": "8-10"
+      },
+      {
+        "name": "Bulgarian Split Squats",
+        "sets": 3,
+        "reps": "10-12"
+      },
+      {
+        "name": "Leg Extensions",
+        "sets": 3,
+        "reps": "12-15"
+      },
+      {
+        "name": "Lying Leg Curls",
+        "sets": 3,
+        "reps": "12-15"
+      },
+      {
+        "name": "Walking Lunges",
+        "sets": 3,
+        "reps": "12-15"
+      },
+      {
+        "name": "Seated Calf Raises",
+        "sets": 4,
+        "reps": "15-20"
+      },
+      {
+        "name": "Cable Crunches",
+        "sets": 3,
+        "reps": "15-20"
+      }
+    ],
+    "Day 7": []
+  }
+}
