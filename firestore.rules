@@ -2,10 +2,42 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Allow public read and write access to all collections
-    // Note: In production, you should implement authentication and restrict access
+    // CURRENT STATE: Public read/write access for development
+    // This allows the app to function without user-specific data isolation
+    //
+    // ⚠️ SECURITY WARNING: Anyone with the Firebase project ID can read/write all data
+    //
+    // PRODUCTION MIGRATION PATH:
+    // 1. Enable Firebase Authentication UI (email/password or Google sign-in)
+    // 2. Update app.js to use real authentication instead of anonymous
+    // 3. Add userId field to all new documents
+    // 4. Migrate existing data to include userId
+    // 5. Update rules below to require authentication
+    // 6. Deploy updated rules with: firebase deploy --only firestore:rules
+    
     match /{document=**} {
       allow read, write: if true;
     }
+    
+    // PRODUCTION RULES (uncomment and update above after migration):
+    // match /workouts/{document} {
+    //   allow read: if request.auth != null && request.auth.uid == resource.data.userId;
+    //   allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+    //   // Update/delete: User must own document AND userId field must remain unchanged
+    //   allow update, delete: if request.auth != null 
+    //                         && request.auth.uid == resource.data.userId
+    //                         && request.resource.data.userId == resource.data.userId;
+    // }
+    //
+    // match /nutrition/{document} {
+    //   allow read: if request.auth != null && request.auth.uid == resource.data.userId;
+    //   allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+    //   // Update/delete: User must own document AND userId field must remain unchanged
+    //   allow update, delete: if request.auth != null 
+    //                         && request.auth.uid == resource.data.userId
+    //                         && request.resource.data.userId == resource.data.userId;
+    // }
+    //
+    // ... (repeat for all collections: weight, photos, programs, savedFoods, travelMode, sickDays, bodyGoal, altExerciseHistory)
   }
 }
