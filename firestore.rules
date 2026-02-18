@@ -4,9 +4,9 @@ service cloud.firestore {
   match /databases/{database}/documents {
     // CURRENT STATE: Public read/write access for development
     // This allows the app to function without user-specific data isolation
-    // 
+    //
     // ⚠️ SECURITY WARNING: Anyone with the Firebase project ID can read/write all data
-    // 
+    //
     // PRODUCTION MIGRATION PATH:
     // 1. Enable Firebase Authentication UI (email/password or Google sign-in)
     // 2. Update app.js to use real authentication instead of anonymous

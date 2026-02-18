@@ -5446,16 +5446,8 @@ onAuthStateChanged(auth, async (user) => {
     }
 });
 
-// Handle both cases: DOM already loaded (ES module loaded late) or still loading
-// Note: Actual initialization is now handled by onAuthStateChanged above
-// This is kept as fallback but shouldn't normally be used
-// if (document.readyState === 'loading') {
-//     // DOM not ready yet, wait for DOMContentLoaded
-//     document.addEventListener('DOMContentLoaded', initializeFitnessApp);
-// } else {
-//     // DOM already loaded, initialize immediately
-//     initializeFitnessApp();
-// }
+// Note: App initialization is handled by onAuthStateChanged above
+// which ensures authentication completes before the app starts
 
 window.setWorkoutDate = function () {
     const dateInput = document.getElementById('workout-date-input');

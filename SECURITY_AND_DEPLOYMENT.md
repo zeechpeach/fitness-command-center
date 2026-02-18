@@ -59,9 +59,20 @@
 
 3. **Update Authentication Logic in app.js**
 
-   Replace the anonymous sign-in section with:
+   First, add the Firebase UI import at the top (note: Firebase UI requires the compat library):
    
    ```javascript
+   // After existing Firebase imports, add Firebase UI compat for authentication UI
+   import 'https://www.gstatic.com/firebasejs/ui/6.0.2/firebase-ui-auth.js';
+   ```
+   
+   Then replace the anonymous sign-in section with:
+   
+   ```javascript
+   // Import auth providers for Firebase UI
+   import { EmailAuthProvider, GoogleAuthProvider } from 
+       "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+   
    onAuthStateChanged(auth, async (user) => {
        if (user) {
            currentUser = user;
@@ -82,14 +93,14 @@
            document.getElementById('auth-container').style.display = 'block';
            document.getElementById('app').style.display = 'none';
            
-           // Initialize Firebase UI
+           // Initialize Firebase UI (requires compat library loaded via script tag)
            const ui = firebaseui.auth.AuthUI.getInstance() || 
                      new firebaseui.auth.AuthUI(auth);
            
            ui.start('#firebaseui-auth-container', {
                signInOptions: [
-                   firebase.auth.EmailAuthProvider.PROVIDER_ID,
-                   firebase.auth.GoogleAuthProvider.PROVIDER_ID
+                   EmailAuthProvider.PROVIDER_ID,
+                   GoogleAuthProvider.PROVIDER_ID
                ],
                signInSuccessUrl: '/',
                privacyPolicyUrl: '/privacy'
