@@ -5414,6 +5414,24 @@ if (document.readyState === 'loading') {
     initializeFitnessApp();
 }
 
+window.setWorkoutDate = function () {
+    const dateInput = document.getElementById('workout-date-input');
+    const logBtn = document.getElementById('log-past-workout-btn');
+    const today = getTodayDateString();
+
+    if (dateInput.value && dateInput.value !== today) {
+        logBtn.textContent = 'For ' + formatDateString(dateInput.value);
+        logBtn.style.background = 'rgba(93, 138, 102, 0.15)';
+        logBtn.style.color = '#5D8A66';
+        logBtn.style.borderColor = '#A8B5A0';
+    } else {
+        logBtn.textContent = 'Log Past Workout';
+        logBtn.style.background = 'rgba(168, 181, 160, 0.15)';
+        logBtn.style.color = '#4A5D4A';
+        logBtn.style.borderColor = '#A8B5A0';
+    }
+};
+
 function setupEventListeners() {
     // Tab switching - showTab handles lazy loading
     document.getElementById('workout-tab-btn').addEventListener('click', () => {
@@ -6165,24 +6183,6 @@ async function saveAltExerciseToHistory(originalExercise, alternativeExercise) {
         console.error("Error saving alternative exercise to history:", e);
     }
 }
-
-window.setWorkoutDate = function () {
-    const dateInput = document.getElementById('workout-date-input');
-    const logBtn = document.getElementById('log-past-workout-btn');
-    const today = getTodayDateString();
-
-    if (dateInput.value && dateInput.value !== today) {
-        logBtn.textContent = 'For ' + formatDateString(dateInput.value);
-        logBtn.style.background = 'rgba(93, 138, 102, 0.15)';
-        logBtn.style.color = '#5D8A66';
-        logBtn.style.borderColor = '#A8B5A0';
-    } else {
-        logBtn.textContent = 'Log Past Workout';
-        logBtn.style.background = 'rgba(168, 181, 160, 0.15)';
-        logBtn.style.color = '#4A5D4A';
-        logBtn.style.borderColor = '#A8B5A0';
-    }
-};
 
 async function completeWorkout() {
     const dateInput = document.getElementById('workout-date-input');
