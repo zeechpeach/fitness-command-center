@@ -906,7 +906,11 @@ window.setActiveProgram = async function (programId) {
 
             // Reset currentDay to first day of new program before initialization
             if (activeProgram && activeProgram.schedule) {
-                const dayKeys = Object.keys(activeProgram.schedule).sort();
+                const dayKeys = Object.keys(activeProgram.schedule).sort((a, b) => {
+                    const numA = parseInt(a.replace('day', ''));
+                    const numB = parseInt(b.replace('day', ''));
+                    return numA - numB;
+                });
                 if (dayKeys.length > 0) {
                     currentDay = dayKeys[0];
                 }
@@ -1517,7 +1521,11 @@ async function saveProgramToFirestore() {
                     activeProgram = programs[index];
                     // Reset currentDay to first day of new program before initialization
                     if (activeProgram && activeProgram.schedule) {
-                        const dayKeys = Object.keys(activeProgram.schedule).sort();
+                        const dayKeys = Object.keys(activeProgram.schedule).sort((a, b) => {
+                            const numA = parseInt(a.replace('day', ''));
+                            const numB = parseInt(b.replace('day', ''));
+                            return numA - numB;
+                        });
                         if (dayKeys.length > 0) {
                             currentDay = dayKeys[0];
                         }
