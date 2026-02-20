@@ -6234,9 +6234,18 @@ async function completeWorkout() {
     const today = getTodayDateString();
     const selectedDate = dateInput.value && dateInput.value !== today ? dateInput.value : today;
 
+    // Resolve the actual workout type name (e.g. "Push/Pull", "Arms")
+    // instead of saving the raw day key (e.g. "day1", "day2")
+    let resolvedDay;
+    if (activeProgram && activeProgram.schedule) {
+        resolvedDay = getWorkoutTypeForDay(activeProgram, currentDay);
+    } else {
+        resolvedDay = currentDay; // default plans already use type names as keys
+    }
+
     const workoutData = {
         date: selectedDate,
-        day: currentDay,
+        day: resolvedDay,
         exercises: currentWorkout,
         intensity: {
             energy: workoutIntensity.preWorkout.energy,
@@ -6253,7 +6262,7 @@ async function completeWorkout() {
 
         // Also save locally as backup
         const localHistory = JSON.parse(localStorage.getItem('fitnessData') || '{}');
-        const workoutKey = currentDay + '-' + selectedDate + '-' + Date.now();
+        const workoutKey = resolvedDay + '-' + selectedDate + '-' + Date.now();
         localHistory[workoutKey] = workoutData;
         localStorage.setItem('fitnessData', JSON.stringify(localHistory));
 
