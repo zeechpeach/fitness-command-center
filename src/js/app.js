@@ -5393,6 +5393,7 @@ async function initializeFitnessApp() {
         .then(() => {
             updateSuggestions();
             updateAnalytics();
+            renderWorkout();
         })
         .catch(err => {
             console.error('Failed to load workouts in background:', err);
@@ -5980,6 +5981,7 @@ function renderWorkout(workoutType = null) {
                                        value="${set.notes}" 
                                        onchange="updateSet(${exerciseIndex}, ${setIndex}, 'notes', this.value)">
                                 ${previousExercise?.sets[setIndex]?.weight ? `
+                                    <span class="previous-set-label" style="color: var(--color-text-secondary); font-size: 0.75rem; white-space: nowrap;">last: ${previousExercise.sets[setIndex].weight} × ${previousExercise.sets[setIndex].reps}</span>
                                     <button class="btn btn-copy" onclick="copyPrevious(${exerciseIndex}, ${setIndex})">Copy</button>
                                 ` : ''}
                                 <button class="set-delete-btn" onclick="deleteSet(${exerciseIndex}, ${setIndex})" title="Delete set">×</button>
