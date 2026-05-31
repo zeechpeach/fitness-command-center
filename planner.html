@@ -1,0 +1,1631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Weekly planner</title>
+<style>
+/* ─── Design tokens ──────────────────────────────────────────────────── */
+:root {
+  /* Backgrounds */
+  --color-background-primary:   #FAF8F5;
+  --color-background-secondary: #F2EFE9;
+  --color-background-tertiary:  #EAE6DF;
+  --color-surface:              #FFFFFF;
+
+  /* Text */
+  --color-text-primary:   #1C1917;
+  --color-text-secondary: #6B6660;
+  --color-text-tertiary:  #9C9690;
+
+  /* Borders */
+  --color-border:        #E2DDD7;
+  --color-border-strong: #C9C4BD;
+
+  /* Accent — warm sage */
+  --color-accent-primary:   #5C7055;
+  --color-accent-secondary: #8EA887;
+  --color-accent-subtle:    rgba(92, 112, 85, 0.10);
+
+  /* Semantic */
+  --color-success:  #4A7C59;
+  --color-warning:  #C97B2F;
+  --color-error:    #B85C54;
+  --color-info:     #4A6E8C;
+
+  /* Activity colours */
+  --color-work:    #7A8FA3;
+  --color-fencing: #9B6B4E;
+  --color-lifting: #5C7055;
+  --color-walk:    #7A8C6B;
+  --color-meal:    #B87B8A;
+
+  /* Radius */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+
+  /* Typography */
+  --font-sans: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif;
+  --text-xs:   0.75rem;
+  --text-sm:   0.8125rem;
+  --text-base: 0.9375rem;
+  --text-lg:   1.0625rem;
+  --text-xl:   1.25rem;
+  --text-2xl:  1.5rem;
+
+  /* Spacing */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+
+  /* Timeline */
+  --hour-height: 56px;   /* px height per hour */
+}
+
+/* ─── Reset ──────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { font-size: 16px; }
+
+body {
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  color: var(--color-text-primary);
+  background: var(--color-background-primary);
+  min-height: 100vh;
+  line-height: 1.5;
+}
+
+button { font-family: inherit; cursor: pointer; border: none; }
+select { font-family: inherit; }
+input  { font-family: inherit; }
+
+/* ─── Layout ─────────────────────────────────────────────────────────── */
+.app-shell {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--space-6) var(--space-4);
+}
+
+/* ─── Header ─────────────────────────────────────────────────────────── */
+.app-header {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  margin-bottom: var(--space-6);
+}
+
+.app-header h1 {
+  font-size: var(--text-xl);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--color-text-primary);
+}
+
+.app-header .subtitle {
+  font-size: var(--text-sm);
+  color: var(--color-text-tertiary);
+  font-weight: 400;
+}
+
+/* ─── Alerts ─────────────────────────────────────────────────────────── */
+#alert-bar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.alert {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  line-height: 1.45;
+}
+
+.alert--warning {
+  background: rgba(201, 123, 47, 0.08);
+  border: 1px solid rgba(201, 123, 47, 0.25);
+  color: #8C5210;
+}
+
+.alert--info {
+  background: rgba(74, 110, 140, 0.08);
+  border: 1px solid rgba(74, 110, 140, 0.20);
+  color: #2D4D66;
+}
+
+.alert__icon { font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
+.alert__text { flex: 1; }
+.alert__title { font-weight: 600; margin-bottom: 1px; }
+
+/* ─── Main grid ──────────────────────────────────────────────────────── */
+.main-grid {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: var(--space-5);
+  align-items: start;
+}
+
+@media (max-width: 860px) {
+  .main-grid { grid-template-columns: 1fr; }
+}
+
+/* ─── Left column ────────────────────────────────────────────────────── */
+.planner-panel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+/* ─── Activity picker ────────────────────────────────────────────────── */
+.activity-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-background-secondary);
+}
+
+.activity-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  border: 1.5px solid transparent;
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  transition: all 0.15s ease;
+}
+
+.activity-btn:hover {
+  color: var(--color-text-primary);
+  border-color: var(--color-border-strong);
+}
+
+.activity-btn.active {
+  border-color: currentColor;
+}
+
+.activity-btn--work    { --dot: var(--color-work);    }
+.activity-btn--fencing { --dot: var(--color-fencing); }
+.activity-btn--lifting { --dot: var(--color-lifting); }
+.activity-btn--walk    { --dot: var(--color-walk);    }
+
+.activity-btn.active { color: var(--dot); }
+
+.dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--dot);
+  flex-shrink: 0;
+}
+
+.picker-hint {
+  width: 100%;
+  font-size: var(--text-xs);
+  color: var(--color-text-tertiary);
+  margin-top: var(--space-1);
+}
+
+/* ─── Work time selector ─────────────────────────────────────────────── */
+#work-time-row {
+  display: none;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: rgba(122, 143, 163, 0.07);
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+
+#work-time-row label { white-space: nowrap; }
+
+#work-time-row select {
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xs);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  font-size: var(--text-sm);
+}
+
+#add-work-btn {
+  padding: var(--space-2) var(--space-4);
+  background: var(--color-work);
+  color: #fff;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  font-weight: 500;
+}
+
+#add-work-btn:hover { opacity: 0.88; }
+
+/* ─── Day tabs ───────────────────────────────────────────────────────── */
+.day-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--color-border);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.day-tabs::-webkit-scrollbar { display: none; }
+
+.day-tab {
+  flex: 1;
+  min-width: 60px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: var(--space-3) var(--space-2);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  background: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.12s ease;
+  text-transform: none;
+}
+
+.day-tab:hover { background: var(--color-background-secondary); color: var(--color-text-primary); }
+
+.day-tab.active {
+  color: var(--color-accent-primary);
+  border-bottom-color: var(--color-accent-primary);
+  background: var(--color-background-secondary);
+}
+
+.day-tab__name { font-weight: 600; }
+
+.day-tab__dots {
+  display: flex;
+  gap: 3px;
+  min-height: 8px;
+}
+
+.day-tab__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* ─── Macro strip ────────────────────────────────────────────────────── */
+.macro-strip {
+  display: flex;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-background-secondary);
+  flex-wrap: wrap;
+}
+
+.macro-chip {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  min-width: 72px;
+}
+
+.macro-chip__label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+}
+
+.macro-chip__value {
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.macro-chip__unit {
+  font-size: var(--text-xs);
+  color: var(--color-text-tertiary);
+  font-weight: 400;
+}
+
+.macro-chip--intensity {
+  background: var(--color-accent-subtle);
+  border-color: rgba(92, 112, 85, 0.20);
+}
+
+.macro-chip--intensity .macro-chip__label { color: var(--color-accent-primary); }
+.macro-chip--intensity .macro-chip__value { color: var(--color-accent-primary); }
+
+/* ─── Timeline ───────────────────────────────────────────────────────── */
+.timeline-wrap {
+  overflow-y: auto;
+  max-height: calc(var(--hour-height) * 17 + 40px);
+  position: relative;
+}
+
+.timeline {
+  display: flex;
+  position: relative;
+  padding: var(--space-2) 0;
+}
+
+.time-gutter {
+  width: 52px;
+  flex-shrink: 0;
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: var(--color-surface);
+}
+
+.time-label {
+  height: var(--hour-height);
+  display: flex;
+  align-items: flex-start;
+  padding-top: 2px;
+  padding-right: var(--space-2);
+  justify-content: flex-end;
+  font-size: 10px;
+  color: var(--color-text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+.timeline-body {
+  flex: 1;
+  position: relative;
+  border-left: 1px solid var(--color-border);
+}
+
+/* hour lines */
+.hour-row {
+  height: var(--hour-height);
+  border-bottom: 1px solid var(--color-border);
+  position: relative;
+}
+
+.hour-row:nth-child(odd) { background: var(--color-background-primary); }
+.hour-row:nth-child(even) { background: var(--color-surface); }
+
+/* ─── Activity blocks ────────────────────────────────────────────────── */
+.blocks-layer {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none;
+  padding: 0 4px;
+}
+
+.block {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-2);
+  cursor: pointer;
+  pointer-events: all;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  transition: opacity 0.12s ease;
+  min-height: 20px;
+}
+
+.block:hover { opacity: 0.80; }
+
+.block--work {
+  background: rgba(122, 143, 163, 0.18);
+  border: 1.5px solid var(--color-work);
+  color: #3D546A;
+}
+
+.block--fencing {
+  background: rgba(155, 107, 78, 0.15);
+  border: 1.5px solid var(--color-fencing);
+  color: #6A3E26;
+}
+
+.block--lifting {
+  background: rgba(92, 112, 85, 0.15);
+  border: 1.5px solid var(--color-lifting);
+  color: #35502F;
+}
+
+.block--walk {
+  background: rgba(122, 140, 107, 0.15);
+  border: 1.5px solid var(--color-walk);
+  color: #3F5230;
+}
+
+.block--meal {
+  background: rgba(184, 123, 138, 0.10);
+  border: 1.5px dashed var(--color-meal);
+  color: #7A3D4D;
+}
+
+.block__title {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.block__sub {
+  font-size: 10px;
+  opacity: 0.75;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* drag ghost */
+.drag-ghost {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  background: rgba(92, 112, 85, 0.12);
+  border: 1.5px dashed var(--color-accent-secondary);
+  border-radius: var(--radius-sm);
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* ─── Right column ───────────────────────────────────────────────────── */
+.side-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* ─── Card ───────────────────────────────────────────────────────────── */
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+}
+
+.card__title {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-3);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.card__title-badge {
+  font-size: var(--text-xs);
+  font-weight: 500;
+  color: var(--color-text-tertiary);
+  background: var(--color-background-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xs);
+  padding: 1px 6px;
+}
+
+/* ─── Lifting program tabs ────────────────────────────────────────────── */
+.lift-day-tabs {
+  display: flex;
+  gap: var(--space-1);
+  margin-bottom: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.lift-day-tab {
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--color-border);
+  background: none;
+  color: var(--color-text-secondary);
+  transition: all 0.12s;
+}
+
+.lift-day-tab:hover { border-color: var(--color-accent-secondary); color: var(--color-accent-primary); }
+
+.lift-day-tab.active {
+  background: var(--color-accent-subtle);
+  border-color: var(--color-accent-secondary);
+  color: var(--color-accent-primary);
+}
+
+.lift-session { display: none; }
+.lift-session.active { display: block; }
+
+.lift-session__goal {
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-3);
+  line-height: 1.45;
+}
+
+.lift-session__note {
+  font-size: var(--text-xs);
+  color: var(--color-warning);
+  background: rgba(201, 123, 47, 0.07);
+  border: 1px solid rgba(201, 123, 47, 0.18);
+  border-radius: var(--radius-xs);
+  padding: var(--space-2) var(--space-3);
+  margin-bottom: var(--space-3);
+  line-height: 1.45;
+}
+
+.exercise-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.exercise-item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--space-2);
+  align-items: start;
+  padding: var(--space-2) var(--space-2);
+  border-radius: var(--radius-xs);
+  background: var(--color-background-secondary);
+}
+
+.exercise-item__name {
+  font-size: var(--text-xs);
+  font-weight: 500;
+  color: var(--color-text-primary);
+  line-height: 1.3;
+}
+
+.exercise-item__sets {
+  font-size: 10px;
+  color: var(--color-text-tertiary);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.exercise-item__note {
+  grid-column: 1 / -1;
+  font-size: 10px;
+  color: var(--color-text-tertiary);
+  line-height: 1.3;
+}
+
+.quick-add-btn {
+  width: 100%;
+  margin-top: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-accent-subtle);
+  border: 1.5px solid var(--color-accent-secondary);
+  border-radius: var(--radius-sm);
+  color: var(--color-accent-primary);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  text-align: center;
+  transition: all 0.12s;
+}
+
+.quick-add-btn:hover { background: rgba(92, 112, 85, 0.18); }
+
+/* ─── Schedule guidance ───────────────────────────────────────────────── */
+.guidance-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.guidance-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+}
+
+.guidance-item__icon { flex-shrink: 0; font-size: 0.85rem; margin-top: 1px; }
+
+.guidance-item--warning { color: #8C5210; }
+
+/* ─── Scroll hint ────────────────────────────────────────────────────── */
+.scroll-fade {
+  position: sticky;
+  bottom: 0;
+  height: 24px;
+  background: linear-gradient(transparent, var(--color-surface));
+  pointer-events: none;
+}
+
+</style>
+</head>
+<body>
+<div class="app-shell">
+
+  <!-- Header -->
+  <header class="app-header">
+    <h1>Weekly planner</h1>
+    <span class="subtitle">Drag to schedule · click a block to remove</span>
+  </header>
+
+  <!-- Alert bar (filled by JS) -->
+  <div id="alert-bar"></div>
+
+  <!-- Main grid -->
+  <div class="main-grid">
+
+    <!-- ── Left: planner ────────────────────────────────────────────── -->
+    <div class="planner-panel">
+
+      <!-- Activity picker -->
+      <div class="activity-picker">
+        <button class="activity-btn activity-btn--work"    data-type="work"    onclick="selectActivity('work')">
+          <span class="dot"></span> Work
+        </button>
+        <button class="activity-btn activity-btn--fencing" data-type="fencing" onclick="selectActivity('fencing')">
+          <span class="dot"></span> Fencing
+        </button>
+        <button class="activity-btn activity-btn--lifting" data-type="lifting" onclick="selectActivity('lifting')">
+          <span class="dot"></span> Lifting
+        </button>
+        <button class="activity-btn activity-btn--walk"    data-type="walk"    onclick="selectActivity('walk')">
+          <span class="dot"></span> Incline walk
+        </button>
+        <span class="picker-hint">Select an activity, then drag on the timeline to schedule it.</span>
+      </div>
+
+      <!-- Work time selector (shown only when Work is selected) -->
+      <div id="work-time-row">
+        <label>Start</label>
+        <select id="work-start"></select>
+        <label>End</label>
+        <select id="work-end"></select>
+        <button id="add-work-btn" onclick="addWorkBlock()">Add work block</button>
+      </div>
+
+      <!-- Day tabs -->
+      <div class="day-tabs" id="day-tabs-row"></div>
+
+      <!-- Macro strip -->
+      <div class="macro-strip" id="macro-strip"></div>
+
+      <!-- Timeline -->
+      <div class="timeline-wrap" id="timeline-wrap">
+        <div class="timeline" id="timeline">
+          <!-- gutter + body rendered by JS -->
+        </div>
+      </div>
+
+    </div><!-- /planner-panel -->
+
+    <!-- ── Right: side panel ─────────────────────────────────────────── -->
+    <div class="side-panel">
+
+      <!-- Lifting program reference -->
+      <div class="card">
+        <div class="card__title">
+          Lifting program
+          <span class="card__title-badge">4 days</span>
+        </div>
+
+        <div class="lift-day-tabs">
+          <button class="lift-day-tab active" onclick="showLiftDay('A',this)">Day A</button>
+          <button class="lift-day-tab"        onclick="showLiftDay('B',this)">Day B</button>
+          <button class="lift-day-tab"        onclick="showLiftDay('C',this)">Day C</button>
+          <button class="lift-day-tab"        onclick="showLiftDay('D',this)">Day D</button>
+        </div>
+
+        <!-- Day A -->
+        <div class="lift-session active" id="lift-A">
+          <div class="lift-session__goal">Shoulders + abs — width and capped shoulder look; prioritize lateral delts.</div>
+          <ul class="exercise-list">
+            <li class="exercise-item">
+              <span class="exercise-item__name">Seated DB lateral raise</span>
+              <span class="exercise-item__sets">4 × 12–15</span>
+              <span class="exercise-item__note">Slow eccentric, 3 sec down</span>
+            </li>
+            <li class="exercise-item">
+              <span class="exercise-item__name">Cable lateral raise</span>
+              <span class="exercise-item__sets">3 × 15–20</span>
+              <span class="exercise-item__note">Constant tension beats dumbbells here</span>
+            </li>
+            <li class="exercise-item">
+              <span class="exercise-item__name">Seated DB overhead press</span>
+              <span class="exercise-item__sets">3 × 10–12</span>
+              <span class="exercise-item__note">Compound anchor</span>
+            </li>
+            <li class="exercise-item">
+              <span class="exercise-item__name">Rear delt cable fly</span>
+              <span class="exercise-item__sets">3 × 15–20</span>
+              <span class="exercise-item__note">Face the cable, arms wide</span>
+            </li>
+            <li class="exercise-item">
+              <span class="exercise-item__name">Cable crunch</span>
+              <span class="exercise-item__sets">4 × 15–20</span>
+              <span class="exercise-item__note">Weighted abs build faster</span>
+            </li>
+            <li class="exercise-item">
+              <span class="exercise-item__name">Hanging leg raise</span>
+              <span class="exercise-item__sets">3 × 12–15</span>
+              <span class="exercise-item__note">Full hip flexion at top</span>
+            </li>
+          </ul>
+          <button class="quick-add-btn" onclick="quickAddLifting('A')">+ Add day A to schedule</button>
+        </div>
+
+        <!-- Day B -->
+        <div class="lift-session" id="lift-B">
+          <div class="lift-session__goal">Upper chest + arms — clavicular head for chest fullness without lower pec overhang.</div>
+          <div class="lift-session__note">⚠ More taxing — avoid the day before a high-intensity fencing session. Never do day B before a big fencing day; pressing muscles stabilize the sword arm.</div>
+          <ul class="exercise-list">
+            <li class="exercise-item">
+              <span class="exercise-item__name">Incline barbell press</span>
+              <span class="exercise-item__sets">4 × 6–10</span>
+              <span class="exercise-item__note">30–45° angle, primary mover</span>
+            </li>
+            <li class="exercise-item">
+              <span class="exercise-item__name">Incline DB fly</span>
+              <span class="exercise-item__sets">3 × 12–15</span>
+              <span class="exercise-item__note">Stretch at bottom, don't lock out</span>
+            </li>
+            <li class="exercise-item">
+              <span class="exercise-item__name">Cable crossover (high to low)</span>
+              <span class="exercise-item__sets">3 × 15</span>
+              <span class="exercise-item__note">Emphasizes upper chest insertion</span>
+            </li>
+            <li class="exercise-item">
+              <span class="exercise-item__name">EZ-bar curl</span>
+              <span class="exercise-item__sets">4 × 10–12</span>
+              <span class="exercise-item__note">Supinated grip, full ROM</span>
+            </li>
+            <li class="exercise-item">
+              <span class="exercise-item__name">Incline DB curl</span>
+              <span class="exercise-item__sets">3 × 12</span>
+              <span class="exercise-item__note">Stretch position hits long head of bicep</span>
+            </li>
+            <li class="exercise-item">
+              <span class="exercise-item__name">Overhead tricep extension</span>
+              <span class="exercise-item__sets">4 × 10–12</span>
+              <span class="exercise-item__note">Long head — adds the horseshoe</span>
+            </li>
+          </ul>
+          <button class="quick-add-btn" onclick="quickAddLifting('B')">+ Add day B to schedule</button>
+        </div>
+
+        <!-- Day C -->
+        <div class="lift-session" id="lift-C">
+          <div class="lift-session__goal">Lats + abs — wide lats for V-taper foundation.</div>
+          <ul class="exercise-list">
+            <li class="exercise-item">
+              <span class="exercise-item__name">Wide-grip pull-up</span>
+              <span class="exercise-item__sets">4 × 6–10</span>
+              <span class="exercise-item__note">Weighted if bodyweight is easy</span>
+            </li>
+            <li class="exercise-item">
+              <span class="exercise-item__name">Straight-arm cable pulldown</span>
+              <span class="exercise-item__sets">3 × 12–15</span>
+              <span class="exercise-item__note">Isolates lat without bicep fatigue</span>
+            </li>
+            <li class="exercise-item">
+              <span class="exercise-item__name">Single-arm DB row</span>
+              <span class="exercise-item__sets">3 × 10–12</span>
+              <span class="exercise-item__note">Full stretch at bottom</span>
+            </li>
+            <li class="exercise-item">
+              <span class="exercise-item__name">Seated cable row (wide grip)</span>
+              <span class="exercise-item__sets">3 × 12</span>
+              <span class="exercise-item__note">Drive elbows back and wide</span>
+            </li>
+            <li class="exercise-item">
+              <span class="exercise-item__name">Ab wheel rollout</span>
+              <span class="exercise-item__sets">4 × 10–12</span>
+              <span class="exercise-item__note">Best weighted abs exercise</span>
+            </li>
+            <li class="exercise-item">
+              <span class="exercise-item__name">Side plank hip raise</span>
+              <span class="exercise-item__sets">3 × 12/side</span>
+              <span class="exercise-item__note">Obliques sharpen the V shape</span>
+            </li>
+          </ul>
+          <button class="quick-add-btn" onclick="quickAddLifting('C')">+ Add day C to schedule</button>
+        </div>
+
+        <!-- Day D -->
+        <div class="lift-session" id="lift-D">
+          <div class="lift-session__goal">Arms + shoulder detail — direct arm stimulus plus finishing shoulder detail.</div>
+          <div class="lift-session__note">⚠ More taxing — give yourself a day before a high-intensity fencing session.</div>
+          <ul class="exercise-list">
+            <li class="exercise-item">
+              <span class="exercise-item__name">Barbell curl</span>
+              <span class="exercise-item__sets">4 × 8–10</span>
+              <span class="exercise-item__note">Heavy, bicep peak</span>
+            </li>
+            <li class="exercise-item">
+              <span class="exercise-item__name">Hammer curl</span>
+              <span class="exercise-item__sets">3 × 12</span>
+              <span class="exercise-item__note">Brachialis thickness</span>
+            </li>
+            <li class="exercise-item">
+              <span class="exercise-item__name">Cable curl (low)</span>
+              <span class="exercise-item__sets">3 × 15</span>
+              <span class="exercise-item__note">Pump finisher, peak contraction</span>
+            </li>
+            <li class="exercise-item">
+              <span class="exercise-item__name">Close-grip bench press</span>
+              <span class="exercise-item__sets">4 × 8–10</span>
+              <span class="exercise-item__note">Tricep mass builder</span>
+            </li>
+            <li class="exercise-item">
+              <span class="exercise-item__name">Tricep pushdown (rope)</span>
+              <span class="exercise-item__sets">3 × 15</span>
+              <span class="exercise-item__note">Lateral head, adds width</span>
+            </li>
+            <li class="exercise-item">
+              <span class="exercise-item__name">Face pull</span>
+              <span class="exercise-item__sets">3 × 20</span>
+              <span class="exercise-item__note">Rear delt + rotator cuff — shoulder health given fencing volume</span>
+            </li>
+          </ul>
+          <button class="quick-add-btn" onclick="quickAddLifting('D')">+ Add day D to schedule</button>
+        </div>
+
+      </div><!-- /lifting program card -->
+
+      <!-- Scheduling guidance -->
+      <div class="card">
+        <div class="card__title">Scheduling guidance</div>
+        <ul class="guidance-list">
+          <li class="guidance-item">
+            <span class="guidance-item__icon">✓</span>
+            <span>Days A and C are lower fatigue — fine before or after fencing.</span>
+          </li>
+          <li class="guidance-item">
+            <span class="guidance-item__icon">◎</span>
+            <span>Days B and D are more taxing — allow a day before a high-intensity fencing session.</span>
+          </li>
+          <li class="guidance-item guidance-item--warning">
+            <span class="guidance-item__icon">⚠</span>
+            <span>Never do day B the day before a big fencing day. Pressing muscles stabilize the sword arm.</span>
+          </li>
+          <li class="guidance-item">
+            <span class="guidance-item__icon">↺</span>
+            <span>No leg work in this program. All sessions 45–55 min.</span>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Nutrition baseline -->
+      <div class="card">
+        <div class="card__title">Nutrition baseline</div>
+        <div style="display:flex;flex-direction:column;gap:var(--space-2)">
+          <div style="font-size:var(--text-xs);color:var(--color-text-secondary);line-height:1.5">
+            <strong style="color:var(--color-text-primary)">Breakfast:</strong> 3 hardboiled eggs + 2 string cheese
+          </div>
+          <div style="font-size:var(--text-xs);color:var(--color-text-secondary);line-height:1.5">
+            <strong style="color:var(--color-text-primary)">Lunch/dinner:</strong> 4–6 oz lean meat + grilled veggies + quinoa or couscous
+          </div>
+          <div style="font-size:var(--text-xs);color:var(--color-text-secondary);line-height:1.5">
+            <strong style="color:var(--color-text-primary)">Snacks:</strong> Protein shake (41 g) or Greek yogurt (30 g) + protein bar (20 g)
+          </div>
+          <div style="font-size:var(--text-xs);color:var(--color-text-tertiary);margin-top:var(--space-1);line-height:1.5">
+            Carbs concentrated around training sessions. Protein 155–172 g.
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /side-panel -->
+
+  </div><!-- /main-grid -->
+
+</div><!-- /app-shell -->
+
+<script>
+/* ─────────────────────────────────────────────────────────────────────────
+   Constants & configuration
+   ───────────────────────────────────────────────────────────────────────── */
+
+const HOUR_HEIGHT   = 56;   // px per hour (must match --hour-height CSS var)
+const TIMELINE_START = 6;   // 6:00 AM
+const TIMELINE_END   = 23;  // 11:00 PM  (last row = 22:xx–23:00)
+const HOURS = TIMELINE_END - TIMELINE_START; // 17 hours displayed
+
+const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+/* Activity metadata */
+const ACTIVITIES = {
+  work:    { label: 'Work',         color: '#7A8FA3', units: 0 },
+  fencing: { label: 'Fencing',      color: '#9B6B4E', units: 2 },
+  lifting: { label: 'Lifting',      color: '#5C7055', units: 2 },
+  walk:    { label: 'Incline walk', color: '#7A8C6B', units: 1 },
+};
+
+/* Macro targets by intensity (units per day) */
+const MACRO_TABLE = [
+  /* units, cal,  pro, carb, fat */
+  [0,       1700, 160, 100,  70 ],
+  [1,       1850, 162, 140,  72 ],
+  [2,       2000, 165, 165,  74 ],
+  [3,       2150, 168, 185,  76 ],
+  [4,       2300, 170, 210,  78 ],
+  [5,       2400, 172, 230,  80 ],
+];
+
+/* Meal generation rules — evaluated in order, first match wins per slot */
+const MEAL_RULES = [
+  // id, label, sub-label builder, timing function (returns {day,startH,endH} or null)
+  {
+    id: 'breakfast',
+    label: 'Breakfast',
+    sub: (d) => '3 eggs + string cheese',
+    timing: (day, blocks) => {
+      const earliest = earliestActivityStart(blocks, day);
+      const start = earliest ? Math.max(6, earliest - 1.5) : 7;
+      return { startH: start, endH: start + 0.5 };
+    },
+  },
+  {
+    id: 'pre-workout',
+    label: 'Pre-workout',
+    sub: (d) => 'Protein shake or bar + carbs',
+    timing: (day, blocks) => {
+      const sessions = trainingBlocks(blocks, day);
+      if (!sessions.length) return null;
+      const first = sessions[0];
+      const preH = first.startH - 1;
+      if (preH < TIMELINE_START) return null;
+      // Don't overlap breakfast (approx)
+      return { startH: preH, endH: preH + 0.5 };
+    },
+  },
+  {
+    id: 'post-workout',
+    label: 'Post-workout',
+    sub: (d, blocks) => {
+      const sessions = trainingBlocks(blocks, d);
+      if (!sessions.length) return '';
+      const last = sessions[sessions.length - 1];
+      const during = workBlocksDuring(blocks, d, last.startH, last.endH);
+      if (during) return 'Post-lift window — at work';
+      if (last.type === 'lifting') return 'Post-lift window — 30 min';
+      if (last.type === 'fencing') return 'Post-fencing — fast carbs';
+      return 'Post-workout window';
+    },
+    timing: (day, blocks) => {
+      const sessions = trainingBlocks(blocks, day);
+      if (!sessions.length) return null;
+      const last = sessions[sessions.length - 1];
+      return { startH: last.endH, endH: last.endH + 0.5 };
+    },
+  },
+  {
+    id: 'lunch',
+    label: 'Lunch',
+    sub: (d, blocks) => {
+      const atWork = hasWorkBlock(blocks, d);
+      return atWork ? 'Lean meat + veggies + quinoa — at work' : 'Lean meat + veggies + quinoa';
+    },
+    timing: (day, blocks) => {
+      // Aim for noon-ish, avoid overlapping post-workout
+      return { startH: 12, endH: 12.75 };
+    },
+  },
+  {
+    id: 'snack',
+    label: 'Afternoon snack',
+    sub: (d, blocks) => {
+      const hasWalk = blocks[d] && blocks[d].some(b => b.type === 'walk');
+      if (hasWalk) {
+        const walk = blocks[d].find(b => b.type === 'walk');
+        if (walk && walk.startH <= 15) return 'Fasted walk — skip or sip BCAA';
+      }
+      return 'Greek yogurt (30 g) + protein bar';
+    },
+    timing: (day, blocks) => ({ startH: 15, endH: 15.5 }),
+  },
+  {
+    id: 'dinner',
+    label: 'Dinner',
+    sub: (d, blocks) => {
+      const units = calcUnits(blocks, d);
+      return units >= 3
+        ? 'Lean meat + veggies + quinoa — carbs up'
+        : 'Lean meat + veggies — light carbs';
+    },
+    timing: (day, blocks) => ({ startH: 18.5, endH: 19.25 }),
+  },
+];
+
+/* Lifting session defaults */
+const LIFTING_PRESETS = {
+  A: { label: 'Lifting — day A', duration: 0.833 },  // ~50 min
+  B: { label: 'Lifting — day B', duration: 0.833 },
+  C: { label: 'Lifting — day C', duration: 0.833 },
+  D: { label: 'Lifting — day D', duration: 0.833 },
+};
+
+/* ─────────────────────────────────────────────────────────────────────────
+   State
+   ───────────────────────────────────────────────────────────────────────── */
+
+// blocks[dayIndex] = [ { type, startH, endH, label?, sub? }, ... ]
+const blocks = { 0:[], 1:[], 2:[], 3:[], 4:[], 5:[], 6:[] };
+
+let selectedActivity = 'work';    // currently selected activity type
+let currentDay = 0;               // 0 = Mon … 6 = Sun
+
+/* Drag state */
+let dragState = null;
+/*
+  dragState = {
+    active: bool,
+    dayIdx: int,
+    startY: px from top of blocks-layer,
+    currentY: px,
+    startH: float hours,
+    endH: float hours,
+    ghostEl: HTMLElement,
+  }
+*/
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Helpers
+   ───────────────────────────────────────────────────────────────────────── */
+
+function hToY(h) {
+  return (h - TIMELINE_START) * HOUR_HEIGHT;
+}
+
+function yToH(y) {
+  return TIMELINE_START + y / HOUR_HEIGHT;
+}
+
+function snapH(h, step = 0.25) {
+  return Math.round(h / step) * step;
+}
+
+function formatH(h) {
+  const totalMin = Math.round(h * 60);
+  const hh = Math.floor(totalMin / 60);
+  const mm = totalMin % 60;
+  const period = hh >= 12 ? 'pm' : 'am';
+  const disp = hh > 12 ? hh - 12 : hh === 0 ? 12 : hh;
+  return mm === 0 ? `${disp}${period}` : `${disp}:${String(mm).padStart(2,'0')}${period}`;
+}
+
+function timeOptions() {
+  const opts = [];
+  for (let h = TIMELINE_START; h <= TIMELINE_END; h += 0.25) {
+    opts.push(h);
+  }
+  return opts;
+}
+
+function trainingBlocks(b, dayIdx) {
+  return (b[dayIdx] || []).filter(bl => bl.type === 'fencing' || bl.type === 'lifting' || bl.type === 'walk')
+    .sort((a,b) => a.startH - b.startH);
+}
+
+function earliestActivityStart(b, dayIdx) {
+  const all = (b[dayIdx] || []).filter(bl => bl.type !== 'meal');
+  if (!all.length) return null;
+  return Math.min(...all.map(bl => bl.startH));
+}
+
+function hasWorkBlock(b, dayIdx) {
+  return (b[dayIdx] || []).some(bl => bl.type === 'work');
+}
+
+function workBlocksDuring(b, dayIdx, startH, endH) {
+  return (b[dayIdx] || []).some(bl =>
+    bl.type === 'work' && bl.startH < endH && bl.endH > startH);
+}
+
+function calcUnits(b, dayIdx) {
+  return (b[dayIdx] || [])
+    .filter(bl => bl.type !== 'meal')
+    .reduce((sum, bl) => sum + (ACTIVITIES[bl.type]?.units || 0), 0);
+}
+
+function getMacros(units) {
+  const row = MACRO_TABLE.slice().reverse().find(r => r[0] <= units) || MACRO_TABLE[0];
+  return { cal: row[1], pro: row[2], carb: row[3], fat: row[4] };
+}
+
+/* Detect which activity types are scheduled in a day (for dot display) */
+function dayDotTypes(dayIdx) {
+  const types = new Set();
+  (blocks[dayIdx] || []).forEach(bl => {
+    if (bl.type !== 'meal') types.add(bl.type);
+  });
+  return [...types];
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Meal generation
+   ───────────────────────────────────────────────────────────────────────── */
+
+function generateMeals(dayIdx) {
+  const generated = [];
+  const nonMeal = (blocks[dayIdx] || []).filter(bl => bl.type !== 'meal');
+
+  for (const rule of MEAL_RULES) {
+    const timing = rule.timing(dayIdx, blocks);
+    if (!timing) continue;
+
+    let { startH, endH } = timing;
+    startH = Math.max(TIMELINE_START, snapH(startH, 0.25));
+    endH   = Math.min(TIMELINE_END, snapH(endH, 0.25));
+    if (endH <= startH) continue;
+
+    // Check for overlap with non-meal blocks; shift if needed
+    let shifted = false;
+    for (const bl of nonMeal) {
+      if (bl.startH < endH && bl.endH > startH) {
+        // Try after the block
+        const newStart = snapH(bl.endH, 0.25);
+        const newEnd   = snapH(newStart + (endH - startH), 0.25);
+        if (newEnd <= TIMELINE_END) {
+          startH = newStart;
+          endH   = newEnd;
+          shifted = true;
+        }
+      }
+    }
+
+    generated.push({
+      type: 'meal',
+      id: rule.id,
+      startH,
+      endH,
+      label: rule.label,
+      sub: rule.sub(dayIdx, blocks),
+    });
+  }
+  return generated;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Alerts
+   ───────────────────────────────────────────────────────────────────────── */
+
+function refreshAlerts() {
+  const bar = document.getElementById('alert-bar');
+  const alerts = [];
+
+  // Check consecutive heavy days (units >= 3 for 3+ in a row)
+  let streak = 0;
+  let streakStart = -1;
+  for (let d = 0; d < 7; d++) {
+    if (calcUnits(blocks, d) >= 3) {
+      if (streak === 0) streakStart = d;
+      streak++;
+      if (streak >= 3) {
+        alerts.push({
+          type: 'warning',
+          title: 'High cortisol risk — 3+ consecutive heavy days',
+          text: `${DAYS[streakStart]} through ${DAYS[streakStart + streak - 1]} are all at 3+ intensity units. Consider inserting a lighter day to manage cortisol.`,
+        });
+        break;
+      }
+    } else {
+      streak = 0;
+    }
+  }
+
+  // Check no rest day
+  const allHeavy = Array.from({length: 7}, (_, d) => calcUnits(blocks, d) >= 2);
+  if (allHeavy.every(Boolean)) {
+    alerts.push({
+      type: 'warning',
+      title: 'No rest day scheduled this week',
+      text: 'Every day has at least 2 intensity units. A true rest day supports recovery and helps keep cortisol in check.',
+    });
+  }
+
+  // General cortisol awareness tip (only when no acute alerts and meaningful load present)
+  const totalUnits = Array.from({length: 7}, (_, d) => calcUnits(blocks, d)).reduce((a,b)=>a+b,0);
+  if (alerts.length === 0 && totalUnits >= 6) {
+    alerts.push({
+      type: 'info',
+      title: 'Schedule looks balanced',
+      text: 'No consecutive heavy days detected. Keep monitoring — high fencing volume + lifting together can stack cortisol load quickly.',
+    });
+  }
+
+  bar.innerHTML = alerts.map(a => `
+    <div class="alert alert--${a.type}">
+      <span class="alert__icon">${a.type === 'warning' ? '⚠' : 'ℹ'}</span>
+      <div class="alert__text">
+        <div class="alert__title">${a.title}</div>
+        ${a.text}
+      </div>
+    </div>
+  `).join('');
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Rendering
+   ───────────────────────────────────────────────────────────────────────── */
+
+function renderDayTabs() {
+  const row = document.getElementById('day-tabs-row');
+  row.innerHTML = DAYS.map((d, i) => {
+    const dots = dayDotTypes(i);
+    const dotHtml = dots.map(t => `<span class="day-tab__dot" style="background:${ACTIVITIES[t].color}"></span>`).join('');
+    return `
+      <button class="day-tab ${i === currentDay ? 'active' : ''}" onclick="selectDay(${i})">
+        <span class="day-tab__name">${d}</span>
+        <span class="day-tab__dots">${dotHtml}</span>
+      </button>
+    `;
+  }).join('');
+}
+
+function renderMacroStrip() {
+  const strip = document.getElementById('macro-strip');
+  const units = calcUnits(blocks, currentDay);
+  const m = getMacros(units);
+  strip.innerHTML = `
+    <div class="macro-chip macro-chip--intensity">
+      <span class="macro-chip__label">Load</span>
+      <span class="macro-chip__value">${units}</span>
+      <span class="macro-chip__unit">units</span>
+    </div>
+    <div class="macro-chip">
+      <span class="macro-chip__label">Cal</span>
+      <span class="macro-chip__value">${m.cal}</span>
+      <span class="macro-chip__unit">kcal</span>
+    </div>
+    <div class="macro-chip">
+      <span class="macro-chip__label">Protein</span>
+      <span class="macro-chip__value">${m.pro}</span>
+      <span class="macro-chip__unit">g</span>
+    </div>
+    <div class="macro-chip">
+      <span class="macro-chip__label">Carbs</span>
+      <span class="macro-chip__value">${m.carb}</span>
+      <span class="macro-chip__unit">g</span>
+    </div>
+    <div class="macro-chip">
+      <span class="macro-chip__label">Fat</span>
+      <span class="macro-chip__value">${m.fat}</span>
+      <span class="macro-chip__unit">g</span>
+    </div>
+  `;
+}
+
+function renderTimeline() {
+  const timeline = document.getElementById('timeline');
+
+  // Build gutter
+  let gutterHtml = '<div class="time-gutter">';
+  for (let h = TIMELINE_START; h < TIMELINE_END; h++) {
+    gutterHtml += `<div class="time-label">${formatH(h)}</div>`;
+  }
+  gutterHtml += '</div>';
+
+  // Build body (hour rows)
+  let rowsHtml = '';
+  for (let h = TIMELINE_START; h < TIMELINE_END; h++) {
+    rowsHtml += `<div class="hour-row"></div>`;
+  }
+
+  // Collect all blocks for current day (activity + meals)
+  const meals = generateMeals(currentDay);
+  const allBlocks = [...(blocks[currentDay] || []), ...meals];
+
+  // Render block elements
+  let blocksHtml = '';
+  allBlocks.forEach((bl, idx) => {
+    const top    = hToY(bl.startH);
+    const height = Math.max(20, hToY(bl.endH) - hToY(bl.startH));
+    const isMeal = bl.type === 'meal';
+    const cls    = `block block--${bl.type}`;
+    const label  = bl.label || ACTIVITIES[bl.type]?.label || bl.type;
+    const sub    = bl.sub || (isMeal ? '' : `${formatH(bl.startH)} – ${formatH(bl.endH)}`);
+    const clickHandler = isMeal ? '' : `onclick="removeBlock(${currentDay}, ${idx})"`;
+
+    blocksHtml += `
+      <div class="${cls}" style="top:${top}px;height:${height}px;" title="${label}" ${clickHandler} data-idx="${idx}">
+        <div class="block__title">${label}</div>
+        ${sub ? `<div class="block__sub">${sub}</div>` : ''}
+      </div>
+    `;
+  });
+
+  timeline.innerHTML = gutterHtml + `
+    <div class="timeline-body" id="timeline-body">
+      ${rowsHtml}
+      <div class="blocks-layer" id="blocks-layer">
+        ${blocksHtml}
+      </div>
+    </div>
+  `;
+
+  // Attach drag listeners to the timeline body
+  attachDragListeners();
+}
+
+function refreshAll() {
+  renderDayTabs();
+  renderMacroStrip();
+  renderTimeline();
+  refreshAlerts();
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Day & activity selection
+   ───────────────────────────────────────────────────────────────────────── */
+
+function selectDay(idx) {
+  currentDay = idx;
+  refreshAll();
+}
+
+function selectActivity(type) {
+  selectedActivity = type;
+
+  // Update button active states
+  document.querySelectorAll('.activity-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.type === type);
+  });
+
+  // Show/hide work time row
+  const workRow = document.getElementById('work-time-row');
+  workRow.style.display = type === 'work' ? 'flex' : 'none';
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Block management
+   ───────────────────────────────────────────────────────────────────────── */
+
+function addBlock(dayIdx, type, startH, endH, extraProps = {}) {
+  startH = Math.max(TIMELINE_START, snapH(startH, 0.25));
+  endH   = Math.min(TIMELINE_END,   snapH(endH,   0.25));
+  if (endH - startH < 0.25) endH = startH + 0.25;
+
+  blocks[dayIdx] = blocks[dayIdx] || [];
+  blocks[dayIdx].push({ type, startH, endH, ...extraProps });
+
+  refreshAll();
+}
+
+function removeBlock(dayIdx, idx) {
+  // idx matches blocks[dayIdx] because allBlocks is structured as
+  // [...blocks[dayIdx], ...generatedMeals] and only activity blocks have click handlers.
+  if (idx >= 0 && idx < (blocks[dayIdx] || []).length) {
+    blocks[dayIdx].splice(idx, 1);
+    refreshAll();
+  }
+}
+
+function addWorkBlock() {
+  const startSel = document.getElementById('work-start');
+  const endSel   = document.getElementById('work-end');
+  const startH   = parseFloat(startSel.value);
+  const endH     = parseFloat(endSel.value);
+  if (endH <= startH) {
+    alert('End time must be after start time.');
+    return;
+  }
+  addBlock(currentDay, 'work', startH, endH);
+}
+
+function quickAddLifting(day) {
+  const preset = LIFTING_PRESETS[day];
+  // Find a free slot: default 6pm (18.0), or after last block
+  const existing = blocks[currentDay] || [];
+  let startH = 17; // 5 PM default
+  if (existing.length > 0) {
+    const lastEnd = Math.max(...existing.map(b => b.endH));
+    startH = Math.min(lastEnd + 0.25, 20); // cap at 8 PM
+  }
+  const endH = startH + preset.duration;
+  addBlock(currentDay, 'lifting', startH, endH, { label: preset.label });
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Drag-to-schedule
+   ───────────────────────────────────────────────────────────────────────── */
+
+function attachDragListeners() {
+  const body = document.getElementById('timeline-body');
+  if (!body) return;
+
+  body.addEventListener('mousedown', onDragStart, { passive: false });
+  body.addEventListener('touchstart', onTouchStart, { passive: false });
+}
+
+function getBodyRelativeY(e, body) {
+  const rect = body.getBoundingClientRect();
+  return (e.clientY || (e.touches && e.touches[0].clientY)) - rect.top;
+}
+
+function onDragStart(e) {
+  // Don't start drag on a block click
+  if (e.target.closest('.block')) return;
+  if (selectedActivity === 'work') return; // work uses dropdowns
+  e.preventDefault();
+
+  const body = document.getElementById('timeline-body');
+  const y = getBodyRelativeY(e, body);
+  const startH = snapH(yToH(y), 0.25);
+
+  const ghost = document.createElement('div');
+  ghost.className = 'drag-ghost';
+  ghost.style.top    = hToY(startH) + 'px';
+  ghost.style.height = HOUR_HEIGHT / 4 + 'px'; // 15-min initial size
+  body.appendChild(ghost);
+
+  dragState = {
+    active: true,
+    dayIdx: currentDay,
+    startH,
+    endH: startH + 0.25,
+    ghostEl: ghost,
+    body,
+  };
+
+  document.addEventListener('mousemove', onDragMove, { passive: false });
+  document.addEventListener('mouseup',   onDragEnd,  { passive: false });
+}
+
+function onTouchStart(e) {
+  if (e.target.closest('.block')) return;
+  if (selectedActivity === 'work') return;
+  e.preventDefault();
+
+  const body = document.getElementById('timeline-body');
+  const y = getBodyRelativeY(e, body);
+  const startH = snapH(yToH(y), 0.25);
+
+  const ghost = document.createElement('div');
+  ghost.className = 'drag-ghost';
+  ghost.style.top    = hToY(startH) + 'px';
+  ghost.style.height = HOUR_HEIGHT / 4 + 'px';
+  body.appendChild(ghost);
+
+  dragState = {
+    active: true,
+    dayIdx: currentDay,
+    startH,
+    endH: startH + 0.25,
+    ghostEl: ghost,
+    body,
+  };
+
+  document.addEventListener('touchmove', onTouchMove, { passive: false });
+  document.addEventListener('touchend',  onTouchEnd,  { passive: false });
+}
+
+function onDragMove(e) {
+  if (!dragState || !dragState.active) return;
+  e.preventDefault();
+  const y = getBodyRelativeY(e, dragState.body);
+  updateGhost(y);
+}
+
+function onTouchMove(e) {
+  if (!dragState || !dragState.active) return;
+  e.preventDefault();
+  const y = getBodyRelativeY(e, dragState.body);
+  updateGhost(y);
+}
+
+function updateGhost(y) {
+  const endH = Math.max(dragState.startH + 0.25, snapH(yToH(y), 0.25));
+  dragState.endH = Math.min(TIMELINE_END, endH);
+
+  const top    = hToY(dragState.startH);
+  const height = Math.max(HOUR_HEIGHT * 0.25, hToY(dragState.endH) - top);
+  dragState.ghostEl.style.top    = top    + 'px';
+  dragState.ghostEl.style.height = height + 'px';
+}
+
+function onDragEnd(e) {
+  document.removeEventListener('mousemove', onDragMove);
+  document.removeEventListener('mouseup',   onDragEnd);
+  finalizeDrag();
+}
+
+function onTouchEnd(e) {
+  document.removeEventListener('touchmove', onTouchMove);
+  document.removeEventListener('touchend',  onTouchEnd);
+  finalizeDrag();
+}
+
+function finalizeDrag() {
+  if (!dragState) return;
+  const { dayIdx, startH, endH } = dragState;
+  dragState.ghostEl.remove();
+  dragState = null;
+
+  if (endH - startH >= 0.25) {
+    // For lifting, prompt for day A/B/C/D
+    if (selectedActivity === 'lifting') {
+      const day = promptLiftDay();
+      if (day) {
+        addBlock(dayIdx, 'lifting', startH, endH, { label: `Lifting — day ${day}` });
+      } else {
+        addBlock(dayIdx, 'lifting', startH, endH);
+      }
+    } else {
+      addBlock(dayIdx, selectedActivity, startH, endH);
+    }
+  }
+}
+
+function promptLiftDay() {
+  const choice = window.prompt(
+    'Which lifting day?\n  A — Shoulders + abs\n  B — Upper chest + arms\n  C — Lats + abs\n  D — Arms + shoulder detail\n\nType A, B, C, or D (or leave blank to skip):'
+  );
+  if (!choice) return null;
+  const d = choice.trim().toUpperCase();
+  return ['A','B','C','D'].includes(d) ? d : null;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Lifting program panel
+   ───────────────────────────────────────────────────────────────────────── */
+
+function showLiftDay(day, btn) {
+  document.querySelectorAll('.lift-day-tab').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.lift-session').forEach(s => s.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('lift-' + day).classList.add('active');
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Work block dropdowns init
+   ───────────────────────────────────────────────────────────────────────── */
+
+function initWorkDropdowns() {
+  const startSel = document.getElementById('work-start');
+  const endSel   = document.getElementById('work-end');
+
+  timeOptions().forEach(h => {
+    const opt = new Option(formatH(h), h);
+    startSel.appendChild(opt.cloneNode(true));
+    endSel.appendChild(opt);
+  });
+
+  startSel.value = 9;   // 9 AM default
+  endSel.value   = 17;  // 5 PM default
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Boot
+   ───────────────────────────────────────────────────────────────────────── */
+
+function init() {
+  initWorkDropdowns();
+  selectActivity('work');   // default selection
+  refreshAll();
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
