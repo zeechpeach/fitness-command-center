@@ -695,6 +695,13 @@ function getTodaysProtein() {
 }
 
 function updateNutritionCalories() {
+    // The training-vs-rest comparison is independent of the calorie target, but
+    // it used to be called only at the END of this function, behind both of the
+    // early returns below. With no body goal or no weigh-in it therefore never
+    // ran, and the panel sat on its placeholder ("log at least 3 days") forever
+    // no matter how much food was logged.
+    updateNutritionComparison();
+
     if (!bodyGoalData || !bodyGoalData.bodyGoal) {
         document.getElementById('calorie-target-card').style.display = 'none';
         return;
@@ -748,8 +755,6 @@ function updateNutritionCalories() {
             proteinLeftEl.textContent = '--';
         }
     }
-
-    updateNutritionComparison();
 
     // Update remaining color
     const remainingElement = document.getElementById('calories-remaining');
@@ -1224,10 +1229,26 @@ window.openProgramEditor = function (programId = null) {
     document.body.style.overflow = 'hidden';
 };
 
-// Close program editor
-window.closeProgramEditor = function () {
+// Close program editor.
+//
+// This is an autosave editor: edits are written 1s after you stop typing. Back
+// used to ask "you have unsaved changes?" and then DISCARD them, so tapping
+// Back within a second of the last edit threw away the whole program. Nothing
+// here needs the user's permission - just flush the pending save first.
+window.closeProgramEditor = async function () {
+    const backBtn = document.querySelector('.program-editor-back');
+    if (backBtn) backBtn.disabled = true;
+
+    try {
+        await flushProgramSave();
+    } finally {
+        if (backBtn) backBtn.disabled = false;
+    }
+
+    // Only ask if the write genuinely failed, where closing really would lose
+    // work and the user needs the choice.
     if (unsavedChanges) {
-        if (!confirm('You have unsaved changes. Are you sure you want to close?')) {
+        if (!confirm('Your changes could not be saved. Close anyway and lose them?')) {
             return;
         }
     }
@@ -1400,6 +1421,17 @@ window.editProgramDayName = function (dayNumber) {
     const pill = document.getElementById(`schedule-pill-${dayKey}`);
     if (!pill) return;
 
+    // The pill itself carries onclick="editProgramDayName(n)", so every tap
+    // INSIDE the open editor bubbles back here. Re-rendering then rebuilt the
+    // input from the saved name, which reset whatever was being typed and, on
+    // Save, re-opened the box the user had just closed. Once the editor is
+    // open, leave it alone.
+    if (pill.querySelector('.pill-edit-form')) {
+        const open = document.getElementById(`pill-input-${dayKey}`);
+        if (open) open.focus();
+        return;
+    }
+
     const currentName = getWorkoutTypeForDay(currentEditingProgram, dayKey) || '';
 
     pill.innerHTML = `
@@ -1408,8 +1440,10 @@ window.editProgramDayName = function (dayNumber) {
                    value="${escapeHtml(currentName)}" placeholder="e.g. Push, Legs, Rest"
                    maxlength="40" autocomplete="off">
             <div class="pill-edit-actions">
-                <button type="button" class="pill-edit-save" onclick="commitProgramDayName(${dayNumber})">Save</button>
-                <button type="button" class="pill-edit-cancel" onclick="renderSchedulePills()">Cancel</button>
+                <button type="button" class="pill-edit-save"
+                        onclick="event.stopPropagation(); commitProgramDayName(${dayNumber})">Save</button>
+                <button type="button" class="pill-edit-cancel"
+                        onclick="event.stopPropagation(); cancelProgramDayName()">Cancel</button>
             </div>
             <div class="pill-edit-hint">Name it Rest to make it a rest day.</div>
         </div>`;
@@ -1423,6 +1457,14 @@ window.editProgramDayName = function (dayNumber) {
             if (e.key === 'Escape') { e.preventDefault(); renderSchedulePills(); }
         });
     }
+};
+
+// Cancel has to be reachable from an inline onclick, which resolves names
+// against the GLOBAL scope. renderSchedulePills is module-scoped, so the old
+// `onclick="renderSchedulePills()"` threw ReferenceError and the button did
+// nothing at all.
+window.cancelProgramDayName = function () {
+    renderSchedulePills();
 };
 
 window.commitProgramDayName = function (dayNumber) {
@@ -1514,6 +1556,20 @@ window.removeProgramDay = function (dayNumber) {
     }
 
     const removedType = getWorkoutTypeForDay(currentEditingProgram, `day${dayNumber}`);
+
+    // The "x" sits in the middle of the pill, which at two or three days is
+    // exactly where a thumb lands when aiming at the pill to rename it. This
+    // deleted the day AND its exercise list silently, with no undo. Ask first
+    // whenever there is something real to lose.
+    const removedExercises = (removedType && currentEditingProgram.workouts &&
+        Array.isArray(currentEditingProgram.workouts[removedType]))
+        ? currentEditingProgram.workouts[removedType].length : 0;
+    if (removedType) {
+        const detail = removedExercises
+            ? ` and its ${removedExercises} exercise${removedExercises === 1 ? '' : 's'}`
+            : '';
+        if (!confirm(`Remove Day ${dayNumber} (${removedType})${detail}?`)) return;
+    }
 
     // Re-key the remaining days so they stay day1..dayN with no gaps. A gap
     // would leave getProgramScheduleArray with an undefined slot.
@@ -1955,6 +2011,26 @@ function markUnsavedChanges() {
 // ---------------------------------------------------------------------------
 let programSaveInFlight = false;
 let programSaveQueued = false;
+
+// Write any pending edit NOW instead of waiting out the 1s autosave debounce.
+// Used when leaving the editor, so Back never races the timer.
+async function flushProgramSave() {
+    if (saveTimeout) {
+        clearTimeout(saveTimeout);
+        saveTimeout = null;
+    }
+
+    // Let an in-flight write finish first, so this does not just get parked in
+    // programSaveQueued and then dropped when currentEditingProgram is nulled.
+    // Bounded so a dead connection cannot hang the Back button indefinitely.
+    for (let i = 0; i < 60 && programSaveInFlight; i++) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+    }
+
+    if (unsavedChanges && currentEditingProgram) {
+        await saveProgramToFirestore();
+    }
+}
 
 async function saveProgramToFirestore() {
     if (!currentEditingProgram) return;
@@ -7981,21 +8057,21 @@ function renderWorkout(workoutType = null) {
                                 <input type="number" inputmode="numeric" class="reps-input" placeholder="sec"
                                        aria-label="Seconds for set ${setIndex + 1}"
                                        value="${escapeHtml(set.seconds)}"
-                                       onchange="updateSet(${exerciseIndex}, ${setIndex}, 'seconds', this.value)">
+                                       oninput="updateSet(${exerciseIndex}, ${setIndex}, 'seconds', this.value)">
                                 <span class="set-unit">sec</span>
                                 <input type="text" class="notes-input" placeholder="notes"
                                        value="${escapeHtml(set.notes)}"
-                                       onchange="updateSet(${exerciseIndex}, ${setIndex}, 'notes', this.value)">`;
+                                       oninput="updateSet(${exerciseIndex}, ${setIndex}, 'notes', this.value)">`;
                 } else if (trackingType === 'duration') {
                     fields = `
                                 <input type="number" inputmode="decimal" step="any" class="reps-input" placeholder="min"
                                        aria-label="Minutes for set ${setIndex + 1}"
                                        value="${escapeHtml(set.minutes)}"
-                                       onchange="updateSet(${exerciseIndex}, ${setIndex}, 'minutes', this.value)">
+                                       oninput="updateSet(${exerciseIndex}, ${setIndex}, 'minutes', this.value)">
                                 <span class="set-unit">min</span>
                                 <input type="text" class="notes-input" placeholder="incline, pace, notes"
                                        value="${escapeHtml(set.notes)}"
-                                       onchange="updateSet(${exerciseIndex}, ${setIndex}, 'notes', this.value)">`;
+                                       oninput="updateSet(${exerciseIndex}, ${setIndex}, 'notes', this.value)">`;
                 } else if (trackingType === 'reps') {
                     fields = `
                                 <div class="reps-control-wrapper">
@@ -8004,20 +8080,20 @@ function renderWorkout(workoutType = null) {
                                     <input type="number" inputmode="numeric" class="reps-input" placeholder="reps"
                                            aria-label="Reps for set ${setIndex + 1}"
                                            value="${escapeHtml(set.reps)}"
-                                           onchange="updateSet(${exerciseIndex}, ${setIndex}, 'reps', this.value)">
+                                           oninput="updateSet(${exerciseIndex}, ${setIndex}, 'reps', this.value)">
                                     <button type="button" class="reps-increment-btn" aria-label="One more rep"
                                             onclick="adjustReps(${exerciseIndex}, ${setIndex}, 1); event.stopPropagation();">+</button>
                                 </div>
                                 <span class="set-unit">reps</span>
                                 <input type="text" class="notes-input" placeholder="notes"
                                        value="${escapeHtml(set.notes)}"
-                                       onchange="updateSet(${exerciseIndex}, ${setIndex}, 'notes', this.value)">`;
+                                       oninput="updateSet(${exerciseIndex}, ${setIndex}, 'notes', this.value)">`;
                 } else {
                     fields = `
                                 <input type="number" inputmode="decimal" step="any" class="weight-input" placeholder="lbs"
                                        aria-label="Weight for set ${setIndex + 1}"
                                        value="${escapeHtml(set.weight)}"
-                                       onchange="updateSet(${exerciseIndex}, ${setIndex}, 'weight', this.value)">
+                                       oninput="updateSet(${exerciseIndex}, ${setIndex}, 'weight', this.value)">
                                 <span class="set-unit">&times;</span>
                                 <div class="reps-control-wrapper">
                                     <button type="button" class="reps-increment-btn" aria-label="One fewer rep"
@@ -8025,13 +8101,13 @@ function renderWorkout(workoutType = null) {
                                     <input type="number" inputmode="numeric" class="reps-input" placeholder="reps"
                                            aria-label="Reps for set ${setIndex + 1}"
                                            value="${escapeHtml(set.reps)}"
-                                           onchange="updateSet(${exerciseIndex}, ${setIndex}, 'reps', this.value)">
+                                           oninput="updateSet(${exerciseIndex}, ${setIndex}, 'reps', this.value)">
                                     <button type="button" class="reps-increment-btn" aria-label="One more rep"
                                             onclick="adjustReps(${exerciseIndex}, ${setIndex}, 1); event.stopPropagation();">+</button>
                                 </div>
                                 <input type="text" class="notes-input" placeholder="notes"
                                        value="${escapeHtml(set.notes)}"
-                                       onchange="updateSet(${exerciseIndex}, ${setIndex}, 'notes', this.value)">`;
+                                       oninput="updateSet(${exerciseIndex}, ${setIndex}, 'notes', this.value)">`;
                 }
 
                 html += `
@@ -8057,6 +8133,11 @@ function renderWorkout(workoutType = null) {
 }
 
 // Make functions globally available
+// Bound to `oninput`, not `onchange`, on purpose. `change` only fires when the
+// field loses focus, so a number typed into the last box was still only in the
+// DOM when the phone locked: pagehide wrote a draft without it and the value
+// visibly on screen was gone on return. Writing through on every keystroke
+// costs nothing here - this assigns and re-arms a debounce, it does not render.
 window.updateSet = function (exerciseIndex, setIndex, field, value) {
     currentWorkout[exerciseIndex].sets[setIndex][field] = value;
     scheduleDraftSave();
