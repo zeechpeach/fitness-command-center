@@ -88,6 +88,18 @@ GitHub Pages only serves the site. Apply them with:
 firebase deploy --only firestore:rules
 ```
 
+## Tests
+
+`tests/` holds a browser-driven suite that opens the app at iPhone width, taps
+real buttons, and asserts on what the app would have written to Firestore. It
+never touches the real database. Nothing in that folder is loaded by the app.
+
+```
+node tests/run-all.js
+```
+
+See `tests/README.md` for what each one covers and how to add another.
+
 ## Dependencies
 
 - Firebase 10.12.0 (Firestore + anonymous auth), loaded from gstatic

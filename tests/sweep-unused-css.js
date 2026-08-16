@@ -1,0 +1,12 @@
+const fs=require('fs');
+const R=require('path').resolve(__dirname, '..');
+const css=fs.readFileSync(R+'/src/css/styles.css','utf8');
+const js=fs.readFileSync(R+'/src/js/app.js','utf8');
+const html=fs.readFileSync(R+'/index.html','utf8');
+const used=js+'\n'+html;
+const classes=new Set([...css.matchAll(/\.([a-zA-Z][\w-]*)/g)].map(m=>m[1]));
+const dead=[...classes].filter(c=>!new RegExp(`\\b${c.replace(/-/g,'\\-')}\\b`).test(used));
+console.log(`css classes: ${classes.size}, not referenced in JS/HTML: ${dead.length}`);
+dead.sort().forEach(c=>console.log('  .'+c));
+console.log(`\nRESULT: ${dead.length} failed assertions`);
+if (dead.length) process.exitCode = 1;
