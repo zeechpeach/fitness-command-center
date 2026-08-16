@@ -4801,6 +4801,171 @@ window.deleteLoggedWorkout = async function (workoutId, dateString) {
 // one. The only export function in the codebase dumped the in-progress session
 // and was never wired to anything.
 // ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// Program import
+//
+// The export button had no counterpart, so the only way to get a program in was
+// to type every exercise by hand on a phone. A seven-day program is around 45
+// exercises, which is both slow and the kind of task where a mistyped rep range
+// goes unnoticed for weeks.
+// ---------------------------------------------------------------------------
+
+function validateImportedProgram(raw) {
+    const errors = [];
+    if (!raw || typeof raw !== 'object') return { errors: ['That does not look like program text.'] };
+    if (!raw.name || typeof raw.name !== 'string') errors.push('Missing a program name.');
+    if (!raw.schedule || typeof raw.schedule !== 'object' || Object.keys(raw.schedule).length === 0) {
+        errors.push('Missing the day schedule.');
+    }
+    if (!raw.workouts || typeof raw.workouts !== 'object') errors.push('Missing the exercise lists.');
+    if (errors.length) return { errors };
+
+    // Rebuild rather than trusting the input, so a malformed field cannot reach
+    // Firestore or the scheduler.
+    const schedule = {};
+    Object.keys(raw.schedule)
+        .sort((a, b) => parseInt(a.replace('day', ''), 10) - parseInt(b.replace('day', ''), 10))
+        .forEach((key, idx) => {
+            const value = raw.schedule[key];
+            const type = typeof value === 'string' ? value : (value && value.workoutType) || '';
+            schedule[`day${idx + 1}`] = { workoutType: String(type), customName: String(type) };
+        });
+
+    const workouts = {};
+    Object.entries(raw.workouts).forEach(([type, list]) => {
+        if (!Array.isArray(list)) return;
+        workouts[String(type)] = list
+            .filter(ex => ex && ex.name)
+            .map(ex => {
+                const clean = {
+                    name: String(ex.name).slice(0, 80),
+                    sets: Math.min(Math.max(parseInt(ex.sets, 10) || 1, 1), MAX_EXERCISE_SETS),
+                    reps: String(ex.reps == null ? '' : ex.reps).slice(0, 40) || '1',
+                    trackingType: TRACKING_TYPES[ex.trackingType] ? ex.trackingType : guessTrackingType(ex.name)
+                };
+                if (ex.notes) clean.notes = String(ex.notes).slice(0, 400);
+                return clean;
+            });
+    });
+
+    // Every named day needs a list, even an empty one, or the logger shows the
+    // "no exercises" state with no way to add any.
+    Object.values(schedule).forEach(day => {
+        const type = day.workoutType;
+        if (type && !workouts[type]) workouts[type] = [];
+    });
+
+    const totalExercises = Object.values(workouts).reduce((n, l) => n + l.length, 0);
+    if (totalExercises === 0) errors.push('No exercises found in that text.');
+
+    return {
+        errors,
+        program: { name: String(raw.name).slice(0, 80), schedule, workouts },
+        summary: {
+            days: Object.keys(schedule).length,
+            types: Object.keys(workouts).length,
+            exercises: totalExercises
+        }
+    };
+}
+
+window.openImportProgram = function () {
+    const panel = document.getElementById('import-program-panel');
+    const input = document.getElementById('import-program-input');
+    const result = document.getElementById('import-program-result');
+    if (!panel) return;
+    if (input) input.value = '';
+    if (result) result.textContent = '';
+    panel.classList.add('active');
+};
+
+window.closeImportProgram = function () {
+    const panel = document.getElementById('import-program-panel');
+    if (panel) panel.classList.remove('active');
+};
+
+window.previewImportProgram = function () {
+    const input = document.getElementById('import-program-input');
+    const result = document.getElementById('import-program-result');
+    if (!input || !result) return;
+
+    let parsed;
+    try {
+        parsed = JSON.parse(input.value);
+    } catch (e) {
+        result.innerHTML = '<span style="color: var(--color-error-text);">That text is not complete. Copy the whole block, including the first { and the last }.</span>';
+        return;
+    }
+
+    const check = validateImportedProgram(parsed);
+    if (check.errors.length) {
+        result.innerHTML = '<span style="color: var(--color-error-text);">' +
+            check.errors.map(escapeHtml).join('<br>') + '</span>';
+        return;
+    }
+
+    const dayList = Object.entries(check.program.schedule)
+        .map(([key, d]) => `${key.replace('day', 'Day ')}: ${escapeHtml(d.workoutType)} (${(check.program.workouts[d.workoutType] || []).length})`)
+        .join('<br>');
+
+    result.innerHTML = `
+        <div style="color: var(--color-text-primary); font-weight:600; margin-bottom:0.5rem;">
+            ${escapeHtml(check.program.name)}
+        </div>
+        <div style="margin-bottom:0.75rem;">${check.summary.days} days &middot; ${check.summary.exercises} exercises</div>
+        <div style="font-size:0.8125rem; line-height:1.7;">${dayList}</div>
+        <button type="button" class="btn" style="margin-top:1rem; width:100%;"
+                onclick="confirmImportProgram()">Add this program and make it active</button>`;
+    window._pendingImport = check.program;
+};
+
+window.confirmImportProgram = async function () {
+    const pending = window._pendingImport;
+    if (!pending) return;
+
+    try {
+        const payload = {
+            ...pending,
+            active: true,
+            createdAt: new Date().toISOString(),
+            activatedAt: new Date().toISOString(),
+            exerciseVariations: {}
+        };
+
+        const ref = await addDoc(collection(db, "programs"), payload);
+        const saved = { id: ref.id, ...payload };
+
+        // Importing makes it the active program, so everything else steps down.
+        programs.forEach(other => {
+            if (!other.id || other.id === ref.id || other.active === false) return;
+            other.active = false;
+            updateDoc(doc(db, "programs", other.id), { active: false })
+                .catch(err => console.error('Could not deactivate program:', err));
+        });
+
+        programs.push(saved);
+        activeProgram = saved;
+        window._pendingImport = null;
+
+        invalidateScheduleTimeline();
+        await loadWorkoutsFromFirebase();
+        refreshStartupCache();
+
+        currentDay = getScheduleDayKeyForToday() || currentDay;
+        renderWorkoutDaySelector();
+        initializeWorkout();
+        renderPrograms();
+
+        window.closeImportProgram();
+        closeSettings();
+        showToast(`"${saved.name}" imported and set as your active program.`, 'success');
+    } catch (e) {
+        console.error('Import failed:', e);
+        const result = document.getElementById('import-program-result');
+        if (result) result.innerHTML = '<span style="color: var(--color-error-text);">Could not save. Check your connection and try again.</span>';
+    }
+};
+
 window.exportAllData = async function () {
     try {
         showToast('Gathering your data...', 'info');

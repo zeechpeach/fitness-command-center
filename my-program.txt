@@ -1,0 +1,353 @@
+{
+  "name": "Chain Rebuild (Physique First)",
+  "schedule": {
+    "day1": "Upper A",
+    "day2": "Lower A",
+    "day3": "Restoration",
+    "day4": "Upper B",
+    "day5": "Lower B",
+    "day6": "Skill and Arms",
+    "day7": "Walk"
+  },
+  "workouts": {
+    "Upper A": [
+      {
+        "name": "Wall Handstand Hold",
+        "sets": 3,
+        "reps": "30-45 sec",
+        "trackingType": "time",
+        "notes": "Chest to wall, not back to wall. Wrist circles first."
+      },
+      {
+        "name": "Incline Dumbbell Press",
+        "sets": 3,
+        "reps": "6-10",
+        "trackingType": "weight_reps"
+      },
+      {
+        "name": "Weighted Dip",
+        "sets": 3,
+        "reps": "6-10",
+        "trackingType": "weight_reps",
+        "notes": "Stop where the shoulder stays comfortable. Do not chase depth."
+      },
+      {
+        "name": "Cable Fly",
+        "sets": 2,
+        "reps": "12-15",
+        "trackingType": "weight_reps"
+      },
+      {
+        "name": "Cable Lateral Raise",
+        "sets": 3,
+        "reps": "12-15",
+        "trackingType": "weight_reps"
+      },
+      {
+        "name": "Overhead Cable Triceps Extension",
+        "sets": 2,
+        "reps": "12-15",
+        "trackingType": "weight_reps",
+        "notes": "Superset with lateral raises when short on time."
+      },
+      {
+        "name": "Hollow Body Hold",
+        "sets": 3,
+        "reps": "20-30 sec",
+        "trackingType": "time",
+        "notes": "Trains posterior tilt under tension. This is your anterior tilt work."
+      }
+    ],
+    "Lower A": [
+      {
+        "name": "Heel-Elevated Goblet Squat",
+        "sets": 3,
+        "reps": "8-12",
+        "trackingType": "weight_reps",
+        "notes": "Stop above the point where the pelvis tucks under."
+      },
+      {
+        "name": "Leg Press",
+        "sets": 3,
+        "reps": "10-12",
+        "trackingType": "weight_reps",
+        "notes": "Feet slightly higher and wider to reduce hip flexion depth."
+      },
+      {
+        "name": "Seated Leg Curl",
+        "sets": 3,
+        "reps": "10-12",
+        "trackingType": "weight_reps"
+      },
+      {
+        "name": "Standing Calf Raise",
+        "sets": 4,
+        "reps": "10-12",
+        "trackingType": "weight_reps",
+        "notes": "Three second lowering phase."
+      },
+      {
+        "name": "Tibialis Raise",
+        "sets": 3,
+        "reps": "15-20",
+        "trackingType": "reps"
+      },
+      {
+        "name": "Side-Lying Hip Abduction",
+        "sets": 3,
+        "reps": "15-20 per side",
+        "trackingType": "reps",
+        "notes": "Leg goes up and slightly BACK. Extra set on the left."
+      },
+      {
+        "name": "Side Plank",
+        "sets": 3,
+        "reps": "30 sec per side",
+        "trackingType": "time"
+      }
+    ],
+    "Restoration": [
+      {
+        "name": "Incline Treadmill Walk",
+        "sets": 1,
+        "reps": "20-30 min",
+        "trackingType": "duration",
+        "notes": "8 to 12 percent incline."
+      },
+      {
+        "name": "90/90 Hip Transitions",
+        "sets": 2,
+        "reps": "8 per side",
+        "trackingType": "reps"
+      },
+      {
+        "name": "Hip Controlled Articular Rotations",
+        "sets": 1,
+        "reps": "3 slow circles per side",
+        "trackingType": "checkoff",
+        "notes": "Edge of comfort, never into pinching."
+      },
+      {
+        "name": "Thoracic Extension Over Foam Roller",
+        "sets": 2,
+        "reps": "8",
+        "trackingType": "checkoff"
+      },
+      {
+        "name": "Band Pull-Aparts",
+        "sets": 2,
+        "reps": "20",
+        "trackingType": "checkoff"
+      }
+    ],
+    "Upper B": [
+      {
+        "name": "Scapular Pull-Up",
+        "sets": 3,
+        "reps": "8-10",
+        "trackingType": "reps",
+        "notes": "Front lever ladder, level 2. Arms stay locked straight."
+      },
+      {
+        "name": "Straight-Arm Cable Pulldown",
+        "sets": 3,
+        "reps": "12-15",
+        "trackingType": "weight_reps",
+        "notes": "The strength that builds the lever. Superset with scapular pull-ups."
+      },
+      {
+        "name": "Weighted Pull-Up",
+        "sets": 4,
+        "reps": "5-8",
+        "trackingType": "weight_reps",
+        "notes": "Add weight before you add reps."
+      },
+      {
+        "name": "Seated Dumbbell Overhead Press",
+        "sets": 3,
+        "reps": "6-10",
+        "trackingType": "weight_reps",
+        "notes": "Seated with back support."
+      },
+      {
+        "name": "Chest-Supported Row",
+        "sets": 3,
+        "reps": "10-12",
+        "trackingType": "weight_reps",
+        "notes": "Chest supported by design. A bent-over row is a lower back exercise."
+      },
+      {
+        "name": "Face Pull",
+        "sets": 2,
+        "reps": "15",
+        "trackingType": "weight_reps"
+      },
+      {
+        "name": "Incline Dumbbell Curl",
+        "sets": 3,
+        "reps": "10-12",
+        "trackingType": "weight_reps"
+      },
+      {
+        "name": "Ab Wheel From Knees",
+        "sets": 3,
+        "reps": "8-12",
+        "trackingType": "reps",
+        "notes": "Stop the moment the lower back arches."
+      }
+    ],
+    "Lower B": [
+      {
+        "name": "45-Degree Back Extension",
+        "sets": 3,
+        "reps": "12-15",
+        "trackingType": "weight_reps",
+        "notes": "Glute biased. Round the upper back slightly, tuck the pelvis at the top."
+      },
+      {
+        "name": "Barbell Hip Thrust",
+        "sets": 3,
+        "reps": "8-12",
+        "trackingType": "weight_reps",
+        "notes": "Do not overextend at the top."
+      },
+      {
+        "name": "Trap Bar Deadlift From Blocks",
+        "sets": 3,
+        "reps": "6-8",
+        "trackingType": "weight_reps",
+        "notes": "Add in Block 2 only if the back stays quiet."
+      },
+      {
+        "name": "Split Squat, Front Foot Elevated",
+        "sets": 3,
+        "reps": "8-10 per leg",
+        "trackingType": "weight_reps",
+        "notes": "Run the left side first and match the right to it."
+      },
+      {
+        "name": "Seated Calf Raise",
+        "sets": 4,
+        "reps": "12-15",
+        "trackingType": "weight_reps"
+      },
+      {
+        "name": "Single-Leg Balance With Reach",
+        "sets": 3,
+        "reps": "5 reaches per direction",
+        "trackingType": "reps",
+        "notes": "Forward, then diagonally back, each side."
+      },
+      {
+        "name": "Pallof Press",
+        "sets": 3,
+        "reps": "10 per side",
+        "trackingType": "weight_reps"
+      }
+    ],
+    "Skill and Arms": [
+      {
+        "name": "Wall Handstand Practice",
+        "sets": 1,
+        "reps": "10 min",
+        "trackingType": "duration",
+        "notes": "Many short attempts beat a few long grinding ones."
+      },
+      {
+        "name": "Tuck L-Sit",
+        "sets": 4,
+        "reps": "10-20 sec",
+        "trackingType": "time",
+        "notes": "Watch the left hip. Swap to hanging tuck-ups if it pinches."
+      },
+      {
+        "name": "Scapular Pull-Up",
+        "sets": 3,
+        "reps": "8",
+        "trackingType": "reps"
+      },
+      {
+        "name": "Pseudo Planche Lean",
+        "sets": 3,
+        "reps": "15-20 sec",
+        "trackingType": "time"
+      },
+      {
+        "name": "Cable Lateral Raise",
+        "sets": 3,
+        "reps": "15",
+        "trackingType": "weight_reps"
+      },
+      {
+        "name": "Dumbbell Curl",
+        "sets": 3,
+        "reps": "12",
+        "trackingType": "weight_reps"
+      },
+      {
+        "name": "Triceps Pushdown",
+        "sets": 3,
+        "reps": "12",
+        "trackingType": "weight_reps"
+      },
+      {
+        "name": "Dead Hang",
+        "sets": 2,
+        "reps": "as long as grip allows",
+        "trackingType": "time",
+        "notes": "Grip, shoulder health and decompression in one."
+      }
+    ],
+    "Walk": [
+      {
+        "name": "Easy Outdoor Walk",
+        "sets": 1,
+        "reps": "20-30 min",
+        "trackingType": "duration",
+        "notes": "Conversational pace. Barefoot on grass if your feet feel good."
+      }
+    ],
+    "Tournament Circuit": [
+      {
+        "name": "Push-Ups",
+        "sets": 1,
+        "reps": "10 per round",
+        "trackingType": "reps",
+        "notes": "Hands on a chair the moment form breaks down."
+      },
+      {
+        "name": "Reverse Lunge",
+        "sets": 1,
+        "reps": "8 per leg per round",
+        "trackingType": "reps",
+        "notes": "Step BACKWARD, never forward."
+      },
+      {
+        "name": "Single-Leg Glute Bridge",
+        "sets": 1,
+        "reps": "10 per side per round",
+        "trackingType": "reps"
+      },
+      {
+        "name": "Prone Swimmers",
+        "sets": 1,
+        "reps": "12 per round",
+        "trackingType": "reps",
+        "notes": "The antidote to twelve hours hunched over a strip."
+      },
+      {
+        "name": "Hollow Body Hold",
+        "sets": 1,
+        "reps": "20 sec per round",
+        "trackingType": "time"
+      },
+      {
+        "name": "Rounds Completed",
+        "sets": 1,
+        "reps": "as many as pace allows",
+        "trackingType": "reps",
+        "notes": "20 minute AMRAP. Expect five to seven rounds. Log the count here."
+      }
+    ]
+  }
+}

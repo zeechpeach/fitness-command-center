@@ -1065,7 +1065,29 @@
                     Worth doing every few months.
                 </p>
                 <button class="btn" onclick="exportAllData()" style="width: 100%;">Export all data</button>
+                <button class="btn" onclick="openImportProgram()" style="width: 100%; margin-top: 0.5rem;">Import a
+                    program</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Import program panel -->
+    <div class="exercise-panel" id="import-program-panel">
+        <div class="exercise-panel-header">
+            <h3>Import a program</h3>
+            <button class="exercise-panel-close" onclick="closeImportProgram()">&times;</button>
+        </div>
+        <div class="exercise-panel-content">
+            <div class="form-group">
+                <label for="import-program-input">Paste your program text</label>
+                <textarea id="import-program-input" class="form-textarea" rows="8"
+                    placeholder="Paste the whole block, starting with { and ending with }"></textarea>
+                <div class="form-hint">This adds a new program and makes it active. Nothing you already have is
+                    deleted.</div>
+            </div>
+            <button type="button" class="btn" style="width: 100%;" onclick="previewImportProgram()">Check it</button>
+            <div id="import-program-result"
+                style="margin-top: 1rem; color: var(--color-text-secondary); font-size: 0.9375rem;"></div>
         </div>
     </div>
 
