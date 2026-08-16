@@ -204,6 +204,26 @@
             transform: scale(1.02);
         }
 
+        /* Sessions the program defines but never schedules. Dashed, so they
+           read as "available to train" rather than as another numbered day. */
+        .day-btn-substitute {
+            border-style: dashed;
+            border-color: var(--color-accent-secondary);
+            color: var(--color-text-secondary);
+        }
+
+        .day-btn-substitute::before {
+            content: '+';
+            margin-right: 0.4rem;
+            font-weight: 500;
+            opacity: 0.7;
+        }
+
+        .day-btn-substitute.active {
+            border-style: solid;
+            color: var(--color-surface);
+        }
+
         .intelligence-panel {
             background: var(--color-surface);
             border: 1px solid var(--color-border);
@@ -339,12 +359,6 @@
             font-weight: 400;
         }
 
-        .progression-indicator {
-            color: var(--color-success);
-            font-size: 0.8125rem;
-            font-weight: 400;
-            margin-bottom: 0.25rem;
-        }
 
         .previous-session {
             background: var(--color-bg);
@@ -682,9 +696,6 @@
             margin-bottom: 2rem;
         }
 
-        .insights-list {
-            list-style: none;
-        }
 
         .insight-item {
             padding: 0.75rem;
@@ -697,15 +708,7 @@
             box-shadow: var(--shadow-sm);
         }
 
-        .plateau-alert {
-            border-left-color: var(--color-warning);
-            background: rgba(212, 168, 75, 0.1);
-        }
 
-        .progression-highlight {
-            border-left-color: var(--color-success);
-            background: rgba(93, 138, 102, 0.1);
-        }
 
         .stretch-checkbox {
             width: 1.25rem;
@@ -1072,29 +1075,7 @@
             opacity: 1;
         }
 
-        .quick-add-food-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.75rem 1.25rem;
-            background: rgba(255, 255, 255, 0.65);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            color: var(--color-success);
-            border: 1px solid rgba(255, 255, 255, 0.4);
-            border-radius: 100px;
-            font-weight: 400;
-            font-size: 0.9375rem;
-            cursor: pointer;
-            transition: all 0.15s ease-out;
-            min-height: 44px;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
-        }
 
-        .quick-add-food-btn:hover {
-            background: rgba(255, 255, 255, 0.85);
-            transform: scale(1.02);
-        }
 
 
         .food-input-row {
@@ -1242,91 +1223,6 @@
             outline: none;
             border-color: var(--color-accent-primary);
             box-shadow: var(--focus-shadow);
-        }
-
-        .photo-upload-card {
-            background: rgba(255, 255, 255, 0.65);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.4);
-            border-radius: 20px;
-            padding: 1.5rem;
-            margin-bottom: 1rem;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
-        }
-
-        .photo-upload-area {
-            border: 2px dashed rgba(93, 138, 102, 0.4);
-            border-radius: 16px;
-            padding: 2rem;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.15s ease-out;
-        }
-
-        .photo-upload-area:hover {
-            border-color: var(--color-success);
-            background: rgba(93, 138, 102, 0.08);
-        }
-
-        .photo-gallery {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-            gap: 1rem;
-            margin-top: 1rem;
-        }
-
-        .photo-item {
-            position: relative;
-            aspect-ratio: 1;
-            border-radius: 12px;
-            overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.4);
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-        }
-
-        .photo-item img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .photo-date {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: rgba(0, 0, 0, 0.7);
-            padding: 0.25rem;
-            font-size: 0.7rem;
-            color: white;
-            text-align: center;
-        }
-
-        .btn-delete-photo {
-            position: absolute;
-            top: 0.5rem;
-            right: 0.5rem;
-            padding: 0.5rem;
-            min-width: 36px;
-            min-height: 36px;
-            background: rgba(244, 67, 54, 0.9);
-            color: white;
-            border: none;
-            border-radius: 100px;
-            cursor: pointer;
-            font-size: 1rem;
-            transition: all 0.15s ease-out;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 10;
-        }
-
-        .btn-delete-photo:hover {
-            background: rgba(244, 67, 54, 1);
-            transform: scale(1.05);
-            transform: scale(1.1);
         }
 
         /* Body Goal Styles */
@@ -1645,14 +1541,6 @@
             margin-bottom: 0.5rem;
         }
 
-        .saved-food-macros {
-            color: var(--color-text-secondary);
-            font-size: 0.75rem;
-            display: grid;
-            grid-template-columns: repeat(4, auto);
-            gap: 1rem;
-            margin-top: 0.5rem;
-        }
 
         .saved-food-actions {
             display: flex;
@@ -2132,188 +2020,6 @@
         }
 
         /* Alternative Exercise History Styles */
-        .alt-exercise-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            padding: 1rem;
-        }
-
-        .alt-exercise-modal.active {
-            display: flex;
-        }
-
-        .alt-exercise-modal-content {
-            background: var(--color-surface);
-            border: 1px solid var(--color-border);
-            border-radius: var(--radius-xl);
-            padding: 2rem;
-            max-width: 600px;
-            width: 100%;
-            max-height: 80vh;
-            overflow-y: auto;
-            box-shadow: var(--shadow-lg);
-        }
-
-        .alt-exercise-modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1.5rem;
-        }
-
-        .alt-exercise-modal-title {
-            font-size: 1.5rem;
-            font-weight: 600;
-            color: var(--color-text-primary);
-        }
-
-        .alt-exercise-close-btn {
-            background: rgba(196, 115, 109, 0.15);
-            border: 1px solid rgba(196, 115, 109, 0.3);
-            color: var(--color-error);
-            padding: 0.5rem 1rem;
-            border-radius: var(--radius-sm);
-            cursor: pointer;
-            font-weight: 500;
-            transition: var(--transition-base);
-        }
-
-        .alt-exercise-close-btn:hover {
-            background: rgba(196, 115, 109, 0.25);
-        }
-
-        .alt-exercise-input-section {
-            margin-bottom: 1.5rem;
-        }
-
-        .alt-exercise-input-label {
-            color: var(--color-text-secondary);
-            font-size: 0.9rem;
-            font-weight: 500;
-            margin-bottom: 0.5rem;
-            display: block;
-        }
-
-        .alt-exercise-name-input {
-            width: 100%;
-            padding: 0.75rem;
-            background: var(--color-bg);
-            border: 1px solid var(--color-border);
-            border-radius: var(--radius-sm);
-            color: var(--color-text-primary);
-            font-size: 1rem;
-        }
-
-        .alt-exercise-name-input:focus {
-            outline: none;
-            border-color: var(--color-accent-primary);
-            box-shadow: var(--focus-shadow);
-        }
-
-        .alt-exercise-history-section {
-            margin-top: 1.5rem;
-        }
-
-        .alt-exercise-history-title {
-            color: var(--color-text-secondary);
-            font-size: 0.85rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin-bottom: 0.75rem;
-        }
-
-        .alt-exercise-history-list {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-            max-height: 300px;
-            overflow-y: auto;
-        }
-
-        .alt-exercise-history-item {
-            background: var(--color-bg);
-            border: 1px solid var(--color-border);
-            border-radius: var(--radius-sm);
-            padding: 0.75rem;
-            cursor: pointer;
-            transition: var(--transition-base);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .alt-exercise-history-item:hover {
-            background: var(--color-surface);
-            border-color: var(--color-accent-secondary);
-            transform: translateX(4px);
-        }
-
-        .alt-exercise-history-item-name {
-            font-weight: 500;
-            color: var(--color-text-primary);
-            font-size: 1rem;
-        }
-
-        .alt-exercise-history-item-meta {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            gap: 0.25rem;
-        }
-
-        .alt-exercise-history-item-date {
-            font-size: 0.75rem;
-            color: var(--color-text-secondary);
-        }
-
-        .alt-exercise-history-item-count {
-            font-size: 0.7rem;
-            color: var(--color-accent-primary);
-            background: rgba(168, 181, 160, 0.15);
-            padding: 0.125rem 0.5rem;
-            border-radius: var(--radius-sm);
-        }
-
-        .alt-exercise-empty-state {
-            text-align: center;
-            padding: 2rem;
-            color: var(--color-text-secondary);
-            font-style: italic;
-        }
-
-        .alt-exercise-confirm-btn {
-            width: 100%;
-            padding: 0.875rem;
-            background: var(--color-accent-primary);
-            color: var(--color-surface);
-            border: none;
-            border-radius: var(--radius-md);
-            font-weight: 600;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: var(--transition-base);
-            margin-top: 1rem;
-        }
-
-        .alt-exercise-confirm-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-md);
-        }
-
-        .alt-exercise-confirm-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
         .substitution-tag {
             display: inline-block;
             background: rgba(168, 181, 160, 0.15);
@@ -2842,12 +2548,6 @@
             border-color: var(--color-accent-secondary);
         }
 
-        .exercise-drag-handle {
-            color: var(--color-text-secondary);
-            cursor: grab;
-            font-size: 1.25rem;
-            line-height: 1;
-        }
 
         .exercise-info {
             flex: 1;
@@ -3081,36 +2781,6 @@
             transform: scale(1.02);
         }
 
-        /* Workout Type Selector (Dropdown alternative) */
-        .workout-type-selector {
-            position: absolute;
-            background: var(--color-surface);
-            border: 1px solid var(--color-border);
-            border-radius: var(--radius-md);
-            box-shadow: var(--shadow-lg);
-            padding: 0.5rem;
-            z-index: 100;
-            display: none;
-            min-width: 150px;
-        }
-
-        .workout-type-selector.active {
-            display: block;
-        }
-
-        .workout-type-option {
-            padding: 0.75rem 1rem;
-            border-radius: var(--radius-md);
-            cursor: pointer;
-            transition: var(--transition-base);
-            font-size: 0.9375rem;
-            color: var(--color-text-primary);
-        }
-
-        .workout-type-option:hover {
-            background: var(--color-bg);
-            color: var(--color-accent-primary);
-        }
 
         /* Mobile Responsiveness */
         @media (max-width: 768px) {
@@ -3423,11 +3093,6 @@
 
             .weight-input-field {
                 width: 100%;
-            }
-
-            /* Ensure photo gallery is responsive */
-            .photo-gallery {
-                grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
             }
 
             /* Mobile-optimized meal cards */
