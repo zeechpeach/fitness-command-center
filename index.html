@@ -9,12 +9,28 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://firestore.googleapis.com">
+    <link rel="preconnect" href="https://identitytoolkit.googleapis.com">
     <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js" defer></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"
-        defer></script>
+
+    <!-- Fetch the three Firebase modules in parallel. Without these the browser
+         discovers each import only after parsing the previous one, turning
+         startup into a three-request waterfall on the critical path. -->
+    <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js" crossorigin>
+    <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js" crossorigin>
+    <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js" crossorigin>
+
     <link rel="stylesheet" href="src/css/styles.css">
+
+    <!-- Inter is third in the font stack, behind the system font every Apple
+         device already uses, so it must never block the first paint. -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&display=swap" rel="stylesheet"
+        media="print" onload="this.media='all'">
+    <noscript>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+    </noscript>
+
+    <!-- Chart.js is loaded on demand by ensureChartJs() the first time a chart
+         is drawn, which keeps ~260KB off every page load. -->
 </head>
 
 <body>
@@ -36,7 +52,6 @@
             <div class="nav-tab" id="body-metrics-tab-btn">Body</div>
             <div class="nav-tab" id="analytics-tab-btn">Analytics</div>
             <div class="nav-tab" id="progress-tab-btn">Progress</div>
-            <div class="nav-tab" id="intelligence-tab-btn">Insights</div>
         </div>
 
         <!-- Travel Mode Banner -->
@@ -62,6 +77,46 @@
             <div class="workout-day-selector" id="workout-day-selector">
                 <!-- Dynamic buttons rendered by renderWorkoutDaySelector() -->
             </div>
+
+            <!-- MORNING FOUNDATION PRIMER -->
+            <details class="routine-panel routine-morning">
+                <summary class="routine-summary">
+                    <span class="routine-title">Morning foundation primer</span>
+                    <span class="routine-meta">8 min &middot; every day, workout or not</span>
+                    <span class="routine-status" id="routine-status-morning"></span>
+                    <button type="button" class="routine-done-btn" id="routine-done-morning"
+                        aria-pressed="false" onclick="toggleRoutineDone('morning', event)">Mark done</button>
+                </summary>
+                <div class="routine-body">
+                    <p class="routine-intro">Feet, ankles, hips and pelvis. This is the block that changes the next
+                        decade, and it is the one you will be tempted to skip, so it runs before anything else while you
+                        are fresh. If time is short, cut the last exercise of the session instead of cutting this.</p>
+                    <ol class="routine-list">
+                        <li><strong>Arch doming (short foot)</strong> &mdash; 2 &times; 10 per foot, 5 second holds.
+                            <span class="routine-why">Lift the arch without curling the toes.</span>
+                        </li>
+                        <li><strong>Big toe press and toe spread</strong> &mdash; 2 &times; 10 per foot.
+                            <span class="routine-why">The big toe is what drives the arch upward.</span>
+                        </li>
+                        <li><strong>Knee-to-wall ankle mobilization</strong> &mdash; 2 &times; 10 per side.
+                            <span class="routine-why">Recovers the forward shin travel the sprains took. This is the
+                                gate on squat depth.</span>
+                        </li>
+                        <li><strong>Single-leg balance</strong> &mdash; 3 &times; 30 sec per side.
+                            <span class="routine-why">Progress eyes open, then eyes closed, then on a folded towel.
+                                Highest-yield item for repeatedly sprained ankles.</span>
+                        </li>
+                        <li><strong>90/90 breathing with a slight posterior tilt</strong> &mdash; 5 slow breaths.
+                            <span class="routine-why">Ribs down, pelvis under you. The control side of the anterior
+                                tilt.</span>
+                        </li>
+                        <li><strong>Glute bridge, 3 second hold</strong> &mdash; 10 reps.
+                            <span class="routine-why">Wakes the glutes so they contribute today instead of leaving the
+                                work to your lower back.</span>
+                        </li>
+                    </ol>
+                </div>
+            </details>
 
             <div class="workout-controls"
                 style="display: flex; gap: 1rem; margin-bottom: 1.5rem; align-items: center; flex-wrap: wrap;">
@@ -144,7 +199,57 @@
                 </div>
             </div>
 
+            <p id="session-save-note"
+                style="text-align:center; color: var(--color-text-secondary); font-size: 0.875rem; margin: 0 0 0.5rem;">
+                Your sets save as you go. Leave and come back any time; only tap below when the session is finished.
+            </p>
             <button class="btn-complete" id="complete-workout-btn">Complete Session</button>
+
+            <!-- PRE-BED ROUTINE -->
+            <details class="routine-panel routine-evening">
+                <summary class="routine-summary">
+                    <span class="routine-title">Pre-bed routine</span>
+                    <span class="routine-meta">10 min &middot; last thing before sleep</span>
+                    <span class="routine-status" id="routine-status-evening"></span>
+                    <button type="button" class="routine-done-btn" id="routine-done-evening"
+                        aria-pressed="false" onclick="toggleRoutineDone('evening', event)">Mark done</button>
+                </summary>
+                <div class="routine-body">
+                    <p class="routine-intro">Decompress the spine, lengthen what training shortened, and downshift the
+                        nervous system so you fall asleep faster. Evening is the right time for the long holds, because
+                        they would blunt your output if you did them before lifting. Keep the lights low and breathe
+                        through your nose the whole way through.</p>
+                    <ol class="routine-list">
+                        <li><strong>Roll the arch on a ball</strong> &mdash; 60 sec per foot.
+                            <span class="routine-why">Flat feet spend all day under load. This is where they get
+                                attention.</span>
+                        </li>
+                        <li><strong>Calf stretch on a step</strong> &mdash; 45 sec per side, straight knee then bent
+                            knee.
+                            <span class="routine-why">Bent knee reaches the deeper calf muscle the straight-leg version
+                                misses.</span>
+                        </li>
+                        <li><strong>Half-kneeling hip flexor stretch</strong> &mdash; 60 sec per side, glute squeezed
+                            and ribs down.
+                            <span class="routine-why">This supports the strength work rather than replacing it. Without
+                                the glute squeeze you are arching your lower back instead of stretching the hip.</span>
+                        </li>
+                        <li><strong>Supine figure-4 glute stretch</strong> &mdash; 60 sec per side.
+                            <span class="routine-why">Ease into the left side and back off immediately if you feel
+                                pinching at the front of the hip.</span>
+                        </li>
+                        <li><strong>Constructive rest</strong> &mdash; 10 slow breaths, on your back, knees bent, feet
+                            flat.
+                            <span class="routine-why">Lets the lower back and hip flexors let go without you stretching
+                                anything.</span>
+                        </li>
+                        <li><strong>Legs up the wall</strong> &mdash; 3 to 5 min, inhale 4 and exhale 6.
+                            <span class="routine-why">Decompresses the spine and shifts you toward the parasympathetic
+                                side before you get into bed.</span>
+                        </li>
+                    </ol>
+                </div>
+            </details>
         </div>
 
         <!-- CALENDAR TAB -->
@@ -324,9 +429,28 @@
                                 <div class="calorie-label">Remaining</div>
                             </div>
                         </div>
+                        <div class="calorie-breakdown" style="margin-top: 0.75rem;">
+                            <div class="calorie-item">
+                                <div class="calorie-value" id="protein-target">--</div>
+                                <div class="calorie-label">Protein Target</div>
+                            </div>
+                            <div class="calorie-item">
+                                <div class="calorie-value" id="protein-remaining">--</div>
+                                <div class="calorie-label">Protein Left</div>
+                            </div>
+                        </div>
                         <div
                             style="text-align: center; margin-top: 1rem; color: var(--color-text-secondary); font-size: 0.85rem;">
-                            <span id="calorie-update-notice">Calories update automatically when you log weight</span>
+                            <span id="calorie-update-notice">Targets follow your 7-day average weight</span>
+                        </div>
+                    </div>
+
+                    <div class="analytics-card" style="margin-top: 1rem;">
+                        <h3 class="analytics-title">Training Days vs Rest Days</h3>
+                        <div style="color: var(--color-text-secondary); font-size: 0.9rem;">
+                            <div id="nutrition-comparison" style="margin-top: 0.5rem;">
+                                Log nutrition for at least 3 days to see the comparison.
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -436,68 +560,18 @@
 
         <!-- ANALYTICS TAB -->
         <div id="analytics-content" class="tab-content">
-            <!-- Row 1: Main Stats and Volume Cards -->
+            <!-- Row 1: Headline numbers -->
             <div class="analytics-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
-                <div class="analytics-card">
-                    <h3 class="analytics-title">Personal Records</h3>
-                    <div class="stat-value" id="pr-count">0</div>
-                    <div class="stat-label">PRs set this week</div>
-                </div>
-
                 <div class="analytics-card">
                     <h3 class="analytics-title">Workout Streak</h3>
                     <div class="stat-value" id="workout-streak">0</div>
-                    <div class="stat-label">consecutive workouts</div>
+                    <div class="stat-label">consecutive scheduled sessions</div>
                 </div>
 
                 <div class="analytics-card">
-                    <h3 class="analytics-title">Upper Volume</h3>
-                    <div class="stat-value" id="upper-record">0</div>
-                    <div class="stat-label">Record: <span id="upper-record-lbs">0</span> lbs</div>
-                    <div class="stat-label">Avg: <span id="upper-avg">0</span> lbs | <span id="upper-trend"></span>
-                    </div>
-                    <div class="stat-label" style="font-size: 0.8rem; margin-top: 0.5rem;"><span id="upper-mom"></span>
-                    </div>
-                </div>
-
-                <div class="analytics-card">
-                    <h3 class="analytics-title">Lower Volume</h3>
-                    <div class="stat-value" id="lower-record">0</div>
-                    <div class="stat-label">Record: <span id="lower-record-lbs">0</span> lbs</div>
-                    <div class="stat-label">Avg: <span id="lower-avg">0</span> lbs | <span id="lower-trend"></span>
-                    </div>
-                    <div class="stat-label" style="font-size: 0.8rem; margin-top: 0.5rem;"><span id="lower-mom"></span>
-                    </div>
-                </div>
-
-                <div class="analytics-card">
-                    <h3 class="analytics-title">Push Volume</h3>
-                    <div class="stat-value" id="push-record">0</div>
-                    <div class="stat-label">Record: <span id="push-record-lbs">0</span> lbs</div>
-                    <div class="stat-label">Avg: <span id="push-avg">0</span> lbs | <span id="push-trend"></span></div>
-                    <div class="stat-label" style="font-size: 0.8rem; margin-top: 0.5rem;"><span id="push-mom"></span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Row 2: More Volume Cards -->
-            <div class="analytics-grid" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
-                <div class="analytics-card">
-                    <h3 class="analytics-title">Pull Volume</h3>
-                    <div class="stat-value" id="pull-record">0</div>
-                    <div class="stat-label">Record: <span id="pull-record-lbs">0</span> lbs</div>
-                    <div class="stat-label">Avg: <span id="pull-avg">0</span> lbs | <span id="pull-trend"></span></div>
-                    <div class="stat-label" style="font-size: 0.8rem; margin-top: 0.5rem;"><span id="pull-mom"></span>
-                    </div>
-                </div>
-
-                <div class="analytics-card">
-                    <h3 class="analytics-title">Legs Volume</h3>
-                    <div class="stat-value" id="legs-record">0</div>
-                    <div class="stat-label">Record: <span id="legs-record-lbs">0</span> lbs</div>
-                    <div class="stat-label">Avg: <span id="legs-avg">0</span> lbs | <span id="legs-trend"></span></div>
-                    <div class="stat-label" style="font-size: 0.8rem; margin-top: 0.5rem;"><span id="legs-mom"></span>
-                    </div>
+                    <h3 class="analytics-title">Sessions This Week</h3>
+                    <div class="stat-value" id="sessions-this-week">0</div>
+                    <div class="stat-label">in the last 7 days</div>
                 </div>
 
                 <div class="analytics-card">
@@ -508,16 +582,39 @@
                 </div>
             </div>
 
-            <!-- Row 3: Charts -->
+            <!-- Row 2: Weekly hard sets per muscle group -->
+            <div class="analytics-card">
+                <h3 class="analytics-title">Hard Sets This Week</h3>
+                <div class="stat-label" style="margin-bottom: 0.75rem;">
+                    Counts every working set, including bodyweight and skill work that volume in pounds cannot see.
+                    Roughly 10 to 20 sets per muscle group per week drives growth.
+                </div>
+                <div id="weekly-sets-content" style="color: var(--color-text-secondary); font-size: 0.9rem;">
+                    <p>Log a few sessions to see your weekly set counts.</p>
+                </div>
+            </div>
+
+            <!-- Row 3: Estimated 1RM -->
+            <div class="analytics-card">
+                <h3 class="analytics-title">Estimated One-Rep Max</h3>
+                <div class="stat-label" style="margin-bottom: 0.75rem;">
+                    Estimated from your best set using the Epley formula. Unlike a weight-only PR, this counts extra
+                    reps at the same load as progress, which is how most progress actually happens.
+                </div>
+                <div id="e1rm-content" style="color: var(--color-text-secondary); font-size: 0.9rem;">
+                    <p>Log a few sessions to see your estimated maxes.</p>
+                </div>
+            </div>
+
+            <!-- Row 4: Charts -->
             <div class="chart-grid">
                 <div class="analytics-card">
                     <h3 class="analytics-title">PR Timeline</h3>
                     <div style="margin-bottom: 1rem;">
                         <label for="exercise-selector"
-                            style="color: var(--color-text-secondary); font-size: 0.9375rem; margin-right: 0.5rem;">Exercise:</label>
+                            style="color: var(--color-text-secondary); font-size: 0.9rem; display: block; margin-bottom: 0.5rem;">Exercise</label>
                         <select id="exercise-selector"
-                            style="padding: 0.5rem; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); color: var(--color-text-primary); font-size: 0.9375rem;">
-                            <option value="">Select an exercise</option>
+                            style="width: 100%; padding: 0.5rem; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-sm); color: var(--color-text-primary); font-family: inherit;">
                         </select>
                     </div>
                     <div class="chart-container">
@@ -529,52 +626,34 @@
                     <h3 class="analytics-title">Session Comparison</h3>
                     <div style="margin-bottom: 1rem;">
                         <label for="comparison-selector"
-                            style="color: var(--color-text-secondary); font-size: 0.9375rem; margin-right: 0.5rem;">Workout
-                            Type:</label>
+                            style="color: var(--color-text-secondary); font-size: 0.9rem; display: block; margin-bottom: 0.5rem;">Workout
+                            type</label>
                         <select id="comparison-selector"
-                            style="padding: 0.5rem; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); color: var(--color-text-primary); font-size: 0.9375rem;">
-                            <option value="Upper">Upper</option>
-                            <option value="Lower">Lower</option>
-                            <option value="Push">Push</option>
-                            <option value="Pull">Pull</option>
-                            <option value="Legs">Legs</option>
+                            style="width: 100%; padding: 0.5rem; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-sm); color: var(--color-text-primary); font-family: inherit;">
                         </select>
                     </div>
                     <div id="session-comparison-content"
-                        style="color: var(--color-text-secondary); font-size: 0.9375rem;">
-                        <p>Select a workout type to compare sessions</p>
+                        style="color: var(--color-text-secondary); font-size: 0.9rem;">
+                        <p>Select a workout type to compare your last two sessions.</p>
                     </div>
                 </div>
             </div>
 
-            <!-- Row 4: Analytics -->
-            <div class="chart-grid">
-                <div class="analytics-card">
-                    <h3 class="analytics-title">Progression Snapshot</h3>
-                    <div id="progression-snapshot" style="color: var(--color-text-secondary); font-size: 0.9375rem;">
-                        <div style="margin-bottom: 1rem;">
-                            <strong style="color: #1a1a1a;">Quick Wins:</strong>
-                            <div id="quick-wins">Complete at least 2 workouts to see recent PRs</div>
-                        </div>
-                        <div style="margin-bottom: 1rem;">
-                            <strong style="color: var(--color-success);">Trending Up:</strong>
-                            <div style="font-size: 0.8rem; color: var(--color-text-secondary); margin-bottom: 0.25rem;">
-                                Improving over last 4 sessions</div>
-                            <div id="trending-up">N/A</div>
-                        </div>
-                        <div>
-                            <strong style="color: var(--color-warning);">Needs Attention:</strong>
-                            <div style="font-size: 0.8rem; color: var(--color-text-secondary); margin-bottom: 0.25rem;">
-                                No progress for 3+ sessions</div>
-                            <div id="needs-attention">N/A</div>
-                        </div>
+            <!-- Row 5: Progression snapshot -->
+            <div class="analytics-card">
+                <h3 class="analytics-title">Progression Snapshot</h3>
+                <div id="progression-snapshot" style="color: var(--color-text-secondary); font-size: 0.9375rem;">
+                    <div style="margin-bottom: 0.75rem;">
+                        <strong style="color: var(--color-success);">Trending Up:</strong>
+                        <div style="font-size: 0.8rem; color: var(--color-text-secondary); margin-bottom: 0.25rem;">
+                            Getting heavier across recent sessions</div>
+                        <div id="trending-up">N/A</div>
                     </div>
-                </div>
-
-                <div class="analytics-card">
-                    <h3 class="analytics-title">Intensity Heatmap</h3>
-                    <div id="intensity-heatmap" style="color: var(--color-text-secondary); font-size: 0.9rem;">
-                        <div id="heatmap-content"></div>
+                    <div>
+                        <strong style="color: var(--color-warning);">Needs Attention:</strong>
+                        <div style="font-size: 0.8rem; color: var(--color-text-secondary); margin-bottom: 0.25rem;">
+                            No progress for 3+ sessions</div>
+                        <div id="needs-attention">N/A</div>
                     </div>
                 </div>
             </div>
@@ -599,39 +678,6 @@
             </div>
         </div>
 
-        <!-- INTELLIGENCE TAB -->
-        <div id="intelligence-content" class="tab-content">
-            <div class="analytics-card">
-                <h3 class="analytics-title">AI Insights</h3>
-                <ul class="insights-list" id="insights-list">
-                    <li class="insight-item">Complete some workouts to get personalized insights!</li>
-                </ul>
-            </div>
-
-            <div class="analytics-card">
-                <h3 class="analytics-title">Nutrition Analytics (Past 7 Days)</h3>
-                <div id="nutrition-insights" style="color: var(--color-text-secondary); font-size: 0.9rem;">
-                    <div style="margin-bottom: 1rem;">
-                        <strong style="color: var(--color-accent-primary);">Workout Days vs Rest Days</strong>
-                        <div id="nutrition-comparison" style="margin-top: 0.5rem;">
-                            Log nutrition for at least 3 days to see insights
-                        </div>
-                    </div>
-                    <div style="margin-bottom: 1rem;">
-                        <strong style="color: var(--color-success);">Pre-Workout Nutrition</strong>
-                        <div id="preworkout-insights" style="margin-top: 0.5rem;">
-                            Track meal times to see pre-workout nutrition patterns
-                        </div>
-                    </div>
-                    <div>
-                        <strong style="color: var(--color-warning);">Post-Workout Recovery</strong>
-                        <div id="postworkout-insights" style="margin-top: 0.5rem;">
-                            Track meal times to see post-workout nutrition patterns
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
 
     <!-- Add Food Modal - Bottom Sheet Style -->
@@ -1011,6 +1057,15 @@
                 <button class="btn" onclick="createNewProgram()" style="margin-top: 1rem; width: 100%;">+ Create New
                     Program</button>
             </div>
+
+            <div class="settings-section">
+                <h3 class="settings-section-title">Your data</h3>
+                <p style="color: var(--color-text-secondary); font-size: 0.9375rem; margin-bottom: 0.75rem;">
+                    Downloads every workout, program, weigh-in and food log as a single file you keep.
+                    Worth doing every few months.
+                </p>
+                <button class="btn" onclick="exportAllData()" style="width: 100%;">Export all data</button>
+            </div>
         </div>
     </div>
 
@@ -1072,13 +1127,24 @@
                 <label for="exercise-name-input">Exercise Name</label>
                 <input type="text" id="exercise-name-input" class="form-input" placeholder="e.g., Barbell Squat">
             </div>
+            <div class="form-group">
+                <label for="exercise-type-input">How do you track it?</label>
+                <select id="exercise-type-input" class="form-input" onchange="updateExerciseTypeHint()">
+                    <option value="weight_reps">Weight &amp; reps</option>
+                    <option value="reps">Reps only</option>
+                    <option value="time">Time (seconds)</option>
+                    <option value="duration">Duration (minutes)</option>
+                    <option value="checkoff">Just check it off</option>
+                </select>
+                <div id="exercise-type-hint" class="form-hint">Barbell, dumbbell, machine and cable work.</div>
+            </div>
             <div class="form-row">
                 <div class="form-group">
                     <label for="exercise-sets-input">Sets</label>
                     <input type="number" id="exercise-sets-input" class="form-input" placeholder="3" min="1">
                 </div>
                 <div class="form-group">
-                    <label for="exercise-reps-input">Reps</label>
+                    <label for="exercise-reps-input" id="exercise-reps-label">Reps</label>
                     <input type="text" id="exercise-reps-input" class="form-input" placeholder="8-12 or AMRAP">
                 </div>
             </div>

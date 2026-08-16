@@ -47,7 +47,10 @@ let currentCalendarDate = new Date();
 let selectedCalendarDay = null;
 let nutritionData = [];
 window.nutritionData = nutritionData;
-let currentNutritionDate = new Date().toISOString().split('T')[0];
+// Deliberately empty. Initialising from toISOString() gave tomorrow's date
+// after 5pm Pacific. bootUIFromCache() sets this via the timezone-aware
+// getTodayDateString() before anything reads it.
+let currentNutritionDate = '';
 let currentEditingMealId = null; // Track which meal is currently being edited
 let weightData = [];
 window.weightData = weightData;
@@ -58,6 +61,11 @@ window.programs = programs;
 window.activeProgram = activeProgram;
 window.photoData = photoData;
 let savedFoods = [];
+// This module-scoped array was aliased to window.travelModeData at startup,
+// but loadTravelModeData() REBINDS the window property to a brand new array,
+// leaving this one permanently empty. getScheduleTimelineKey read this copy, so
+// its travel component was always 0, the schedule cache was never invalidated
+// when travel was enabled, and travel days stayed painted red as missed.
 let travelModeData = [];
 window.travelModeData = travelModeData;
 let sickDayData = [];
@@ -171,6 +179,21 @@ async function saveWorkoutToFirebase(workoutData) {
     }
 }
 
+// Raw, unfiltered result of the last workouts query. Kept so the active
+// program filter can be re-applied without another network round trip, which
+// lets the programs and workouts queries run concurrently at startup.
+let rawWorkouts = [];
+
+function filterWorkoutsByActiveProgram(workouts) {
+    return (workouts || []).filter(workout =>
+        !activeProgram || !workout.programId || workout.programId === activeProgram.id);
+}
+
+function applyProgramFilterToWorkouts() {
+    allWorkouts = filterWorkoutsByActiveProgram(rawWorkouts);
+    return allWorkouts;
+}
+
 async function loadWorkoutsFromFirebase() {
     try {
         // Load only last 90 days of workouts for better performance
@@ -190,16 +213,15 @@ async function loadWorkoutsFromFirebase() {
         const querySnapshot = await getDocs(q);
         const workouts = [];
         querySnapshot.forEach((doc) => {
-            const workout = { id: doc.id, ...doc.data() };
-            // Filter by active program if one is set
-            // Include workouts with no programId (legacy data) or matching programId
-            if (!activeProgram || !workout.programId || workout.programId === activeProgram.id) {
-                workouts.push(workout);
-            }
+            workouts.push({ id: doc.id, ...doc.data() });
         });
-        allWorkouts = workouts;
-        console.log(`Loaded ${workouts.length} workouts for active program`);
-        return workouts;
+        rawWorkouts = workouts;
+        // Filtering is a separate step so this query can start before the
+        // programs query has resolved.
+        applyProgramFilterToWorkouts();
+        invalidateScheduleTimeline();
+        console.log(`Loaded ${rawWorkouts.length} workouts (${allWorkouts.length} for active program)`);
+        return allWorkouts;
     } catch (e) {
         console.error("Error loading workouts:", e);
         // Fallback to simpler query if date filtering fails
@@ -208,15 +230,13 @@ async function loadWorkoutsFromFirebase() {
             const querySnapshot = await getDocs(q);
             const workouts = [];
             querySnapshot.forEach((doc) => {
-                const workout = { id: doc.id, ...doc.data() };
-                // Filter by active program
-                if (!activeProgram || !workout.programId || workout.programId === activeProgram.id) {
-                    workouts.push(workout);
-                }
+                workouts.push({ id: doc.id, ...doc.data() });
             });
-            allWorkouts = workouts;
-            console.log(`Loaded ${workouts.length} workouts (fallback) for active program`);
-            return workouts;
+            rawWorkouts = workouts;
+            applyProgramFilterToWorkouts();
+            invalidateScheduleTimeline();
+            console.log(`Loaded ${rawWorkouts.length} workouts (fallback, ${allWorkouts.length} for active program)`);
+            return allWorkouts;
         } catch (fallbackError) {
             console.error("Fallback query also failed:", fallbackError);
             return [];
@@ -226,7 +246,17 @@ async function loadWorkoutsFromFirebase() {
 
 async function loadNutritionData() {
     try {
-        const q = query(collection(db, "nutrition"), orderBy("date", "desc"), limit(30));
+        // Was limit(30) DOCUMENTS. Because every food is its own document, that
+        // was roughly four days of history, so browsing back a week showed
+        // false empties and the "past 7 days" averages covered a window that
+        // mostly did not exist.
+        const nutritionFrom = addDaysToDateString(getTodayDateString(), -30);
+        const q = query(
+            collection(db, "nutrition"),
+            where("date", ">=", nutritionFrom),
+            orderBy("date", "desc"),
+            limit(600)
+        );
         const querySnapshot = await getDocs(q);
         const nutrition = [];
         const seenIds = new Set();
@@ -392,18 +422,38 @@ function calculateTargetCalories(weight, bodyGoal) {
     }
 }
 
+// Most recent weigh-in BY DATE rather than by insertion order.
+function getLatestWeight() {
+    if (!Array.isArray(weightData) || weightData.length === 0) return null;
+    let best = null;
+    weightData.forEach(w => {
+        const value = parseFloat(w && w.weight);
+        if (!w || !w.date || !Number.isFinite(value) || value <= 0) return;
+        if (!best || w.date > best.date) best = { date: w.date, weight: value };
+    });
+    return best ? best.weight : null;
+}
+
 function calculate7DayMovingAverage(weightHistory) {
     if (!weightHistory || weightHistory.length === 0) return null;
 
     // Sort by date descending
     const sorted = [...weightHistory].sort((a, b) => new Date(b.date) - new Date(a.date));
 
-    // Take last 7 entries (or fewer if less than 7 available)
-    const last7 = sorted.slice(0, Math.min(7, sorted.length));
+    // Take entries from the last 7 DAYS. Taking the last 7 entries meant that
+    // weighing in twice a week made the "7-day average" span three and a half
+    // weeks.
+    const cutoff = addDaysToDateString(getTodayDateString(), -6);
+    let window = sorted.filter(w => w.date >= cutoff);
+    if (window.length === 0) window = sorted.slice(0, Math.min(7, sorted.length));
 
-    // Calculate average
-    const sum = last7.reduce((acc, w) => acc + w.weight, 0);
-    return sum / last7.length;
+    // One malformed document used to turn the whole average into NaN.
+    const values = window
+        .map(w => parseFloat(w.weight))
+        .filter(v => Number.isFinite(v) && v > 0);
+    if (values.length === 0) return null;
+
+    return values.reduce((acc, v) => acc + v, 0) / values.length;
 }
 
 function calculateGoalEndDate(currentWeight, targetWeight, goalStartDate, bodyGoal) {
@@ -422,11 +472,44 @@ function calculateGoalEndDate(currentWeight, targetWeight, goalStartDate, bodyGo
         return null;
     }
 
-    const startDate = new Date(goalStartDate);
-    const endDate = new Date(startDate);
-    endDate.setDate(startDate.getDate() + (weeksToGoal * 7));
+    // Anchor to TODAY. Anchoring to goalStartDate while measuring weight still
+    // remaining made the projection move earlier every week and eventually
+    // point at a date already past.
+    return addDaysToDateString(getTodayDateString(), Math.ceil(weeksToGoal * 7));
+}
 
-    return endDate.toISOString().split('T')[0];
+// Change between the current 7-day average and the average of the 7 days before
+// that. Returns null when there is not enough history to say anything.
+function getWeightTrend() {
+    if (!Array.isArray(weightData) || weightData.length < 4) return null;
+
+    const sorted = weightData
+        .filter(w => w && w.date && Number.isFinite(parseFloat(w.weight)))
+        .slice()
+        .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0)); // newest first
+    if (sorted.length < 4) return null;
+
+    const today = getTodayDateString();
+    const recentFrom = addDaysToDateString(today, -6);
+    const priorFrom = addDaysToDateString(today, -13);
+
+    const mean = (rows) => rows.length
+        ? rows.reduce((sum, w) => sum + parseFloat(w.weight), 0) / rows.length
+        : null;
+
+    const recent = mean(sorted.filter(w => w.date >= recentFrom));
+    const prior = mean(sorted.filter(w => w.date >= priorFrom && w.date < recentFrom));
+
+    // Not enough spread by date, so fall back to comparing halves of the log.
+    if (recent === null || prior === null) {
+        const half = Math.floor(sorted.length / 2);
+        const newHalf = mean(sorted.slice(0, half));
+        const oldHalf = mean(sorted.slice(half));
+        if (newHalf === null || oldHalf === null) return null;
+        return newHalf - oldHalf;
+    }
+
+    return recent - prior;
 }
 
 function checkIfOnTrack(movingAverage, targetWeight, currentWeight, bodyGoal) {
@@ -441,18 +524,26 @@ function checkIfOnTrack(movingAverage, targetWeight, currentWeight, bodyGoal) {
         } else {
             return { isOnTrack: false, message: `Off Track (${deviation.toFixed(1)} lbs from target)` };
         }
-    } else if (bodyGoal === 'cutting') {
-        if (movingAverage <= currentWeight) {
-            return { isOnTrack: true, message: 'On Track (trending downward)' };
-        } else {
-            return { isOnTrack: false, message: 'Off Track (not trending downward)' };
-        }
+    }
+
+    // Compare the recent average against an older one. Comparing the average
+    // against the latest weigh-in is circular, because that weigh-in is part of
+    // the average, and it inverted the verdict.
+    const trend = getWeightTrend();
+    if (trend === null) {
+        return { isOnTrack: false, message: 'Log a few more weigh-ins to see a trend' };
+    }
+
+    const magnitude = Math.abs(trend).toFixed(1);
+
+    if (bodyGoal === 'cutting') {
+        if (trend < -0.2) return { isOnTrack: true, message: `On Track (down ${magnitude} lbs)` };
+        if (trend > 0.2) return { isOnTrack: false, message: `Off Track (up ${magnitude} lbs)` };
+        return { isOnTrack: false, message: 'Holding steady, not yet trending down' };
     } else if (bodyGoal === 'bulking') {
-        if (movingAverage >= currentWeight) {
-            return { isOnTrack: true, message: 'On Track (trending upward)' };
-        } else {
-            return { isOnTrack: false, message: 'Off Track (not trending upward)' };
-        }
+        if (trend > 0.2) return { isOnTrack: true, message: `On Track (up ${magnitude} lbs)` };
+        if (trend < -0.2) return { isOnTrack: false, message: `Off Track (down ${magnitude} lbs)` };
+        return { isOnTrack: false, message: 'Holding steady, not yet trending up' };
     }
 
     return { isOnTrack: false, message: 'Unable to determine progress' };
@@ -466,8 +557,10 @@ function updateBodyGoalDisplay() {
 
     document.getElementById('goal-display-container').style.display = 'block';
 
-    // Get current weight (most recent)
-    const currentWeight = weightData && weightData.length > 0 ? weightData[0].weight : null;
+    // Latest weigh-in BY DATE. weightData[0] is whatever was logged most
+    // recently, so entering a backdated weigh-in made a stale number the
+    // "current weight" driving both this card and the calorie target.
+    const currentWeight = getLatestWeight();
 
     // Calculate 7-day moving average
     const movingAvg = calculate7DayMovingAverage(weightData);
@@ -513,14 +606,106 @@ function updateBodyGoalDisplay() {
     progressText.textContent = progressStatus.message;
 }
 
+// ---------------------------------------------------------------------------
+// Protein target.
+//
+// The app had no macro targets at all. It only had a hardcoded absolute
+// threshold buried in an insight string ("aim for 0.8-1g per lb") which was
+// never scaled to the user's actual bodyweight. For a recomp, protein is the
+// number that decides whether it works.
+// ---------------------------------------------------------------------------
+const PROTEIN_PER_LB = { cutting: 1.0, maintaining: 0.9, bulking: 0.8 };
+
+function calculateProteinTarget(bodyWeight, bodyGoal) {
+    const w = parseFloat(bodyWeight);
+    if (!Number.isFinite(w) || w <= 0) return null;
+    const perLb = PROTEIN_PER_LB[bodyGoal] || 0.9;
+    return Math.round(w * perLb);
+}
+
+// Averages protein and calories on days a session was logged against days it
+// was not. Moved here from the deleted Insights tab, which was the only card on
+// it that computed anything.
+function updateNutritionComparison() {
+    const container = document.getElementById('nutrition-comparison');
+    if (!container) return;
+
+    const today = getTodayDateString();
+    const from = addDaysToDateString(today, -13);
+
+    const byDate = {};
+    (nutritionData || []).forEach(meal => {
+        if (!meal || !meal.date || meal.date < from || meal.date > today) return;
+        if (!byDate[meal.date]) byDate[meal.date] = { calories: 0, protein: 0 };
+        (meal.foods || []).forEach(food => {
+            const qty = parseFloat(food.quantity) || 1;
+            byDate[meal.date].calories += (parseFloat(food.calories) || 0) * qty;
+            byDate[meal.date].protein += (parseFloat(food.protein) || 0) * qty;
+        });
+    });
+
+    const trainingDates = new Set(
+        allWorkouts.filter(w => normalizeLabel(w.day) !== 'rest').map(w => w.date));
+
+    const split = { training: [], rest: [] };
+    Object.entries(byDate).forEach(([date, totals]) => {
+        split[trainingDates.has(date) ? 'training' : 'rest'].push(totals);
+    });
+
+    if (split.training.length + split.rest.length < 3) {
+        container.textContent = 'Log nutrition for at least 3 days to see the comparison.';
+        return;
+    }
+
+    const avg = (rows, key) => rows.length
+        ? Math.round(rows.reduce((sum, r) => sum + r[key], 0) / rows.length) : null;
+
+    const row = (label, rows) => {
+        if (!rows.length) return `<div style="margin-bottom:0.375rem;">${label}: no days logged</div>`;
+        return `<div style="margin-bottom:0.375rem;">
+            <strong style="color: var(--color-text-primary);">${label}</strong>
+            <span style="margin-left:0.5rem;">${avg(rows, 'calories')} kcal &middot; ${avg(rows, 'protein')}g protein</span>
+            <span style="color: var(--color-text-secondary); font-size:0.8125rem;"> (${rows.length} day${rows.length === 1 ? '' : 's'})</span>
+        </div>`;
+    };
+
+    let html = row('Training days', split.training) + row('Rest days', split.rest);
+
+    const trainKcal = avg(split.training, 'calories');
+    const restKcal = avg(split.rest, 'calories');
+    if (trainKcal !== null && restKcal !== null) {
+        const diff = trainKcal - restKcal;
+        html += `<div style="margin-top:0.5rem; color: var(--color-text-secondary); font-size:0.8125rem;">
+            You eat ${Math.abs(diff)} kcal ${diff >= 0 ? 'more' : 'less'} on training days.</div>`;
+    }
+
+    container.innerHTML = html;
+}
+
+function getTodaysProtein() {
+    let total = 0;
+    (nutritionData || [])
+        .filter(meal => meal && meal.date === currentNutritionDate)
+        .forEach(meal => {
+            (meal.foods || []).forEach(food => {
+                total += (parseFloat(food.protein) || 0) * (parseFloat(food.quantity) || 1);
+            });
+        });
+    return total;
+}
+
 function updateNutritionCalories() {
     if (!bodyGoalData || !bodyGoalData.bodyGoal) {
         document.getElementById('calorie-target-card').style.display = 'none';
         return;
     }
 
-    // Get current weight (most recent)
-    const currentWeight = weightData && weightData.length > 0 ? weightData[0].weight : null;
+    // The target follows the 7-day average rather than a single weigh-in, so a
+    // 3 lb water swing stops moving the daily calorie goal by ~44 kcal.
+    const averageWeight = calculate7DayMovingAverage(weightData);
+    const currentWeight = Number.isFinite(averageWeight) && averageWeight > 0
+        ? averageWeight
+        : getLatestWeight();
 
     if (!currentWeight) {
         document.getElementById('calorie-target-card').style.display = 'none';
@@ -546,8 +731,25 @@ function updateNutritionCalories() {
 
     // Calculate remaining calories
     const totalCalories = calculateTotalCalories();
-    const remaining = targetCalories - totalCalories;
+    // Measured portions produce non-terminating quantities, so this rendered
+    // values like 1706.5217391304348.
+    const remaining = Math.round(targetCalories - totalCalories);
     document.getElementById('calories-remaining').textContent = remaining;
+
+    const proteinTarget = calculateProteinTarget(currentWeight, bodyGoalData.bodyGoal);
+    const proteinTargetEl = document.getElementById('protein-target');
+    const proteinLeftEl = document.getElementById('protein-remaining');
+    if (proteinTargetEl && proteinLeftEl) {
+        if (proteinTarget) {
+            proteinTargetEl.textContent = proteinTarget + 'g';
+            proteinLeftEl.textContent = Math.round(proteinTarget - getTodaysProtein()) + 'g';
+        } else {
+            proteinTargetEl.textContent = '--';
+            proteinLeftEl.textContent = '--';
+        }
+    }
+
+    updateNutritionComparison();
 
     // Update remaining color
     const remainingElement = document.getElementById('calories-remaining');
@@ -718,9 +920,32 @@ async function loadPrograms() {
 
         return programs;
     } catch (e) {
+        // Returning [] used to leave activeProgram null, which made
+        // getActiveWorkouts() fall back to the built-in ULPPL plan. A transient
+        // network error therefore looked exactly like "my program was deleted"
+        // and replaced it with a stranger's. Keep whatever we already have.
         console.error("Error loading programs:", e);
-        return [];
+        showConnectionNotice('Could not reach your programs. Showing the last version saved on this device.');
+        return programs;
     }
+}
+
+// One non-blocking banner for load failures, so a backend problem stops looking
+// like data loss to someone who cannot open a console.
+function showConnectionNotice(text) {
+    let el = document.getElementById('connection-notice');
+    if (!el) {
+        el = document.createElement('div');
+        el.id = 'connection-notice';
+        el.className = 'connection-notice';
+        el.innerHTML = `<span class="connection-notice-text"></span>
+            <button type="button" class="connection-notice-retry" onclick="location.reload()">Retry</button>`;
+        const container = document.querySelector('.container');
+        if (container) container.insertBefore(el, container.firstChild);
+        else document.body.appendChild(el);
+    }
+    el.querySelector('.connection-notice-text').textContent = text;
+    el.classList.add('visible');
 }
 
 // Migrate old schedule format (string) to new format (object with customName)
@@ -926,6 +1151,7 @@ window.setActiveProgram = async function (programId) {
 
             // Reload workouts to show only workouts from this program
             await loadWorkoutsFromFirebase();
+            refreshStartupCache();
 
             // Re-render day selector for new program
             renderWorkoutDaySelector();
@@ -1047,13 +1273,14 @@ function renderProgramEditor() {
 }
 
 // Toggle program name editing
+// The field is already editable when the editor opens, so toggling `disabled`
+// meant the first tap on the pencil made the name UNeditable. Just focus it.
 window.toggleProgramNameEdit = function () {
     const nameInput = document.getElementById('program-name-input');
-    nameInput.disabled = !nameInput.disabled;
-    if (!nameInput.disabled) {
-        nameInput.focus();
-        nameInput.select();
-    }
+    if (!nameInput) return;
+    nameInput.disabled = false;
+    nameInput.focus();
+    nameInput.select();
 };
 
 // Handle program name change (initialize once)
@@ -1083,7 +1310,7 @@ window.updateCycleLength = function (delta) {
 
     // Validate length using constants
     if (newLength < MIN_CYCLE_LENGTH || newLength > MAX_CYCLE_LENGTH) {
-        alert(`Cycle length must be between ${MIN_CYCLE_LENGTH} and ${MAX_CYCLE_LENGTH} days`);
+        showEditorMessage(`A cycle can be ${MIN_CYCLE_LENGTH} to ${MAX_CYCLE_LENGTH} days.`);
         return;
     }
 
@@ -1119,11 +1346,17 @@ function renderSchedulePills() {
             const dayKey = `day${i}`;
             const displayName = getDisplayNameForDay(currentEditingProgram, dayKey);
             
+            const named = Boolean(getWorkoutTypeForDay(currentEditingProgram, dayKey));
+            const isRest = normalizeLabel(getWorkoutTypeForDay(currentEditingProgram, dayKey)) === 'rest';
             html += `
-                        <div class="schedule-pill" onclick="selectWorkoutForDay(${i})">
+                        <div class="schedule-pill${named ? '' : ' unnamed'}${isRest ? ' rest' : ''}" id="schedule-pill-${dayKey}"
+                             role="button" tabindex="0" onclick="editProgramDayName(${i})">
                             <span class="schedule-pill-day">Day ${i}</span>
-                            <span class="schedule-pill-workout">${displayName}</span>
-                            <button class="schedule-pill-edit" onclick="event.stopPropagation(); editProgramDayName(${i})" title="Edit day name">✏️</button>
+                            <span class="schedule-pill-workout">${escapeHtml(named ? displayName : 'Tap to name')}</span>
+                            <button type="button" class="schedule-pill-edit" aria-label="Edit day ${i} name"
+                                    onclick="event.stopPropagation(); editProgramDayName(${i})">Edit</button>
+                            <button type="button" class="schedule-pill-remove" aria-label="Remove day ${i}"
+                                    onclick="event.stopPropagation(); removeProgramDay(${i})">&times;</button>
                         </div>
                     `;
         }
@@ -1132,45 +1365,175 @@ function renderSchedulePills() {
     container.innerHTML = html;
 }
 
+// Values from user input are interpolated into markup and into onclick
+// attributes. A day named "Arm's Day" used to break every button in its
+// accordion into a JavaScript syntax error with no visible explanation.
+function escapeHtml(value) {
+    return String(value == null ? '' : value)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function escapeJsArg(value) {
+    return String(value == null ? '' : value)
+        .replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;')
+        .replace(/\n/g, ' ').replace(/</g, '&lt;');
+}
+
+// A stable DOM-safe id for a workout type, since names contain spaces,
+// slashes and apostrophes.
+function workoutTypeSlug(workoutType) {
+    return 'wt-' + String(workoutType == null ? '' : workoutType)
+        .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+}
+
 // Edit day name for a program day
+// Naming a day used to go through browser prompt(). On a phone that is a
+// cramped one-line box, and once Safari or Chrome offers "prevent this page
+// from creating additional dialogs" and the user accepts, prompt() returns
+// null forever and days can never be named again. This renders an inline
+// editor instead.
 window.editProgramDayName = function (dayNumber) {
     if (!currentEditingProgram) return;
-    
+
     const dayKey = `day${dayNumber}`;
-    const workoutType = getWorkoutTypeForDay(currentEditingProgram, dayKey);
-    // Don't show "(click to name)" placeholder as default value
-    const defaultValue = workoutType || '';
-    
-    const newName = prompt(
-        `Enter name for Day ${dayNumber}:`,
-        defaultValue
-    );
-    
-    if (newName !== null && newName.trim() !== '') { // User didn't cancel and provided a name
-        const trimmedName = newName.trim();
-        
-        // Set both customName and workoutType to the same value
-        // This makes the workout type equal to the day name
-        currentEditingProgram.schedule[dayKey] = {
-            workoutType: trimmedName,
-            customName: trimmedName
-        };
-        
-        // Initialize workout if it doesn't exist
-        if (!currentEditingProgram.workouts[trimmedName]) {
-            currentEditingProgram.workouts[trimmedName] = [];
-        }
-        
-        markUnsavedChanges();
-        renderSchedulePills();
-        renderWorkoutsAccordion(); // Update accordion to reflect new day name
+    const pill = document.getElementById(`schedule-pill-${dayKey}`);
+    if (!pill) return;
+
+    const currentName = getWorkoutTypeForDay(currentEditingProgram, dayKey) || '';
+
+    pill.innerHTML = `
+        <div class="pill-edit-form">
+            <input type="text" class="pill-edit-input" id="pill-input-${dayKey}"
+                   value="${escapeHtml(currentName)}" placeholder="e.g. Push, Legs, Rest"
+                   maxlength="40" autocomplete="off">
+            <div class="pill-edit-actions">
+                <button type="button" class="pill-edit-save" onclick="commitProgramDayName(${dayNumber})">Save</button>
+                <button type="button" class="pill-edit-cancel" onclick="renderSchedulePills()">Cancel</button>
+            </div>
+            <div class="pill-edit-hint">Name it Rest to make it a rest day.</div>
+        </div>`;
+
+    const input = document.getElementById(`pill-input-${dayKey}`);
+    if (input) {
+        input.focus();
+        input.select();
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') { e.preventDefault(); window.commitProgramDayName(dayNumber); }
+            if (e.key === 'Escape') { e.preventDefault(); renderSchedulePills(); }
+        });
     }
+};
+
+window.commitProgramDayName = function (dayNumber) {
+    if (!currentEditingProgram) return;
+
+    const dayKey = `day${dayNumber}`;
+    const input = document.getElementById(`pill-input-${dayKey}`);
+    if (!input) return;
+
+    const trimmedName = input.value.trim();
+    if (trimmedName === '') {
+        showEditorMessage('Give the day a name, or tap Cancel.');
+        input.focus();
+        return;
+    }
+
+    const oldName = getWorkoutTypeForDay(currentEditingProgram, dayKey) || '';
+
+    // Two days sharing a name share one exercise list, and the logger can only
+    // ever open the first of them.
+    const clash = Object.keys(currentEditingProgram.schedule).some(key => {
+        if (key === dayKey) return false;
+        return normalizeLabel(getWorkoutTypeForDay(currentEditingProgram, key)) === normalizeLabel(trimmedName);
+    });
+    if (clash) {
+        showEditorMessage(`Another day is already called "${trimmedName}". Give this one a different name.`);
+        input.focus();
+        return;
+    }
+
+    currentEditingProgram.schedule[dayKey] = { workoutType: trimmedName, customName: trimmedName };
+
+    if (!currentEditingProgram.workouts) currentEditingProgram.workouts = {};
+
+    // Carry the exercises across on rename. Previously a rename created a fresh
+    // empty list under the new name and stranded everything under the old one,
+    // so renaming "Push" to "Push A" silently emptied the day.
+    if (oldName && oldName !== trimmedName && currentEditingProgram.workouts[oldName]) {
+        // Copy the list across. Only delete the old key if no OTHER day still
+        // uses that name: the app's own default program has two days both
+        // called "Rest", so renaming one used to delete the other's exercises.
+        currentEditingProgram.workouts[trimmedName] =
+            JSON.parse(JSON.stringify(currentEditingProgram.workouts[oldName]));
+
+        const stillUsed = Object.keys(currentEditingProgram.schedule).some(key =>
+            key !== dayKey &&
+            normalizeLabel(getWorkoutTypeForDay(currentEditingProgram, key)) === normalizeLabel(oldName));
+        if (!stillUsed) delete currentEditingProgram.workouts[oldName];
+    } else if (!currentEditingProgram.workouts[trimmedName]) {
+        currentEditingProgram.workouts[trimmedName] = [];
+    }
+
+    markUnsavedChanges();
+    renderSchedulePills();
+    renderWorkoutsAccordion();
+};
+
+// Non-blocking editor feedback, replacing alert() on routine paths.
+function showEditorMessage(text, tone = 'warn') {
+    let el = document.getElementById('program-editor-message');
+    if (!el) {
+        const host = document.getElementById('program-editor-modal') || document.body;
+        el = document.createElement('div');
+        el.id = 'program-editor-message';
+        el.className = 'editor-message';
+        host.appendChild(el);
+    }
+    el.textContent = text;
+    el.dataset.tone = tone;
+    el.classList.add('visible');
+    clearTimeout(el._timer);
+    el._timer = setTimeout(() => el.classList.remove('visible'), 3200);
 }
 
 // Select workout type for a specific day - now just prompts for name
 window.selectWorkoutForDay = function (dayNumber) {
-    // Instead of cycling through hardcoded types, prompt user to name the day
-    editProgramDayName(dayNumber);
+    window.editProgramDayName(dayNumber);
+};
+
+// Removing a day used to be impossible without deleting the whole program.
+window.removeProgramDay = function (dayNumber) {
+    if (!currentEditingProgram || !currentEditingProgram.schedule) return;
+
+    const keys = Object.keys(currentEditingProgram.schedule)
+        .sort((a, b) => parseInt(a.replace('day', ''), 10) - parseInt(b.replace('day', ''), 10));
+    if (keys.length <= 1) {
+        showEditorMessage('A program needs at least one day.');
+        return;
+    }
+
+    const removedType = getWorkoutTypeForDay(currentEditingProgram, `day${dayNumber}`);
+
+    // Re-key the remaining days so they stay day1..dayN with no gaps. A gap
+    // would leave getProgramScheduleArray with an undefined slot.
+    const remaining = keys
+        .filter(k => k !== `day${dayNumber}`)
+        .map(k => currentEditingProgram.schedule[k]);
+
+    currentEditingProgram.schedule = {};
+    remaining.forEach((value, idx) => { currentEditingProgram.schedule[`day${idx + 1}`] = value; });
+
+    // Keep the exercise list only if no remaining day still uses that name.
+    const stillUsed = Object.keys(currentEditingProgram.schedule).some(k =>
+        normalizeLabel(getWorkoutTypeForDay(currentEditingProgram, k)) === normalizeLabel(removedType));
+    if (removedType && !stillUsed && currentEditingProgram.workouts) {
+        delete currentEditingProgram.workouts[removedType];
+    }
+
+    markUnsavedChanges();
+    renderSchedulePills();
+    renderWorkoutsAccordion();
 };
 
 // Update workout type for a day
@@ -1268,19 +1631,21 @@ function renderWorkoutsAccordion() {
         const hasCustomNames = days.every(d => d.displayName !== workoutType);
         const headerName = hasCustomNames ? dayLabels : `${dayLabels} (${workoutType})`;
         
+        const wtArg = escapeJsArg(workoutType);
         html += `
-                    <div class="workout-accordion" id="accordion-${workoutType}">
-                        <div class="workout-accordion-header" onclick="toggleWorkoutAccordion('${workoutType}')">
+                    <div class="workout-accordion" id="${workoutTypeSlug(workoutType)}">
+                        <div class="workout-accordion-header" role="button" tabindex="0"
+                             onclick="toggleWorkoutAccordion('${wtArg}')">
                             <div class="workout-accordion-title">
-                                <span class="workout-accordion-name">${headerName}</span>
+                                <span class="workout-accordion-name">${escapeHtml(headerName)}</span>
                                 <span class="workout-accordion-badge">${exerciseCount} ${exerciseCount === 1 ? 'exercise' : 'exercises'}</span>
                             </div>
-                            <span class="workout-accordion-toggle">▼</span>
+                            <span class="workout-accordion-toggle">&#9660;</span>
                         </div>
                         <div class="workout-accordion-content">
                             <div class="workout-accordion-body">
                                 ${renderExercisesList(workoutType, exercises)}
-                                <button class="add-exercise-btn" onclick="openAddExercisePanel('${workoutType}')">
+                                <button type="button" class="add-exercise-btn" onclick="openAddExercisePanel('${wtArg}')">
                                     + Add Exercise
                                 </button>
                             </div>
@@ -1294,7 +1659,26 @@ function renderWorkoutsAccordion() {
         html = '<div style="padding: 2rem; text-align: center; color: var(--color-text-secondary);">Add days above and name them to define your workout types. Then you can add exercises here.</div>';
     }
 
+    // Remember which panels were open BEFORE the rebuild. Without this the
+    // accordion collapsed on every edit, so adding an exercise appeared to do
+    // nothing and the move/delete buttons looked inert.
+    const openSlugs = new Set(
+        Array.prototype.slice.call(container.querySelectorAll('.workout-accordion.expanded'))
+            .map(el => el.id));
+
     container.innerHTML = html;
+
+    openSlugs.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.add('expanded');
+    });
+
+    // With exactly one workout type, there is nothing to choose between, so
+    // open it rather than making the user discover the tap.
+    if (openSlugs.size === 0 && orderedWorkoutTypes.length === 1) {
+        const only = container.querySelector('.workout-accordion');
+        if (only) only.classList.add('expanded');
+    }
 }
 
 // Render exercises list for a workout
@@ -1303,18 +1687,18 @@ function renderExercisesList(workoutType, exercises) {
         return '<p style="color: var(--color-text-secondary); padding: 1rem 0;">No exercises yet. Add your first exercise!</p>';
     }
 
+    const wt = escapeJsArg(workoutType);
     return exercises.map((exercise, index) => `
                 <div class="exercise-row">
-                    <span class="exercise-drag-handle">⋮⋮</span>
                     <div class="exercise-info">
-                        <div class="exercise-name">${exercise.name}</div>
-                        <div class="exercise-details">${exercise.sets} × ${exercise.reps}</div>
+                        <div class="exercise-name">${escapeHtml(exercise.name)}</div>
+                        <div class="exercise-details">${escapeHtml(exercise.sets)} × ${escapeHtml(exercise.reps)}</div>
                     </div>
                     <div class="exercise-actions">
-                        ${index > 0 ? `<button class="exercise-move-btn" onclick="moveExercise('${workoutType}', ${index}, -1)" title="Move up">↑</button>` : ''}
-                        ${index < exercises.length - 1 ? `<button class="exercise-move-btn" onclick="moveExercise('${workoutType}', ${index}, 1)" title="Move down">↓</button>` : ''}
-                        <button class="exercise-edit-btn" onclick="openEditExercisePanel('${workoutType}', ${index})" title="Edit">✏️</button>
-                        <button class="exercise-delete-btn" onclick="removeExercise('${workoutType}', ${index})" title="Delete">🗑</button>
+                        ${index > 0 ? `<button type="button" class="exercise-move-btn" onclick="moveExercise('${wt}', ${index}, -1)" aria-label="Move up">&#8593;</button>` : ''}
+                        ${index < exercises.length - 1 ? `<button type="button" class="exercise-move-btn" onclick="moveExercise('${wt}', ${index}, 1)" aria-label="Move down">&#8595;</button>` : ''}
+                        <button type="button" class="exercise-edit-btn" onclick="openEditExercisePanel('${wt}', ${index})" aria-label="Edit ${escapeHtml(exercise.name)}">Edit</button>
+                        <button type="button" class="exercise-delete-btn" onclick="removeExercise('${wt}', ${index})" aria-label="Delete ${escapeHtml(exercise.name)}">Delete</button>
                     </div>
                 </div>
             `).join('');
@@ -1322,7 +1706,7 @@ function renderExercisesList(workoutType, exercises) {
 
 // Toggle workout accordion
 window.toggleWorkoutAccordion = function (workoutType) {
-    const accordion = document.getElementById(`accordion-${workoutType}`);
+    const accordion = document.getElementById(workoutTypeSlug(workoutType));
     if (accordion) {
         accordion.classList.toggle('expanded');
     }
@@ -1333,10 +1717,22 @@ window.openAddExercisePanel = function (workoutType) {
     currentExercisePanelContext = { workoutType, exerciseIndex: null };
 
     // Clear form
-    document.getElementById('exercise-name-input').value = '';
+    const nameInput = document.getElementById('exercise-name-input');
+    nameInput.value = '';
     document.getElementById('exercise-sets-input').value = '';
     document.getElementById('exercise-reps-input').value = '';
     document.getElementById('exercise-notes-input').value = '';
+
+    const typeSelect = document.getElementById('exercise-type-input');
+    if (typeSelect) {
+        typeSelect.value = 'weight_reps';
+        delete typeSelect.dataset.userChosen;
+        typeSelect.addEventListener('change', () => { typeSelect.dataset.userChosen = 'true'; }, { once: true });
+    }
+    // Guess the tracking type from the name as it is typed, so a hold or a
+    // walk does not silently default to asking for a weight.
+    nameInput.oninput = window.maybeGuessExerciseType;
+    window.updateExerciseTypeHint();
 
     // Update title and buttons
     document.getElementById('exercise-panel-title').textContent = `Add Exercise to ${workoutType}`;
@@ -1356,10 +1752,23 @@ window.openEditExercisePanel = function (workoutType, exerciseIndex) {
     currentExercisePanelContext = { workoutType, exerciseIndex };
 
     // Fill form with existing data
-    document.getElementById('exercise-name-input').value = exercise.name;
+    const nameInput = document.getElementById('exercise-name-input');
+    nameInput.value = exercise.name;
     document.getElementById('exercise-sets-input').value = exercise.sets;
     document.getElementById('exercise-reps-input').value = exercise.reps;
     document.getElementById('exercise-notes-input').value = exercise.notes || '';
+
+    const typeSelect = document.getElementById('exercise-type-input');
+    if (typeSelect) {
+        // An exercise saved before tracking types existed has none, so fall
+        // back to guessing from its name rather than defaulting to weights.
+        typeSelect.value = exercise.trackingType && TRACKING_TYPES[exercise.trackingType]
+            ? exercise.trackingType
+            : guessTrackingType(exercise.name);
+        typeSelect.dataset.userChosen = 'true';   // do not re-guess over a saved choice
+    }
+    nameInput.oninput = window.maybeGuessExerciseType;
+    window.updateExerciseTypeHint();
 
     // Update title and buttons
     document.getElementById('exercise-panel-title').textContent = `Edit Exercise`;
@@ -1376,6 +1785,41 @@ window.closeExercisePanel = function () {
 };
 
 // Save exercise (add or update)
+// The type dropdown in the exercise panel, plus its hint line and the label on
+// the target field, which reads "Reps" for lifts but "Hold (sec)" for a plank.
+window.updateExerciseTypeHint = function () {
+    const select = document.getElementById('exercise-type-input');
+    const hint = document.getElementById('exercise-type-hint');
+    const repsLabel = document.getElementById('exercise-reps-label');
+    const repsInput = document.getElementById('exercise-reps-input');
+    if (!select) return;
+
+    const type = select.value;
+    const meta = TRACKING_TYPES[type] || TRACKING_TYPES.weight_reps;
+    if (hint) hint.textContent = meta.hint;
+
+    const targets = {
+        weight_reps: ['Reps', '8-12 or AMRAP'],
+        reps:        ['Reps', '10-15'],
+        time:        ['Target hold', '30 sec'],
+        duration:    ['Target duration', '20 min'],
+        checkoff:    ['Target', 'as prescribed']
+    };
+    const [label, placeholder] = targets[type] || targets.weight_reps;
+    if (repsLabel) repsLabel.textContent = label;
+    if (repsInput) repsInput.placeholder = placeholder;
+};
+
+// Guess the type as the name is typed, but stop guessing once the user has
+// chosen for themselves.
+window.maybeGuessExerciseType = function () {
+    const select = document.getElementById('exercise-type-input');
+    const nameInput = document.getElementById('exercise-name-input');
+    if (!select || !nameInput || select.dataset.userChosen === 'true') return;
+    select.value = guessTrackingType(nameInput.value);
+    window.updateExerciseTypeHint();
+};
+
 window.saveExercise = function () {
     if (!currentEditingProgram || !currentExercisePanelContext) return;
 
@@ -1389,19 +1833,19 @@ window.saveExercise = function () {
 
     // Validate
     if (!name) {
-        alert('Exercise name is required');
+        showEditorMessage('Exercise name is required.');
         return;
     }
     if (!sets || sets < 1) {
-        alert('Sets must be at least 1');
+        showEditorMessage('Sets must be at least 1.');
         return;
     }
     if (sets > MAX_EXERCISE_SETS) {
-        alert(`Sets cannot exceed ${MAX_EXERCISE_SETS}`);
+        showEditorMessage(`Sets cannot exceed ${MAX_EXERCISE_SETS}.`);
         return;
     }
     if (!reps) {
-        alert('Reps is required');
+        showEditorMessage('Give it a target, for example 8-12 or 30 sec.');
         return;
     }
     // Validate reps: allow text like "8-12", "AMRAP", etc.
@@ -1410,13 +1854,18 @@ window.saveExercise = function () {
     if (!isNaN(repsNum) && reps.trim() === repsNum.toString()) {
         // Pure numeric value - validate against max
         if (repsNum > MAX_EXERCISE_REPS) {
-            alert(`Numeric reps cannot exceed ${MAX_EXERCISE_REPS}`);
+            showEditorMessage(`Reps cannot exceed ${MAX_EXERCISE_REPS}.`);
             return;
         }
     }
 
     // Create exercise object
-    const exercise = { name, sets: parseInt(sets), reps };
+    const typeSelect = document.getElementById('exercise-type-input');
+    const trackingType = typeSelect && TRACKING_TYPES[typeSelect.value]
+        ? typeSelect.value
+        : guessTrackingType(name);
+
+    const exercise = { name, sets: parseInt(sets), reps, trackingType };
     if (notes) {
         exercise.notes = notes;
     }
@@ -1493,68 +1942,138 @@ function markUnsavedChanges() {
 }
 
 // Save program to Firestore
+// ---------------------------------------------------------------------------
+// Saving a program.
+//
+// Previously this was unserialized. Every edit scheduled a 1s debounced save
+// with no in-flight guard, so on mobile latency a second save fired while `id`
+// was still null and created a DUPLICATE program document. And because
+// closeProgramEditor() nulls currentEditingProgram, tapping Back during a save
+// threw a TypeError after the await, which surfaced as "Error saving program.
+// Please try again." even though Firestore had accepted the write, while the
+// program never made it into the local list.
+// ---------------------------------------------------------------------------
+let programSaveInFlight = false;
+let programSaveQueued = false;
+
 async function saveProgramToFirestore() {
     if (!currentEditingProgram) return;
 
+    // Serialize. A save already running will pick up the newest state when it
+    // finishes rather than racing alongside this one.
+    if (programSaveInFlight) {
+        programSaveQueued = true;
+        return;
+    }
+
+    if (!currentEditingProgram.name || currentEditingProgram.name.trim() === '') {
+        // Was a blocking alert fired from the autosave timer, so clearing the
+        // name to retype it stole focus mid-edit.
+        showEditorMessage('Give the program a name to save it.');
+        return;
+    }
+
+    programSaveInFlight = true;
+
+    // Deep copy, because `programs[i] = {...currentEditingProgram}` is a shallow
+    // spread: schedule and workouts stayed shared references with the object
+    // still being edited, so unsaved edits leaked into the live program.
+    // activatedAt was missing from this whitelist. Firestore kept it, but the
+    // in-memory object and the boot cache were replaced WITHOUT it, so a single
+    // program edit silently lost the schedule anchor and the adherence window
+    // start, shifting the calendar and the score for reasons the user could not
+    // connect to anything they did.
+    const snapshot = {
+        name: currentEditingProgram.name,
+        active: currentEditingProgram.active,
+        schedule: JSON.parse(JSON.stringify(currentEditingProgram.schedule || {})),
+        workouts: JSON.parse(JSON.stringify(currentEditingProgram.workouts || {})),
+        createdAt: currentEditingProgram.createdAt,
+        activatedAt: currentEditingProgram.activatedAt || null,
+        exerciseVariations: JSON.parse(JSON.stringify(currentEditingProgram.exerciseVariations || {}))
+    };
+    const existingId = currentEditingProgram.id;
+
     try {
-        // Validate program
-        if (!currentEditingProgram.name || currentEditingProgram.name.trim() === '') {
-            alert('Program name is required. Please enter a program name.');
-            return;
-        }
+        let savedId = existingId;
 
-        // Prepare data
-        const programData = {
-            name: currentEditingProgram.name,
-            active: currentEditingProgram.active,
-            schedule: currentEditingProgram.schedule,
-            workouts: currentEditingProgram.workouts,
-            createdAt: currentEditingProgram.createdAt,
-            exerciseVariations: currentEditingProgram.exerciseVariations || {}
-        };
-
-        if (currentEditingProgram.id) {
-            // Update existing program
-            const docRef = doc(db, "programs", currentEditingProgram.id);
-            await updateDoc(docRef, programData);
-
-            // Update in local array
-            const index = programs.findIndex(p => p.id === currentEditingProgram.id);
-            if (index !== -1) {
-                programs[index] = { ...currentEditingProgram };
-                if (currentEditingProgram.active) {
-                    activeProgram = programs[index];
-                    // Reset currentDay to first day of new program before initialization
-                    if (activeProgram && activeProgram.schedule) {
-                        const dayKeys = Object.keys(activeProgram.schedule).sort((a, b) => {
-                            const numA = parseInt(a.replace('day', ''));
-                            const numB = parseInt(b.replace('day', ''));
-                            return numA - numB;
-                        });
-                        if (dayKeys.length > 0) {
-                            currentDay = dayKeys[0];
-                        }
-                    }
-                    // Re-render day selector for updated active program
-                    renderWorkoutDaySelector();
-                    initializeWorkout();
+        if (existingId) {
+            // A program created before it had content is not active yet. Once
+            // it has days and exercises, it takes over.
+            if (!snapshot.active && !programs.some(p => p.active && p.id !== existingId)) {
+                const ready = Object.keys(snapshot.schedule).length > 0 &&
+                    Object.values(snapshot.workouts || {}).some(l => Array.isArray(l) && l.length > 0);
+                if (ready) {
+                    snapshot.active = true;
+                    snapshot.activatedAt = snapshot.activatedAt || new Date().toISOString();
                 }
             }
+            await updateDoc(doc(db, "programs", existingId), snapshot);
         } else {
-            // Create new program
-            const docRef = await addDoc(collection(db, "programs"), programData);
-            currentEditingProgram.id = docRef.id;
-            const newProgram = { ...currentEditingProgram };
-            programs.push(newProgram);
+            // Building a program is a signal you intend to use it, so it
+            // becomes active. But autosave fires one second after the FIRST
+            // KEYSTROKE of the name, and activating an empty program deactivated
+            // the real one, emptied the day selector and stranded the user with
+            // no workout at all. Only take over once it has something in it.
+            const hasRealContent = Object.keys(snapshot.schedule).length > 0 &&
+                Object.values(snapshot.workouts || {}).some(list => Array.isArray(list) && list.length > 0);
+            snapshot.active = hasRealContent;
+            if (snapshot.active) snapshot.activatedAt = new Date().toISOString();
+            const docRef = await addDoc(collection(db, "programs"), snapshot);
+            savedId = docRef.id;
+            if (currentEditingProgram) currentEditingProgram.active = snapshot.active;
+            // Re-check after the await. The editor may have been closed while
+            // the write was in flight; that must not throw.
+            if (currentEditingProgram) currentEditingProgram.id = savedId;
         }
+
+        const saved = { id: savedId, ...snapshot };
+        const index = programs.findIndex(p => p.id === savedId);
+        if (index !== -1) programs[index] = saved;
+        else programs.push(saved);
+
+        // Deactivate the others in the background. Awaiting one updateDoc per
+        // program sequentially is what made the Activate button appear dead on
+        // a weak signal, because Firestore write promises settle on server ack.
+        if (saved.active) {
+            programs
+                .filter(other => other.id && other.id !== savedId && other.active !== false)
+                .forEach(other => {
+                    other.active = false;
+                    updateDoc(doc(db, "programs", other.id), { active: false })
+                        .catch(err => console.error('Could not deactivate program:', err));
+                });
+        }
+
+        if (saved.active) {
+            activeProgram = saved;
+            invalidateScheduleTimeline();
+            currentDay = getScheduleDayKeyForToday() || currentDay;
+            renderWorkoutDaySelector();
+            initializeWorkout();
+        }
+
+        // The boot cache was never refreshed after a program save, so the next
+        // launch painted the previous version until Firebase responded.
+        refreshStartupCache();
 
         unsavedChanges = false;
         showSaveIndicator();
+        if (!existingId && saved.active) {
+            showToast(`"${saved.name}" is now your active program.`, 'success');
+        }
         console.log('Program saved successfully');
 
     } catch (e) {
         console.error("Error saving program:", e);
-        alert('Error saving program. Please try again.');
+        showEditorMessage('Could not save. Your changes are still here, and it will retry.', 'error');
+        unsavedChanges = true;
+    } finally {
+        programSaveInFlight = false;
+        if (programSaveQueued) {
+            programSaveQueued = false;
+            if (currentEditingProgram) saveProgramToFirestore();
+        }
     }
 }
 
@@ -1684,141 +2203,302 @@ function daysBetween(date1Str, date2Str) {
     return diffDays;
 }
 
-// Helper function: Find the most recent completed non-Rest workout before (or on) a target date
-// Returns { date: string, day: string } or null if none found
-function getMostRecentCompletedNonRestWorkoutBefore(targetDateStr) {
-    const targetDate = new Date(targetDateStr + 'T00:00:00.000Z');
+// ---------------------------------------------------------------------------
+// Scheduling engine
+//
+// PREVIOUS BEHAVIOUR (removed): the cycle advanced by CALENDAR DAYS from the
+// last logged workout. Because a 7-entry cycle and a 7-day week advance in
+// lockstep, every workout type became pinned to a fixed weekday, and a missed
+// session was silently deleted rather than re-offered. Missing the same weekday
+// four times meant that workout was never trained, which is the exact
+// asymmetry the schedule was supposed to prevent. Two in-app alerts claimed
+// sessions were "pushed back by one day"; nothing was.
+//
+// CURRENT BEHAVIOUR: the schedule is a QUEUE. A slot is consumed only when its
+// workout is actually done. Rest slots are consumed by the passage of time.
+// Anything else leaves the slot pending, so a missed session becomes tomorrow's
+// session and everything behind it slides by a day.
+// ---------------------------------------------------------------------------
 
-    // Filter to non-Rest workouts that are on or before the target date
-    const eligibleWorkouts = allWorkouts
-        .filter(w => {
-            if (w.day === 'Rest') return false;
-            const workoutDate = new Date(w.date + 'T00:00:00.000Z');
-            return workoutDate <= targetDate;
-        })
-        .sort((a, b) => {
-            const dateA = new Date(a.date + 'T00:00:00.000Z');
-            const dateB = new Date(b.date + 'T00:00:00.000Z');
-            return dateB.getTime() - dateA.getTime(); // Most recent first
-        });
+const SCHEDULE_LOOKBACK_DAYS = 180;   // bounds the walk; older history cannot change today
+const SCHEDULE_LOOKAHEAD_DAYS = 90;   // enough for the calendar to render future months
 
-    if (eligibleWorkouts.length > 0) {
-        return {
-            date: eligibleWorkouts[0].date,
-            day: eligibleWorkouts[0].day
-        };
+// Slots that time alone consumes. An unnamed program day ('') is treated as
+// rest so it cannot wedge the queue forever.
+const REST_SLOT_NAMES = ['rest', 'rest day', 'off', 'off day', 'recovery', 'recovery day', 'active recovery'];
+
+// Only the literal string "rest" counted, so naming a day "Off" or "Recovery"
+// made it a workout that could never be completed. The queue then never
+// advanced past it and the logger opened on that day forever.
+function isRestSlot(slotName) {
+    const n = normalizeLabel(slotName);
+    return n === '' || REST_SLOT_NAMES.includes(n);
+}
+
+function addDaysToDateString(dateStr, days) {
+    const d = new Date(dateStr + 'T00:00:00.000Z');
+    d.setUTCDate(d.getUTCDate() + days);
+    return d.toISOString().split('T')[0];
+}
+
+// Earliest date the queue can be anchored to.
+function getScheduleAnchorDate() {
+    const today = getTodayDateString();
+    const floor = addDaysToDateString(today, -SCHEDULE_LOOKBACK_DAYS);
+
+    const candidates = [];
+    if (activeProgram && activeProgram.activatedAt) {
+        const activated = String(activeProgram.activatedAt).split('T')[0];
+        if (/^\d{4}-\d{2}-\d{2}$/.test(activated)) candidates.push(activated);
     }
-    return null;
+    if (allWorkouts.length) {
+        const earliest = allWorkouts
+            .map(w => w.date)
+            .filter(d => typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d))
+            .sort()[0];
+        if (earliest) candidates.push(earliest);
+    }
+    if (!candidates.length) return floor;
+
+    const anchor = candidates.sort()[0];
+    return anchor < floor ? floor : anchor;
+}
+
+let scheduleTimelineCache = null;
+let scheduleTimelineCacheKey = '';
+
+function getScheduleTimelineKey() {
+    const newest = allWorkouts.length ? (allWorkouts[0].id || '') + (allWorkouts[0].date || '') : '';
+    return [
+        activeProgram ? activeProgram.id : 'none',
+        activeProgram ? (activeProgram.activatedAt || '') : '',
+        allWorkouts.length,
+        newest,
+        (window.sickDayData || []).length,
+        ((window.travelModeData) || []).length,
+        getTodayDateString()
+    ].join('|');
+}
+
+// One pass builds the whole timeline, so the calendar, the streak and the
+// adherence score all read the same answer instead of each re-deriving it.
+function buildScheduleTimeline() {
+    const timeline = new Map();
+    const scheduleArray = activeProgram ? getProgramScheduleArray(activeProgram) : workoutSchedule;
+    if (!scheduleArray || scheduleArray.length === 0) return timeline;
+
+    // Where each workout type sits in the cycle, for resuming after a session
+    // done out of order.
+    const slotPositions = new Map();
+    scheduleArray.forEach((slot, idx) => {
+        const key = normalizeLabel(slot);
+        if (key && !slotPositions.has(key)) slotPositions.set(key, idx);
+    });
+
+    const workoutsByDate = new Map();
+    allWorkouts.forEach(w => { if (w && w.date && !workoutsByDate.has(w.date)) workoutsByDate.set(w.date, w); });
+
+    const today = getTodayDateString();
+    const start = getScheduleAnchorDate();
+    const end = addDaysToDateString(today, SCHEDULE_LOOKAHEAD_DAYS);
+
+    let index = 0;
+    let cursor = start;
+
+    while (cursor <= end) {
+        const slot = scheduleArray[index % scheduleArray.length];
+        const logged = workoutsByDate.get(cursor);
+
+        if (logged) {
+            timeline.set(cursor, logged.day);   // what you actually did wins
+        } else if (isDateSickDay(cursor)) {
+            timeline.set(cursor, 'Sick');
+        } else if (isDateInTravelMode(cursor)) {
+            timeline.set(cursor, 'Travel');
+        } else {
+            timeline.set(cursor, slot);
+        }
+
+        // Advance the queue for the NEXT day.
+        //
+        // Past and today: a slot is owed until it is done, so a missed session
+        // rolls forward. The FUTURE cannot work that way, because no future day
+        // can have a logged workout, so the index would freeze and every day
+        // for the next three months would show the same session. Beyond today
+        // the schedule is a projection, so it simply advances.
+        if (cursor > today) {
+            index++;
+        } else if (isRestSlot(slot)) {
+            index++;                            // rest is consumed by time
+        } else if (logged) {
+            const loggedKey = normalizeLabel(logged.day);
+            if (loggedKey === normalizeLabel(slot)) {
+                index++;                        // did what was queued
+            } else if (slotPositions.has(loggedKey) && !isRestSlot(logged.day)) {
+                // Resume after the session that was actually done. Rest is
+                // excluded: 'rest' is in the schedule array, so a logged Rest
+                // day used to jump the index BACKWARDS to just after the first
+                // Rest slot, discarding whatever session was owed and quietly
+                // erasing a miss from the discipline score.
+                index = slotPositions.get(loggedKey) + 1;
+            }
+            // A logged Rest, or a substitute session not in the program (a
+            // tournament circuit), consumes nothing. The queued session is
+            // still owed, so it rolls to tomorrow.
+        }
+        // Missed, sick or travelling with nothing logged: index holds, so the
+        // slot becomes tomorrow's workout and the rest of the week slides.
+
+        cursor = addDaysToDateString(cursor, 1);
+    }
+
+    return timeline;
+}
+
+function getScheduleTimeline() {
+    const key = getScheduleTimelineKey();
+    if (scheduleTimelineCache && scheduleTimelineCacheKey === key) return scheduleTimelineCache;
+    scheduleTimelineCacheKey = key;
+    scheduleTimelineCache = buildScheduleTimeline();
+    return scheduleTimelineCache;
+}
+
+function invalidateScheduleTimeline() {
+    scheduleTimelineCache = null;
+    scheduleTimelineCacheKey = '';
 }
 
 function getScheduledWorkout(date) {
     const actualWorkout = getWorkoutForDate(date);
+    if (actualWorkout) return actualWorkout.day;
 
-    // If there's an actual workout on this date, return its type (HIGHEST PRIORITY)
-    // A logged workout overrides sick/travel markers because actual workout data
-    // is authoritative - users want logged workouts to count toward their progress
-    // even if the date was originally marked as sick or travel
-    if (actualWorkout) {
-        return actualWorkout.day;
+    const timeline = getScheduleTimeline();
+    if (timeline.has(date)) return timeline.get(date);
+
+    // Outside the modelled window, fall back to the plain cycle so nothing throws.
+    if (isDateSickDay(date)) return 'Sick';
+    if (isDateInTravelMode(date)) return 'Travel';
+    let scheduleArray = activeProgram ? getProgramScheduleArray(activeProgram) : workoutSchedule;
+    // A program saved with zero days made this `% 0` -> NaN, which produced no
+    // day buttons and a blank logger with no error.
+    if (!scheduleArray || scheduleArray.length === 0) scheduleArray = workoutSchedule;
+    const daysDiff = daysBetween(SCHEDULE_REFERENCE_DATE, date);
+    const idx = ((daysDiff % scheduleArray.length) + scheduleArray.length) % scheduleArray.length;
+    return scheduleArray[idx];
+}
+
+// Which program day key is owed today. Used to open the logger on the right
+// session instead of always on day one.
+function getScheduleDayKeyForToday() {
+    if (!activeProgram || !activeProgram.schedule) return null;
+
+    // If a session is already logged today, STAY on it. Advancing to tomorrow
+    // hid the half-finished session behind a day pill the user had no reason to
+    // tap, and anything typed on the day the logger opened on was saved as a
+    // second, wrongly-labelled session. Staying put is what makes finishing a
+    // workout later in the day actually work.
+    const today = getTodayDateString();
+    const loggedToday = getWorkoutForDate(today);
+    const todaysType = loggedToday ? loggedToday.day : getScheduledWorkout(today);
+    if (!todaysType) return null;
+
+    const dayKeys = Object.keys(activeProgram.schedule).sort((a, b) =>
+        parseInt(a.replace('day', ''), 10) - parseInt(b.replace('day', ''), 10));
+
+    const wanted = normalizeLabel(todaysType);
+    for (const key of dayKeys) {
+        if (normalizeLabel(getWorkoutTypeForDay(activeProgram, key)) === wanted) return key;
     }
-
-    // Check if date is a sick day
-    if (isDateSickDay(date)) {
-        return 'Sick';
-    }
-
-    // Check if date is in travel mode - show scheduled workout but don't penalize if missed
-    if (isDateInTravelMode(date)) {
-        return 'Travel';
-    }
-
-    // Get the schedule array for the active program
-    // Falls back to ULPPL schedule if no active program
-    const scheduleArray = activeProgram ? getProgramScheduleArray(activeProgram) : workoutSchedule;
-
-    // Calendar-day-based advancement approach:
-    // Find the most recent completed non-Rest workout, then advance through the cycle
-    // by counting calendar days (not skipping Rest/Sick/Travel)
-
-    const lastCompleted = getMostRecentCompletedNonRestWorkoutBefore(date);
-
-    if (lastCompleted) {
-        // We have a most recent completed non-Rest workout
-        // Calculate calendar days between lastCompleted.date and the target date
-        const daysDiff = daysBetween(lastCompleted.date, date);
-
-        // Find the index of the last completed workout in the schedule
-        const lastCompletedIndex = scheduleArray.indexOf(lastCompleted.day);
-
-        // Advance by daysDiff positions in the cycle
-        const scheduleIndex = (lastCompletedIndex + daysDiff) % scheduleArray.length;
-        return scheduleArray[scheduleIndex];
-    } else {
-        // No completed non-Rest workouts found
-        // Fall back to deterministic reference date (defined at top of file)
-        const daysDiff = daysBetween(SCHEDULE_REFERENCE_DATE, date);
-
-        // Handle negative modulo safely
-        const scheduleIndex = ((daysDiff % scheduleArray.length) + scheduleArray.length) % scheduleArray.length;
-        return scheduleArray[scheduleIndex];
-    }
+    return null;
 }
 
 function getWorkoutForDate(dateString) {
-    const workout = allWorkouts.find(w => w.date === dateString);
-    if (workout) {
-        console.log(`Found workout for ${dateString}: type="${workout.day}", hasExercises=${!!workout.exercises}`);
-    }
-    return workout;
+    return allWorkouts.find(w => w.date === dateString);
 }
 
+// ---------------------------------------------------------------------------
+// Discipline score.
+//
+// Fixed here:
+//  - Today counted toward `scheduled` but could not yet count as missed, so the
+//    three tiles on screen literally did not reconcile (completed + missed was
+//    never equal to scheduled) and the score was docked for a session still
+//    hours away.
+//  - The loop stepped local dates but read them via toISOString(), i.e. UTC, so
+//    every evening a day that had not happened yet joined the denominator.
+//  - T-30d through T inclusive is 31 days, not 30.
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// Discipline score.
+//
+// The queue change broke the old per-day count. Because an unmade session now
+// rolls forward, walking the calendar and counting "scheduled but nothing
+// logged" charged the SAME missed session once per day, and the denominator
+// grew the longer you were away. A week off produced 7 misses of one session
+// and a `scheduled` total higher than a perfect user's, so the percentage was
+// not a rate of anything.
+//
+// It now measures against the pace the program prescribes. Over N available
+// days, a cycle with T training slots out of C days expects N * T / C
+// sessions. Sick and travel days are removed from N rather than counted
+// against you, and today is excluded until something is logged.
+// ---------------------------------------------------------------------------
 function calculateAdherence() {
-    const today = new Date();
-    const thirtyDaysAgo = new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000));
-    
-    // Use program activation date as the starting point if available
-    // This ensures discipline score starts fresh for new programs
-    let startDate;
+    const today = getTodayDateString();
+    const thirtyDaysAgo = addDaysToDateString(today, -29);   // 30 days inclusive
+
+    let startDate = thirtyDaysAgo;
     if (activeProgram && activeProgram.activatedAt) {
-        const activationDate = new Date(activeProgram.activatedAt);
-        
-        // Use the more recent of activation date or 30 days ago
-        startDate = activationDate > thirtyDaysAgo ? activationDate : thirtyDaysAgo;
-    } else {
-        // Fallback to 30-day window if no activation date
-        startDate = thirtyDaysAgo;
-    }
-
-    let scheduled = 0;
-    let completed = 0;
-    let missed = 0;
-
-    for (let d = new Date(startDate); d <= today; d.setDate(d.getDate() + 1)) {
-        const dateStr = d.toISOString().split('T')[0];
-        const scheduledWorkout = getScheduledWorkout(dateStr);
-        const actualWorkout = getWorkoutForDate(dateStr);
-
-        // Exclude rest days from adherence calculations
-        // Sick/travel days without logged workouts are excluded (getScheduledWorkout returns 'Sick'/'Travel')
-        // Sick/travel days WITH logged workouts are included (getScheduledWorkout returns the workout type)
-        if (scheduledWorkout !== 'Rest' && scheduledWorkout !== 'Travel' && scheduledWorkout !== 'Sick') {
-            scheduled++;
-            if (actualWorkout) {
-                completed++;
-            } else if (d < today) { // Don't count future dates as missed
-                missed++;
-            }
+        const activated = String(activeProgram.activatedAt).split('T')[0];
+        if (/^\d{4}-\d{2}-\d{2}$/.test(activated) && activated > startDate) {
+            startDate = activated;
         }
     }
 
-    const adherenceScore = scheduled > 0 ? Math.round((completed / scheduled) * 100) : 0;
+    const scheduleArray = activeProgram ? getProgramScheduleArray(activeProgram) : workoutSchedule;
+    const cycleLength = (scheduleArray && scheduleArray.length) ? scheduleArray.length : 7;
+    const trainingSlots = (scheduleArray || []).filter(slot => !isRestSlot(slot)).length;
 
-    return {
-        score: adherenceScore,
-        completed,
-        scheduled,
-        missed
-    };
+    let availableDays = 0;
+    let completed = 0;
+
+    for (let dateStr = startDate; dateStr <= today; dateStr = addDaysToDateString(dateStr, 1)) {
+        const logged = getWorkoutForDate(dateStr);
+
+        if (logged) {
+            // A session logged on a sick or travel day still counts for you.
+            if (!isRestSlot(logged.day)) completed++;
+            availableDays++;
+            continue;
+        }
+
+        // Nothing logged. Absences you declared do not count against you.
+        if (isDateSickDay(dateStr) || isDateInTravelMode(dateStr)) continue;
+
+        // Today has not been earned or lost yet.
+        if (dateStr === today) continue;
+
+        availableDays++;
+    }
+
+    // A program with no training days, or a window with no days in it, has
+    // nothing to be measured against. Returning scheduled:0 alongside a
+    // non-zero completed made the three tiles contradict each other, so report
+    // the sessions and a full score rather than 0% of nothing.
+    if (trainingSlots === 0 || availableDays === 0) {
+        return { score: completed > 0 ? 100 : 0, completed, scheduled: completed, missed: 0 };
+    }
+
+    // Math.max(completed, expected) used to raise the denominator to whatever
+    // had been completed, so banked over-training erased every later miss:
+    // training daily for three weeks then skipping nine days straight still
+    // reported 100% and 0 missed. Expected pace is now independent of what was
+    // actually done, and only the SCORE is capped.
+    const expected = Math.round(availableDays * (trainingSlots / cycleLength));
+    const missed = Math.max(0, expected - completed);
+    const score = expected > 0 ? Math.round((completed / expected) * 100) : 100;
+
+    return { score: Math.min(100, score), completed, scheduled: Math.max(expected, completed), missed };
 }
 // Enhanced Analytics Functions
 function calculateTotalVolume() {
@@ -1866,7 +2546,10 @@ function calculateWorkoutStreak() {
         const actual = getWorkoutForDate(dateStr);
 
         // Only count as missed if it was a scheduled workout (not rest or travel)
-        if (scheduled !== 'Rest' && scheduled !== 'Travel' && !actual) {
+        // Was a literal 'Rest'/'Travel' check, so a day named "Off" or
+        // "Recovery" broke the streak, and being ill zeroed it while being on a
+        // plane did not.
+        if (!isNonTrainingLabel(scheduled) && !actual) {
             hasMissedWorkout = true;
             break;
         }
@@ -1889,7 +2572,7 @@ function calculateWorkoutStreak() {
         const actual = getWorkoutForDate(dateStr);
 
         // Only count scheduled workout days (not rest or travel)
-        if (scheduled !== 'Rest' && scheduled !== 'Travel') {
+        if (!isNonTrainingLabel(scheduled)) {
             // This was a scheduled workout day
             if (actual) {
                 streak++;
@@ -1905,13 +2588,7 @@ function calculateWorkoutStreak() {
     return streak;
 }
 
-function calculatePRCount() {
-    const today = new Date();
-    const sevenDaysAgo = new Date(today.getTime() - (7 * 24 * 60 * 60 * 1000));
 
-    const recentPRs = getRecentPRs(7);
-    return recentPRs.length;
-}
 
 function detectPlateaus() {
     const plateaus = [];
@@ -1956,23 +2633,30 @@ function detectPlateaus() {
 
         // Detect plateaus
         Object.keys(exerciseMap).forEach(exerciseName => {
+            // maxWeight is 0 for holds, walks and mobility work, so
+            // hasWeightProgression was permanently false and every one of them
+            // was reported as a plateau forever, with a "+2.5lbs" suggestion.
+            if (guessTrackingType(exerciseName) !== 'weight_reps') return;
             const progression = exerciseMap[exerciseName].slice(0, 3);
 
             if (progression.length < 3) return;
 
-            // Check if weight hasn't increased in 3 sessions
-            const weights = progression.map(p => p.maxWeight);
+            // progression[] arrives newest-first. Reverse it so "increased"
+            // means the newer session was heavier, not the older one.
+            const chronological = progression.slice().reverse();
+
+            const weights = chronological.map(p => p.maxWeight);
             const hasWeightProgression = weights.some((w, i) => i > 0 && w > weights[i - 1]);
 
-            // Check if volume is declining
-            const volumes = progression.map(p => p.totalVolume);
-            const hasVolumeDecline = volumes.length >= 2 && volumes[0] < volumes[1];
+            // Volume declining means the most recent session is the lighter one.
+            const volumes = chronological.map(p => p.totalVolume);
+            const hasVolumeDecline = volumes.length >= 2 && volumes[volumes.length - 1] < volumes[volumes.length - 2];
 
             if (!hasWeightProgression || hasVolumeDecline) {
                 plateaus.push({
                     exercise: exerciseName,
                     sessions: progression.length,
-                    lastWeight: weights[0],
+                    lastWeight: weights[weights.length - 1],
                     suggestion: generatePlateauSuggestion(exerciseName, progression)
                 });
             }
@@ -2059,13 +2743,19 @@ function generateAdvancedSuggestions() {
     }
 
     // Consistency suggestions
-    const recentWorkouts = allWorkouts.slice(0, 7);
+    // Previously this took the 7 most recent workouts REGARDLESS OF DATE, so
+    // anyone with 7 rows in history saw "100% workout rate this week" forever,
+    // including after months away. Count sessions in the actual last 7 days.
+    const weekStart = addDaysToDateString(getTodayDateString(), -6);
+    const todayStr = getTodayDateString();
+    const recentWorkouts = allWorkouts.filter(w =>
+        w.date >= weekStart && w.date <= todayStr && normalizeLabel(w.day) !== 'rest');
     if (recentWorkouts.length >= 3) {
-        const consistency = (recentWorkouts.length / 7) * 100;
-        if (consistency >= 60) {
+        const consistency = Math.min(100, (recentWorkouts.length / 7) * 100);
+        if (consistency >= 40) {
             suggestions.push({
                 type: 'motivation',
-                text: `Excellent consistency! ${Math.round(consistency)}% workout rate this week.`
+                text: `${recentWorkouts.length} sessions in the last 7 days. Keep it going.`
             });
         }
     } else if (recentWorkouts.length === 1) {
@@ -2096,19 +2786,37 @@ function calculateMuscleGroupVolumes() {
     return volumes;
 }
 
+// Volume in pounds is meaningless for holds, walks and bodyweight work, so
+// those exercises are excluded rather than silently contributing zero.
 function calculateWorkoutVolume(workout) {
-    if (workout.day === 'Rest') return 0;
+    if (isRestSlot(workout.day)) return 0;
 
     return Object.values(workout.exercises || {}).reduce((total, exercise) => {
-        return total + exercise.sets.reduce((setTotal, set) => {
+        // Only weight-and-reps work has a tonnage. Holds, walks and bodyweight
+        // sets used to contribute a silent zero, which dragged every comparison
+        // toward "Declining" for a session that had actually improved.
+        const type = exercise.trackingType && TRACKING_TYPES[exercise.trackingType]
+            ? exercise.trackingType
+            : guessTrackingType(exercise.substitution || exercise.exercise);
+        if (type !== 'weight_reps') return total;
+
+        return total + (exercise.sets || []).reduce((setTotal, set) => {
             return setTotal + (parseFloat(set.weight) || 0) * (parseInt(set.reps) || 0);
         }, 0);
     }, 0);
 }
 
 // Get all workouts of a specific type (e.g., all "Upper" workouts)
+// Matched with strict === against a hardcoded list of five names, which meant
+// every custom program compared "day1"-style keys or names like "Push/Pull"
+// against 'Upper'/'Lower'/... and matched nothing. Normalised comparison plus
+// newest-first ordering, which this function previously did not guarantee.
 function getWorkoutsByType(workoutType) {
-    return allWorkouts.filter(workout => workout.day === workoutType);
+    const wanted = normalizeLabel(workoutType);
+    if (!wanted) return [];
+    return allWorkouts
+        .filter(w => normalizeLabel(w.day) === wanted)
+        .sort((a, b) => workoutRecency(b) - workoutRecency(a));
 }
 
 // Calculate record volume for a workout type
@@ -2238,7 +2946,8 @@ function getPlateauedExercises(sessionsBack) {
     // Find exercises that haven't progressed
     const plateaued = [];
     Object.keys(exerciseHistory).forEach(exercise => {
-        const weights = exerciseHistory[exercise].slice(0, sessionsBack);
+        // Reverse to chronological order; the source array is newest-first.
+        const weights = exerciseHistory[exercise].slice(0, sessionsBack).reverse();
         if (weights.length >= sessionsBack) {
             const hasProgress = weights.some((weight, idx) => idx > 0 && weight > weights[idx - 1]);
             if (!hasProgress) {
@@ -2324,7 +3033,9 @@ function getTrendingUpExercises() {
     // Find exercises trending up
     const trending = [];
     Object.keys(exerciseHistory).forEach(exercise => {
-        const weights = exerciseHistory[exercise].slice(0, 4);
+        // allWorkouts is newest-first, so reverse to chronological order before
+        // comparing. Without this the check detects regression, not progress.
+        const weights = exerciseHistory[exercise].slice(0, 4).reverse();
         if (weights.length >= 3) {
             // Check if generally increasing
             const increases = weights.filter((weight, idx) => idx > 0 && weight > weights[idx - 1]).length;
@@ -2532,9 +3243,462 @@ function generateAIInsights() {
     return insights;
 }
 
+// ---------------------------------------------------------------------------
+// Tracking types
+//
+// The app decided between a checkbox and weight/reps entry using ONE rule:
+// whether the exercise name contained the literal word "stretch". Everything
+// else got a weight box and a reps box. For a program full of holds, balance
+// work and walking that is actively wrong: a hollow body hold asked for a
+// weight, and the only way to record 30 seconds was to type it in the reps box,
+// which then poisoned every downstream number.
+//
+// Each exercise now carries an explicit tracking type, defaulted from its name
+// and overridable in the program editor.
+// ---------------------------------------------------------------------------
+
+const TRACKING_TYPES = {
+    weight_reps: { label: 'Weight & reps', unit: 'lbs',  hint: 'Barbell, dumbbell, machine and cable work.' },
+    reps:        { label: 'Reps only',     unit: '',     hint: 'Bodyweight work where load is not the variable.' },
+    time:        { label: 'Time (seconds)', unit: 'sec', hint: 'Holds, planks, balance, levers, hangs.' },
+    duration:    { label: 'Duration (minutes)', unit: 'min', hint: 'Walking, cycling, rowing, any steady cardio.' },
+    checkoff:    { label: 'Just check it off', unit: '', hint: 'Stretches, mobility and primer work.' }
+};
+
+const TRACKING_GUESS = [
+    { type: 'checkoff', tokens: ['stretch', 'mobility', 'foam roll', 'roll the arch', 'breathing', 'cat-cow',
+                                 'cat cow', 'controlled articular', 'toe spread', 'arch doming', 'short foot',
+                                 'pull-apart', 'pull apart', 'legs up the wall', 'constructive rest'] },
+    // 'swim' alone matched "prone swimmers", which is a back exercise. Tokens
+    // here have to be specific enough not to swallow strength movements.
+    { type: 'duration', tokens: ['treadmill', 'walk', 'jog', 'running', 'bike', 'cycling', 'elliptical',
+                                 'swimming', 'cardio', 'zone 2', 'rowing machine', 'erg', 'stair climber'] },
+    { type: 'time',     tokens: ['hold', 'plank', 'balance', 'hang', 'l-sit', 'l sit', 'lever', 'handstand',
+                                 'carry', 'isometric', 'lean', 'wall sit', 'dead hang'] },
+    { type: 'reps',     tokens: ['push-up', 'pushup', 'push up', 'air squat', 'bodyweight', 'swimmers',
+                                 'glute bridge', 'dead bug', 'scapular', 'knee-to-wall', 'knee to wall',
+                                 'toe raise', 'pogo', 'hop'] }
+];
+
+// Words that mean load is the variable, which outranks a bodyweight guess.
+const LOADED_TOKENS = ['weighted', 'barbell', 'dumbbell', 'cable', 'machine', 'smith', 'trap bar',
+                       'goblet', 'plate', 'banded', 'leg press', 'hack squat'];
+
+function guessTrackingType(exerciseName) {
+    const name = normalizeLabel(exerciseName);
+    if (!name) return 'weight_reps';
+
+    for (const rule of TRACKING_GUESS) {
+        if (rule.tokens.some(t => name.includes(t))) {
+            // A weighted hold is still a hold, but a weighted push-up is a
+            // loaded rep scheme, so only the reps guess defers to load.
+            if (rule.type === 'reps' && LOADED_TOKENS.some(t => name.includes(t))) return 'weight_reps';
+            return rule.type;
+        }
+    }
+    return 'weight_reps';
+}
+
+function getTrackingType(exercise, workoutExercise) {
+    const explicit = (workoutExercise && workoutExercise.trackingType) ||
+                     (exercise && exercise.trackingType);
+    if (explicit && TRACKING_TYPES[explicit]) return explicit;
+    return guessTrackingType((exercise && exercise.name) || (workoutExercise && workoutExercise.exercise));
+}
+
+// What one logged set looks like for each type.
+function blankSetForType(type) {
+    switch (type) {
+        case 'time':     return { seconds: '', notes: '' };
+        case 'duration': return { minutes: '', notes: '' };
+        case 'reps':     return { reps: '', notes: '' };
+        case 'checkoff': return { completed: false };
+        default:         return { weight: '', reps: '', notes: '' };
+    }
+}
+
+// Human-readable summary of a logged set, used by the "last session" line.
+function formatSetForType(set, type) {
+    if (!set) return '';
+    switch (type) {
+        case 'time':     return set.seconds ? `${set.seconds} sec` : '';
+        case 'duration': return set.minutes ? `${set.minutes} min` : '';
+        case 'reps':     return set.reps ? `${set.reps} reps` : '';
+        case 'checkoff': return set.completed ? 'done' : '';
+        default:         return (set.weight || set.reps) ? `${set.weight}×${set.reps}` : '';
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Daily routines
+//
+// The morning primer and the pre-bed routine were reference panels with no
+// logging at all, even though they happen at different times of day from the
+// training session and are the part of the program most at risk of quietly
+// being skipped. They are stored separately from workouts on purpose: a
+// routine is not a session, and mixing them would corrupt volume, set counts
+// and the training score.
+// ---------------------------------------------------------------------------
+
+const ROUTINE_CACHE_KEY = 'fcc:cache:routines:v1';
+let dailyRoutines = [];
+
+async function loadDailyRoutines() {
+    try {
+        const from = addDaysToDateString(getTodayDateString(), -90);
+        const q = query(
+            collection(db, "dailyRoutines"),
+            where("date", ">=", from),
+            orderBy("date", "desc"),
+            limit(120)
+        );
+        const snapshot = await getDocs(q);
+        const rows = [];
+        snapshot.forEach(d => rows.push({ id: d.id, ...d.data() }));
+        dailyRoutines = rows;
+        writeCache(ROUTINE_CACHE_KEY, rows.slice(0, 90));
+        renderRoutineState();
+        return rows;
+    } catch (e) {
+        console.error('Failed to load daily routines:', e);
+        const cached = readCache(ROUTINE_CACHE_KEY);
+        if (Array.isArray(cached)) { dailyRoutines = cached; renderRoutineState(); }
+        return dailyRoutines;
+    }
+}
+
+function getRoutineRecord(dateStr) {
+    return dailyRoutines.find(r => r.date === dateStr) || null;
+}
+
+function isRoutineDone(which, dateStr) {
+    const record = getRoutineRecord(dateStr || getTodayDateString());
+    return Boolean(record && record[which]);
+}
+
+// Consecutive days back from today, so the primer gets the streak the training
+// side already has.
+function getRoutineStreak(which) {
+    let streak = 0;
+    let cursor = getTodayDateString();
+    // Today not being done yet should not break a streak mid-morning.
+    if (!isRoutineDone(which, cursor)) cursor = addDaysToDateString(cursor, -1);
+    while (isRoutineDone(which, cursor)) {
+        streak++;
+        cursor = addDaysToDateString(cursor, -1);
+    }
+    return streak;
+}
+
+function countRoutineDays(which, days) {
+    const from = addDaysToDateString(getTodayDateString(), -(days - 1));
+    return dailyRoutines.filter(r => r.date >= from && r[which]).length;
+}
+
+const routineWriteInFlight = { morning: false, evening: false };
+
+window.toggleRoutineDone = async function (which, event) {
+    if (event) event.preventDefault();   // the button sits inside a <summary>
+    if (event) event.stopPropagation();  // so it must not also toggle the panel
+
+    // record.id is only assigned after the await, so two quick taps both took
+    // the "no id yet" branch and created two documents for the same day, which
+    // permanently desynced the streak and the 30-day count.
+    if (routineWriteInFlight[which]) return;
+    routineWriteInFlight[which] = true;
+
+    const today = getTodayDateString();
+    const existing = getRoutineRecord(today);
+    const nextValue = !(existing && existing[which]);
+
+    // Update locally first so the tap feels instant and works offline.
+    if (existing) {
+        existing[which] = nextValue;
+    } else {
+        dailyRoutines.unshift({ id: null, date: today, morning: false, evening: false, [which]: nextValue });
+    }
+    renderRoutineState();
+    writeCache(ROUTINE_CACHE_KEY, dailyRoutines.slice(0, 90));
+
+    const record = getRoutineRecord(today);
+    try {
+        if (record.id) {
+            await updateDoc(doc(db, "dailyRoutines", record.id), { [which]: nextValue });
+        } else {
+            const payload = {
+                date: today,
+                morning: Boolean(record.morning),
+                evening: Boolean(record.evening),
+                timestamp: new Date().toISOString()
+            };
+            const ref = await addDoc(collection(db, "dailyRoutines"), payload);
+            record.id = ref.id;
+        }
+        writeCache(ROUTINE_CACHE_KEY, dailyRoutines.slice(0, 90));
+    } catch (e) {
+        // There is no retry queue, so claiming it would sync later was a lie
+        // and the tick silently vanished on the next load. Revert instead.
+        console.error('Could not save routine:', e);
+        const revert = getRoutineRecord(today);
+        if (revert) revert[which] = !nextValue;
+        renderRoutineState();
+        writeCache(ROUTINE_CACHE_KEY, dailyRoutines.slice(0, 90));
+        showToast('Could not save that. Check your connection and tap again.', 'error');
+    } finally {
+        routineWriteInFlight[which] = false;
+    }
+};
+
+function renderRoutineState() {
+    [['morning'], ['evening']].forEach(([which]) => {
+        const btn = document.getElementById('routine-done-' + which);
+        const status = document.getElementById('routine-status-' + which);
+        if (!btn) return;
+
+        const done = isRoutineDone(which);
+        btn.textContent = done ? 'Done today' : 'Mark done';
+        btn.classList.toggle('done', done);
+        btn.setAttribute('aria-pressed', String(done));
+
+        if (status) {
+            const streak = getRoutineStreak(which);
+            const last30 = countRoutineDays(which, 30);
+            status.textContent = streak > 0
+                ? streak + ' day streak \u00b7 ' + last30 + ' of the last 30'
+                : last30 + ' of the last 30 days';
+        }
+    });
+}
+
+// ---------------------------------------------------------------------------
+// Skill progressions
+//
+// Calisthenics skills are not one exercise, they are a ladder. Logging "front
+// lever" with no level makes progress invisible, so each skill carries its
+// levels and the standard for moving up. The chosen level is stored on the
+// exercise and saved with the session.
+// ---------------------------------------------------------------------------
+
+const SKILL_PROGRESSIONS = {
+    'front lever': {
+        label: 'Front lever',
+        levels: [
+            { name: 'Dead hang', target: '3 x 30-45 sec',
+              cue: 'Straight arms, shoulders active, ribs down.',
+              gate: 'Hold 45 sec before moving up.' },
+            { name: 'Scapular pull-up', target: '3 x 8-10',
+              cue: 'Arms stay straight. Only the shoulder blades move, down and together.',
+              gate: '10 clean reps with a 2 sec hold at the top.' },
+            { name: 'Straight-arm pulldown', target: '3 x 12-15',
+              cue: 'Cable machine, arms locked straight, pull to the thighs.',
+              gate: 'This runs alongside the bar work, not instead of it.' },
+            { name: 'Tuck hang', target: '4 x 10-15 sec',
+              cue: 'Hang, pull the knees to the chest, let the torso tip back. Arms straight.',
+              gate: '3 sets of 15 sec with the lower back flat.' },
+            { name: 'Tuck front lever', target: '4 x 10-20 sec',
+              cue: 'Knees tight to chest, torso horizontal, pelvis tucked under.',
+              gate: '3 sets of 15 sec before opening the knees.' },
+            { name: 'Advanced tuck', target: '4 x 8-15 sec',
+              cue: 'Open the knees toward 90 degrees. Keep the lower back flat against the tuck.',
+              gate: '3 sets of 12 sec.' },
+            { name: 'One-leg lever', target: '4 x 8-12 sec per side',
+              cue: 'One leg extends, the other stays tucked. Alternate the extended leg.',
+              gate: '10 sec per side, both sides equal.' },
+            { name: 'Straddle lever', target: '4 x 5-10 sec',
+              cue: 'Both legs straight and wide. The wider the straddle the easier it is.',
+              gate: '3 sets of 8 sec.' },
+            { name: 'Full front lever', target: '4 x 3-8 sec',
+              cue: 'Legs together, body horizontal, straight arms throughout.',
+              gate: 'The goal.' }
+        ]
+    },
+    'handstand': {
+        label: 'Handstand',
+        levels: [
+            { name: 'Wrist prep and plank', target: '2 min total',
+              cue: 'Wrist circles, then a 30 sec plank with the shoulders stacked over the hands.',
+              gate: 'Wrists comfortable under full bodyweight.' },
+            { name: 'Pike push-up', target: '3 x 6-8',
+              cue: 'Hips high, head travels toward the floor between the hands.',
+              gate: '8 clean reps.' },
+            { name: 'Back-to-wall hold', target: '3 x 30 sec',
+              cue: 'Feet on the wall, hands close in. Easier, but it lets you cheat the line.',
+              gate: '30 sec without the lower back arching.' },
+            { name: 'Chest-to-wall hold', target: '3 x 30-45 sec',
+              cue: 'Face the wall, walk the feet up, hands close. This is the honest version.',
+              gate: '45 sec with ribs down and a stacked line.' },
+            { name: 'Wall taps', target: '3 x 5-8 per side',
+              cue: 'From chest-to-wall, shift the weight and lift one hand briefly.',
+              gate: '8 taps per side under control.' },
+            { name: 'Freestanding attempts', target: '10 min of short tries',
+              cue: 'Kick up away from the wall. Many short attempts beat a few long ones.',
+              gate: 'The goal.' }
+        ]
+    },
+    'l-sit': {
+        label: 'L-sit',
+        levels: [
+            { name: 'Foot-supported hold', target: '4 x 15-20 sec',
+              cue: 'On parallel bars, press down hard, heels stay lightly on the floor.',
+              gate: '20 sec with the shoulders pushed down away from the ears.' },
+            { name: 'One-leg tuck', target: '4 x 10-15 sec per side',
+              cue: 'One knee tucked up, the other foot lightly supporting.',
+              gate: '15 sec per side.' },
+            { name: 'Tuck L-sit', target: '4 x 10-20 sec',
+              cue: 'Both knees tucked, feet off the floor. Watch the left hip and stop if it pinches.',
+              gate: '3 sets of 15 sec, pain free.' },
+            { name: 'One-leg extended', target: '4 x 8-12 sec per side',
+              cue: 'One leg straight out, the other tucked.',
+              gate: '10 sec per side.' },
+            { name: 'Full L-sit', target: '4 x 5-15 sec',
+              cue: 'Both legs straight and parallel to the floor.',
+              gate: 'The goal.' }
+        ]
+    }
+};
+
+// Skills are matched loosely, so "Tuck Front Lever Hold" still finds the ladder.
+function getSkillProgression(exerciseName) {
+    const name = normalizeLabel(exerciseName);
+    if (!name) return null;
+    for (const key of Object.keys(SKILL_PROGRESSIONS)) {
+        if (name.includes(key)) return { key, ...SKILL_PROGRESSIONS[key] };
+    }
+    return null;
+}
+
+// ---------------------------------------------------------------------------
+// Previous-session lookup
+//
+// completeWorkout() saves `day` as the RESOLVED workout type name (e.g.
+// "Push/Pull"), while the UI tracks `currentDay` as a schedule key (e.g.
+// "day1"). Comparing those two strings directly never matched, so every
+// "last session" label, per-set Copy button and suggested weight silently
+// disappeared. These helpers compare against every label a day could have
+// been saved under, including raw keys from older rows.
+// ---------------------------------------------------------------------------
+
+function normalizeLabel(value) {
+    return String(value == null ? '' : value).trim().toLowerCase();
+}
+
+function getDayLabelCandidates(day) {
+    const candidates = new Set();
+    const add = (value) => {
+        const normalized = normalizeLabel(value);
+        if (normalized) candidates.add(normalized);
+    };
+
+    // Raw key covers legacy rows and the default plans, whose keys ARE type names.
+    add(day);
+
+    if (activeProgram && activeProgram.schedule) {
+        add(getWorkoutTypeForDay(activeProgram, day));
+        add(getCustomNameForDay(activeProgram, day));
+    }
+
+    return candidates;
+}
+
+function workoutRecency(workout) {
+    const ts = workout && workout.timestamp;
+    if (ts) {
+        if (typeof ts.seconds === 'number') return ts.seconds * 1000;
+        if (typeof ts.toMillis === 'function') return ts.toMillis();
+        const parsedTs = new Date(ts).getTime();
+        if (!isNaN(parsedTs)) return parsedTs;
+    }
+    const parsedDate = new Date(workout && workout.date).getTime();
+    return isNaN(parsedDate) ? 0 : parsedDate;
+}
+
+// Every past session logged under this day, most recent first. Sorted here
+// rather than trusting the load order, since other code paths mutate
+// allWorkouts in place.
+function getWorkoutsForDay(day) {
+    const candidates = getDayLabelCandidates(day);
+    if (candidates.size === 0) return [];
+
+    return allWorkouts
+        .filter(workout => candidates.has(normalizeLabel(workout.day)))
+        .sort((a, b) => workoutRecency(b) - workoutRecency(a));
+}
+
+// Every name a given slot could have been logged under, so a substituted or
+// renamed exercise still finds its own history.
+function getExerciseNameCandidates(workoutExercise, fallbackName) {
+    const names = new Set();
+    const add = (value) => {
+        const normalized = normalizeLabel(value);
+        if (normalized) names.add(normalized);
+    };
+
+    if (workoutExercise) {
+        add(workoutExercise.exercise);
+        add(workoutExercise.substitution);
+        add(workoutExercise.originalExercise);
+    }
+    add(fallbackName);
+
+    return names;
+}
+
+// Matches by exercise NAME rather than by position, so reordering a program or
+// inserting an exercise no longer compares bench press against rows.
+function findPreviousExercise(day, exerciseIndex, exerciseNames, approach = null) {
+    const dayWorkouts = getWorkoutsForDay(day);
+    if (dayWorkouts.length === 0) return null;
+
+    // Must recognise EVERY tracking type. Checking only weight and reps meant a
+    // hold logged as {seconds:'30'} counted as no data, so time-based and
+    // cardio exercises found no history, no "last session" line and no working
+    // Copy button.
+    const hasValue = (v) => v !== '' && v != null;
+    const hasLoggedData = (ex) => Boolean(
+        ex && Array.isArray(ex.sets) && ex.sets.some(set =>
+            set && (
+                hasValue(set.weight) || hasValue(set.reps) ||
+                hasValue(set.seconds) || hasValue(set.minutes) ||
+                set.completed === true
+            ))
+    );
+
+    const matchesName = (ex) => Boolean(ex && (
+        exerciseNames.has(normalizeLabel(ex.exercise)) ||
+        exerciseNames.has(normalizeLabel(ex.substitution)) ||
+        exerciseNames.has(normalizeLabel(ex.originalExercise))
+    ));
+
+    const approachOf = (ex) => normalizeLabel(ex && ex.approach ? ex.approach : 'standard');
+    const wantedApproach = approach ? normalizeLabel(approach) : null;
+
+    // Pass 1 - same exercise, same approach. Comparing heavy against heavy.
+    if (wantedApproach) {
+        for (const workout of dayWorkouts) {
+            const match = Object.values(workout.exercises || {})
+                .find(ex => matchesName(ex) && approachOf(ex) === wantedApproach && hasLoggedData(ex));
+            if (match) return { workout, exercise: match };
+        }
+    }
+
+    // Pass 2 - same exercise under any approach.
+    for (const workout of dayWorkouts) {
+        const match = Object.values(workout.exercises || {})
+            .find(ex => matchesName(ex) && hasLoggedData(ex));
+        if (match) return { workout, exercise: match };
+    }
+
+    // Pass 3 - legacy position fallback, most recent session only. This is the
+    // old behaviour, kept so rows saved without usable names still show data.
+    const mostRecent = dayWorkouts[0];
+    const byIndex = (mostRecent.exercises || {})[exerciseIndex];
+    if (hasLoggedData(byIndex)) return { workout: mostRecent, exercise: byIndex };
+
+    return null;
+}
+
 function getLastWorkoutForDay(day, exerciseApproach = null) {
-    // Filter workouts by day
-    const dayWorkouts = allWorkouts.filter(workout => workout.day === day);
+    const dayWorkouts = getWorkoutsForDay(day);
 
     if (dayWorkouts.length === 0) return null;
 
@@ -2544,13 +3708,10 @@ function getLastWorkoutForDay(day, exerciseApproach = null) {
     }
 
     // Filter by matching approach (standard, heavy, form focus, etc.)
+    const wantedApproach = normalizeLabel(exerciseApproach);
     const matchingWorkouts = dayWorkouts.filter(workout => {
-        // Check if this workout has exercises with the matching approach
         const exercises = Object.values(workout.exercises || {});
-        return exercises.some(ex => {
-            const workoutApproach = ex.approach || 'standard';
-            return workoutApproach.toLowerCase() === exerciseApproach.toLowerCase();
-        });
+        return exercises.some(ex => normalizeLabel(ex.approach || 'standard') === wantedApproach);
     });
 
     return matchingWorkouts.length > 0 ? matchingWorkouts[0] : dayWorkouts[0];
@@ -2910,97 +4071,7 @@ function updateSessionComparison(workoutType) {
             `;
 }
 
-function updateIntensityHeatmap() {
-    const container = document.getElementById('heatmap-content');
 
-    if (allWorkouts.length === 0) {
-        container.innerHTML = '<p>Complete workouts to see intensity patterns!</p>';
-        return;
-    }
-
-    // Get last 4 weeks of workouts
-    const today = new Date();
-    const fourWeeksAgo = new Date(today.getTime() - (28 * 24 * 60 * 60 * 1000));
-
-    const recentWorkouts = allWorkouts.filter(w => {
-        const workoutDate = new Date(w.date);
-        return workoutDate >= fourWeeksAgo;
-    });
-
-    // Group by day of week
-    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    const intensityByDay = {};
-
-    dayNames.forEach(day => {
-        intensityByDay[day] = [];
-    });
-
-    recentWorkouts.forEach(workout => {
-        const workoutDate = new Date(workout.date);
-        const dayOfWeek = dayNames[workoutDate.getDay()];
-
-        // Calculate average intensity score (1-5 scale)
-        const intensity = workout.intensity || {};
-        const avgScore = (
-            (intensity.energy || 0) +
-            (intensity.motivation || 0) +
-            (6 - (intensity.fatigue || 1)) +  // Invert fatigue: 1->5, 2->4, 3->3, 4->2, 5->1
-            (intensity.satisfaction || 0)
-        ) / 4;
-
-        // Scale to 0-10 range
-        const scaledScore = (avgScore / 5) * 10;
-
-        intensityByDay[dayOfWeek].push(scaledScore);
-    });
-
-    // Calculate average for each day
-    const dayAverages = {};
-    Object.keys(intensityByDay).forEach(day => {
-        const scores = intensityByDay[day];
-        dayAverages[day] = scores.length > 0
-            ? scores.reduce((a, b) => a + b, 0) / scores.length
-            : 0;
-    });
-
-    // Create heatmap HTML
-    const getColorForScore = (score) => {
-        if (score === 0) return 'rgba(71, 85, 105, 0.3)';
-        if (score < 4) return 'var(--color-error)';
-        if (score < 6) return 'var(--color-warning)';
-        if (score < 8) return 'var(--color-success)';
-        return 'var(--color-accent-primary)';
-    };
-
-    const heatmapHTML = `
-                <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.5rem; margin-top: 1rem;">
-                    ${dayNames.map(day => {
-        const score = dayAverages[day];
-        const color = getColorForScore(score);
-        return `
-                            <div style="text-align: center;">
-                                <div style="font-size: 0.8rem; margin-bottom: 0.5rem; color: var(--color-text-secondary);">${day}</div>
-                                <div style="
-                                    background: ${color};
-                                    border-radius: 8px;
-                                    padding: 1rem 0.5rem;
-                                    font-weight: bold;
-                                    color: white;
-                                    font-size: 0.9rem;
-                                ">
-                                    ${score > 0 ? score.toFixed(1) : '-'}
-                                </div>
-                            </div>
-                        `;
-    }).join('')}
-                </div>
-                <div style="margin-top: 1rem; font-size: 0.8rem; color: var(--color-text-secondary); text-align: center;">
-                    Intensity score (0-10) - calculated from your 1-5 ratings. Fatigue is inverted (lower fatigue = higher score).
-                </div>
-            `;
-
-    container.innerHTML = heatmapHTML;
-}
 
 // UI Functions
 function updateSuggestions() {
@@ -3016,82 +4087,282 @@ function updateSuggestions() {
 }
 
 function updateAnalytics() {
-    // Update basic stats
-    document.getElementById('pr-count').textContent = calculatePRCount();
-    document.getElementById('workout-streak').textContent = calculateWorkoutStreak();
+    const streakEl = document.getElementById('workout-streak');
+    if (streakEl) streakEl.textContent = calculateWorkoutStreak();
 
-    // Update volume cards for each workout type
-    const workoutTypes = ['Upper', 'Lower', 'Push', 'Pull', 'Legs'];
-    workoutTypes.forEach(type => {
-        const typeKey = type.toLowerCase();
+    const weekEl = document.getElementById('sessions-this-week');
+    if (weekEl) weekEl.textContent = countSessionsInLastDays(7);
 
-        // Record volume
-        const recordVolume = getRecordVolumeForType(type);
-        const recordElement = document.getElementById(`${typeKey}-record`);
-        const recordLbsElement = document.getElementById(`${typeKey}-record-lbs`);
-        if (recordElement && recordLbsElement) {
-            recordElement.textContent = recordVolume > 0 ? recordVolume.toLocaleString() : '0';
-            recordLbsElement.textContent = recordVolume > 0 ? recordVolume.toLocaleString() : '0';
-        }
+    updateWeeklySets();
+    updateEstimatedMaxes();
+    updateProgressionSnapshot();
+    updateFocusAreas();
+    populateComparisonSelector();
+}
 
-        // Current month average
-        const currentAvg = getCurrentMonthAverageVolume(type);
-        const avgElement = document.getElementById(`${typeKey}-avg`);
-        if (avgElement) {
-            avgElement.textContent = currentAvg > 0 ? currentAvg.toLocaleString() : '0';
-        }
+// Sessions actually logged in a real date window, excluding rest days.
+function countSessionsInLastDays(days) {
+    const today = getTodayDateString();
+    const from = addDaysToDateString(today, -(days - 1));
+    return allWorkouts.filter(w =>
+        w.date >= from && w.date <= today && normalizeLabel(w.day) !== 'rest'
+    ).length;
+}
 
-        // Trend
-        const trend = getTrendDirection(type);
-        const trendElement = document.getElementById(`${typeKey}-trend`);
-        if (trendElement) {
-            trendElement.textContent = trend;
-        }
+// ---------------------------------------------------------------------------
+// Hard sets per muscle group per week.
+//
+// Volume in pounds (weight x reps) was the app's headline training metric and
+// it scores every bodyweight movement as ZERO: pull-ups, dips, hollow holds and
+// every rung of the front lever ladder. Counting working sets is the standard
+// currency for hypertrophy, it handles bodyweight work correctly, and it does
+// not care what the program's days are named.
+// ---------------------------------------------------------------------------
 
-        // Month-over-month
-        const lastMonthAvg = getLastMonthAverageVolume(type);
-        const momElement = document.getElementById(`${typeKey}-mom`);
-        if (momElement) {
-            if (currentAvg > 0 && lastMonthAvg > 0) {
-                const diff = currentAvg - lastMonthAvg;
-                const sign = diff > 0 ? '+' : '';
-                momElement.textContent = `${sign}${diff.toLocaleString()} lbs vs last month`;
-                momElement.style.color = diff > 0 ? 'var(--color-success)' : (diff < 0 ? 'var(--color-error)' : 'var(--color-text-secondary)');
-            } else if (currentAvg > 0) {
-                momElement.textContent = 'First month tracked';
-                momElement.style.color = 'var(--color-text-secondary)';
-            } else {
-                momElement.textContent = 'No data this month';
-                momElement.style.color = 'var(--color-text-secondary)';
+const MUSCLE_GROUP_PATTERNS = [
+    { group: 'Chest',      match: ['bench press', 'chest press', 'incline press', 'incline dumbbell press',
+                                   'decline press', 'chest fly', 'cable fly', 'pec deck', 'dip', 'push-up',
+                                   'pushup', 'push up', 'chest', 'fly', 'press'] },
+    { group: 'Back',       match: ['barbell row', 'dumbbell row', 'cable row', 'chest-supported row',
+                                   'lat pulldown', 'pulldown', 'straight-arm pulldown', 'pull-up', 'pullup',
+                                   'pull up', 'chin-up', 'chinup', 'front lever', 'scapular pull', 'row',
+                                   'shrug', 'dead hang'] },
+    { group: 'Shoulders',  match: ['overhead press', 'shoulder press', 'military press', 'lateral raise',
+                                   'side raise', 'rear delt', 'face pull', 'handstand', 'pike push-up',
+                                   'pike push up', 'upright row', 'delt'] },
+    { group: 'Biceps',     match: ['bicep curl', 'incline curl', 'hammer curl', 'preacher curl', 'curl'] },
+    { group: 'Triceps',    match: ['triceps extension', 'overhead extension', 'skull crusher', 'pushdown',
+                                   'tricep', 'triceps'] },
+    { group: 'Quads',      match: ['back squat', 'front squat', 'goblet squat', 'hack squat', 'split squat',
+                                   'bulgarian split squat', 'leg press', 'leg extension', 'reverse lunge',
+                                   'lunge', 'step-up', 'step up', 'squat'] },
+    { group: 'Hamstrings', match: ['romanian deadlift', 'stiff leg deadlift', 'trap bar deadlift', 'deadlift',
+                                   'rdl', 'seated leg curl', 'lying leg curl', 'leg curl', 'back extension',
+                                   'good morning', 'nordic'] },
+    { group: 'Glutes',     match: ['hip thrust', 'glute bridge', 'hip abduction', 'side-lying hip abduction',
+                                   'lateral walk', 'abduction', 'glute'] },
+    { group: 'Calves',     match: ['standing calf raise', 'seated calf raise', 'calf raise', 'calf',
+                                   'tibialis raise', 'tibialis'] },
+    { group: 'Core',       match: ['hollow body hold', 'hollow hold', 'hollow', 'ab wheel', 'dead bug',
+                                   'pallof press', 'pallof', 'side plank', 'plank', 'l-sit', 'l sit',
+                                   'hanging leg raise', 'leg raise', 'crunch'] }
+];
+
+// Longest match wins. A first-match-wins loop classified "Cable Lateral Raise"
+// as Back (because 'lat' is a substring of 'lateral') and failed to classify
+// "Incline Dumbbell Press" at all. Scoring by the length of the matched token
+// makes 'lateral raise' beat 'lat', and 'overhead press' beat 'press'.
+function classifyMuscleGroup(exerciseName) {
+    const name = normalizeLabel(exerciseName);
+    if (!name) return null;
+
+    let best = null;
+    let bestLength = 0;
+
+    for (const entry of MUSCLE_GROUP_PATTERNS) {
+        for (const token of entry.match) {
+            if (name.includes(token) && token.length > bestLength) {
+                bestLength = token.length;
+                best = entry.group;
             }
-        }
-    });
-
-    // Update exercise selector for PR Timeline
-    const exerciseSelector = document.getElementById('exercise-selector');
-    if (exerciseSelector) {
-        const exercises = getAllExercises();
-        exerciseSelector.innerHTML = '<option value="">Select an exercise</option>' +
-            exercises.map(ex => `<option value="${ex}">${ex}</option>`).join('');
-
-        // Set default to first exercise if available
-        if (exercises.length > 0) {
-            exerciseSelector.value = exercises[0];
-            createPRTimelineChart(exercises[0]);
         }
     }
 
-    // Update session comparison with default (Upper)
-    updateSessionComparison('Upper');
+    return best;
+}
 
-    // Update progression snapshot
-    updateProgressionSnapshot();
+// A set counts when it was actually performed: any reps logged, or a completed
+// checkbox for a hold. Weight is deliberately not required.
+function isWorkingSet(set) {
+    if (!set) return false;
+    if (set.completed === true) return true;
+    const reps = parseInt(set.reps, 10);
+    if (Number.isFinite(reps) && reps > 0) return true;
+    // A 30 second hold is a working set even though it has no reps.
+    const seconds = parseFloat(set.seconds);
+    if (Number.isFinite(seconds) && seconds > 0) return true;
+    // A logged walk is training too; it was counting as zero.
+    const minutes = parseFloat(set.minutes);
+    if (Number.isFinite(minutes) && minutes > 0) return true;
+    return false;
+}
 
-    // Update focus areas
-    updateFocusAreas();
+function getWeeklySetCounts(days = 7) {
+    const today = getTodayDateString();
+    const from = addDaysToDateString(today, -(days - 1));
+    const counts = {};
 
-    // Update intensity heatmap
-    updateIntensityHeatmap();
+    allWorkouts.forEach(workout => {
+        if (!workout || workout.date < from || workout.date > today) return;
+        if (normalizeLabel(workout.day) === 'rest') return;
+
+        Object.values(workout.exercises || {}).forEach(exercise => {
+            if (!exercise || !exercise.exercise) return;
+            const name = exercise.substitution || exercise.exercise;
+            if (normalizeLabel(name).includes('stretch')) return;
+
+            const group = classifyMuscleGroup(name);
+            if (!group) return;
+
+            // A ticked mobility drill is not a hard set. Counting check-offs
+            // put stretches into the muscle-group totals alongside real work.
+            const type = exercise.trackingType && TRACKING_TYPES[exercise.trackingType]
+                ? exercise.trackingType
+                : guessTrackingType(name);
+            if (type === 'checkoff') return;
+
+            const sets = (exercise.sets || []).filter(isWorkingSet).length;
+            if (sets > 0) counts[group] = (counts[group] || 0) + sets;
+        });
+    });
+
+    return counts;
+}
+
+function updateWeeklySets() {
+    const container = document.getElementById('weekly-sets-content');
+    if (!container) return;
+
+    const counts = getWeeklySetCounts(7);
+    const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+
+    if (entries.length === 0) {
+        container.innerHTML = '<p>No working sets logged in the last 7 days.</p>';
+        return;
+    }
+
+    const max = Math.max(...entries.map(e => e[1]), 20);
+    container.innerHTML = entries.map(([group, sets]) => {
+        const pct = Math.round((sets / max) * 100);
+        let colour = 'var(--color-accent-primary)';
+        let verdict = '';
+        if (sets < 6) { colour = 'var(--color-warning)'; verdict = ' (low)'; }
+        else if (sets > 22) { colour = 'var(--color-warning)'; verdict = ' (high)'; }
+        return `
+            <div style="margin-bottom: 0.625rem;">
+                <div style="display:flex; justify-content:space-between; font-size:0.875rem; margin-bottom:0.1875rem;">
+                    <span style="color: var(--color-text-primary); font-weight: 500;">${group}</span>
+                    <span style="color:${colour}; font-weight:600;">${sets} sets${verdict}</span>
+                </div>
+                <div style="height:6px; background:var(--color-border); border-radius:3px; overflow:hidden;">
+                    <div style="height:100%; width:${pct}%; background:${colour};"></div>
+                </div>
+            </div>`;
+    }).join('');
+}
+
+// ---------------------------------------------------------------------------
+// Estimated one-rep max (Epley: weight x (1 + reps/30)).
+//
+// The old PR system compared weight ONLY, so 225x5 -> 225x8 registered as zero
+// progress. e1RM makes extra reps at the same load count, which is how most
+// progress actually happens past the beginner stage.
+// ---------------------------------------------------------------------------
+
+function estimateOneRepMax(weight, reps) {
+    const w = parseFloat(weight);
+    const r = parseInt(reps, 10);
+    if (!Number.isFinite(w) || w <= 0 || !Number.isFinite(r) || r <= 0) return 0;
+    if (r === 1) return w;
+    if (r > 12) return 0;   // Epley drifts badly past ~12 reps
+    return w * (1 + r / 30);
+}
+
+function getEstimatedMaxHistory() {
+    const byExercise = {};
+
+    // Oldest first, so "latest" and "previous" mean what they say.
+    const chronological = allWorkouts.slice().sort((a, b) => (a.date > b.date ? 1 : a.date < b.date ? -1 : 0));
+
+    chronological.forEach(workout => {
+        if (normalizeLabel(workout.day) === 'rest') return;
+        Object.values(workout.exercises || {}).forEach(exercise => {
+            if (!exercise || !exercise.exercise) return;
+            const name = exercise.substitution || exercise.exercise;
+            if (normalizeLabel(name).includes('stretch')) return;
+
+            // Only weight-and-reps work has a meaningful estimated max.
+            const type = exercise.trackingType || guessTrackingType(name);
+            if (type !== 'weight_reps') return;
+
+            let best = 0;
+            (exercise.sets || []).forEach(set => {
+                const e = estimateOneRepMax(set.weight, set.reps);
+                if (e > best) best = e;
+            });
+            if (best <= 0) return;
+
+            if (!byExercise[name]) byExercise[name] = [];
+            byExercise[name].push({ date: workout.date, e1rm: Math.round(best) });
+        });
+    });
+
+    return byExercise;
+}
+
+function updateEstimatedMaxes() {
+    const container = document.getElementById('e1rm-content');
+    if (!container) return;
+
+    const history = getEstimatedMaxHistory();
+    const rows = Object.entries(history)
+        .filter(([, points]) => points.length >= 2)
+        .map(([name, points]) => {
+            const latest = points[points.length - 1];
+            const best = points.reduce((m, p) => (p.e1rm > m.e1rm ? p : m), points[0]);
+            const previous = points[points.length - 2];
+            const delta = latest.e1rm - previous.e1rm;
+            return { name, latest: latest.e1rm, best: best.e1rm, delta, isPR: latest.e1rm >= best.e1rm };
+        })
+        .sort((a, b) => b.latest - a.latest)
+        .slice(0, 10);
+
+    if (rows.length === 0) {
+        container.innerHTML = '<p>Log an exercise at least twice with weight and reps to see an estimate.</p>';
+        return;
+    }
+
+    container.innerHTML = rows.map(r => {
+        const arrow = r.delta > 0 ? '&#9650;' : r.delta < 0 ? '&#9660;' : '&#8212;';
+        const colour = r.delta > 0 ? 'var(--color-success)'
+                     : r.delta < 0 ? 'var(--color-text-secondary)'
+                     : 'var(--color-text-secondary)';
+        return `
+            <div style="display:flex; justify-content:space-between; align-items:baseline; gap:0.75rem;
+                        padding:0.4375rem 0; border-bottom:1px solid var(--color-border);">
+                <span style="color: var(--color-text-primary); font-weight: 500;">${r.name}${r.isPR ? ' <span style="color:var(--color-success); font-size:0.75rem;">BEST</span>' : ''}</span>
+                <span style="white-space:nowrap;">
+                    <strong style="color: var(--color-text-primary);">${r.latest} lbs</strong>
+                    <span style="color:${colour}; font-size:0.8125rem; margin-left:0.375rem;">${arrow} ${Math.abs(r.delta)}</span>
+                </span>
+            </div>`;
+    }).join('');
+}
+
+// The dropdown used to be a hardcoded list of five workout names in the markup,
+// so it listed workouts the user does not have and never listed the ones they do.
+function populateComparisonSelector() {
+    const selector = document.getElementById('comparison-selector');
+    if (!selector) return;
+
+    const types = [];
+    const seen = new Set();
+    allWorkouts.forEach(w => {
+        const key = normalizeLabel(w.day);
+        if (!key || key === 'rest' || seen.has(key)) return;
+        seen.add(key);
+        types.push(w.day);
+    });
+
+    if (types.length === 0) {
+        selector.innerHTML = '<option value="">No sessions logged yet</option>';
+        return;
+    }
+
+    const previous = selector.value;
+    selector.innerHTML = types.map(t => `<option value="${t}">${t}</option>`).join('');
+    if (previous && types.some(t => t === previous)) selector.value = previous;
+    updateSessionComparison(selector.value);
 }
 
 function updateProgressionSnapshot() {
@@ -3138,171 +4409,108 @@ function updateProgressionSnapshot() {
     }
 }
 
+// ---------------------------------------------------------------------------
+// Focus areas: the imbalance backstop.
+//
+// Three defects made this the most misleading panel in the app.
+//  1. It looked for a hardcoded ['Upper','Lower','Push','Pull','Legs'], so any
+//     custom program produced no data at all.
+//  2. It computed the minimum frequency from `frequencies.filter(f => f > 0)`,
+//     which structurally EXCLUDES anything trained zero times. The detector was
+//     blind to the exact case it exists to catch.
+//  3. With no data it printed a green "Your training is well balanced!", which
+//     is a confident claim made from nothing.
+// It now reads the workout types from the active program, counts zeroes, and
+// says plainly when it has too little data to judge.
+// ---------------------------------------------------------------------------
 function updateFocusAreas() {
     const container = document.getElementById('focus-areas-content');
     if (!container) return;
 
-    const workoutTypes = ['Upper', 'Lower', 'Push', 'Pull', 'Legs'];
+    // Workout types come from the program, falling back to what has been logged.
+    let workoutTypes = [];
+    if (activeProgram && activeProgram.schedule) {
+        const seen = new Set();
+        Object.keys(activeProgram.schedule).forEach(key => {
+            const type = getWorkoutTypeForDay(activeProgram, key);
+            const norm = normalizeLabel(type);
+            if (!norm || norm === 'rest' || seen.has(norm)) return;
+            seen.add(norm);
+            workoutTypes.push(type);
+        });
+    }
+    if (workoutTypes.length === 0) {
+        const seen = new Set();
+        allWorkouts.forEach(w => {
+            const norm = normalizeLabel(w.day);
+            if (!norm || norm === 'rest' || seen.has(norm)) return;
+            seen.add(norm);
+            workoutTypes.push(w.day);
+        });
+    }
+
+    if (workoutTypes.length === 0) {
+        container.innerHTML = '<div>Set up a program to see focus areas.</div>';
+        container.style.color = 'var(--color-text-secondary)';
+        return;
+    }
+
+    // Count over a rolling 28 days using string comparison, which avoids the
+    // timezone drift that new Date(dateString) introduces.
+    const today = getTodayDateString();
+    const from = addDaysToDateString(today, -27);
+
+    const counts = {};
+    const lastDone = {};
+    workoutTypes.forEach(type => { counts[type] = 0; lastDone[type] = null; });
+
+    allWorkouts.forEach(w => {
+        const match = workoutTypes.find(t => normalizeLabel(t) === normalizeLabel(w.day));
+        if (!match) return;
+        if (w.date >= from && w.date <= today) counts[match]++;
+        if (!lastDone[match] || w.date > lastDone[match]) lastDone[match] = w.date;
+    });
+
+    const totalSessions = Object.values(counts).reduce((a, b) => a + b, 0);
+    if (totalSessions < workoutTypes.length) {
+        container.innerHTML = `<div>Only ${totalSessions} session${totalSessions === 1 ? '' : 's'} logged in the last 28 days. Not enough yet to judge balance.</div>`;
+        container.style.color = 'var(--color-text-secondary)';
+        return;
+    }
+
     const warnings = [];
 
-    // Check for workout types not done recently
+    // Never trained, or not trained in a long time. Zero counts are included.
     workoutTypes.forEach(type => {
-        const daysSince = getDaysSinceLastWorkout(type);
-        if (daysSince !== null && daysSince > 5) {
-            warnings.push(`It's been ${daysSince} days since your last ${type} workout`);
+        if (counts[type] === 0) {
+            warnings.push(lastDone[type]
+                ? `${type} has not been trained in the last 28 days.`
+                : `${type} has never been logged.`);
         }
     });
 
-    // Check for imbalanced training this month
-    const thisMonth = new Date().getMonth();
-    const thisYear = new Date().getFullYear();
-    const typeFrequency = {};
-
-    workoutTypes.forEach(type => {
-        typeFrequency[type] = allWorkouts.filter(w => {
-            const workoutDate = new Date(w.date);
-            return w.day === type &&
-                workoutDate.getMonth() === thisMonth &&
-                workoutDate.getFullYear() === thisYear;
-        }).length;
-    });
-
-    const frequencies = Object.values(typeFrequency).filter(f => f > 0);
-    if (frequencies.length > 1) {
-        const maxFreq = Math.max(...frequencies);
-        const minFreq = Math.min(...frequencies);
-
-        if (maxFreq - minFreq >= 2) {
-            const undertrainedTypes = Object.keys(typeFrequency).filter(type => typeFrequency[type] === minFreq);
-            warnings.push(`Consider adding more ${undertrainedTypes.join(' or ')} workouts to balance your training`);
-        }
+    // Imbalance across the types that WERE trained.
+    const values = workoutTypes.map(t => counts[t]);
+    const maxFreq = Math.max(...values);
+    const minFreq = Math.min(...values);
+    if (maxFreq - minFreq >= 2) {
+        const behind = workoutTypes.filter(t => counts[t] === minFreq);
+        const ahead = workoutTypes.filter(t => counts[t] === maxFreq);
+        warnings.push(`${behind.join(' and ')} sits at ${minFreq} session${minFreq === 1 ? '' : 's'} while ${ahead.join(' and ')} sits at ${maxFreq}. Prioritise the ones behind.`);
     }
 
     if (warnings.length > 0) {
         container.innerHTML = warnings.map(w => `<div style="margin-bottom: 0.5rem;">${w}</div>`).join('');
         container.style.color = 'var(--color-warning)';
     } else {
-        container.innerHTML = '<div>Your training is well balanced! Keep it up!</div>';
+        container.innerHTML = `<div>Balanced across ${workoutTypes.length} session types over the last 28 days.</div>`;
         container.style.color = 'var(--color-success)';
     }
 }
 
-function updateInsights() {
-    const insights = generateAIInsights();
-    const plateaus = detectPlateaus();
-    const container = document.getElementById('insights-list');
 
-    let html = '';
 
-    // Add plateau alerts first
-    plateaus.slice(0, 2).forEach(plateau => {
-        html += `<li class="insight-item plateau-alert">${plateau.exercise} plateaued for ${plateau.sessions} sessions. ${plateau.suggestion}</li>`;
-    });
 
-    // Add regular insights
-    insights.forEach(insight => {
-        const isProgression = insight.includes('Outstanding') || insight.includes('excellent');
-        const className = isProgression ? 'progression-highlight' : '';
-        html += `<li class="insight-item ${className}">${insight}</li>`;
-    });
-
-    container.innerHTML = html || '<li class="insight-item">Complete more workouts to get personalized insights!</li>';
-
-    // Update nutrition insights
-    updateNutritionInsights();
-}
-
-function updateNutritionInsights() {
-    const today = new Date();
-    const last7Days = new Date(today.getTime() - (7 * 24 * 60 * 60 * 1000));
-
-    // Get nutrition data for past 7 days
-    const recentNutrition = window.nutritionData?.filter(n => new Date(n.date) >= last7Days) || [];
-
-    // Get workout dates for past 7 days
-    const recentWorkouts = allWorkouts.filter(w => new Date(w.date) >= last7Days);
-    const workoutDates = recentWorkouts.map(w => w.date);
-
-    // Group nutrition by date and calculate daily totals
-    const dailyNutrition = {};
-    recentNutrition.forEach(meal => {
-        if (!dailyNutrition[meal.date]) {
-            dailyNutrition[meal.date] = { protein: 0, carbs: 0, fats: 0, calories: 0, meals: [] };
-        }
-        dailyNutrition[meal.date].meals.push(meal);
-        (meal.foods || []).forEach(food => {
-            const qty = food.quantity || 1;
-            dailyNutrition[meal.date].protein += (parseFloat(food.protein) || 0) * qty;
-            dailyNutrition[meal.date].carbs += (parseFloat(food.carbs) || 0) * qty;
-            dailyNutrition[meal.date].fats += (parseFloat(food.fats) || 0) * qty;
-            dailyNutrition[meal.date].calories += (parseFloat(food.calories) || 0) * qty;
-        });
-    });
-
-    // Filter out days with zero nutrition
-    const datesWithNutrition = Object.keys(dailyNutrition).filter(date =>
-        dailyNutrition[date].protein > 0 || dailyNutrition[date].calories > 0
-    );
-
-    // Workout Days vs Rest Days Comparison
-    const comparisonContainer = document.getElementById('nutrition-comparison');
-    if (datesWithNutrition.length >= 3) {
-        const workoutDayData = datesWithNutrition.filter(date => workoutDates.includes(date));
-        const restDayData = datesWithNutrition.filter(date => !workoutDates.includes(date));
-
-        let comparisonHtml = '<div style="font-size: 0.85rem; line-height: 1.6;">';
-        comparisonHtml += `<div style="margin-bottom: 0.5rem; color: var(--color-text-secondary);">Data from ${datesWithNutrition.length} days with logged nutrition</div>`;
-
-        if (workoutDayData.length > 0) {
-            const workoutAvg = {
-                protein: Math.round(workoutDayData.reduce((sum, date) => sum + dailyNutrition[date].protein, 0) / workoutDayData.length),
-                carbs: Math.round(workoutDayData.reduce((sum, date) => sum + dailyNutrition[date].carbs, 0) / workoutDayData.length),
-                fats: Math.round(workoutDayData.reduce((sum, date) => sum + dailyNutrition[date].fats, 0) / workoutDayData.length),
-                calories: Math.round(workoutDayData.reduce((sum, date) => sum + dailyNutrition[date].calories, 0) / workoutDayData.length)
-            };
-
-            comparisonHtml += `<div style="margin-bottom: 0.5rem; color: var(--color-success);">`;
-            comparisonHtml += `<strong>Workout Days (${workoutDayData.length}):</strong> `;
-            comparisonHtml += `${workoutAvg.protein}g protein, ${workoutAvg.carbs}g carbs, ${workoutAvg.fats}g fat, ${workoutAvg.calories} cal`;
-            comparisonHtml += `</div>`;
-        }
-
-        if (restDayData.length > 0) {
-            const restAvg = {
-                protein: Math.round(restDayData.reduce((sum, date) => sum + dailyNutrition[date].protein, 0) / restDayData.length),
-                carbs: Math.round(restDayData.reduce((sum, date) => sum + dailyNutrition[date].carbs, 0) / restDayData.length),
-                fats: Math.round(restDayData.reduce((sum, date) => sum + dailyNutrition[date].fats, 0) / restDayData.length),
-                calories: Math.round(restDayData.reduce((sum, date) => sum + dailyNutrition[date].calories, 0) / restDayData.length)
-            };
-
-            comparisonHtml += `<div style="margin-bottom: 0.5rem; color: var(--color-accent-primary);">`;
-            comparisonHtml += `<strong>Rest Days (${restDayData.length}):</strong> `;
-            comparisonHtml += `${restAvg.protein}g protein, ${restAvg.carbs}g carbs, ${restAvg.fats}g fat, ${restAvg.calories} cal`;
-            comparisonHtml += `</div>`;
-        }
-
-        comparisonHtml += '</div>';
-        comparisonContainer.innerHTML = comparisonHtml;
-    } else {
-        comparisonContainer.innerHTML = '<div style="color: var(--color-text-secondary);">Log nutrition for at least 3 days to see insights</div>';
-    }
-
-    // Pre-Workout Nutrition Analysis
-    const preworkoutContainer = document.getElementById('preworkout-insights');
-    let preworkoutHtml = '<div style="font-size: 0.85rem; line-height: 1.6;">';
-
-    // Note: Full meal timing analysis would require meal time data
-    preworkoutHtml += '<div style="color: var(--color-text-secondary);">Meal timing analysis requires logged meal times. ';
-    preworkoutHtml += 'This feature tracks meals 1-4 hours before workouts to correlate with performance.</div>';
-    preworkoutContainer.innerHTML = preworkoutHtml + '</div>';
-
-    // Post-Workout Recovery Analysis
-    const postworkoutContainer = document.getElementById('postworkout-insights');
-    let postworkoutHtml = '<div style="font-size: 0.85rem; line-height: 1.6;">';
-    postworkoutHtml += '<div style="color: var(--color-text-secondary);">Post-workout analysis tracks protein intake within 2 hours of completing workouts ';
-    postworkoutHtml += 'to correlate with next session performance.</div>';
-    postworkoutContainer.innerHTML = postworkoutHtml + '</div>';
-}
 
 function updateProgress() {
     const prs = getPersonalRecords();
@@ -3390,7 +4598,11 @@ function renderCalendar() {
     const today = getTodayDateString();
     for (let day = 1; day <= daysInMonth; day++) {
         const date = new Date(year, month, day);
-        const dateStr = date.toISOString().split('T')[0];
+        // Build the key from the calendar parts. new Date(y,m,d) is LOCAL
+        // midnight and toISOString() renders UTC, so east of Greenwich every
+        // cell used to query the previous day's data and the whole grid was
+        // shifted by one square.
+        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
         const scheduledWorkout = getScheduledWorkout(dateStr);
         const actualWorkout = getWorkoutForDate(dateStr);
 
@@ -3417,11 +4629,14 @@ function renderCalendar() {
             const wouldBeWorkout = getWouldBeScheduledWorkout(dateStr);
             displayLabel = `Travel (${wouldBeWorkout})`;
             labelClass = scheduledWorkout;
-        } else if (scheduledWorkout !== 'Rest' && scheduledWorkout !== 'Travel' && date < new Date()) {
+        } else if (!isNonTrainingLabel(scheduledWorkout) && dateStr < today) {
+            // Was `date < new Date()`, comparing today's LOCAL MIDNIGHT against
+            // the current moment, which is true from 00:00 onward. Today was
+            // painted red as missed before you had any chance to train.
             classes.push('missed');
             displayLabel = scheduledWorkout;
             labelClass = scheduledWorkout;
-        } else if (scheduledWorkout !== 'Rest' && scheduledWorkout !== 'Travel') {
+        } else if (!isNonTrainingLabel(scheduledWorkout)) {
             classes.push('scheduled');
             displayLabel = scheduledWorkout;
             labelClass = scheduledWorkout;
@@ -3500,12 +4715,22 @@ window.selectCalendarDay = function (dateStr) {
             }
             html += `</h4>`;
 
+            // Handled only two shapes, so a hold or a walk rendered NOTHING and
+            // a reps-only set printed "undefinedlbs × 12 reps". formatSetForType
+            // already knows every shape; this just did not use it.
+            const setType = exercise.trackingType && TRACKING_TYPES[exercise.trackingType]
+                ? exercise.trackingType
+                : guessTrackingType(exercise.substitution || exercise.exercise);
+
             exercise.sets.forEach((set, idx) => {
                 if (set.completed) {
-                    html += `<div style="color: var(--color-success); padding: 0.25rem;">✓ Completed</div>`;
-                } else if (set.weight || set.reps) {
-                    html += `<div style="color: var(--color-text-secondary); padding: 0.25rem;">Set ${idx + 1}: ${set.weight}lbs × ${set.reps} reps`;
-                    if (set.notes) html += ` (${set.notes})`;
+                    html += `<div style="color: var(--color-success); padding: 0.25rem;">&#10003; Completed</div>`;
+                    return;
+                }
+                const summary = formatSetForType(set, setType);
+                if (summary) {
+                    html += `<div style="color: var(--color-text-secondary); padding: 0.25rem;">Set ${idx + 1}: ${escapeHtml(summary)}`;
+                    if (set.notes) html += ` (${escapeHtml(set.notes)})`;
                     html += '</div>';
                 }
             });
@@ -3528,7 +4753,89 @@ window.selectCalendarDay = function (dateStr) {
         }
     }
 
+    // A mis-logged session used to be permanent: no delete existed anywhere in
+    // the client, so a wrong date or a fat-fingered 3150 lbs corrupted PRs, the
+    // estimated max, the plateau detector and the discipline score forever. The
+    // Firestore rules already allowed the delete; nothing implemented it.
+    if (workout && workout.id) {
+        html += `
+            <div style="margin-top: 1rem; display:flex; gap:0.5rem; flex-wrap:wrap;">
+                <button type="button" class="btn btn-danger-outline"
+                        onclick="deleteLoggedWorkout('${escapeJsArg(workout.id)}', '${escapeJsArg(dateString)}')">
+                    Delete this session
+                </button>
+            </div>`;
+        content.innerHTML = html;
+    }
+
     container.style.display = 'block';
+};
+
+window.deleteLoggedWorkout = async function (workoutId, dateString) {
+    if (!workoutId) return;
+    const ok = confirm(`Delete the session logged on ${dateString}? This cannot be undone, and your schedule and discipline score will recalculate.`);
+    if (!ok) return;
+
+    try {
+        await deleteDoc(doc(db, "workouts", workoutId));
+        await loadWorkoutsFromFirebase();
+        refreshStartupCache();
+        invalidateScheduleTimeline();
+        renderCalendar();
+        renderWorkoutDaySelector();
+        initializeWorkout();
+        const panel = document.getElementById('selected-day-detail');
+        if (panel) panel.style.display = 'none';
+        showToast('Session deleted.', 'success');
+    } catch (e) {
+        console.error('Failed to delete workout:', e);
+        showToast('Could not delete that session. Try again in a moment.', 'error');
+    }
+};
+
+// ---------------------------------------------------------------------------
+// Export.
+//
+// Years of six-day-a-week training lived in one Firestore project behind
+// anonymous auth, with no copy anywhere the owner controlled and no way to make
+// one. The only export function in the codebase dumped the in-progress session
+// and was never wired to anything.
+// ---------------------------------------------------------------------------
+window.exportAllData = async function () {
+    try {
+        showToast('Gathering your data...', 'info');
+
+        const collections = ['workouts', 'programs', 'weight', 'nutrition', 'bodyGoals',
+                             'savedFoods', 'travelMode', 'sickDays'];
+        const payload = {
+            exportedAt: new Date().toISOString(),
+            app: 'Unison',
+            version: 1
+        };
+
+        for (const name of collections) {
+            const snapshot = await getDocs(query(collection(db, name)));
+            const rows = [];
+            snapshot.forEach(d => rows.push({ id: d.id, ...d.data() }));
+            payload[name] = rows;
+        }
+
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `unison-backup-${getTodayDateString()}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+        const total = collections.reduce((sum, n) => sum + payload[n].length, 0);
+        showToast(`Exported ${total} records.`, 'success');
+    } catch (e) {
+        console.error('Export failed:', e);
+        showToast('Export failed. Check your connection and try again.', 'error');
+    }
 };
 
 // Travel Mode Functions
@@ -3594,6 +4901,7 @@ window.enableTravelMode = async function () {
 
         await loadTravelModeData();
         updateTravelModeBanner();
+        invalidateScheduleTimeline();
         renderCalendar();
 
         // Clear inputs
@@ -3631,27 +4939,27 @@ window.resumeWorkoutProgram = async function (mode) {
         console.log('Travel mode ended');
 
         if (mode === 'restart') {
-            // Restart the program by creating a Rest day workout for today
-            // This will cause the schedule to restart from Upper tomorrow
-            const today = getTodayDateString();
-            const restartWorkout = {
-                date: today,
-                day: 'Rest',
-                exercises: {},
-                timestamp: new Date().toISOString()
-            };
-
-            // Check if there's already a workout today
-            const existingWorkout = getWorkoutForDate(today);
-            if (!existingWorkout) {
-                await addDoc(collection(db, "workouts"), restartWorkout);
-                console.log('Program restarted - Rest day logged for today');
+            // Previously this wrote a fabricated Rest workout into permanent
+            // history to "restart" the cycle. It never worked, because the
+            // function it relied on filtered Rest days out, and the row carried
+            // no programId so it leaked into every program's history and
+            // quietly inflated the discipline score by erasing a missed day.
+            // Restarting now just re-anchors the schedule queue.
+            if (activeProgram && activeProgram.id) {
+                activeProgram.activatedAt = new Date().toISOString();
+                await updateDoc(doc(db, "programs", activeProgram.id), {
+                    activatedAt: activeProgram.activatedAt
+                });
             }
-
+            invalidateScheduleTimeline();
             await loadWorkoutsFromFirebase();
         }
 
         await loadTravelModeData();
+        // The 'restart' branch invalidated but 'resume' did not, so the same
+        // button refreshed the calendar or not depending on which option was
+        // picked.
+        invalidateScheduleTimeline();
         updateTravelModeBanner();
         renderCalendar();
 
@@ -3717,7 +5025,8 @@ window.markSickDay = async function () {
                     console.log('Sick day removed');
 
                     await loadSickDayData();
-                    renderCalendar();
+                    invalidateScheduleTimeline();
+        renderCalendar();
 
                     document.getElementById('sick-day-date').value = '';
                     alert('Sick day removed. Schedule will adjust accordingly.');
@@ -3751,6 +5060,7 @@ window.markSickDay = async function () {
         console.log('Sick day marked:', docRef.id);
 
         await loadSickDayData();
+        invalidateScheduleTimeline();
         renderCalendar();
 
         // Clear input
@@ -4492,14 +5802,34 @@ window.changeMealType = async function (mealId, newMealType) {
     }
 };
 
+const mealSaveTimers = {};
+
 window.updateMealFood = async function (mealId, foodIndex, field, value) {
     const meal = nutritionData.find(m => m.id === mealId);
-    if (meal && meal.foods && meal.foods[foodIndex]) {
+    if (!meal || !meal.foods || !meal.foods[foodIndex]) return;
+
+    // Numeric fields were being stored as strings, which made `quantity || 1`
+    // treat "0" as truthy and broke the `quantity !== 1` display check.
+    if (field === 'quantity' || field === 'calories' || field === 'protein' ||
+        field === 'carbs' || field === 'fats') {
+        const parsed = parseFloat(value);
+        meal.foods[foodIndex][field] = Number.isFinite(parsed) ? parsed : 0;
+    } else {
         meal.foods[foodIndex][field] = value;
-        meal.hasUnsavedChanges = true; // Mark meal as having unsaved changes
-        updateNutritionSummary();
-        renderMeals(); // Re-render to show save button
     }
+
+    meal.hasUnsavedChanges = true;
+    updateNutritionSummary();
+    renderMeals();
+
+    // Persist. Previously this never happened: the edit lived in memory, looked
+    // saved, and vanished on reload. Debounced so typing does not spam Firestore.
+    if (mealSaveTimers[mealId]) clearTimeout(mealSaveTimers[mealId]);
+    mealSaveTimers[mealId] = setTimeout(() => {
+        delete mealSaveTimers[mealId];
+        window.saveMealChanges(mealId).catch(err =>
+            console.error('Failed to save meal edit:', err));
+    }, 800);
 };
 
 window.saveMealChanges = async function (mealId) {
@@ -4522,7 +5852,7 @@ window.saveMealChanges = async function (mealId) {
         await updateDoc(docRef, { foods: meal.foods });
         meal.hasUnsavedChanges = false;
         console.log('Meal changes saved successfully to Firestore');
-        alert('Meal saved! Changes have been updated to the database and counted in daily calories.');
+        showToast('Meal updated.', 'success');
         renderMeals();
     } catch (e) {
         console.error("Error saving meal:", e);
@@ -4736,7 +6066,7 @@ window.confirmSaveFood = async function () {
             savedFoods.unshift({ id: docRef.id, ...savedFood });
 
             closeSaveFoodModal();
-            alert('Food saved to library!');
+            showToast('Saved to your library.', 'success');
             renderSavedFoods();
         } catch (e) {
             console.error("Error saving food:", e);
@@ -4826,6 +6156,12 @@ window.openSavedFoodsModal = function () {
         backdrop.style.display = 'block';
         backdrop.classList.add('active');
 
+        // Every other modal sets display explicitly; this one relied on a
+        // mobile stylesheet override that has since been removed, so the sheet
+        // stayed display:none while the backdrop greyed out the page and locked
+        // scrolling. Tapping "Saved Foods" froze the app with nothing on screen.
+        modal.style.display = 'block';
+
         // Then show modal with animation
         setTimeout(() => {
             modal.classList.add('active');
@@ -4848,6 +6184,7 @@ window.closeSavedFoodsModal = function () {
         setTimeout(() => {
             backdrop.classList.remove('active');
             backdrop.style.display = 'none';
+            modal.style.display = 'none';
         }, 300);
 
         // Re-enable body scroll
@@ -4965,7 +6302,7 @@ window.confirmEditFood = async function () {
 
         closeEditFoodModal();
         renderSavedFoods();
-        alert('Food updated successfully!');
+        showToast('Food updated.', 'success');
 
         console.log(`Updated saved food ${foodId}`);
     } catch (e) {
@@ -5125,23 +6462,74 @@ const CHARTJS_MAX_WAIT_ATTEMPTS = 50; // 5 seconds total
 // Date calculation constants
 const NINETY_DAYS_IN_MS = 90 * 24 * 60 * 60 * 1000;
 
-// Helper function to wait for Chart.js to be loaded
-function waitForChartJs(callback, maxAttempts = CHARTJS_MAX_WAIT_ATTEMPTS) {
-    let attempts = 0;
-    const checkInterval = setInterval(() => {
-        attempts++;
-        if (isChartJsReady()) {
-            clearInterval(checkInterval);
+// Chart.js and its date adapter are roughly 260KB and are only needed on the
+// Analytics and Progress tabs, so they are fetched the first time a chart is
+// actually drawn rather than on every page load.
+const CHARTJS_SOURCES = [
+    'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js',
+    'https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js'
+];
+let chartJsPromise = null;
+
+function loadScriptOnce(src) {
+    return new Promise((resolve, reject) => {
+        const existing = document.querySelector(`script[src="${src}"]`);
+        if (existing) {
+            if (existing.dataset.loaded === 'true') resolve();
+            else {
+                existing.addEventListener('load', () => resolve(), { once: true });
+                existing.addEventListener('error', reject, { once: true });
+            }
+            return;
+        }
+        const el = document.createElement('script');
+        el.src = src;
+        el.async = false; // preserve order: the adapter needs Chart to exist
+        el.addEventListener('load', () => { el.dataset.loaded = 'true'; resolve(); }, { once: true });
+        el.addEventListener('error', () => reject(new Error('Failed to load ' + src)), { once: true });
+        document.head.appendChild(el);
+    });
+}
+
+function ensureChartJs() {
+    if (isChartJsReady() && chartJsPromise === null) {
+        chartJsPromise = Promise.resolve();
+    }
+    if (!chartJsPromise) {
+        chartJsPromise = CHARTJS_SOURCES.reduce(
+            (chain, src) => chain.then(() => loadScriptOnce(src)),
+            Promise.resolve()
+        ).catch(err => {
+            chartJsPromise = null; // allow a retry the next time a tab is opened
+            throw err;
+        });
+    }
+    return chartJsPromise;
+}
+
+// Helper kept so existing call sites work unchanged; it now triggers the
+// download instead of polling and hoping something else loaded it.
+//
+// Callers follow the shape `if (!isChartJsReady()) { waitForChartJs(self); return; }`,
+// so the readiness re-check below is load-bearing: invoking the callback while
+// Chart is still undefined sends it straight back here against an
+// already-resolved promise, which spins the main thread forever. That happens
+// whenever the CDN is unreachable or returns a body that registers no global,
+// which is exactly the flaky-network case this needs to survive.
+function waitForChartJs(callback) {
+    ensureChartJs()
+        .then(() => {
+            if (!isChartJsReady()) {
+                console.error('Chart.js loaded but registered no global; skipping this chart.');
+                return;
+            }
             try {
                 callback();
             } catch (err) {
                 console.error('Error executing Chart.js callback:', err);
             }
-        } else if (attempts >= maxAttempts) {
-            clearInterval(checkInterval);
-            console.error('Chart.js failed to load within timeout period');
-        }
-    }, CHARTJS_WAIT_INTERVAL_MS);
+        })
+        .catch(err => console.error('Chart.js failed to load:', err));
 }
 
 // Weight Functions
@@ -5172,7 +6560,7 @@ window.logWeight = async function () {
         createWeightChart();
         updateBodyGoalDisplay();
         updateNutritionCalories();
-        alert('Weight logged successfully!');
+        showToast('Weight logged.', 'success');
     } catch (e) {
         console.error("Error logging weight:", e);
         alert('Error logging weight');
@@ -5245,7 +6633,7 @@ window.uploadProgressPhoto = async function (event) {
 
             window.photoData.unshift({ id: docRef.id, ...photoData });
             renderPhotos();
-            alert('Photo uploaded successfully!');
+            showToast('Photo saved.', 'success');
         } catch (error) {
             console.error("Error uploading photo:", error);
             alert('Error uploading photo');
@@ -5355,67 +6743,171 @@ let analyticsLoaded = false;
 let progressLoaded = false;
 
 // Main app initialization function
+// ---------------------------------------------------------------------------
+// Fast boot
+//
+// Startup used to be a strict chain: download three Firebase modules, wait for
+// an anonymous sign-in round trip, wait for the programs query, and only then
+// attach a single tap handler. Every one of those steps is network-bound, so on
+// a phone the whole interface sat dead for several seconds.
+//
+// Now the interface paints from a local cache and binds its handlers the moment
+// the DOM is ready, and Firebase refreshes everything underneath when it lands.
+// ---------------------------------------------------------------------------
+
+const CACHE_KEYS = {
+    programs: 'fcc:cache:programs:v1',
+    workouts: 'fcc:cache:workouts:v1'
+};
+const WORKOUT_CACHE_LIMIT = 60;
+let uiBooted = false;
+
+function readCache(key) {
+    try {
+        const raw = localStorage.getItem(key);
+        return raw ? JSON.parse(raw) : null;
+    } catch (e) {
+        console.warn('Cache read failed:', key, e);
+        return null;
+    }
+}
+
+function writeCache(key, value) {
+    try {
+        localStorage.setItem(key, JSON.stringify(value));
+    } catch (e) {
+        // A full quota is not fatal, it only costs the next load its head start.
+        console.warn('Cache write failed:', key, e);
+    }
+}
+
+function refreshStartupCache() {
+    if (Array.isArray(programs) && programs.length) {
+        writeCache(CACHE_KEYS.programs, programs);
+    }
+    if (Array.isArray(rawWorkouts)) {
+        writeCache(CACHE_KEYS.workouts, rawWorkouts.slice(0, WORKOUT_CACHE_LIMIT));
+    }
+}
+
+function hideLoadingOverlay() {
+    const overlay = document.getElementById('app-loading');
+    if (overlay) overlay.style.display = 'none';
+}
+
+function bootUIFromCache() {
+    if (uiBooted) return;
+    uiBooted = true;
+
+    currentNutritionDate = getTodayDateString();
+
+    // Bound first, so taps do something even while Firebase is still in flight.
+    setupEventListeners();
+    initializeProgramNameInput();
+
+    const cachedPrograms = readCache(CACHE_KEYS.programs);
+    if (Array.isArray(cachedPrograms) && cachedPrograms.length) {
+        programs = cachedPrograms;
+        programs.forEach(migrateScheduleFormat);
+        activeProgram = programs.find(p => p.active) || null;
+    }
+
+    const cachedRoutines = readCache(ROUTINE_CACHE_KEY);
+    if (Array.isArray(cachedRoutines)) dailyRoutines = cachedRoutines;
+
+    const cachedWorkouts = readCache(CACHE_KEYS.workouts);
+    if (Array.isArray(cachedWorkouts)) {
+        rawWorkouts = cachedWorkouts;
+        applyProgramFilterToWorkouts();
+    }
+
+    try {
+        renderWorkoutDaySelector();
+        initializeWorkout();
+        renderRoutineState();
+        restoreWorkoutDraftIfAny();
+        // Only drop the spinner once there is a real program to look at,
+        // otherwise a first-time visitor would stare at an empty screen.
+        if (activeProgram) {
+            hideLoadingOverlay();
+            console.log('UI painted from cache; refreshing from Firebase in the background');
+        }
+    } catch (e) {
+        console.error('Cached render failed, waiting for network data:', e);
+    }
+}
+
 async function initializeFitnessApp() {
     console.log('Initializing Fitness Command Center...');
 
-    // Initialize timezone-aware current nutrition date
-    currentNutritionDate = getTodayDateString();
+    bootUIFromCache(); // no-op when the DOM-ready path already ran it
 
-    // Set up UI event listeners immediately (non-blocking)
-    setupEventListeners();
+    // Programs and workouts are independent queries. Running them together
+    // removes a full round trip from the critical path; the program filter is
+    // re-applied afterwards so ordering no longer matters.
+    const [programsResult, workoutsResult] = await Promise.allSettled([
+        loadPrograms(),
+        loadWorkoutsFromFirebase()
+    ]);
 
-    // Initialize program editor
-    initializeProgramNameInput();
-
-    // CRITICAL FIX: Load programs BEFORE rendering any UI
-    // This ensures activeProgram is set before any rendering functions are called
-    try {
-        await loadPrograms();
-        console.log('Programs loaded successfully, activeProgram:', activeProgram?.name || 'none');
-    } catch (err) {
-        console.error('Failed to load programs:', err);
-        // Continue with default workout structure as fallback
+    if (programsResult.status === 'rejected') {
+        console.error('Failed to load programs:', programsResult.reason);
+    }
+    if (workoutsResult.status === 'rejected') {
+        console.error('Failed to load workouts:', workoutsResult.reason);
     }
 
-    // Now render UI with loaded programs
+    applyProgramFilterToWorkouts();
+    refreshStartupCache();
+
+    // Typing during the Firebase round trip is already covered: the 400ms
+    // debounce persists it, and initializeWorkout now always restores the
+    // current day's draft. Flushing here instead parked the hydrated,
+    // already-saved session as a draft and produced a false "you have unsaved
+    // sets" warning on the next day-pill tap.
     renderWorkoutDaySelector();
     initializeWorkout();
+    restoreWorkoutDraftIfAny(currentDay);
+    hideLoadingOverlay();
 
-    // Hide loading overlay after programs are loaded and UI is rendered
-    const loadingOverlay = document.getElementById('app-loading');
-    if (loadingOverlay) loadingOverlay.style.display = 'none';
+    updateSuggestions();
+    updateAnalytics();
 
-    console.log('Fitness Command Center initialized! UI is ready (loading workout history in background)...');
+    console.log('Fitness Command Center initialized with fresh data.');
 
-    // Load remaining data in background without blocking
-    // Fire and forget - these will update UI when they complete
-    loadWorkoutsFromFirebase()
-        .then(() => {
-            updateSuggestions();
-            updateAnalytics();
-            renderWorkout();
-        })
-        .catch(err => {
-            console.error('Failed to load workouts in background:', err);
-            // UI remains functional, just without workout history
-        });
-
+    // Weight used to load only when the Body tab was opened, but the calorie
+    // target card lives on Nutrition and hides itself without weight data, so
+    // on every fresh load the target was blank until you tabbed through Body.
+    loadWeightData()
+        .then(() => { updateBodyGoalDisplay(); updateNutritionCalories(); })
+        .catch(err => console.error('Failed to load weight data:', err));
     loadBodyGoalData().catch(err => console.error('Failed to load body goal data:', err));
-    loadTravelModeData().catch(err => console.error('Failed to load travel mode data:', err));
+    loadTravelModeData()
+        .then(() => {
+            // updateTravelModeBanner() was only ever called from the two
+            // functions that change travel state, never at boot. Since the
+            // "End Travel Mode" button lives inside that banner, closing the
+            // tab left travel mode permanently on with no way to turn it off.
+            updateTravelModeBanner();
+            invalidateScheduleTimeline();
+            renderCalendar();
+        })
+        .catch(err => console.error('Failed to load travel mode data:', err));
     loadSickDayData().catch(err => console.error('Failed to load sick day data:', err));
+    loadDailyRoutines().catch(err => console.error('Failed to load daily routines:', err));
 
-    // Don't load nutrition/weight/photo data yet - lazy load when tabs are opened
+    // Nutrition, weight and photo data stay lazy until their tab is opened.
 }
 
-// Authentication state observer - initializes app after authentication
+// Authentication state observer - refreshes the app with live data
 onAuthStateChanged(auth, async (user) => {
     if (user) {
         currentUser = user;
         console.log('User authenticated:', user.uid);
-        
+
         // Initialize app after authentication
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initializeFitnessApp);
+            document.addEventListener('DOMContentLoaded', initializeFitnessApp, { once: true });
         } else {
             initializeFitnessApp();
         }
@@ -5496,9 +6988,6 @@ function setupEventListeners() {
     document.getElementById('progress-tab-btn').addEventListener('click', () => {
         showTab('progress');
     });
-    document.getElementById('intelligence-tab-btn').addEventListener('click', () => {
-        showTab('intelligence');
-    });
 
     // Day selection - now handled by renderWorkoutDaySelector()
     // Event listeners are attached dynamically when buttons are rendered
@@ -5511,7 +7000,15 @@ function setupEventListeners() {
     document.getElementById('workout-date-input').value = today;
 
     // Date input handling
-    document.getElementById('workout-date-input').addEventListener('change', setWorkoutDate);
+    document.getElementById('workout-date-input').addEventListener('change', () => {
+        setWorkoutDate();
+        // The form may still hold a session already saved for TODAY, with
+        // editingWorkoutId set. Without rebuilding, picking a past date saved a
+        // byte-for-byte copy of today's session under that date, silently
+        // inflating volume, streak and adherence.
+        editingWorkoutId = null;
+        initializeWorkout();
+    });
     document.getElementById('log-past-workout-btn').addEventListener('click', () => {
         const dateInput = document.getElementById('workout-date-input');
         if (dateInput.style.display === 'none' || !dateInput.style.display) {
@@ -5670,9 +7167,9 @@ function showTab(tabName) {
         }
     }
 
-    if (tabName === 'analytics' && !analyticsLoaded) {
+    if (tabName === 'analytics') {
         analyticsLoaded = true;
-        updateAnalytics();
+        updateAnalytics();   // cheap now, and stale numbers were worse than a re-render
     }
 
     if (tabName === 'progress' && !progressLoaded) {
@@ -5680,9 +7177,6 @@ function showTab(tabName) {
         updateProgress();
     }
 
-    if (tabName === 'intelligence') {
-        updateInsights();
-    }
 }
 
 // Render dynamic workout day selector based on active program schedule
@@ -5702,10 +7196,11 @@ function renderWorkoutDaySelector() {
             { key: 'Legs', label: 'Legs' }
         ];
         
-        // Set current day to first day if not valid
+        // Open on the session the queue owes today, not always on Upper.
         const validKeys = defaultDays.map(d => d.key);
         if (!validKeys.includes(currentDay)) {
-            currentDay = defaultDays[0].key;
+            const owed = getScheduledWorkout(getTodayDateString());
+            currentDay = validKeys.includes(owed) ? owed : defaultDays[0].key;
         }
         
         let html = '';
@@ -5729,11 +7224,15 @@ function renderWorkoutDaySelector() {
     
     // Build buttons from active program schedule
     const schedule = activeProgram.schedule;
-    const dayKeys = Object.keys(schedule).sort(); // day1, day2, etc.
-    
-    // Select first day by default if currentDay is not set or invalid
+    // Numeric sort: a lexicographic sort puts day10 before day2.
+    const dayKeys = Object.keys(schedule).sort((a, b) =>
+        parseInt(a.replace('day', ''), 10) - parseInt(b.replace('day', ''), 10));
+
+    // Open on whatever the schedule queue owes today rather than always on day
+    // one. Previously currentDay started as 'Upper', never matched a day key,
+    // and so every load reset the logger to the first day of the program.
     if (!dayKeys.includes(currentDay)) {
-        currentDay = dayKeys[0];
+        currentDay = getScheduleDayKeyForToday() || dayKeys[0];
     }
     
     let html = '';
@@ -5760,7 +7259,18 @@ function renderWorkoutDaySelector() {
 }
 
 function selectDay(dayKey) {
+    // Tapping a day pill used to call initializeWorkout(), whose first line is
+    // `currentWorkout = {}`. Four exercises into a session, a stray tap on the
+    // horizontally scrolling pill row erased everything with no confirm and no
+    // undo. Park the draft instead of destroying it.
+    if (dayKey !== currentDay && currentWorkoutHasData()) {
+        persistWorkoutDraft();   // park this day's work before leaving it
+        const ok = confirm('You have sets logged in this session. Switch days anyway? Your entries are saved and come back when you return to this day.');
+        if (!ok) return;
+    }
+
     currentDay = dayKey;
+    pendingDraftDay = dayKey;   // initializeWorkout will restore this day's draft
 
     // Update day buttons
     document.querySelectorAll('.day-btn').forEach(btn => btn.classList.remove('active'));
@@ -5811,28 +7321,274 @@ function initializeWorkout(workoutType = null) {
     // Handle case where workout type doesn't exist
     if (!exercises || !Array.isArray(exercises)) {
         console.warn(`No exercises found for workout type: ${workoutType} (day: ${currentDay})`);
+        // Reset both here too. Falling out early used to leak pendingDraftDay
+        // and a stale editingWorkoutId into the next rebuild.
+        editingWorkoutId = null;
+        pendingDraftDay = null;
         renderWorkout(workoutType);
         return;
     }
 
     exercises.forEach((exercise, index) => {
         const isStretch = exercise.name.toLowerCase().includes('stretch');
-        const isRest = workoutType === 'Rest';
+        const isRest = isRestDayType(workoutType);
+        // isRest forced every exercise on the day to a checkbox. That is right
+        // for a bare rest day, but a day named "Recovery" or "Off" that
+        // actually CONTAINS exercises is real training, and forcing checkboxes
+        // made those sessions unloggable and scored them as misses.
+        const restDayWithoutExercises = isRest && exercises.length === 0;
+        const trackingType = (isStretch || restDayWithoutExercises)
+            ? 'checkoff'
+            : getTrackingType(exercise, null);
+        const setCount = trackingType === 'checkoff'
+            ? 1
+            : (typeof exercise.sets === 'number' && exercise.sets > 0 ? exercise.sets : 1);
 
         currentWorkout[index] = {
             exercise: exercise.name,
-            sets: (isStretch || isRest) ?
-                [{ completed: false }] :
-                Array(typeof exercise.sets === 'number' ? exercise.sets : 1).fill().map(() => ({
-                    weight: '',
-                    reps: '',
-                    notes: ''
-                }))
+            trackingType,
+            sets: Array(setCount).fill().map(() => blankSetForType(trackingType))
         };
     });
 
+    // If this day already has a session logged TODAY, load it back in so the
+    // form continues it rather than starting blank. Completing then UPDATES
+    // that record instead of adding a second one. This is what makes a workout
+    // split across the day work: log what you did this morning, come back this
+    // evening, add the rest, save again.
+    editingWorkoutId = null;
+    // Key off the DATE IN THE PICKER, not today. Keying off today meant that
+    // selecting a past date left today's already-saved sets on screen, and
+    // saving wrote a byte-for-byte copy of them under that date.
+    const dateInput = document.getElementById('workout-date-input');
+    const targetDate = (dateInput && dateInput.value) ? dateInput.value : getTodayDateString();
+    const savedToday = allWorkouts.find(w =>
+        w.date === targetDate && normalizeLabel(w.day) === normalizeLabel(workoutType));
+
+    if (savedToday && savedToday.exercises) {
+        const savedByName = new Map();
+        Object.values(savedToday.exercises).forEach(ex => {
+            if (ex && ex.exercise) savedByName.set(normalizeLabel(ex.exercise), ex);
+        });
+
+        Object.values(currentWorkout).forEach(slot => {
+            const match = savedByName.get(normalizeLabel(slot.exercise));
+            if (match && Array.isArray(match.sets) && match.sets.length) {
+                slot.sets = JSON.parse(JSON.stringify(match.sets));
+                if (match.trackingType) slot.trackingType = match.trackingType;
+                if (match.approach) slot.approach = match.approach;
+                if (match.substitution) slot.substitution = match.substitution;
+                if (Number.isInteger(match.skillLevel)) slot.skillLevel = match.skillLevel;
+            }
+        });
+
+        editingWorkoutId = savedToday.id || null;
+        if (savedToday.intensity) {
+            workoutIntensity = {
+                preWorkout: {
+                    energy: savedToday.intensity.energy != null ? savedToday.intensity.energy : null,
+                    motivation: savedToday.intensity.motivation != null ? savedToday.intensity.motivation : null
+                },
+                postWorkout: {
+                    fatigue: savedToday.intensity.fatigue != null ? savedToday.intensity.fatigue : null,
+                    satisfaction: savedToday.intensity.satisfaction != null ? savedToday.intensity.satisfaction : null
+                }
+            };
+        }
+    }
+
+    // An unsaved draft is newer than anything on the server, so it always wins.
+    // This runs on EVERY rebuild, not only after a day switch, because
+    // initializeWorkout is also reached from deleting a session on the
+    // Calendar, saving a program and activating one. Each of those used to
+    // silently destroy whatever was being logged at the time.
+    const draftDay = pendingDraftDay != null ? pendingDraftDay : currentDay;
+    pendingDraftDay = null;
+    // Drafts belong to today. Applying one while a past date is selected would
+    // file today's in-progress work under the wrong day.
+    const parked = (targetDate === getTodayDateString())
+        ? readAllDrafts()[String(draftDay)]
+        : null;
+    if (parked && parked.workout) {
+        currentWorkout = parked.workout;
+        if (parked.intensity) workoutIntensity = parked.intensity;
+    }
+
     renderWorkout(workoutType);
 }
+// ---------------------------------------------------------------------------
+// In-progress session durability
+//
+// currentWorkout lived only in memory. Backgrounding Safari (which iOS does
+// aggressively), reloading, or tapping a day pill mid-session destroyed the
+// entire workout with no warning and no way back. A lifting session is 45+
+// minutes of foreground use punctuated by rest periods, so this was the modal
+// usage pattern, not an edge case.
+// ---------------------------------------------------------------------------
+
+// Time and duration sets carry only `seconds`/`minutes`, so a check limited to
+// weight and reps read a session of holds or cardio as empty. That made those
+// sessions unsavable and caused the draft system to delete them.
+function setHasAnyValue(set) {
+    if (!set) return false;
+    if (set.completed === true) return true;
+    return ['weight', 'reps', 'seconds', 'minutes', 'notes']
+        .some(field => set[field] !== '' && set[field] != null);
+}
+
+const DRAFT_KEY = 'fcc:draft:v2';
+let draftSaveTimer = null;
+let pendingDraftDay = null;
+// The id of an already-saved session the logger is editing, so a later save
+// updates it rather than creating a duplicate for the same day.
+let editingWorkoutId = null;
+
+function currentWorkoutHasData() {
+    return Object.values(currentWorkout || {}).some(ex =>
+        (ex.sets || []).some(setHasAnyValue));
+}
+
+function readAllDrafts() {
+    try {
+        const raw = localStorage.getItem(DRAFT_KEY);
+        if (!raw) return {};
+        const parsed = JSON.parse(raw);
+        // programId was stored but never checked, so a draft parked under one
+        // program was loaded on top of a different program's day and saved as
+        // that program's session, with exercises it does not contain.
+        const currentProgramId = activeProgram ? activeProgram.id : null;
+        if (parsed && parsed.programId !== undefined && parsed.programId !== currentProgramId) {
+            localStorage.removeItem(DRAFT_KEY);
+            return {};
+        }
+        if (!parsed || parsed.date !== getTodayDateString()) {
+            // Only today's drafts. Yesterday's abandoned session should not
+            // reappear on top of a fresh day.
+            localStorage.removeItem(DRAFT_KEY);
+            return {};
+        }
+        return parsed.days || {};
+    } catch (e) {
+        return {};
+    }
+}
+
+function writeAllDrafts(days) {
+    try {
+        if (!days || Object.keys(days).length === 0) {
+            localStorage.removeItem(DRAFT_KEY);
+            return;
+        }
+        localStorage.setItem(DRAFT_KEY, JSON.stringify({
+            date: getTodayDateString(),
+            programId: activeProgram ? activeProgram.id : null,
+            days,
+            savedAt: new Date().toISOString()
+        }));
+    } catch (e) {
+        console.warn('Could not save workout draft:', e);
+    }
+}
+
+// Drafts are keyed BY DAY. There used to be a single slot, so switching days
+// left nothing to come back to even though the confirm promised otherwise, and
+// worse, backgrounding the phone on the now-empty day deleted the previous
+// day's work outright.
+function persistWorkoutDraft() {
+    const days = readAllDrafts();
+    const key = String(currentDay);
+
+    if (currentWorkoutHasData()) {
+        days[key] = {
+            day: currentDay,
+            workoutDate: (document.getElementById('workout-date-input') || {}).value || getTodayDateString(),
+            workout: currentWorkout,
+            intensity: workoutIntensity
+        };
+    } else {
+        delete days[key];   // only ever clears THIS day
+    }
+
+    writeAllDrafts(days);
+}
+
+function scheduleDraftSave() {
+    if (draftSaveTimer) clearTimeout(draftSaveTimer);
+    draftSaveTimer = setTimeout(persistWorkoutDraft, 400);
+}
+
+function clearWorkoutDraft(dayKey) {
+    if (draftSaveTimer) clearTimeout(draftSaveTimer);
+    const days = readAllDrafts();
+    delete days[String(dayKey == null ? currentDay : dayKey)];
+    writeAllDrafts(days);
+}
+
+function restoreWorkoutDraftIfAny(preferredDay) {
+    const days = readAllDrafts();
+    const keys = Object.keys(days);
+    if (keys.length === 0) return false;
+
+    const key = (preferredDay != null && days[String(preferredDay)]) ? String(preferredDay) : keys[0];
+    const draft = days[key];
+    if (!draft || !draft.workout) return false;
+
+    currentDay = draft.day || currentDay;
+    currentWorkout = draft.workout;
+    if (draft.intensity) workoutIntensity = draft.intensity;
+
+    // The date input is reset to today on every boot, so a restored past-dated
+    // session used to be silently re-filed under today.
+    const dateInput = document.getElementById('workout-date-input');
+    if (dateInput && draft.workoutDate) dateInput.value = draft.workoutDate;
+
+    renderWorkoutDaySelector();
+    renderWorkout();
+    showDraftRestoredBanner();
+    return true;
+}
+
+function showDraftRestoredBanner() {
+    let el = document.getElementById('draft-restored-banner');
+    if (!el) {
+        el = document.createElement('div');
+        el.id = 'draft-restored-banner';
+        el.className = 'draft-banner';
+        el.innerHTML = `<span>Picked up your in-progress session.</span>
+            <button type="button" class="draft-banner-discard" onclick="discardWorkoutDraft()">Start fresh</button>`;
+        const host = document.getElementById('workout-content');
+        if (host) host.insertBefore(el, host.firstChild);
+    }
+    el.classList.add('visible');
+}
+
+window.discardWorkoutDraft = function () {
+    clearWorkoutDraft(currentDay);
+    initializeWorkout();
+    const el = document.getElementById('draft-restored-banner');
+    if (el) el.classList.remove('visible');
+};
+
+// iOS discards backgrounded tabs without firing unload, so pagehide and
+// visibilitychange are the reliable moments to flush.
+window.addEventListener('pagehide', persistWorkoutDraft);
+window.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') persistWorkoutDraft();
+});
+
+// One definition of "this day was never a training day", used by the streak,
+// the calendar and the discipline score. These three each had their own literal
+// string comparison, so a program whose rest days were named "Off" scored a
+// perfect month at 50% with every rest day painted red.
+function isNonTrainingLabel(label) {
+    const n = normalizeLabel(label);
+    return n === 'travel' || n === 'sick' || isRestSlot(label);
+}
+
+function isRestDayType(workoutType) {
+    return REST_SLOT_NAMES.includes(normalizeLabel(workoutType));
+}
+
 function renderWorkout(workoutType = null) {
     const container = document.getElementById('exercises-container');
     const workouts = getActiveWorkouts();
@@ -5858,6 +7614,31 @@ function renderWorkout(workoutType = null) {
 
     let html = '';
 
+    // An empty exercise list used to fall straight through to
+    // container.innerHTML = '' — a completely blank panel with no explanation.
+    // This is the most literal reading of "the app doesn't work".
+    // Make it obvious that what is on screen is an already-saved session, so
+    // Complete Session reads as "update" rather than "log a second one".
+    const continuationBanner = editingWorkoutId ? `
+        <div class="draft-banner visible" style="margin-bottom:1rem;">
+            <span>This session is already saved. Add to it and save again to update it.</span>
+        </div>` : '';
+
+    if (exercises.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-title">No exercises for this day yet</div>
+                <div class="empty-state-body">
+                    ${isRestDayType(workoutType)
+                        ? 'This is a rest day. Nothing to log, and that counts as following the plan.'
+                        : 'Open Settings, choose this program, and add exercises to this day.'}
+                </div>
+                ${isRestDayType(workoutType) ? '' :
+                    '<button type="button" class="btn empty-state-action" onclick="openSettings()">Edit program</button>'}
+            </div>`;
+        return;
+    }
+
     exercises.forEach((exercise, exerciseIndex) => {
         const workoutExercise = currentWorkout[exerciseIndex];
         if (!workoutExercise) {
@@ -5865,21 +7646,62 @@ function renderWorkout(workoutType = null) {
             return; // Skip if not initialized
         }
         
-        // Get last workout matching current exercise's approach
+        // Get last logged data for THIS exercise, matched by name and approach
         const currentApproach = workoutExercise.approach || 'standard';
-        const lastWorkout = getLastWorkoutForDay(currentDay, currentApproach);
-        const previousExercise = lastWorkout?.exercises?.[exerciseIndex];
+        const previousMatch = findPreviousExercise(
+            currentDay,
+            exerciseIndex,
+            getExerciseNameCandidates(workoutExercise, exercise.name),
+            currentApproach
+        );
+        const lastWorkout = previousMatch ? previousMatch.workout : null;
+        const previousExercise = previousMatch ? previousMatch.exercise : null;
+
+        const isStretch = exercise.name.toLowerCase().includes('stretch');
+        const isRest = isRestDayType(workoutType);
+        const restDayWithoutExercises = isRest && exercises.length === 0;
+        const trackingType = (isStretch || restDayWithoutExercises)
+            ? 'checkoff'
+            : getTrackingType(exercise, workoutExercise);
+
+        // The logged row carries the type it was recorded with. Reading old
+        // history through today's type made every pre-existing "Plank" or
+        // "Treadmill Walk" render as an empty Last session block.
+        const previousTrackingType = (previousExercise && previousExercise.trackingType &&
+            TRACKING_TYPES[previousExercise.trackingType])
+            ? previousExercise.trackingType
+            : trackingType;
+
+        // Skill ladder state. Defaults to the level logged last session, so the
+        // selector opens where you left off rather than back at level one.
+        // The logged row carries the type it was recorded with. Reading old
+        // history through today's type made every pre-existing "Plank" or
+        // "Treadmill Walk" render as an empty Last session block, because the
+        // formatter looked for seconds on a set that stored weight and reps.
+
+        const skillProgression = getSkillProgression(exercise.name);
+        let activeSkillLevel = 0;
+        if (skillProgression) {
+            const stored = Number.isInteger(workoutExercise.skillLevel)
+                ? workoutExercise.skillLevel
+                : (Number.isInteger(previousExercise?.skillLevel) ? previousExercise.skillLevel : 0);
+            activeSkillLevel = Math.min(Math.max(stored, 0), skillProgression.levels.length - 1);
+            workoutExercise.skillLevel = activeSkillLevel;
+            workoutExercise.skillLevelName = skillProgression.levels[activeSkillLevel].name;
+        }
 
         // Check if this is a stretch exercise or rest day
-        const isStretch = exercise.name.toLowerCase().includes('stretch');
-        const isRest = workoutType === 'Rest';
 
         // Calculate suggested weight and get progression info
         let suggestedWeight = '';
         let progressionInfo = '';
 
-        if (!isStretch && !isRest && previousExercise && previousExercise.sets.length > 0) {
-            const prevSets = previousExercise.sets.filter(set => set.weight && set.reps);
+        // Skills and other bodyweight holds log 0 lbs, so the progression maths
+        // would cheerfully suggest "Try 5lbs" for a front lever. Skip it.
+        const isBodyweightSkill = Boolean(skillProgression) || trackingType !== 'weight_reps';
+
+        if (!isStretch && !isRest && !isBodyweightSkill && previousExercise && previousExercise.sets.length > 0) {
+            const prevSets = previousExercise.sets.filter(set => parseFloat(set.weight) > 0 && set.reps);
             if (prevSets.length > 0) {
                 const avgWeight = prevSets.reduce((sum, set) => sum + parseFloat(set.weight), 0) / prevSets.length;
                 const avgReps = prevSets.reduce((sum, set) => sum + parseInt(set.reps), 0) / prevSets.length;
@@ -5918,6 +7740,21 @@ function renderWorkout(workoutType = null) {
                                 </div>
                                 <div class="exercise-target">${exercise.sets} × ${exercise.reps}</div>
                                 ${progressionInfo ? `<div class="exercise-progress-indicator">${progressionInfo} last session</div>` : ''}
+                                ${skillProgression ? `
+                                    <div class="skill-selector">
+                                        <div class="skill-selector-label">${skillProgression.label} level</div>
+                                        <select class="skill-level-select" onchange="setSkillLevel(${exerciseIndex}, this.value)">
+                                            ${skillProgression.levels.map((lvl, i) => `
+                                                <option value="${i}" ${i === activeSkillLevel ? 'selected' : ''}>${i + 1}. ${lvl.name}</option>
+                                            `).join('')}
+                                        </select>
+                                        <div class="skill-level-detail">
+                                            <span class="skill-level-target">${skillProgression.levels[activeSkillLevel].target}</span>
+                                            <span class="skill-level-cue">${skillProgression.levels[activeSkillLevel].cue}</span>
+                                            <span class="skill-level-gate">Move up when: ${skillProgression.levels[activeSkillLevel].gate}</span>
+                                        </div>
+                                    </div>
+                                ` : ''}
                                 ${!isStretch && !isRest ? `
                                     <div class="approach-selector">
                                         <button class="approach-btn ${!workoutExercise.approach ? 'active' : ''}" onclick="setExerciseApproach(${exerciseIndex}, null)">Standard</button>
@@ -5935,18 +7772,19 @@ function renderWorkout(workoutType = null) {
 
                         ${previousExercise && !isStretch && !isRest ? `
                             <div class="previous-session">
-                                <div class="previous-header">Last session (${formatDateString(lastWorkout.date)})${lastWorkout.exercises?.[exerciseIndex]?.approach ? ` - ${lastWorkout.exercises[exerciseIndex].approach}` : ''}:</div>
+                                <div class="previous-header">Last session (${formatDateString(lastWorkout.date)})${previousExercise.approach ? ` - ${previousExercise.approach}` : ''}${previousExercise.skillLevelName ? ` - ${previousExercise.skillLevelName}` : ''}:</div>
                                 <div class="previous-sets-compact">
-                                    ${previousExercise.sets.filter(set => set.weight || set.reps).map(set => {
-            let setStr = `${set.weight}×${set.reps}`;
-            if (set.notes) setStr += ` (${set.notes})`;
+                                    ${previousExercise.sets.map(set => {
+            let setStr = formatSetForType(set, previousTrackingType);
+            if (!setStr) return '';
+            if (set.notes) setStr += ` (${escapeHtml(set.notes)})`;
             return setStr;
-        }).join(', ')}
+        }).filter(Boolean).join(', ')}
                                 </div>
                             </div>
                         ` : ''}`;
 
-        if (isStretch || isRest) {
+        if (isStretch || (isRest && exercises.length === 0)) {
             const label = isRest ? 'Rest Day Complete' : exercise.name;
             html += `
                         <div class="stretch-row">
@@ -5963,46 +7801,100 @@ function renderWorkout(workoutType = null) {
             html += `<div class="set-input-grid">`;
 
             workoutExercise.sets.forEach((set, setIndex) => {
+                const prevSet = previousExercise?.sets?.[setIndex];
+                const prevLabel = formatSetForType(prevSet, previousTrackingType);
+                const lastAndCopy = prevLabel ? `
+                                    <span class="previous-set-label">last: ${escapeHtml(prevLabel)}</span>
+                                    <button type="button" class="btn btn-copy" onclick="copyPrevious(${exerciseIndex}, ${setIndex})">Copy</button>
+                                ` : '';
+
+                let fields;
+                if (trackingType === 'time') {
+                    // Seconds per set, so 30 -> 45 on a hold reads as progress
+                    // instead of being crammed into a reps box.
+                    fields = `
+                                <input type="number" inputmode="numeric" class="reps-input" placeholder="sec"
+                                       aria-label="Seconds for set ${setIndex + 1}"
+                                       value="${escapeHtml(set.seconds)}"
+                                       onchange="updateSet(${exerciseIndex}, ${setIndex}, 'seconds', this.value)">
+                                <span class="set-unit">sec</span>
+                                <input type="text" class="notes-input" placeholder="notes"
+                                       value="${escapeHtml(set.notes)}"
+                                       onchange="updateSet(${exerciseIndex}, ${setIndex}, 'notes', this.value)">`;
+                } else if (trackingType === 'duration') {
+                    fields = `
+                                <input type="number" inputmode="decimal" step="any" class="reps-input" placeholder="min"
+                                       aria-label="Minutes for set ${setIndex + 1}"
+                                       value="${escapeHtml(set.minutes)}"
+                                       onchange="updateSet(${exerciseIndex}, ${setIndex}, 'minutes', this.value)">
+                                <span class="set-unit">min</span>
+                                <input type="text" class="notes-input" placeholder="incline, pace, notes"
+                                       value="${escapeHtml(set.notes)}"
+                                       onchange="updateSet(${exerciseIndex}, ${setIndex}, 'notes', this.value)">`;
+                } else if (trackingType === 'reps') {
+                    fields = `
+                                <div class="reps-control-wrapper">
+                                    <button type="button" class="reps-increment-btn" aria-label="One fewer rep"
+                                            onclick="adjustReps(${exerciseIndex}, ${setIndex}, -1); event.stopPropagation();">&minus;</button>
+                                    <input type="number" inputmode="numeric" class="reps-input" placeholder="reps"
+                                           aria-label="Reps for set ${setIndex + 1}"
+                                           value="${escapeHtml(set.reps)}"
+                                           onchange="updateSet(${exerciseIndex}, ${setIndex}, 'reps', this.value)">
+                                    <button type="button" class="reps-increment-btn" aria-label="One more rep"
+                                            onclick="adjustReps(${exerciseIndex}, ${setIndex}, 1); event.stopPropagation();">+</button>
+                                </div>
+                                <span class="set-unit">reps</span>
+                                <input type="text" class="notes-input" placeholder="notes"
+                                       value="${escapeHtml(set.notes)}"
+                                       onchange="updateSet(${exerciseIndex}, ${setIndex}, 'notes', this.value)">`;
+                } else {
+                    fields = `
+                                <input type="number" inputmode="decimal" step="any" class="weight-input" placeholder="lbs"
+                                       aria-label="Weight for set ${setIndex + 1}"
+                                       value="${escapeHtml(set.weight)}"
+                                       onchange="updateSet(${exerciseIndex}, ${setIndex}, 'weight', this.value)">
+                                <span class="set-unit">&times;</span>
+                                <div class="reps-control-wrapper">
+                                    <button type="button" class="reps-increment-btn" aria-label="One fewer rep"
+                                            onclick="adjustReps(${exerciseIndex}, ${setIndex}, -1); event.stopPropagation();">&minus;</button>
+                                    <input type="number" inputmode="numeric" class="reps-input" placeholder="reps"
+                                           aria-label="Reps for set ${setIndex + 1}"
+                                           value="${escapeHtml(set.reps)}"
+                                           onchange="updateSet(${exerciseIndex}, ${setIndex}, 'reps', this.value)">
+                                    <button type="button" class="reps-increment-btn" aria-label="One more rep"
+                                            onclick="adjustReps(${exerciseIndex}, ${setIndex}, 1); event.stopPropagation();">+</button>
+                                </div>
+                                <input type="text" class="notes-input" placeholder="notes"
+                                       value="${escapeHtml(set.notes)}"
+                                       onchange="updateSet(${exerciseIndex}, ${setIndex}, 'notes', this.value)">`;
+                }
+
                 html += `
                             <div class="set-row">
                                 <div class="set-number">${setIndex + 1}</div>
-                                <input type="number" class="weight-input" placeholder="lbs" 
-                                       value="${set.weight}" 
-                                       onchange="updateSet(${exerciseIndex}, ${setIndex}, 'weight', this.value)">
-                                <span style="color: var(--color-text-secondary);">×</span>
-                                <div class="reps-control-wrapper">
-                                    <button class="reps-increment-btn" onclick="adjustReps(${exerciseIndex}, ${setIndex}, -1); event.stopPropagation();" title="Decrease reps">−</button>
-                                    <input type="number" class="reps-input" placeholder="reps" 
-                                           value="${set.reps}" 
-                                           onchange="updateSet(${exerciseIndex}, ${setIndex}, 'reps', this.value)">
-                                    <button class="reps-increment-btn" onclick="adjustReps(${exerciseIndex}, ${setIndex}, 1); event.stopPropagation();" title="Increase reps">+</button>
-                                </div>
-                                <input type="text" class="notes-input" placeholder="notes" 
-                                       value="${set.notes}" 
-                                       onchange="updateSet(${exerciseIndex}, ${setIndex}, 'notes', this.value)">
-                                ${previousExercise?.sets[setIndex]?.weight ? `
-                                    <span class="previous-set-label" style="color: var(--color-text-secondary); font-size: 0.75rem; white-space: nowrap;">last: ${previousExercise.sets[setIndex].weight} × ${previousExercise.sets[setIndex].reps}</span>
-                                    <button class="btn btn-copy" onclick="copyPrevious(${exerciseIndex}, ${setIndex})">Copy</button>
-                                ` : ''}
-                                <button class="set-delete-btn" onclick="deleteSet(${exerciseIndex}, ${setIndex})" title="Delete set">×</button>
+                                ${fields}
+                                ${lastAndCopy}
+                                <button type="button" class="set-delete-btn" aria-label="Delete set ${setIndex + 1}"
+                                        onclick="deleteSet(${exerciseIndex}, ${setIndex})">&times;</button>
                             </div>`;
             });
 
             html += `
                             </div>
-                            <button class="btn btn-add" onclick="addSet(${exerciseIndex})" style="margin-top: 0.75rem;">+ Add Set</button>
+                            <button type="button" class="btn btn-add" onclick="addSet(${exerciseIndex})" style="margin-top: 0.75rem;">+ Add Set</button>
                         `;
         }
 
         html += `</div>`;
     });
 
-    container.innerHTML = html;
+    container.innerHTML = continuationBanner + html;
 }
 
 // Make functions globally available
 window.updateSet = function (exerciseIndex, setIndex, field, value) {
     currentWorkout[exerciseIndex].sets[setIndex][field] = value;
+    scheduleDraftSave();
 };
 
 window.deleteSet = function (exerciseIndex, setIndex) {
@@ -6010,6 +7902,7 @@ window.deleteSet = function (exerciseIndex, setIndex) {
         currentWorkout[exerciseIndex].sets.splice(setIndex, 1);
         renderWorkout();
     }
+    scheduleDraftSave();
 };
 
 window.adjustReps = function (exerciseIndex, setIndex, delta) {
@@ -6017,28 +7910,74 @@ window.adjustReps = function (exerciseIndex, setIndex, delta) {
     const newReps = Math.max(0, currentReps + delta);
     currentWorkout[exerciseIndex].sets[setIndex].reps = newReps.toString();
     renderWorkout();
+    scheduleDraftSave();
 };
 
 window.addSet = function (exerciseIndex) {
-    currentWorkout[exerciseIndex].sets.push({ weight: '', reps: '', notes: '' });
+    const type = currentWorkout[exerciseIndex].trackingType || 'weight_reps';
+    currentWorkout[exerciseIndex].sets.push(blankSetForType(type));
     renderWorkout();
+    scheduleDraftSave();
 };
 
 window.copyPrevious = function (exerciseIndex, setIndex) {
-    // Get last workout matching current exercise's approach
-    const currentApproach = currentWorkout[exerciseIndex].approach || 'standard';
-    const lastWorkout = getLastWorkoutForDay(currentDay, currentApproach);
-    const previousSet = lastWorkout?.exercises?.[exerciseIndex]?.sets[setIndex];
+    const workoutExercise = currentWorkout[exerciseIndex];
+    if (!workoutExercise || !workoutExercise.sets || !workoutExercise.sets[setIndex]) return;
+
+    // Uses the identical lookup as renderWorkout, so the button always copies
+    // exactly the numbers shown next to it.
+    const currentApproach = workoutExercise.approach || 'standard';
+    const previousMatch = findPreviousExercise(
+        currentDay,
+        exerciseIndex,
+        getExerciseNameCandidates(workoutExercise, workoutExercise.exercise),
+        currentApproach
+    );
+    const previousSet = previousMatch?.exercise?.sets?.[setIndex];
 
     if (previousSet) {
-        currentWorkout[exerciseIndex].sets[setIndex].weight = previousSet.weight;
-        currentWorkout[exerciseIndex].sets[setIndex].reps = previousSet.reps;
+        // Copy whichever fields this exercise's tracking type actually uses,
+        // so a hold copies seconds and a walk copies minutes.
+        const type = workoutExercise.trackingType || 'weight_reps';
+        const sourceType = (previousMatch.exercise && previousMatch.exercise.trackingType) || type;
+        if (sourceType !== type) {
+            // The exercise was tracked differently last time, so copying would
+            // move numbers between fields that do not mean the same thing.
+            showToast('Last session was tracked differently, so there is nothing to copy.', 'warn');
+            return;
+        }
+        const target = workoutExercise.sets[setIndex];
+        const carry = (field) => {
+            if (previousSet[field] != null && previousSet[field] !== '') target[field] = String(previousSet[field]);
+        };
+
+        if (type === 'time') carry('seconds');
+        else if (type === 'duration') carry('minutes');
+        else if (type === 'reps') carry('reps');
+        else { carry('weight'); carry('reps'); }
+
+        scheduleDraftSave();
         renderWorkout();
     }
+    scheduleDraftSave();
 };
 
 window.updateStretch = function (exerciseIndex, completed) {
     currentWorkout[exerciseIndex].sets[0] = { completed: completed };
+    scheduleDraftSave();
+};
+
+window.setSkillLevel = function (exerciseIndex, levelIndex) {
+    const workoutExercise = currentWorkout[exerciseIndex];
+    if (!workoutExercise) return;
+
+    const progression = getSkillProgression(workoutExercise.exercise);
+    if (!progression) return;
+
+    const index = Math.min(Math.max(parseInt(levelIndex, 10) || 0, 0), progression.levels.length - 1);
+    workoutExercise.skillLevel = index;
+    workoutExercise.skillLevelName = progression.levels[index].name;
+    renderWorkout();
 };
 
 window.setExerciseApproach = function (exerciseIndex, approach) {
@@ -6048,9 +7987,16 @@ window.setExerciseApproach = function (exerciseIndex, approach) {
 
 window.toggleSubstitution = function (exerciseIndex) {
     if (currentWorkout[exerciseIndex].substitution) {
-        // Remove substitution
+        // Removing a substitution used to delete both keys without restoring
+        // `exercise`, which confirmAltExercise had overwritten. The card then
+        // displayed "Barbell Bench Press" while the saved row still said
+        // "Machine Chest Press", so the PR landed on the wrong lift.
+        if (currentWorkout[exerciseIndex].originalExercise) {
+            currentWorkout[exerciseIndex].exercise = currentWorkout[exerciseIndex].originalExercise;
+        }
         delete currentWorkout[exerciseIndex].substitution;
         delete currentWorkout[exerciseIndex].originalExercise;
+        scheduleDraftSave();
         renderWorkout();
     } else {
         // Open modal to select/enter alternative exercise
@@ -6231,18 +8177,59 @@ async function saveAltExerciseToHistory(originalExercise, alternativeExercise) {
     }
 }
 
+// ---------------------------------------------------------------------------
+// Completing a session.
+//
+// With Firestore offline persistence enabled, a write promise settles on SERVER
+// ACK, not locally. In a basement gym `await saveWorkoutToFirebase(...)` never
+// resolved and never rejected, so the success alert, the catch, and the state
+// reset were all unreachable. The button showed no spinner and was never
+// disabled, so every impatient tap queued another document, and when signal
+// returned the history filled with duplicate sessions that could not be
+// deleted. That turned "bad signal" into permanent log corruption at the exact
+// moment the app exists for.
+//
+// The write is now treated as succeeded once it is in the local cache, with a
+// timeout that reports "saved on this device" rather than hanging.
+// ---------------------------------------------------------------------------
+let completeWorkoutInFlight = false;
+
 async function completeWorkout() {
+    if (completeWorkoutInFlight) return;
+
     const dateInput = document.getElementById('workout-date-input');
     const today = getTodayDateString();
     const selectedDate = dateInput.value && dateInput.value !== today ? dateInput.value : today;
 
-    // Resolve the actual workout type name (e.g. "Push/Pull", "Arms")
-    // instead of saving the raw day key (e.g. "day1", "day2")
+    // An all-blank logger used to save happily, so an accidental tap created a
+    // phantom session that counted toward the streak and the discipline score.
+    if (!currentWorkoutHasData()) {
+        showToast('Nothing logged yet. Enter at least one set first.', 'warn');
+        return;
+    }
+
     let resolvedDay;
     if (activeProgram && activeProgram.schedule) {
         resolvedDay = getWorkoutTypeForDay(activeProgram, currentDay);
     } else {
-        resolvedDay = currentDay; // default plans already use type names as keys
+        resolvedDay = currentDay;
+    }
+
+    // The form may be a continuation of a session already saved today, which is
+    // the normal case when the workout is split across the day. Update that
+    // record rather than writing a duplicate.
+    const existing = allWorkouts.find(w =>
+        w.date === selectedDate && normalizeLabel(w.day) === normalizeLabel(resolvedDay));
+
+    let updateExistingId = null;
+    if (existing) {
+        if (editingWorkoutId && existing.id === editingWorkoutId) {
+            updateExistingId = existing.id;
+        } else {
+            const ok = confirm(`A ${resolvedDay} session is already logged for ${selectedDate}. Update that session with what is on screen?`);
+            if (!ok) return;
+            updateExistingId = existing.id || null;
+        }
     }
 
     const workoutData = {
@@ -6255,46 +8242,96 @@ async function completeWorkout() {
             fatigue: workoutIntensity.postWorkout.fatigue,
             satisfaction: workoutIntensity.postWorkout.satisfaction
         },
-        programId: activeProgram ? activeProgram.id : null // NEW: Track which program this workout belongs to
+        programId: activeProgram ? activeProgram.id : null
     };
 
+    completeWorkoutInFlight = true;
+    const btn = document.getElementById('complete-workout-btn');
+    const originalLabel = btn ? btn.textContent : '';
+    if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
+
+    // Local backup first, so the session survives even if everything else fails.
     try {
-        // Save to Firebase
-        await saveWorkoutToFirebase(workoutData);
-
-        // Also save locally as backup
         const localHistory = JSON.parse(localStorage.getItem('fitnessData') || '{}');
-        const workoutKey = resolvedDay + '-' + selectedDate + '-' + Date.now();
-        localHistory[workoutKey] = workoutData;
+        localHistory[resolvedDay + '-' + selectedDate + '-' + Date.now()] = workoutData;
         localStorage.setItem('fitnessData', JSON.stringify(localHistory));
-
-        // Reload data from Firebase
-        await loadWorkoutsFromFirebase();
-
-        // Export to clipboard
-        exportToClipboard();
-
-        alert('Workout saved to Firebase and copied to clipboard!');
-
-        // Reset intensity inputs
-        workoutIntensity = {
-            preWorkout: { energy: null, motivation: null },
-            postWorkout: { fatigue: null, satisfaction: null }
-        };
-
-        // Clear active intensity buttons
-        document.querySelectorAll('.intensity-btn').forEach(btn => btn.classList.remove('active'));
-
-        // Reset and refresh
-        initializeWorkout();
-        updateSuggestions();
-        updateAnalytics();
-
-    } catch (error) {
-        console.error('Error saving workout:', error);
-        alert('Error saving workout. Check your internet connection.');
+    } catch (e) {
+        console.warn('Local backup failed:', e);
     }
+
+    const savePromise = updateExistingId
+        ? updateDoc(doc(db, "workouts", updateExistingId), workoutData)
+        : saveWorkoutToFirebase(workoutData);
+    const timedOut = Symbol('timeout');
+    const outcome = await Promise.race([
+        savePromise.then(() => 'saved').catch(err => { console.error(err); return 'failed'; }),
+        new Promise(resolve => setTimeout(() => resolve(timedOut), 4000))
+    ]);
+
+    if (outcome === 'failed') {
+        showToast('Could not save. Your session is still here, so try again in a moment.', 'error');
+        if (btn) { btn.disabled = false; btn.textContent = originalLabel; }
+        completeWorkoutInFlight = false;
+        return;
+    }
+
+    if (outcome === timedOut) {
+        showToast('Saved on this device. It will sync when you have signal.', 'info');
+        // Keep syncing in the background and reconcile when it lands.
+        savePromise
+            .then(() => loadWorkoutsFromFirebase().then(() => { refreshStartupCache(); updateAnalytics(); }))
+            .catch(err => console.error('Background sync failed:', err));
+    } else {
+        showToast(updateExistingId ? 'Session updated.' : 'Session saved.', 'success');
+        try {
+            await loadWorkoutsFromFirebase();
+            refreshStartupCache();
+        } catch (e) {
+            console.error('Reload after save failed:', e);
+        }
+    }
+
+    clearWorkoutDraft(currentDay);
+
+    workoutIntensity = {
+        preWorkout: { energy: null, motivation: null },
+        postWorkout: { fatigue: null, satisfaction: null }
+    };
+    document.querySelectorAll('.intensity-btn').forEach(b => b.classList.remove('active'));
+
+    invalidateScheduleTimeline();
+    currentDay = getScheduleDayKeyForToday() || currentDay;
+    renderWorkoutDaySelector();
+    initializeWorkout();
+    updateSuggestions();
+
+    if (btn) { btn.disabled = false; btn.textContent = originalLabel; }
+    completeWorkoutInFlight = false;
 }
+
+// ---------------------------------------------------------------------------
+// One non-blocking toast, replacing roughly 80 native alert() dialogs on
+// routine success paths. Native dialogs on every save trained the user to
+// dismiss reflexively, which is exactly what made the genuinely destructive
+// confirms ineffective.
+// ---------------------------------------------------------------------------
+function showToast(message, tone = 'info') {
+    let el = document.getElementById('app-toast');
+    if (!el) {
+        el = document.createElement('div');
+        el.id = 'app-toast';
+        el.className = 'app-toast';
+        el.setAttribute('role', 'status');
+        el.setAttribute('aria-live', 'polite');
+        document.body.appendChild(el);
+    }
+    el.textContent = message;
+    el.dataset.tone = tone;
+    el.classList.add('visible');
+    clearTimeout(el._timer);
+    el._timer = setTimeout(() => el.classList.remove('visible'), 3000);
+}
+window.showToast = showToast;
 
 function exportToClipboard() {
     const dateInput = document.getElementById('workout-date-input');
@@ -6351,4 +8388,17 @@ function exportToClipboard() {
         document.execCommand('copy');
         document.body.removeChild(textarea);
     }
+}
+
+// ---------------------------------------------------------------------------
+// Boot trigger. This MUST stay at the bottom of the file: bootUIFromCache()
+// calls setupEventListeners(), which references handlers assigned further up as
+// `window.foo = function ...` expressions. Module scripts are deferred, so when
+// app.js is fetched over the network document.readyState is often already past
+// 'loading', and calling boot mid-module would run before those assignments.
+// ---------------------------------------------------------------------------
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bootUIFromCache, { once: true });
+} else {
+    bootUIFromCache();
 }
