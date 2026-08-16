@@ -204,6 +204,26 @@
             transform: scale(1.02);
         }
 
+        /* Sessions the program defines but never schedules. Dashed, so they
+           read as "available to train" rather than as another numbered day. */
+        .day-btn-substitute {
+            border-style: dashed;
+            border-color: var(--color-accent-secondary);
+            color: var(--color-text-secondary);
+        }
+
+        .day-btn-substitute::before {
+            content: '+';
+            margin-right: 0.4rem;
+            font-weight: 500;
+            opacity: 0.7;
+        }
+
+        .day-btn-substitute.active {
+            border-style: solid;
+            color: var(--color-surface);
+        }
+
         .intelligence-panel {
             background: var(--color-surface);
             border: 1px solid var(--color-border);

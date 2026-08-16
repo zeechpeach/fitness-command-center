@@ -948,6 +948,53 @@ function getWorkoutTypeForDay(program, dayKey) {
     return dayValue.workoutType || ''; // New format - returns empty string if not set
 }
 
+// ---------------------------------------------------------------------------
+// Substitute sessions.
+//
+// A program can define exercise lists that are not one of its scheduled days -
+// a tournament circuit, a travel session, a pool day. There was no way to log
+// those at all without editing the program, so they simply could not be
+// trained.
+//
+// A substitute is addressed as `sub:<Workout Type>` wherever a day key is
+// expected. It deliberately does NOT touch the schedule: buildScheduleTimeline
+// only advances the queue for a logged session whose name matches a slot in the
+// program, so a substitute consumes nothing and the session it displaced is
+// still owed tomorrow. That is the behaviour we want - training a circuit
+// instead of Lower A does not mean Lower A was done.
+// ---------------------------------------------------------------------------
+const SUBSTITUTE_DAY_PREFIX = 'sub:';
+
+function isSubstituteDayKey(dayKey) {
+    return typeof dayKey === 'string' && dayKey.startsWith(SUBSTITUTE_DAY_PREFIX);
+}
+
+function substituteDayKeyFor(workoutType) {
+    return SUBSTITUTE_DAY_PREFIX + workoutType;
+}
+
+// The workout type a day key refers to, whether it is a scheduled day (day3) or
+// a substitute (sub:Tournament Circuit).
+function resolveWorkoutTypeForDayKey(dayKey) {
+    if (isSubstituteDayKey(dayKey)) return dayKey.slice(SUBSTITUTE_DAY_PREFIX.length);
+    if (activeProgram && activeProgram.schedule) return getWorkoutTypeForDay(activeProgram, dayKey);
+    return dayKey;
+}
+
+// Exercise lists the program defines that are not on any scheduled day.
+function getSubstituteWorkoutTypes() {
+    if (!activeProgram || !activeProgram.workouts) return [];
+    const scheduled = new Set(
+        Object.keys(activeProgram.schedule || {})
+            .map(k => normalizeLabel(getWorkoutTypeForDay(activeProgram, k)))
+            .filter(Boolean)
+    );
+    return Object.keys(activeProgram.workouts).filter(type => {
+        const list = activeProgram.workouts[type];
+        return Array.isArray(list) && list.length > 0 && !scheduled.has(normalizeLabel(type));
+    });
+}
+
 // Helper: Get custom name for a day
 function getCustomNameForDay(program, dayKey) {
     if (!program || !program.schedule || !program.schedule[dayKey]) {
@@ -5834,6 +5881,15 @@ function renderSavedFoods(searchTerm = '') {
     if (mobileContainer) mobileContainer.innerHTML = html;
 }
 
+// Both search boxes call these from an inline oninput in index.html, which
+// resolves against the GLOBAL scope, so they have to be exported. (These
+// exports previously sat next to the alternative-exercise code and were lost
+// when it was removed, which silently broke filtering in the Saved Foods
+// panel.)
+window.renderSavedFoods = renderSavedFoods;
+window.renderInlineSavedFoods = renderInlineSavedFoods;
+
+
 // Modal functions for mobile saved foods
 window.openSavedFoodsModal = function () {
     const modal = document.getElementById('saved-foods-modal');
@@ -6710,7 +6766,7 @@ function renderWorkoutDaySelector() {
         
         // Open on the session the queue owes today, not always on Upper.
         const validKeys = defaultDays.map(d => d.key);
-        if (!validKeys.includes(currentDay)) {
+        if (!validKeys.includes(currentDay) && !isSubstituteDayKey(currentDay)) {
             const owed = getScheduledWorkout(getTodayDateString());
             currentDay = validKeys.includes(owed) ? owed : defaultDays[0].key;
         }
@@ -6743,7 +6799,9 @@ function renderWorkoutDaySelector() {
     // Open on whatever the schedule queue owes today rather than always on day
     // one. Previously currentDay started as 'Upper', never matched a day key,
     // and so every load reset the logger to the first day of the program.
-    if (!dayKeys.includes(currentDay)) {
+    // A substitute (sub:Tournament Circuit) is a valid selection even though it
+    // is not one of the scheduled day keys, so it must survive this reset.
+    if (!dayKeys.includes(currentDay) && !isSubstituteDayKey(currentDay)) {
         currentDay = getScheduleDayKeyForToday() || dayKeys[0];
     }
     
@@ -6756,11 +6814,29 @@ function renderWorkoutDaySelector() {
         const buttonLabel = displayName && displayName !== '(click to name)' 
             ? `Day ${dayNumber} (${displayName})` 
             : `Day ${dayNumber}`;
-        html += `<button class="day-btn ${isActive ? 'active' : ''}" id="${dayKey}-btn">${buttonLabel}</button>`;
+        html += `<button class="day-btn ${isActive ? 'active' : ''}" id="${dayKey}-btn">${escapeHtml(buttonLabel)}</button>`;
     });
-    
+
+    // Sessions the program defines but never schedules, so they can be trained
+    // without editing the program. Logging one does not consume the day the
+    // queue owes, so the displaced session still comes up tomorrow.
+    const substitutes = getSubstituteWorkoutTypes();
+    substitutes.forEach((type) => {
+        const key = substituteDayKeyFor(type);
+        const isActive = currentDay === key;
+        html += `<button class="day-btn day-btn-substitute ${isActive ? 'active' : ''}"
+                         data-substitute="${escapeHtml(type)}"
+                         title="Train this instead of today's session. Today's session stays owed."
+                         >${escapeHtml(type)}</button>`;
+    });
+
     container.innerHTML = html;
-    
+
+    container.querySelectorAll('[data-substitute]').forEach(btn => {
+        btn.addEventListener('click', () =>
+            selectDay(substituteDayKeyFor(btn.getAttribute('data-substitute'))));
+    });
+
     // Attach event listeners to all buttons
     dayKeys.forEach(dayKey => {
         const btn = document.getElementById(`${dayKey}-btn`);
@@ -6787,29 +6863,25 @@ function selectDay(dayKey) {
     // Update day buttons
     document.querySelectorAll('.day-btn').forEach(btn => btn.classList.remove('active'));
     
-    // Construct button ID based on whether we're using default days or program schedule
-    // Default days use lowercase IDs (Upper -> upper-btn), program days use as-is (day1 -> day1-btn)
-    let buttonId;
-    if (activeProgram && activeProgram.schedule) {
-        buttonId = dayKey + '-btn'; // Program schedule: day1-btn, day2-btn, etc.
+    // Substitute pills are matched by data attribute; they carry no id because
+    // a workout type can contain characters an id cannot.
+    if (isSubstituteDayKey(dayKey)) {
+        const type = resolveWorkoutTypeForDayKey(dayKey);
+        const subBtn = document.querySelector(`.day-btn[data-substitute="${CSS.escape(type)}"]`);
+        if (subBtn) subBtn.classList.add('active');
     } else {
-        buttonId = dayKey.toLowerCase() + '-btn'; // Default: upper-btn, lower-btn, etc.
-    }
-    
-    const activeBtn = document.getElementById(buttonId);
-    if (activeBtn) {
-        activeBtn.classList.add('active');
+        // Construct button ID based on whether we're using default days or program schedule
+        // Default days use lowercase IDs (Upper -> upper-btn), program days use as-is (day1 -> day1-btn)
+        const buttonId = (activeProgram && activeProgram.schedule)
+            ? dayKey + '-btn'                 // Program schedule: day1-btn, day2-btn, etc.
+            : dayKey.toLowerCase() + '-btn';  // Default: upper-btn, lower-btn, etc.
+        const activeBtn = document.getElementById(buttonId);
+        if (activeBtn) {
+            activeBtn.classList.add('active');
+        }
     }
 
-    // Get workout type for the selected day
-    // If no active program, dayKey is already the workout type (Upper, Lower, etc.)
-    // If there's an active program, get the workout type from the schedule
-    let workoutType;
-    if (activeProgram && activeProgram.schedule) {
-        workoutType = getWorkoutTypeForDay(activeProgram, dayKey);
-    } else {
-        workoutType = dayKey; // For default workoutPlans, dayKey is the workout type
-    }
+    const workoutType = resolveWorkoutTypeForDayKey(dayKey);
     
     initializeWorkout(workoutType);
     updateSuggestions();
@@ -6821,11 +6893,7 @@ function initializeWorkout(workoutType = null) {
     
     // If no workoutType provided, try to get it from currentDay
     if (!workoutType) {
-        if (activeProgram && activeProgram.schedule) {
-            workoutType = getWorkoutTypeForDay(activeProgram, currentDay);
-        } else {
-            workoutType = currentDay; // For default workoutPlans, currentDay is the workout type
-        }
+        workoutType = resolveWorkoutTypeForDayKey(currentDay);
     }
     
     const exercises = workouts[workoutType];
@@ -7107,11 +7175,7 @@ function renderWorkout(workoutType = null) {
     
     // If no workoutType provided, try to get it from currentDay
     if (!workoutType) {
-        if (activeProgram && activeProgram.schedule) {
-            workoutType = getWorkoutTypeForDay(activeProgram, currentDay);
-        } else {
-            workoutType = currentDay; // For default workoutPlans, currentDay is the workout type
-        }
+        workoutType = resolveWorkoutTypeForDayKey(currentDay);
     }
     
     const exercises = workouts[workoutType];
@@ -7532,12 +7596,9 @@ async function completeWorkout() {
         return;
     }
 
-    let resolvedDay;
-    if (activeProgram && activeProgram.schedule) {
-        resolvedDay = getWorkoutTypeForDay(activeProgram, currentDay);
-    } else {
-        resolvedDay = currentDay;
-    }
+    // Saves under the workout TYPE, so a substitute session is stored as
+    // "Tournament Circuit" and the queue sees a session it has no slot for.
+    const resolvedDay = resolveWorkoutTypeForDayKey(currentDay);
 
     // The form may be a continuation of a session already saved today, which is
     // the normal case when the workout is split across the day. Update that
