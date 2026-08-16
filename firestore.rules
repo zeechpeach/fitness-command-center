@@ -1,43 +1,53 @@
 rules_version = '2';
 
+// ---------------------------------------------------------------------------
+// These rules were previously `allow read, write: if true` on every document.
+// The Firebase project ID is not a secret - it sits in firebaseConfig in
+// src/js/app.js, which is public on GitHub, and bots scrape public repos for
+// exactly this pattern. Anyone who found it could read, alter or delete all
+// training, nutrition and bodyweight history.
+//
+// Every read now requires an authenticated session. The app signs in
+// anonymously at startup and every Firestore call happens after that callback,
+// so app behaviour is unchanged. bootUIFromCache() runs before auth but touches
+// only localStorage.
+//
+// Deliberately NOT scoped by userId. With anonymous auth, clearing browser data
+// issues a new uid, so `resource.data.userId == request.auth.uid` would lock the
+// owner out of their own history. Real per-user isolation needs email or Google
+// sign-in plus a migration that stamps userId onto existing documents.
+//
+// NOTE: these rules are NOT deployed by pushing to GitHub. GitHub Pages serves
+// the site; the rules only take effect after:
+//     firebase deploy --only firestore:rules
+// ---------------------------------------------------------------------------
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    // CURRENT STATE: Public read/write access for development
-    // This allows the app to function without user-specific data isolation
-    //
-    // ⚠️ SECURITY WARNING: Anyone with the Firebase project ID can read/write all data
-    //
-    // PRODUCTION MIGRATION PATH:
-    // 1. Enable Firebase Authentication UI (email/password or Google sign-in)
-    // 2. Update app.js to use real authentication instead of anonymous
-    // 3. Add userId field to all new documents
-    // 4. Migrate existing data to include userId
-    // 5. Update rules below to require authentication
-    // 6. Deploy updated rules with: firebase deploy --only firestore:rules
-    
-    match /{document=**} {
-      allow read, write: if true;
+
+    function signedIn() {
+      return request.auth != null;
     }
-    
-    // PRODUCTION RULES (uncomment and update above after migration):
-    // match /workouts/{document} {
-    //   allow read: if request.auth != null && request.auth.uid == resource.data.userId;
-    //   allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
-    //   // Update/delete: User must own document AND userId field must remain unchanged
-    //   allow update, delete: if request.auth != null 
-    //                         && request.auth.uid == resource.data.userId
-    //                         && request.resource.data.userId == resource.data.userId;
-    // }
-    //
-    // match /nutrition/{document} {
-    //   allow read: if request.auth != null && request.auth.uid == resource.data.userId;
-    //   allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
-    //   // Update/delete: User must own document AND userId field must remain unchanged
-    //   allow update, delete: if request.auth != null 
-    //                         && request.auth.uid == resource.data.userId
-    //                         && request.resource.data.userId == resource.data.userId;
-    // }
-    //
-    // ... (repeat for all collections: weight, photos, programs, savedFoods, travelMode, sickDays, bodyGoal, altExerciseHistory)
+
+    match /workouts/{document}       { allow read, write: if signedIn(); }
+    match /nutrition/{document}      { allow read, write: if signedIn(); }
+    match /weight/{document}         { allow read, write: if signedIn(); }
+    match /programs/{document}       { allow read, write: if signedIn(); }
+    match /savedFoods/{document}     { allow read, write: if signedIn(); }
+    match /travelMode/{document}     { allow read, write: if signedIn(); }
+    match /sickDays/{document}       { allow read, write: if signedIn(); }
+    match /bodyGoals/{document}      { allow read, write: if signedIn(); }
+    match /dailyRoutines/{document}  { allow read, write: if signedIn(); }
+
+    // `photos` and `alternativeExercises` are gone: progress photos could never
+    // work (a phone photo base64s to several MB against a 1MB document limit)
+    // and the alternative-exercise feature was removed. Any documents left in
+    // those collections are now unreachable from the app, and deny-by-default
+    // below covers them.
+
+    // Anything not listed above is denied rather than inheriting open access.
+    match /{document=**} {
+      allow read, write: if false;
+    }
   }
 }

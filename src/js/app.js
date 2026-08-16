@@ -1,6 +1,6 @@
 // Firebase imports
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, query, orderBy, where, limit, deleteDoc, doc, updateDoc, enableIndexedDbPersistence, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, query, orderBy, where, limit, deleteDoc, doc, updateDoc, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 // Firebase config
@@ -54,12 +54,8 @@ let currentNutritionDate = '';
 let currentEditingMealId = null; // Track which meal is currently being edited
 let weightData = [];
 window.weightData = weightData;
-let photoData = [];
 let programs = [];
 let activeProgram = null;
-window.programs = programs;
-window.activeProgram = activeProgram;
-window.photoData = photoData;
 let savedFoods = [];
 // This module-scoped array was aliased to window.travelModeData at startup,
 // but loadTravelModeData() REBINDS the window property to a brand new array,
@@ -73,8 +69,6 @@ window.sickDayData = sickDayData;
 window.savedFoods = savedFoods;
 let bodyGoalData = null;
 window.bodyGoalData = bodyGoalData;
-let alternativeExerciseHistory = {}; // Store alternative exercise history by original exercise name
-let currentAltExerciseIndex = null; // Track which exercise is being edited
 
 // Program Editor State
 let currentEditingProgram = null; // Program being edited
@@ -293,24 +287,6 @@ async function loadWeightData() {
         return weights;
     } catch (e) {
         console.error("Error loading weight:", e);
-        return [];
-    }
-}
-
-async function loadPhotoData() {
-    try {
-        const q = query(collection(db, "photos"), orderBy("date", "desc"), limit(50));
-        const querySnapshot = await getDocs(q);
-        const photos = [];
-        querySnapshot.forEach((doc) => {
-            photos.push({ id: doc.id, ...doc.data() });
-        });
-        photoData = photos;
-        window.photoData = photos;
-        console.log("Loaded photo data:", photos.length);
-        return photos;
-    } catch (e) {
-        console.error("Error loading photos:", e);
         return [];
     }
 }
@@ -817,8 +793,6 @@ function getProgramScheduleArray(program) {
 }
 
 // Configuration for schedule calculation
-const MIN_SCHEDULE_DAYS = 14; // Minimum days to schedule ahead for missed workout queue
-const FUTURE_SCHEDULE_BUFFER = 7; // Additional days beyond missed workouts to schedule
 
 // Timezone configuration - default to LA timezone, but respect device timezone when traveling
 const DEFAULT_TIMEZONE = 'America/Los_Angeles';
@@ -860,30 +834,6 @@ function getCurrentTimeString() {
         hour12: false
     });
     return formatter.format(now);
-}
-
-function getCurrentHour() {
-    // Get current hour in user's timezone (0-23)
-    const now = new Date();
-    const timeString = now.toLocaleString('en-US', {
-        timeZone: userTimezone,
-        hour: 'numeric',
-        hour12: false
-    });
-    return parseInt(timeString);
-}
-
-function getDefaultMealType() {
-    // Determine meal type based on current time in user's timezone
-    // Before 11am = Breakfast
-    // 11am-2pm = Lunch
-    // 2pm-5pm = Snack
-    // After 5pm = Dinner
-    const hour = getCurrentHour();
-    if (hour < 11) return 'Breakfast';
-    if (hour < 14) return 'Lunch';
-    if (hour < 17) return 'Snack';
-    return 'Dinner';
 }
 
 // ============================================
@@ -1539,11 +1489,6 @@ function showEditorMessage(text, tone = 'warn') {
     el._timer = setTimeout(() => el.classList.remove('visible'), 3200);
 }
 
-// Select workout type for a specific day - now just prompts for name
-window.selectWorkoutForDay = function (dayNumber) {
-    window.editProgramDayName(dayNumber);
-};
-
 // Removing a day used to be impossible without deleting the whole program.
 window.removeProgramDay = function (dayNumber) {
     if (!currentEditingProgram || !currentEditingProgram.schedule) return;
@@ -1591,35 +1536,6 @@ window.removeProgramDay = function (dayNumber) {
     renderSchedulePills();
     renderWorkoutsAccordion();
 };
-
-// Update workout type for a day
-function updateDayWorkout(dayNumber, workoutType) {
-    if (!currentEditingProgram) return;
-    
-    const dayKey = `day${dayNumber}`;
-    const currentCustomName = getCustomNameForDay(currentEditingProgram, dayKey);
-    
-    // Update with new format
-    currentEditingProgram.schedule[dayKey] = {
-        workoutType: workoutType,
-        customName: currentCustomName // Preserve custom name
-    };
-
-    // Initialize workout if it doesn't exist
-    if (!currentEditingProgram.workouts[workoutType]) {
-        if (workoutType === 'Rest') {
-            currentEditingProgram.workouts[workoutType] = [
-                { name: 'Rest Day Recovery', sets: 1, reps: 'Complete' }
-            ];
-        } else {
-            currentEditingProgram.workouts[workoutType] = [];
-        }
-    }
-
-    markUnsavedChanges();
-    renderSchedulePills();
-    renderWorkoutsAccordion();
-}
 
 // Render workouts accordion
 function renderWorkoutsAccordion() {
@@ -2215,60 +2131,6 @@ window.createNewProgram = function () {
 
 // Helper function to get what workout would have been scheduled on a special day (travel/sick)
 // This is used to show users what they're missing
-function getWouldBeScheduledWorkout(date) {
-    const queryDate = new Date(date + 'T00:00:00.000Z');
-    const actualWorkout = getWorkoutForDate(date);
-
-    // If there's an actual workout on this date, return its type
-    if (actualWorkout) {
-        return actualWorkout.day;
-    }
-
-    // Get the schedule array for the active program
-    const scheduleArray = activeProgram ? getProgramScheduleArray(activeProgram) : workoutSchedule;
-
-    // Calculate what workout would be here if we ignored travel/sick days
-    const todayStr = getTodayDateString();
-    const todayDate = new Date(todayStr + 'T00:00:00.000Z');
-
-    // Find the most recent completed NON-REST workout (excluding rest days only)
-    const completedWorkouts = allWorkouts
-        .filter(w => w.day !== 'Rest')
-        .sort((a, b) => new Date(b.date + 'T00:00:00.000Z') - new Date(a.date + 'T00:00:00.000Z'));
-
-    if (completedWorkouts.length > 0) {
-        const mostRecent = completedWorkouts[0];
-        const mostRecentDate = new Date(mostRecent.date + 'T00:00:00.000Z');
-        const mostRecentType = mostRecent.day;
-
-        // Find the index of the most recent workout type in the schedule
-        const lastIndex = scheduleArray.indexOf(mostRecentType);
-
-        // Count all days (including travel/sick) from most recent to query date
-        let daysSince = 0;
-        let d = new Date(mostRecentDate);
-        while (d < queryDate) {
-            daysSince++;
-            d = new Date(d.getTime() + 24 * 60 * 60 * 1000);
-        }
-
-        // Project forward in the cycle
-        const scheduleIndex = (lastIndex + daysSince) % scheduleArray.length;
-        return scheduleArray[scheduleIndex];
-    } else {
-        // No workouts yet, use default schedule from reference date
-        const referenceDate = new Date(SCHEDULE_REFERENCE_DATE + 'T00:00:00.000Z');
-        let allDays = 0;
-        let d = new Date(referenceDate);
-        while (d < queryDate) {
-            allDays++;
-            d = new Date(d.getTime() + 24 * 60 * 60 * 1000);
-        }
-        const scheduleIndex = ((allDays % scheduleArray.length) + scheduleArray.length) % scheduleArray.length;
-        return scheduleArray[scheduleIndex];
-    }
-}
-
 // Helper function: Calculate calendar days between two dates (whole days)
 // Returns positive number if date2 is after date1, negative if before
 function daysBetween(date1Str, date2Str) {
@@ -2358,10 +2220,15 @@ function getScheduleTimelineKey() {
 
 // One pass builds the whole timeline, so the calendar, the streak and the
 // adherence score all read the same answer instead of each re-deriving it.
+// Returns { timeline, slots }. `timeline` is what the day IS (a logged
+// session, Sick, Travel, or the queued slot); `slots` is the session the queue
+// owed on that date regardless of sick/travel, which is what the calendar needs
+// to say "Travel (Upper A)".
 function buildScheduleTimeline() {
     const timeline = new Map();
+    const slots = new Map();
     const scheduleArray = activeProgram ? getProgramScheduleArray(activeProgram) : workoutSchedule;
-    if (!scheduleArray || scheduleArray.length === 0) return timeline;
+    if (!scheduleArray || scheduleArray.length === 0) return { timeline, slots };
 
     // Where each workout type sits in the cycle, for resuming after a session
     // done out of order.
@@ -2384,6 +2251,8 @@ function buildScheduleTimeline() {
     while (cursor <= end) {
         const slot = scheduleArray[index % scheduleArray.length];
         const logged = workoutsByDate.get(cursor);
+
+        slots.set(cursor, slot);
 
         if (logged) {
             timeline.set(cursor, logged.day);   // what you actually did wins
@@ -2428,15 +2297,28 @@ function buildScheduleTimeline() {
         cursor = addDaysToDateString(cursor, 1);
     }
 
-    return timeline;
+    return { timeline, slots };
 }
 
-function getScheduleTimeline() {
+function getScheduleTimelineBundle() {
     const key = getScheduleTimelineKey();
     if (scheduleTimelineCache && scheduleTimelineCacheKey === key) return scheduleTimelineCache;
     scheduleTimelineCacheKey = key;
     scheduleTimelineCache = buildScheduleTimeline();
     return scheduleTimelineCache;
+}
+
+function getScheduleTimeline() {
+    return getScheduleTimelineBundle().timeline;
+}
+
+// The session the queue owed on this date, ignoring sick and travel. Replaces
+// getWouldBeScheduledWorkout, which re-derived an answer from the OLD calendar
+// rotation (advance one slot per calendar day from the most recent workout) and
+// so contradicted the queue everywhere it was shown.
+function getQueuedSlotForDate(date) {
+    const { slots } = getScheduleTimelineBundle();
+    return slots.get(date) || getScheduledWorkout(date);
 }
 
 function invalidateScheduleTimeline() {
@@ -2577,24 +2459,6 @@ function calculateAdherence() {
     return { score: Math.min(100, score), completed, scheduled: Math.max(expected, completed), missed };
 }
 // Enhanced Analytics Functions
-function calculateTotalVolume() {
-    const thisMonth = new Date().getMonth();
-    const thisYear = new Date().getFullYear();
-
-    return allWorkouts
-        .filter(workout => {
-            const workoutDate = new Date(workout.date);
-            return workoutDate.getMonth() === thisMonth && workoutDate.getFullYear() === thisYear;
-        })
-        .reduce((total, workout) => {
-            return total + Object.values(workout.exercises || {}).reduce((exerciseTotal, exercise) => {
-                return exerciseTotal + exercise.sets.reduce((setTotal, set) => {
-                    return setTotal + (parseFloat(set.weight) || 0) * (parseInt(set.reps) || 0);
-                }, 0);
-            }, 0);
-        }, 0);
-}
-
 function calculateWorkoutStreak() {
     if (allWorkouts.length === 0) return 0;
 
@@ -2844,24 +2708,6 @@ function generateAdvancedSuggestions() {
     return suggestions.slice(0, 4);
 }
 
-function calculateMuscleGroupVolumes() {
-    const volumes = { Push: 0, Pull: 0, Legs: 0, Upper: 0, Lower: 0 };
-
-    allWorkouts.slice(0, 8).forEach(workout => {
-        if (workout.day === 'Rest') return;
-
-        const workoutVolume = Object.values(workout.exercises || {}).reduce((total, exercise) => {
-            return total + exercise.sets.reduce((setTotal, set) => {
-                return setTotal + (parseFloat(set.weight) || 0) * (parseInt(set.reps) || 0);
-            }, 0);
-        }, 0);
-
-        volumes[workout.day] = (volumes[workout.day] || 0) + workoutVolume;
-    });
-
-    return volumes;
-}
-
 // Volume in pounds is meaningless for holds, walks and bodyweight work, so
 // those exercises are excluded rather than silently contributing zero.
 function calculateWorkoutVolume(workout) {
@@ -2893,107 +2739,6 @@ function getWorkoutsByType(workoutType) {
     return allWorkouts
         .filter(w => normalizeLabel(w.day) === wanted)
         .sort((a, b) => workoutRecency(b) - workoutRecency(a));
-}
-
-// Calculate record volume for a workout type
-function getRecordVolumeForType(workoutType) {
-    const workouts = getWorkoutsByType(workoutType);
-    if (workouts.length === 0) return 0;
-
-    return Math.max(...workouts.map(workout => calculateWorkoutVolume(workout)));
-}
-
-// Calculate average volume for a workout type in current month
-function getCurrentMonthAverageVolume(workoutType) {
-    const thisMonth = new Date().getMonth();
-    const thisYear = new Date().getFullYear();
-
-    const monthWorkouts = allWorkouts.filter(workout => {
-        const workoutDate = new Date(workout.date);
-        return workout.day === workoutType &&
-            workoutDate.getMonth() === thisMonth &&
-            workoutDate.getFullYear() === thisYear;
-    });
-
-    if (monthWorkouts.length === 0) return 0;
-
-    const totalVolume = monthWorkouts.reduce((sum, workout) => sum + calculateWorkoutVolume(workout), 0);
-    return Math.round(totalVolume / monthWorkouts.length);
-}
-
-// Calculate average volume for a workout type in last month
-function getLastMonthAverageVolume(workoutType) {
-    const lastMonth = new Date().getMonth() - 1;
-    const year = lastMonth < 0 ? new Date().getFullYear() - 1 : new Date().getFullYear();
-    const month = lastMonth < 0 ? 11 : lastMonth;
-
-    const monthWorkouts = allWorkouts.filter(workout => {
-        const workoutDate = new Date(workout.date);
-        return workout.day === workoutType &&
-            workoutDate.getMonth() === month &&
-            workoutDate.getFullYear() === year;
-    });
-
-    if (monthWorkouts.length === 0) return 0;
-
-    const totalVolume = monthWorkouts.reduce((sum, workout) => sum + calculateWorkoutVolume(workout), 0);
-    return Math.round(totalVolume / monthWorkouts.length);
-}
-
-// Get trend direction for last 3 sessions
-function getTrendDirection(workoutType) {
-    const workouts = getWorkoutsByType(workoutType).slice(0, 3);
-    if (workouts.length < 2) return '';
-
-    const volumes = workouts.map(w => calculateWorkoutVolume(w)).reverse();
-
-    // Check if trending up
-    let isIncreasing = true;
-    let isDecreasing = true;
-
-    for (let i = 1; i < volumes.length; i++) {
-        if (volumes[i] <= volumes[i - 1]) isIncreasing = false;
-        if (volumes[i] >= volumes[i - 1]) isDecreasing = false;
-    }
-
-    if (isIncreasing) return '(up)';
-    if (isDecreasing) return '(down)';
-    return '(flat)';
-}
-
-// Find exercises with recent PRs
-function getRecentPRs(daysBack) {
-    const cutoffDate = new Date();
-    cutoffDate.setDate(cutoffDate.getDate() - daysBack);
-
-    const exercisePRs = {};
-    const recentPRs = [];
-
-    // Build PR history chronologically
-    allWorkouts.slice().reverse().forEach(workout => {
-        if (workout.day === 'Rest') return;
-
-        Object.values(workout.exercises || {}).forEach(exercise => {
-            if (!exercise.exercise.toLowerCase().includes('stretch')) {
-                const maxWeight = Math.max(...exercise.sets.map(set => parseFloat(set.weight) || 0));
-
-                if (maxWeight > 0) {
-                    const exerciseName = exercise.exercise;
-                    const currentPR = exercisePRs[exerciseName] || 0;
-
-                    if (maxWeight > currentPR) {
-                        const workoutDate = new Date(workout.date);
-                        if (workoutDate >= cutoffDate) {
-                            recentPRs.push({ exercise: exerciseName, weight: maxWeight, date: workout.date });
-                        }
-                        exercisePRs[exerciseName] = maxWeight;
-                    }
-                }
-            }
-        });
-    });
-
-    return recentPRs;
 }
 
 // Find exercises without progression
@@ -3033,21 +2778,6 @@ function getPlateauedExercises(sessionsBack) {
     });
 
     return plateaued.slice(0, 3);
-}
-
-// Get all unique exercises from workout history
-function getAllExercises() {
-    const exercises = new Set();
-    allWorkouts.forEach(workout => {
-        if (workout.day !== 'Rest') {
-            Object.values(workout.exercises || {}).forEach(exercise => {
-                if (!exercise.exercise.toLowerCase().includes('stretch')) {
-                    exercises.add(exercise.exercise);
-                }
-            });
-        }
-    });
-    return Array.from(exercises).sort();
 }
 
 // Get exercise progression data for PR Timeline (specific exercise)
@@ -3122,201 +2852,6 @@ function getTrendingUpExercises() {
     });
 
     return trending.slice(0, 5);
-}
-
-// Get days since last workout of a specific type
-function getDaysSinceLastWorkout(workoutType) {
-    const workouts = getWorkoutsByType(workoutType);
-    if (workouts.length === 0) return null;
-
-    const lastWorkout = new Date(workouts[0].date);
-    const today = new Date();
-    return Math.floor((today - lastWorkout) / (1000 * 60 * 60 * 24));
-}
-
-function generateAIInsights() {
-    if (allWorkouts.length < 3) {
-        return [
-            "Complete more workouts to unlock AI insights!",
-            "Aim for consistency - 3-4 workouts per week is ideal.",
-            "Focus on progressive overload - gradually increase weight or reps."
-        ];
-    }
-
-    const insights = [];
-
-    // Workout frequency analysis
-    const workoutDays = allWorkouts.slice(0, 10).map(w => new Date(w.date).getDay());
-    const dayFrequency = {};
-    workoutDays.forEach(day => {
-        dayFrequency[day] = (dayFrequency[day] || 0) + 1;
-    });
-
-    if (Object.keys(dayFrequency).length > 0) {
-        const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-        const preferredDay = Object.keys(dayFrequency).reduce((a, b) => dayFrequency[a] > dayFrequency[b] ? a : b);
-        insights.push(`You train most often on ${dayNames[preferredDay]}s - this seems to be your power day!`);
-    }
-
-    // Volume analysis
-    const totalVolume = allWorkouts.reduce((sum, w) => sum + calculateWorkoutVolume(w), 0);
-    const avgVolumePerWorkout = Math.round(totalVolume / allWorkouts.length);
-    insights.push(`Your average workout volume is ${avgVolumePerWorkout.toLocaleString()}lbs - solid training stimulus.`);
-
-    // Data requirements: minimum 5 workouts, 5 nutrition days, 5 weight entries
-    const hasEnoughData = allWorkouts.length >= 5 &&
-        window.nutritionData && window.nutritionData.length >= 5 &&
-        window.weightData && window.weightData.length >= 5;
-
-    if (hasEnoughData) {
-        console.log('Calculating correlation insights with sufficient data...');
-
-        // 1. Strength vs. Weight Changes
-        // Compare last 2 weeks vs prior 2 weeks
-        const today = new Date();
-        const twoWeeksAgo = new Date(today.getTime() - (14 * 24 * 60 * 60 * 1000));
-        const fourWeeksAgo = new Date(today.getTime() - (28 * 24 * 60 * 60 * 1000));
-
-        const recentWorkouts = allWorkouts.filter(w => new Date(w.date) >= twoWeeksAgo);
-        const priorWorkouts = allWorkouts.filter(w => {
-            const date = new Date(w.date);
-            return date >= fourWeeksAgo && date < twoWeeksAgo;
-        });
-
-        if (recentWorkouts.length > 0 && priorWorkouts.length > 0) {
-            const recentVolume = recentWorkouts.reduce((sum, w) => sum + calculateWorkoutVolume(w), 0) / recentWorkouts.length;
-            const priorVolume = priorWorkouts.reduce((sum, w) => sum + calculateWorkoutVolume(w), 0) / priorWorkouts.length;
-            const volumeChangePercent = priorVolume > 0 ? Math.round(((recentVolume - priorVolume) / priorVolume) * 100) : 0;
-
-            console.log(`Volume change: ${volumeChangePercent}%`);
-
-            // Weight changes
-            const recentWeights = window.weightData.filter(w => new Date(w.date) >= twoWeeksAgo);
-            const priorWeights = window.weightData.filter(w => {
-                const date = new Date(w.date);
-                return date >= fourWeeksAgo && date < twoWeeksAgo;
-            });
-
-            if (recentWeights.length > 0 && priorWeights.length > 0) {
-                const avgRecentWeight = recentWeights.reduce((sum, w) => sum + parseFloat(w.weight), 0) / recentWeights.length;
-                const avgPriorWeight = priorWeights.reduce((sum, w) => sum + parseFloat(w.weight), 0) / priorWeights.length;
-                const weightChange = avgRecentWeight - avgPriorWeight;
-
-                console.log(`Weight change: ${weightChange.toFixed(1)}lbs`);
-
-                // Generate strength vs weight correlation insight
-                if (volumeChangePercent > 5 && weightChange > 1) {
-                    insights.push(`Your strength is up ${volumeChangePercent}% while weight increased ${weightChange.toFixed(1)}lbs - excellent lean mass gains!`);
-                } else if (Math.abs(volumeChangePercent) < 5 && weightChange < -2) {
-                    insights.push(`Strength maintaining while weight down ${Math.abs(weightChange).toFixed(1)}lbs - good cutting progress`);
-                } else if (Math.abs(weightChange) < 1 && volumeChangePercent > 10) {
-                    insights.push(`Weight stable but strength up ${volumeChangePercent}% - great recomp!`);
-                } else if (volumeChangePercent < -5 && weightChange < -3) {
-                    insights.push(`Strength declining ${Math.abs(volumeChangePercent)}% while weight down ${Math.abs(weightChange).toFixed(1)}lbs - may need more calories`);
-                }
-            }
-        }
-
-        // 2. Nutrition Adequacy (Past 7 Days)
-        const last7Days = new Date(today.getTime() - (7 * 24 * 60 * 60 * 1000));
-        const recentNutrition = window.nutritionData.filter(n => new Date(n.date) >= last7Days);
-
-        // Get workout days in last 7 days
-        const recentWorkoutDates = allWorkouts
-            .filter(w => new Date(w.date) >= last7Days)
-            .map(w => w.date);
-        const workoutDaysCount = recentWorkoutDates.length;
-
-        // Group nutrition by date and calculate daily totals
-        const dailyNutrition = {};
-        recentNutrition.forEach(meal => {
-            if (!dailyNutrition[meal.date]) {
-                dailyNutrition[meal.date] = { protein: 0, carbs: 0, fats: 0, calories: 0 };
-            }
-            (meal.foods || []).forEach(food => {
-                const qty = food.quantity || 1;
-                dailyNutrition[meal.date].protein += (parseFloat(food.protein) || 0) * qty;
-                dailyNutrition[meal.date].carbs += (parseFloat(food.carbs) || 0) * qty;
-                dailyNutrition[meal.date].fats += (parseFloat(food.fats) || 0) * qty;
-                dailyNutrition[meal.date].calories += (parseFloat(food.calories) || 0) * qty;
-            });
-        });
-
-        // Filter out days with zero nutrition (not logged)
-        const datesWithNutrition = Object.keys(dailyNutrition).filter(date =>
-            dailyNutrition[date].protein > 0 || dailyNutrition[date].calories > 0
-        );
-
-        if (datesWithNutrition.length >= 3) {
-            // Separate workout days and rest days
-            const workoutDayData = datesWithNutrition.filter(date => recentWorkoutDates.includes(date));
-            const restDayData = datesWithNutrition.filter(date => !recentWorkoutDates.includes(date));
-
-            if (workoutDayData.length > 0) {
-                const workoutAvgProtein = Math.round(
-                    workoutDayData.reduce((sum, date) => sum + dailyNutrition[date].protein, 0) / workoutDayData.length
-                );
-                const workoutAvgCalories = Math.round(
-                    workoutDayData.reduce((sum, date) => sum + dailyNutrition[date].calories, 0) / workoutDayData.length
-                );
-
-                console.log(`Avg protein on workout days (${workoutDayData.length} days): ${workoutAvgProtein}g`);
-
-                if (workoutAvgProtein >= 150 && workoutDaysCount >= 3) {
-                    insights.push(`Averaging ${workoutAvgProtein}g protein on ${workoutDayData.length} workout days (past 7 days) - excellent for muscle growth`);
-                } else if (workoutAvgProtein < 120 && workoutDaysCount >= 2) {
-                    insights.push(`Only ${workoutAvgProtein}g protein on workout days (${workoutDayData.length} days tracked) - aim for 0.8-1g per lb bodyweight`);
-                }
-            }
-
-            if (restDayData.length > 0 && workoutDayData.length > 0) {
-                const restAvgProtein = Math.round(
-                    restDayData.reduce((sum, date) => sum + dailyNutrition[date].protein, 0) / restDayData.length
-                );
-                const workoutAvgProtein = Math.round(
-                    workoutDayData.reduce((sum, date) => sum + dailyNutrition[date].protein, 0) / workoutDayData.length
-                );
-
-                if (restAvgProtein < workoutAvgProtein - 30) {
-                    insights.push(`Rest day protein (${restAvgProtein}g avg) is much lower than workout days (${workoutAvgProtein}g) - keep protein consistent for recovery`);
-                }
-            }
-        }
-
-        // 3. Recovery Indicators - correlate intensity ratings with volume changes
-        const workoutsWithIntensity = allWorkouts.filter(w => w.intensity &&
-            (w.intensity.energy || w.intensity.motivation || w.intensity.fatigue || w.intensity.satisfaction));
-
-        if (workoutsWithIntensity.length >= 5) {
-            const recentIntensity = workoutsWithIntensity.slice(0, 7);
-
-            const avgEnergy = recentIntensity.reduce((sum, w) => sum + (w.intensity.energy || 0), 0) / recentIntensity.length;
-            const avgFatigue = recentIntensity.reduce((sum, w) => sum + (w.intensity.fatigue || 0), 0) / recentIntensity.length;
-            const avgSatisfaction = recentIntensity.reduce((sum, w) => sum + (w.intensity.satisfaction || 0), 0) / recentIntensity.length;
-
-            console.log(`Recent intensity - Energy: ${avgEnergy.toFixed(1)}, Fatigue: ${avgFatigue.toFixed(1)}, Satisfaction: ${avgSatisfaction.toFixed(1)}`);
-
-            // Compare recent vs prior volume (only if we have enough data)
-            if (recentIntensity.length >= 6) {
-                const recentVol = recentIntensity.slice(0, 3).reduce((sum, w) => sum + calculateWorkoutVolume(w), 0) / 3;
-                const priorVol = recentIntensity.slice(3, 6).reduce((sum, w) => sum + calculateWorkoutVolume(w), 0) / 3;
-                const volChange = priorVol > 0 ? Math.round(((recentVol - priorVol) / priorVol) * 100) : 0;
-
-                if (avgEnergy < 2.5 && volChange > 0) {
-                    insights.push(`Low energy scores (avg ${avgEnergy.toFixed(1)}/5) last week but volume still up - good mental toughness`);
-                } else if (avgFatigue > 3.5 && volChange < -10) {
-                    insights.push(`High fatigue scores correlate with ${Math.abs(volChange)}% volume drop - consider deload week`);
-                }
-            }
-
-            // Add satisfaction insight regardless of volume data
-            if (avgSatisfaction >= 4.5) {
-                insights.push(`Satisfaction scores averaging ${avgSatisfaction.toFixed(1)}/5 - training is going well!`);
-            }
-        }
-    }
-
-    return insights;
 }
 
 // ---------------------------------------------------------------------------
@@ -3711,6 +3246,11 @@ function getExerciseNameCandidates(workoutExercise, fallbackName) {
 
     if (workoutExercise) {
         add(workoutExercise.exercise);
+        // The alternative-exercise feature has been removed, so nothing writes
+        // `substitution` / `originalExercise` any more. Sessions logged BEFORE
+        // that removal still carry them, and history has to keep matching and
+        // displaying those rows under the name they were actually trained as.
+        // These reads are deliberate back-compatibility, not dead code.
         add(workoutExercise.substitution);
         add(workoutExercise.originalExercise);
     }
@@ -3771,26 +3311,6 @@ function findPreviousExercise(day, exerciseIndex, exerciseNames, approach = null
     if (hasLoggedData(byIndex)) return { workout: mostRecent, exercise: byIndex };
 
     return null;
-}
-
-function getLastWorkoutForDay(day, exerciseApproach = null) {
-    const dayWorkouts = getWorkoutsForDay(day);
-
-    if (dayWorkouts.length === 0) return null;
-
-    // If no specific approach requested, return the most recent workout
-    if (!exerciseApproach) {
-        return dayWorkouts[0];
-    }
-
-    // Filter by matching approach (standard, heavy, form focus, etc.)
-    const wantedApproach = normalizeLabel(exerciseApproach);
-    const matchingWorkouts = dayWorkouts.filter(workout => {
-        const exercises = Object.values(workout.exercises || {});
-        return exercises.some(ex => normalizeLabel(ex.approach || 'standard') === wantedApproach);
-    });
-
-    return matchingWorkouts.length > 0 ? matchingWorkouts[0] : dayWorkouts[0];
 }
 
 function getPersonalRecords() {
@@ -4442,19 +3962,9 @@ function populateComparisonSelector() {
 }
 
 function updateProgressionSnapshot() {
-    // Quick Wins
-    const recentPRs = getRecentPRs(7);
-    const quickWinsElement = document.getElementById('quick-wins');
-    if (quickWinsElement) {
-        if (recentPRs.length > 0) {
-            const uniqueExercises = [...new Set(recentPRs.map(pr => pr.exercise))];
-            quickWinsElement.innerHTML = `<strong>${uniqueExercises.length}</strong> exercise${uniqueExercises.length !== 1 ? 's' : ''} hit PRs this week!`;
-            quickWinsElement.style.color = 'var(--color-success)';
-        } else {
-            quickWinsElement.innerHTML = 'No PRs this week yet. Keep pushing!';
-            quickWinsElement.style.color = 'var(--color-text-secondary)';
-        }
-    }
+    // The "Quick Wins" block that used to live here wrote into #quick-wins,
+    // which was removed with the weight-only PRs-this-week tile. It was guarded
+    // by `if (element)`, so it silently did nothing on every render.
 
     // Trending Up
     const trendingExercises = getTrendingUpExercises();
@@ -4702,7 +4212,7 @@ function renderCalendar() {
         } else if (scheduledWorkout === 'Travel') {
             // Priority 3: Travel day (only if no workout logged)
             classes.push('travel');
-            const wouldBeWorkout = getWouldBeScheduledWorkout(dateStr);
+            const wouldBeWorkout = getQueuedSlotForDate(dateStr);
             displayLabel = `Travel (${wouldBeWorkout})`;
             labelClass = scheduledWorkout;
         } else if (!isNonTrainingLabel(scheduledWorkout) && dateStr < today) {
@@ -4821,7 +4331,7 @@ window.selectCalendarDay = function (dateStr) {
         if (scheduledWorkout === 'Sick') {
             content.innerHTML = `<p style="color: #f472b6;">This day is marked as a sick day. Workout was canceled and schedule adjusted.</p>`;
         } else if (scheduledWorkout === 'Travel') {
-            const wouldBeWorkout = getWouldBeScheduledWorkout(dateStr);
+            const wouldBeWorkout = getQueuedSlotForDate(dateStr);
             content.innerHTML = `<p style="color: #a855f7;">Travel day - workout schedule paused.</p>
                         <p style="color: var(--color-text-secondary); margin-top: 0.5rem;">Scheduled workout if not traveling: <strong style="color: var(--color-text-secondary);">${wouldBeWorkout}</strong></p>`;
         } else {
@@ -4860,7 +4370,10 @@ window.deleteLoggedWorkout = async function (workoutId, dateString) {
         renderCalendar();
         renderWorkoutDaySelector();
         initializeWorkout();
-        const panel = document.getElementById('selected-day-detail');
+        // Was 'selected-day-detail', which is not an element that exists, so
+        // the guard silently did nothing and the panel stayed open showing the
+        // session that had just been deleted.
+        const panel = document.getElementById('selected-day-workout');
         if (panel) panel.style.display = 'none';
         showToast('Session deleted.', 'success');
     } catch (e) {
@@ -5848,11 +5361,6 @@ window.addFoodToLog = async function () {
     }
 };
 
-// Legacy meal tag modal (for new food flow)
-window.showMealTagModal = function () {
-    document.getElementById('meal-tag-modal').classList.add('active');
-};
-
 window.closeMealTagModal = function () {
     document.getElementById('meal-tag-modal').classList.remove('active');
     pendingFoodData = null;
@@ -5964,11 +5472,6 @@ window.confirmCreateFood = async function () {
     showPortionModal(newFood);
 };
 
-window.showSavedFoodsForAdding = function () {
-    // This is now handled by the tab toggle
-    switchAddFoodTab('saved');
-};
-
 window.tagFood = async function (mealTag) {
     closeMealTagModal();
 
@@ -6009,37 +5512,6 @@ window.tagFood = async function (mealTag) {
         console.error("Error adding food:", e);
         alert('Error adding food. Please check your connection and try again.');
         throw e;
-    }
-};
-
-// Keep old functions for compatibility with existing meal editing
-window.addMeal = function () {
-    showAddFoodModal();
-};
-
-window.addFoodToMeal = function (mealId) {
-    const meal = nutritionData.find(m => m.id === mealId);
-    if (!meal.foods) meal.foods = [];
-    meal.foods.push({ name: '', protein: 0, carbs: 0, fats: 0, calories: 0, quantity: 1 });
-    currentEditingMealId = mealId; // Set the context to this meal
-    renderMeals();
-};
-
-window.changeMealType = async function (mealId, newMealType) {
-    try {
-        const meal = nutritionData.find(m => m.id === mealId);
-        if (!meal) return;
-
-        meal.mealType = newMealType;
-
-        // Update in Firestore
-        const docRef = doc(db, "nutrition", mealId);
-        await updateDoc(docRef, { mealType: newMealType });
-
-        console.log(`Updated meal ${mealId} to ${newMealType}`);
-    } catch (e) {
-        console.error("Error changing meal type:", e);
-        alert('Error changing meal type. Please try again.');
     }
 };
 
@@ -6316,28 +5788,6 @@ window.confirmSaveFood = async function () {
     }
 };
 
-async function saveSavedFoodsToFirebase() {
-    // Update existing saved food documents in Firebase
-    for (const food of savedFoods) {
-        if (food.id) {
-            try {
-                const docRef = doc(db, "savedFoods", food.id);
-                await updateDoc(docRef, {
-                    name: food.name,
-                    protein: food.protein,
-                    carbs: food.carbs,
-                    fats: food.fats,
-                    calories: food.calories,
-                    lastUsed: food.lastUsed,
-                    useCount: food.useCount
-                });
-            } catch (e) {
-                console.error("Error updating saved food:", e);
-            }
-        }
-    }
-}
-
 function renderSavedFoods(searchTerm = '') {
     const container = document.getElementById('saved-food-list');
     const mobileContainer = document.getElementById('saved-food-list-mobile');
@@ -6596,99 +6046,6 @@ async function loadSavedFoods() {
  * If duplicates exist, keeps the most recently used one and deletes others from Firebase.
  * NOTE: This is a utility function for one-time cleanup, not called during normal app initialization.
  */
-async function deduplicateSavedFoods(foods) {
-    if (!foods || foods.length === 0) return [];
-
-    const foodMap = new Map();
-    const duplicatesToDelete = [];
-
-    // Create a unique key for each food based on name and nutritional values
-    const createFoodKey = (food) => {
-        const name = (food.name || '').toLowerCase().trim();
-        const protein = parseFloat(food.protein) || 0;
-        const carbs = parseFloat(food.carbs) || 0;
-        const fats = parseFloat(food.fats) || 0;
-        const calories = parseFloat(food.calories) || 0;
-        return `${name}_${protein}_${carbs}_${fats}_${calories}`;
-    };
-
-    // Group foods by their unique key
-    for (const food of foods) {
-        const key = createFoodKey(food);
-
-        if (!foodMap.has(key)) {
-            foodMap.set(key, food);
-        } else {
-            // Duplicate found - keep the one with more recent lastUsed date
-            const existing = foodMap.get(key);
-            const existingDate = new Date(existing.lastUsed || 0);
-            const currentDate = new Date(food.lastUsed || 0);
-
-            if (currentDate > existingDate) {
-                // Current food is more recent, replace existing and mark old for deletion
-                duplicatesToDelete.push(existing.id);
-                foodMap.set(key, food);
-            } else {
-                // Existing is more recent, mark current for deletion
-                duplicatesToDelete.push(food.id);
-            }
-        }
-    }
-
-    // Delete duplicates from Firebase using batch operations
-    if (duplicatesToDelete.length > 0) {
-        console.log(`Found ${duplicatesToDelete.length} duplicate saved foods to clean up`);
-
-        // Process deletions in batches of 500 (Firestore limit)
-        const batchSize = 500;
-        for (let i = 0; i < duplicatesToDelete.length; i += batchSize) {
-            const batch = writeBatch(db);
-            const batchIds = duplicatesToDelete.slice(i, i + batchSize);
-            
-            for (const foodId of batchIds) {
-                const docRef = doc(db, "savedFoods", foodId);
-                batch.delete(docRef);
-            }
-
-            try {
-                await batch.commit();
-                console.log(`Deleted batch of ${batchIds.length} duplicate saved foods`);
-            } catch (e) {
-                console.error(`Error deleting batch of duplicate foods:`, e);
-            }
-        }
-
-        console.log(`Cleaned up ${duplicatesToDelete.length} duplicate saved foods from database`);
-    }
-
-    // Return deduplicated list
-    return Array.from(foodMap.values());
-}
-
-// Calculate proportional nutrition based on baseline serving size
-function calculateProportionalNutrition(food, actualAmount) {
-    // If food has baseline nutrition info, calculate proportionally
-    if (food.baselineNutrition && food.baselineServingSize) {
-        const baselineAmount = parseFloat(food.baselineServingSize);
-        const multiplier = actualAmount / baselineAmount;
-        
-        return {
-            calories: Math.round(food.baselineNutrition.calories * multiplier),
-            protein: Math.round(food.baselineNutrition.protein * multiplier * 10) / 10,
-            carbs: Math.round(food.baselineNutrition.carbs * multiplier * 10) / 10,
-            fats: Math.round(food.baselineNutrition.fats * multiplier * 10) / 10
-        };
-    }
-    
-    // Fallback: return original values multiplied by quantity
-    return {
-        calories: Math.round((food.calories || 0) * actualAmount),
-        protein: Math.round((food.protein || 0) * actualAmount * 10) / 10,
-        carbs: Math.round((food.carbs || 0) * actualAmount * 10) / 10,
-        fats: Math.round((food.fats || 0) * actualAmount * 10) / 10
-    };
-}
-
 // Note: editSavedFood, closeEditFoodModal, and confirmEditFood functions already exist below
 
 // Helper function to check if Chart.js is loaded
@@ -6697,8 +6054,6 @@ function isChartJsReady() {
 }
 
 // Chart.js loading configuration
-const CHARTJS_WAIT_INTERVAL_MS = 100;
-const CHARTJS_MAX_WAIT_ATTEMPTS = 50; // 5 seconds total
 
 // Date calculation constants
 const NINETY_DAYS_IN_MS = 90 * 24 * 60 * 60 * 1000;
@@ -6851,77 +6206,6 @@ function createWeightChart() {
     });
 }
 
-// Photo Functions
-window.uploadProgressPhoto = async function (event) {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = async function (e) {
-        const photoData = {
-            date: new Date().toISOString().split('T')[0],
-            dataUrl: e.target.result,
-            timestamp: new Date()
-        };
-
-        try {
-            const docRef = await addDoc(collection(db, "photos"), photoData);
-
-            // Safety check: Initialize window.photoData if undefined
-            if (!window.photoData) {
-                window.photoData = [];
-            }
-
-            window.photoData.unshift({ id: docRef.id, ...photoData });
-            renderPhotos();
-            showToast('Photo saved.', 'success');
-        } catch (error) {
-            console.error("Error uploading photo:", error);
-            alert('Error uploading photo');
-        }
-    };
-    reader.readAsDataURL(file);
-};
-
-window.deleteProgressPhoto = async function (photoId) {
-    if (confirm('Delete this progress photo?')) {
-        try {
-            // Delete from Firestore
-            await deleteDoc(doc(db, "photos", photoId));
-
-            // Remove from local photoData array
-            window.photoData = window.photoData.filter(p => p.id !== photoId);
-
-            // Re-render the gallery
-            renderPhotos();
-        } catch (e) {
-            console.error("Error deleting progress photo:", e);
-            alert('Error deleting photo. Please try again.');
-        }
-    }
-};
-
-function renderPhotos() {
-    const container = document.getElementById('photo-gallery');
-    if (!container) return;
-
-    if (window.photoData.length === 0) {
-        container.innerHTML = '<p style="color: var(--color-text-secondary); text-align: center; padding: 2rem;">No progress photos yet. Upload your first one!</p>';
-        return;
-    }
-
-    let html = '';
-    window.photoData.forEach(photo => {
-        html += `<div class="photo-item">
-                    <img src="${photo.dataUrl}" alt="Progress photo">
-                    <button class="btn-delete-photo" onclick="deleteProgressPhoto('${photo.id}')" title="Delete photo">Delete</button>
-                    <div class="photo-date">${formatDateString(photo.date)}</div>
-                </div>`;
-    });
-
-    container.innerHTML = html;
-}
-
 // Utility function to wipe all nutrition data (call from console: window.wipeNutritionData())
 window.wipeNutritionData = async function () {
     if (!confirm('WARNING: This will delete ALL nutrition and food data from Firestore. This cannot be undone!\n\nAre you sure you want to continue?')) {
@@ -6979,7 +6263,6 @@ window.wipeNutritionData = async function () {
 // Tab loading flags for lazy loading
 let nutritionLoaded = false;
 let weightLoaded = false;
-let photosLoaded = false;
 let analyticsLoaded = false;
 let progressLoaded = false;
 
@@ -7137,7 +6420,7 @@ async function initializeFitnessApp() {
     loadSickDayData().catch(err => console.error('Failed to load sick day data:', err));
     loadDailyRoutines().catch(err => console.error('Failed to load daily routines:', err));
 
-    // Nutrition, weight and photo data stay lazy until their tab is opened.
+    // Nutrition and weight data stay lazy until their tab is opened.
 }
 
 // Authentication state observer - refreshes the app with live data
@@ -7391,18 +6674,6 @@ function showTab(tabName) {
                     const container = document.getElementById('weight-chart');
                     if (container && container.parentElement) {
                         container.parentElement.innerHTML = '<p style="color: var(--color-error); text-align: center; padding: 2rem;">Failed to load weight data. Please refresh the page.</p>';
-                    }
-                });
-        }
-        if (!photosLoaded) {
-            photosLoaded = true;
-            loadPhotoData()
-                .then(() => renderPhotos())
-                .catch(err => {
-                    console.error('Failed to load photo data:', err);
-                    const container = document.getElementById('photo-gallery');
-                    if (container) {
-                        container.innerHTML = '<p style="color: var(--color-error); text-align: center; padding: 2rem;">Failed to load photos. Please refresh the page.</p>';
                     }
                 });
         }
@@ -8001,7 +7272,6 @@ function renderWorkout(workoutType = null) {
                                         <button class="approach-btn ${!workoutExercise.approach ? 'active' : ''}" onclick="setExerciseApproach(${exerciseIndex}, null)">Standard</button>
                                         <button class="approach-btn ${workoutExercise.approach === 'Heavy' ? 'active' : ''}" onclick="setExerciseApproach(${exerciseIndex}, 'Heavy')">Heavy</button>
                                         <button class="approach-btn ${workoutExercise.approach === 'Form Focus' ? 'active' : ''}" onclick="setExerciseApproach(${exerciseIndex}, 'Form Focus')">Form Focus</button>
-                                        <button class="approach-btn ${workoutExercise.substitution ? 'active' : ''}" onclick="toggleSubstitution(${exerciseIndex})">Alt Exercise</button>
                                     </div>
                                 ` : ''}
                             </div>
@@ -8231,198 +7501,6 @@ window.setExerciseApproach = function (exerciseIndex, approach) {
     renderWorkout();
 };
 
-window.toggleSubstitution = function (exerciseIndex) {
-    if (currentWorkout[exerciseIndex].substitution) {
-        // Removing a substitution used to delete both keys without restoring
-        // `exercise`, which confirmAltExercise had overwritten. The card then
-        // displayed "Barbell Bench Press" while the saved row still said
-        // "Machine Chest Press", so the PR landed on the wrong lift.
-        if (currentWorkout[exerciseIndex].originalExercise) {
-            currentWorkout[exerciseIndex].exercise = currentWorkout[exerciseIndex].originalExercise;
-        }
-        delete currentWorkout[exerciseIndex].substitution;
-        delete currentWorkout[exerciseIndex].originalExercise;
-        scheduleDraftSave();
-        renderWorkout();
-    } else {
-        // Open modal to select/enter alternative exercise
-        currentAltExerciseIndex = exerciseIndex;
-        showAltExerciseModal(exerciseIndex);
-    }
-};
-
-window.showAltExerciseModal = function (exerciseIndex) {
-    const modal = document.getElementById('alt-exercise-modal');
-    const nameInput = document.getElementById('alt-exercise-name-input');
-    const originalExerciseName = currentWorkout[exerciseIndex].exercise;
-
-    // Clear input
-    nameInput.value = '';
-
-    // Show modal
-    modal.classList.add('active');
-
-    // Focus input
-    setTimeout(() => nameInput.focus(), 100);
-
-    // Load and display history for this exercise
-    loadAltExerciseHistory(originalExerciseName);
-};
-
-window.closeAltExerciseModal = function () {
-    const modal = document.getElementById('alt-exercise-modal');
-    modal.classList.remove('active');
-    currentAltExerciseIndex = null;
-};
-
-window.confirmAltExercise = function () {
-    const nameInput = document.getElementById('alt-exercise-name-input');
-    const altExerciseName = nameInput.value.trim();
-
-    if (!altExerciseName) {
-        alert('Please enter an alternative exercise name');
-        return;
-    }
-
-    if (currentAltExerciseIndex !== null) {
-        const originalExercise = currentWorkout[currentAltExerciseIndex].exercise;
-
-        currentWorkout[currentAltExerciseIndex].substitution = altExerciseName;
-        currentWorkout[currentAltExerciseIndex].originalExercise = originalExercise;
-        currentWorkout[currentAltExerciseIndex].exercise = altExerciseName;
-
-        // Save to history
-        saveAltExerciseToHistory(originalExercise, altExerciseName);
-
-        closeAltExerciseModal();
-        renderWorkout();
-    }
-};
-
-window.selectAltExerciseFromHistory = function (altExerciseName) {
-    const nameInput = document.getElementById('alt-exercise-name-input');
-    nameInput.value = altExerciseName;
-};
-
-// Expose nutrition search functions to window for HTML oninput attributes
-window.renderSavedFoods = renderSavedFoods;
-window.renderInlineSavedFoods = renderInlineSavedFoods;
-
-async function loadAltExerciseHistory(originalExerciseName) {
-    try {
-        const q = query(
-            collection(db, "alternativeExercises"),
-            where("originalExercise", "==", originalExerciseName),
-            orderBy("lastUsed", "desc"),
-            limit(10)
-        );
-
-        const querySnapshot = await getDocs(q);
-        const history = [];
-
-        querySnapshot.forEach((doc) => {
-            const data = doc.data();
-            history.push({
-                id: doc.id,
-                ...data
-            });
-        });
-
-        // Also check local state
-        if (!alternativeExerciseHistory[originalExerciseName]) {
-            alternativeExerciseHistory[originalExerciseName] = [];
-        }
-
-        // Merge and deduplicate
-        const seenNames = new Set();
-        const merged = [];
-
-        for (const item of history) {
-            if (!seenNames.has(item.alternativeExercise)) {
-                seenNames.add(item.alternativeExercise);
-                merged.push(item);
-            }
-        }
-
-        alternativeExerciseHistory[originalExerciseName] = merged;
-        renderAltExerciseHistory(merged);
-
-    } catch (e) {
-        console.error("Error loading alternative exercise history:", e);
-        renderAltExerciseHistory([]);
-    }
-}
-
-function renderAltExerciseHistory(history) {
-    const historySection = document.getElementById('alt-exercise-history-section');
-    const historyList = document.getElementById('alt-exercise-history-list');
-
-    if (history.length === 0) {
-        historySection.style.display = 'none';
-        return;
-    }
-
-    historySection.style.display = 'block';
-
-    let html = '';
-    history.forEach(item => {
-        const lastUsedDate = item.lastUsed ? new Date(item.lastUsed).toLocaleDateString() : 'Unknown';
-        const useCount = item.useCount || 1;
-
-        html += `
-                    <div class="alt-exercise-history-item" onclick="selectAltExerciseFromHistory('${item.alternativeExercise.replace(/'/g, "\\'")}')">
-                        <div class="alt-exercise-history-item-name">${item.alternativeExercise}</div>
-                        <div class="alt-exercise-history-item-meta">
-                            <div class="alt-exercise-history-item-date">${lastUsedDate}</div>
-                            <div class="alt-exercise-history-item-count">Used ${useCount}x</div>
-                        </div>
-                    </div>
-                `;
-    });
-
-    historyList.innerHTML = html;
-}
-
-async function saveAltExerciseToHistory(originalExercise, alternativeExercise) {
-    try {
-        // Check if this combination already exists
-        const q = query(
-            collection(db, "alternativeExercises"),
-            where("originalExercise", "==", originalExercise),
-            where("alternativeExercise", "==", alternativeExercise)
-        );
-
-        const querySnapshot = await getDocs(q);
-
-        if (querySnapshot.empty) {
-            // Create new entry
-            const data = {
-                originalExercise: originalExercise,
-                alternativeExercise: alternativeExercise,
-                firstUsed: new Date().toISOString(),
-                lastUsed: new Date().toISOString(),
-                useCount: 1
-            };
-
-            await addDoc(collection(db, "alternativeExercises"), data);
-            console.log('Saved new alternative exercise to history');
-        } else {
-            // Update existing entry
-            querySnapshot.forEach(async (document) => {
-                const docRef = doc(db, "alternativeExercises", document.id);
-                const currentData = document.data();
-                await updateDoc(docRef, {
-                    lastUsed: new Date().toISOString(),
-                    useCount: (currentData.useCount || 0) + 1
-                });
-            });
-            console.log('Updated alternative exercise history');
-        }
-    } catch (e) {
-        console.error("Error saving alternative exercise to history:", e);
-    }
-}
-
 // ---------------------------------------------------------------------------
 // Completing a session.
 //
@@ -8578,63 +7656,6 @@ function showToast(message, tone = 'info') {
     el._timer = setTimeout(() => el.classList.remove('visible'), 3000);
 }
 window.showToast = showToast;
-
-function exportToClipboard() {
-    const dateInput = document.getElementById('workout-date-input');
-    const workoutDate = dateInput.value ? new Date(dateInput.value) : new Date();
-    const dateString = workoutDate.toLocaleDateString('en-US', {
-        weekday: 'short',
-        month: 'short',
-        day: 'numeric'
-    });
-
-    let exportText = currentDay + ' | ' + dateString + '\n';
-    exportText += '=========================\n';
-
-    // Add intensity ratings if available
-    if (workoutIntensity.preWorkout.energy || workoutIntensity.postWorkout.satisfaction) {
-        exportText += '\nSession Intensity:\n';
-        if (workoutIntensity.preWorkout.energy) exportText += `Energy: ${workoutIntensity.preWorkout.energy}/5 `;
-        if (workoutIntensity.preWorkout.motivation) exportText += `| Motivation: ${workoutIntensity.preWorkout.motivation}/5\n`;
-        if (workoutIntensity.postWorkout.fatigue) exportText += `Fatigue: ${workoutIntensity.postWorkout.fatigue}/5 `;
-        if (workoutIntensity.postWorkout.satisfaction) exportText += `| Satisfaction: ${workoutIntensity.postWorkout.satisfaction}/5\n`;
-        exportText += '\n';
-    }
-
-    Object.values(currentWorkout).forEach(exercise => {
-        exportText += exercise.exercise;
-        if (exercise.substitution && exercise.originalExercise) {
-            exportText += ' (Alt for ' + exercise.originalExercise + ')';
-        } else if (exercise.approach) {
-            exportText += ' (' + exercise.approach + ')';
-        }
-        exportText += '\n';
-
-        exercise.sets.forEach((set, index) => {
-            if (set.completed) {
-                exportText += '  ✓ Completed\n';
-            } else if (set.weight || set.reps) {
-                exportText += '  ' + set.weight + 'lbs × ' + set.reps;
-                if (set.notes) exportText += ' (' + set.notes + ')';
-                exportText += '\n';
-            }
-        });
-        exportText += '\n';
-    });
-
-    // Copy to clipboard
-    if (navigator.clipboard) {
-        navigator.clipboard.writeText(exportText);
-    } else {
-        // Fallback
-        const textarea = document.createElement('textarea');
-        textarea.value = exportText;
-        document.body.appendChild(textarea);
-        textarea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textarea);
-    }
-}
 
 // ---------------------------------------------------------------------------
 // Boot trigger. This MUST stay at the bottom of the file: bootUIFromCache()
