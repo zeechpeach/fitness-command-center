@@ -22,6 +22,24 @@ function report(label, names) {
 const fns = [...js.matchAll(/^\s*(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\s*\(/gm)].map(m => m[1]);
 report('module functions', [...new Set(fns)]);
 
+// Two `window.foo = ...` assignments mean the later one silently wins and the
+// earlier one is unreachable, with no error anywhere. This has bitten twice.
+const winAssignments = [...js.matchAll(/^window\.([A-Za-z_$][\w$]*)\s*=/gm)].map(m => m[1]);
+const seenWin = new Map();
+winAssignments.forEach(n => seenWin.set(n, (seenWin.get(n) || 0) + 1));
+const shadowed = [...seenWin].filter(([, count]) => count > 1);
+console.log(`\n=== window.* assigned more than once (later one wins): ${shadowed.length} ===`);
+shadowed.forEach(([name, count]) => console.log(`  window.${name}  (${count} assignments)`));
+
+// Same for module functions declared twice.
+const seenFn = new Map();
+fns.forEach(n => seenFn.set(n, (seenFn.get(n) || 0) + 1));
+const dupeFns = [...seenFn].filter(([, count]) => count > 1);
+console.log(`=== module functions declared more than once: ${dupeFns.length} ===`);
+dupeFns.forEach(([name, count]) => console.log(`  ${name}()  (${count} declarations)`));
+
+if (shadowed.length || dupeFns.length) process.exitCode = 1;
+
 // window.* assignments
 const wins = [...js.matchAll(/^window\.([A-Za-z_$][\w$]*)\s*=/gm)].map(m => m[1]);
 const deadWin = [];
