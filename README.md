@@ -37,6 +37,14 @@ committed is live within about two minutes.
 - Delete a mis-logged session from the calendar
 
 ### Nutrition
+- **Combos** - several foods you always eat together (yogurt + frozen fruit,
+  milk + protein powder) saved as one item and logged in a single tap. Built
+  from foods already in your library. Not tied to a meal: the same combo can be
+  breakfast one day and a late snack the next.
+- **Quick add** - the eight things you log most, one tap each, no modal and no
+  keyboard. Combos come first, and each remembers the amount you logged last.
+- The meal (breakfast / lunch / dinner / snack) is guessed from the time of day
+  and stays overridable
 - Meals by type (breakfast, lunch, dinner, snack) with per-food macros
 - Daily totals, a saved-foods library, and measured or serving-based portions
 - Calorie and protein targets scaled to bodyweight and goal

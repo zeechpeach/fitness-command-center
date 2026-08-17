@@ -375,6 +375,9 @@
 
                 <!-- Main Content Area -->
                 <div class="nutrition-main-content">
+                    <!-- One tap for the things actually eaten most, no modal -->
+                    <div id="quick-add-strip" class="quick-add-strip"></div>
+
                     <!-- Add Food button at top for easy access -->
                     <button class="btn btn-add" onclick="showAddFoodModal()"
                         style="width: 100%; padding: 1rem; font-size: 1rem; margin-bottom: 1.5rem;">+ Add Food</button>
@@ -687,6 +690,11 @@
                     <div style="font-weight: 600;">Create New Food</div>
                     <div style="font-size: 0.75rem; opacity: 0.8; margin-top: 0.25rem;">Enter macros manually</div>
                 </button>
+                <button class="meal-type-btn" onclick="openComboBuilder()" style="margin-top: 0.75rem;">
+                    <div style="font-weight: 600;">Create a Combo</div>
+                    <div style="font-size: 0.75rem; opacity: 0.8; margin-top: 0.25rem;">Several foods you always eat
+                        together, logged as one</div>
+                </button>
             </div>
 
             <!-- Saved Foods Panel -->
@@ -715,7 +723,7 @@
         <div class="bottom-sheet-content">
             <div class="portion-input-section">
                 <h4>How much?</h4>
-                <div class="tab-toggle">
+                <div class="tab-toggle" id="portion-mode-toggle">
                     <button class="tab-toggle-btn active" id="servings-mode-tab"
                         onclick="switchPortionMode('servings')">Servings</button>
                     <button class="tab-toggle-btn" id="measured-mode-tab"
@@ -783,6 +791,36 @@
                 <button class="meal-type-btn" onclick="tagFood('Snack')">🍪 Snack</button>
             </div>
             <button class="modal-close" onclick="closeMealTagModal()">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Combo Builder: several library foods logged as one item -->
+    <div class="modal-backdrop" id="combo-builder-backdrop" onclick="closeComboBuilder()"></div>
+    <div class="bottom-sheet-modal" id="combo-builder-modal">
+        <div class="bottom-sheet-handle"></div>
+        <div class="bottom-sheet-header">
+            <h3 class="bottom-sheet-title" id="combo-builder-title">New combo</h3>
+        </div>
+        <div class="bottom-sheet-content">
+            <div class="portion-input-section">
+                <label for="combo-name-input" class="combo-field-label">Call it</label>
+                <input type="text" id="combo-name-input" class="combo-name-input" maxlength="60"
+                    placeholder="Yogurt bowl" autocomplete="off">
+            </div>
+
+            <div class="portion-input-section">
+                <h4>Made of</h4>
+                <input type="text" id="combo-ingredient-search" class="saved-food-search"
+                    placeholder="Search your foods..." autocomplete="off"
+                    oninput="filterComboIngredients(this.value)">
+                <div class="combo-ingredient-list" id="combo-ingredient-list"></div>
+            </div>
+
+            <div class="combo-preview" id="combo-preview"></div>
+            <div class="editor-message" id="combo-builder-message" data-tone="warn"></div>
+
+            <button class="btn-primary-action" id="combo-save-btn" onclick="saveCombo()" disabled>Save combo</button>
+            <button class="modal-close" onclick="closeComboBuilder()" style="margin-top: 0.5rem;">Cancel</button>
         </div>
     </div>
 

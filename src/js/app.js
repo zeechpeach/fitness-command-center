@@ -5088,6 +5088,430 @@ let selectedMealTag = null;
 let saveFoodPreference = 'measured';
 let saveFoodContext = null; // {mealId, foodIndex}
 
+// ---------------------------------------------------------------------------
+// Combos.
+//
+// Some things are always eaten as one unit but are several ingredients: yogurt
+// with frozen fruit, milk with protein powder. Logging those a food at a time
+// is six taps for something eaten daily, and the ingredient amounts never vary.
+//
+// A combo is stored as an ordinary savedFoods document with isCombo:true and a
+// `components` list. Its top-level macros are the sum of its parts, so every
+// existing code path that reads a saved food - search, sort, the library list,
+// delete - keeps working without knowing combos exist.
+//
+// Deliberately NOT tied to a meal type. These float: the shake is breakfast on
+// one day and a late snack on another, so the meal is guessed from the clock at
+// log time rather than baked into the combo.
+//
+// Components store their own macros rather than pointing at library foods.
+// Slightly redundant, but it means correcting a food's macros later cannot
+// silently rewrite months of already-logged history.
+// ---------------------------------------------------------------------------
+
+function isCombo(item) {
+    return !!(item && item.isCombo && Array.isArray(item.components));
+}
+
+// Macros for one serving of a combo, summed from its parts.
+function comboTotals(components) {
+    return (components || []).reduce((total, part) => {
+        const qty = parseFloat(part.quantity) || 1;
+        total.calories += (parseFloat(part.calories) || 0) * qty;
+        total.protein += (parseFloat(part.protein) || 0) * qty;
+        total.carbs += (parseFloat(part.carbs) || 0) * qty;
+        total.fats += (parseFloat(part.fats) || 0) * qty;
+        return total;
+    }, { calories: 0, protein: 0, carbs: 0, fats: 0 });
+}
+
+// The foods[] array a log entry should carry for this item. A combo expands
+// into its parts, so the meal card lists the ingredients and the totals stay
+// correct without any special-casing in the renderer.
+function foodsForLogEntry(item, servings) {
+    const multiplier = parseFloat(servings) || 1;
+    if (isCombo(item)) {
+        return item.components.map(part => ({
+            name: part.name,
+            calories: parseFloat(part.calories) || 0,
+            protein: parseFloat(part.protein) || 0,
+            carbs: parseFloat(part.carbs) || 0,
+            fats: parseFloat(part.fats) || 0,
+            quantity: (parseFloat(part.quantity) || 1) * multiplier,
+            fromCombo: item.name
+        }));
+    }
+    return [{
+        name: item.name,
+        calories: parseFloat(item.calories) || 0,
+        protein: parseFloat(item.protein) || 0,
+        carbs: parseFloat(item.carbs) || 0,
+        fats: parseFloat(item.fats) || 0,
+        quantity: multiplier
+    }];
+}
+
+// Which meal this most likely is, from the time of day. Nothing you eat is
+// permanently attached to a meal, so guessing here removes a tap from every
+// single log without ever being load-bearing - it stays overridable.
+function defaultMealTypeForNow(date = new Date()) {
+    const hour = date.getHours();
+    if (hour < 11) return 'Breakfast';
+    if (hour < 16) return 'Lunch';
+    if (hour < 21) return 'Dinner';
+    return 'Snack';
+}
+
+// Write one log entry. Used by both the quick-add strip and the portion sheet,
+// so they cannot drift apart.
+async function logItemToDiary(item, servings, mealType) {
+    const entry = {
+        date: currentNutritionDate,
+        mealType: mealType || defaultMealTypeForNow(),
+        time: getCurrentTimeString(),
+        foods: foodsForLogEntry(item, servings)
+    };
+
+    const docRef = await addDoc(collection(db, "nutrition"), entry);
+    nutritionData.unshift({ id: docRef.id, ...entry });
+
+    // Open the meal group this landed in, so the result is visible.
+    collapsedMeals[`${entry.mealType}-${currentNutritionDate}`] = false;
+
+    // Remember how much was logged, so next time defaults to it rather than 1.
+    if (item.id) {
+        const saved = savedFoods.find(f => f.id === item.id);
+        if (saved) {
+            saved.lastUsed = new Date().toISOString();
+            saved.useCount = (saved.useCount || 0) + 1;
+            saved.lastQuantity = parseFloat(servings) || 1;
+            updateDoc(doc(db, "savedFoods", saved.id), {
+                lastUsed: saved.lastUsed,
+                useCount: saved.useCount,
+                lastQuantity: saved.lastQuantity
+            }).catch(err => console.error('Could not update food usage:', err));
+        }
+    }
+
+    renderMeals();
+    renderSavedFoods();
+    return entry;
+}
+
+// ---- Quick add -------------------------------------------------------------
+// The things actually eaten most, one tap each, with no modal and no keyboard.
+// Combos come first because they are the ones that used to cost the most taps.
+
+const QUICK_ADD_LIMIT = 8;
+
+function quickAddItems() {
+    const scored = [...savedFoods].map(food => {
+        const lastUsed = new Date(food.lastUsed || 0).getTime() || 0;
+        return { food, lastUsed, useCount: food.useCount || 0 };
+    });
+    scored.sort((a, b) => {
+        // Combos first, then most used, then most recent.
+        const aCombo = isCombo(a.food) ? 1 : 0;
+        const bCombo = isCombo(b.food) ? 1 : 0;
+        if (aCombo !== bCombo) return bCombo - aCombo;
+        if (b.useCount !== a.useCount) return b.useCount - a.useCount;
+        return b.lastUsed - a.lastUsed;
+    });
+    return scored.slice(0, QUICK_ADD_LIMIT).map(s => s.food);
+}
+
+function renderQuickAdd() {
+    const container = document.getElementById('quick-add-strip');
+    if (!container) return;
+
+    const items = quickAddItems();
+    if (items.length === 0) {
+        container.innerHTML = '';
+        return;
+    }
+
+    const meal = defaultMealTypeForNow();
+    let html = `<div class="quick-add-label">Quick add &middot; goes to ${escapeHtml(meal)}</div>
+                <div class="quick-add-row">`;
+    items.forEach(item => {
+        const totals = isCombo(item) ? comboTotals(item.components) : item;
+        const qty = parseFloat(item.lastQuantity) || 1;
+        const kcal = Math.round((parseFloat(totals.calories) || 0) * qty);
+        const sub = qty === 1 ? `${kcal} kcal` : `${qty} &times; &middot; ${kcal} kcal`;
+        html += `<button type="button" class="quick-add-btn${isCombo(item) ? ' is-combo' : ''}"
+                         data-quick-add="${escapeHtml(item.id)}">
+                    <span class="quick-add-name">${escapeHtml(item.name)}</span>
+                    <span class="quick-add-sub">${sub}</span>
+                 </button>`;
+    });
+    html += `</div>`;
+    container.innerHTML = html;
+
+    container.querySelectorAll('[data-quick-add]').forEach(btn => {
+        btn.addEventListener('click', () => quickAddFood(btn.getAttribute('data-quick-add')));
+    });
+}
+
+window.quickAddFood = async function (foodId) {
+    const item = savedFoods.find(f => f.id === foodId);
+    if (!item) return;
+
+    const servings = parseFloat(item.lastQuantity) || 1;
+    try {
+        const entry = await logItemToDiary(item, servings, defaultMealTypeForNow());
+        showToast(`${item.name} added to ${entry.mealType}.`, 'success');
+    } catch (e) {
+        console.error('Quick add failed:', e);
+        showToast('Could not add that. Try again in a moment.', 'error');
+    }
+};
+
+// ---- Combo builder ---------------------------------------------------------
+// Built from foods already in the library rather than by re-entering macros,
+// because the ingredients of a combo are almost always things already logged
+// individually at some point.
+
+let comboDraft = null;   // { name, parts: Map(foodId -> quantity), editingId }
+
+window.openComboBuilder = function (comboId = null) {
+    const existing = comboId ? savedFoods.find(f => f.id === comboId) : null;
+
+    comboDraft = { name: '', parts: new Map(), editingId: null };
+
+    if (isCombo(existing)) {
+        comboDraft.name = existing.name;
+        comboDraft.editingId = existing.id;
+        // Match components back to library foods by name so the builder can
+        // show them selected. A component whose food was since deleted simply
+        // does not appear, and is dropped on save.
+        existing.components.forEach(part => {
+            const match = savedFoods.find(f => !isCombo(f) &&
+                normalizeLabel(f.name) === normalizeLabel(part.name));
+            if (match) comboDraft.parts.set(match.id, parseFloat(part.quantity) || 1);
+        });
+    }
+
+    closeAddFoodModal();
+
+    const backdrop = document.getElementById('combo-builder-backdrop');
+    const modal = document.getElementById('combo-builder-modal');
+    document.getElementById('combo-name-input').value = comboDraft.name;
+    document.getElementById('combo-builder-title').textContent =
+        comboDraft.editingId ? 'Edit combo' : 'New combo';
+
+    renderComboBuilder();
+
+    backdrop.style.display = 'block';
+    setTimeout(() => {
+        backdrop.classList.add('active');
+        modal.classList.add('active');
+    }, 10);
+    document.body.style.overflow = 'hidden';
+};
+
+window.closeComboBuilder = function () {
+    const backdrop = document.getElementById('combo-builder-backdrop');
+    const modal = document.getElementById('combo-builder-modal');
+    modal.classList.remove('active');
+    setTimeout(() => {
+        backdrop.classList.remove('active');
+        backdrop.style.display = 'none';
+        document.body.style.overflow = '';
+    }, 300);
+    comboDraft = null;
+};
+
+window.filterComboIngredients = function (term) {
+    renderComboBuilder(term);
+};
+
+function renderComboBuilder(searchTerm = '') {
+    if (!comboDraft) return;
+
+    // Only plain foods can be ingredients; nesting a combo inside a combo would
+    // make the totals impossible to reason about.
+    let options = savedFoods.filter(f => !isCombo(f));
+    if (searchTerm) {
+        const needle = searchTerm.toLowerCase();
+        options = options.filter(f => f.name.toLowerCase().includes(needle));
+    }
+    // Chosen ingredients stay pinned to the top so they never scroll out of view.
+    options.sort((a, b) => {
+        const aSel = comboDraft.parts.has(a.id) ? 1 : 0;
+        const bSel = comboDraft.parts.has(b.id) ? 1 : 0;
+        if (aSel !== bSel) return bSel - aSel;
+        return (b.useCount || 0) - (a.useCount || 0);
+    });
+
+    const list = document.getElementById('combo-ingredient-list');
+    if (options.length === 0) {
+        list.innerHTML = `<div class="empty-state">No saved foods yet. Save a few foods first,
+            then combine them here.</div>`;
+    } else {
+        list.innerHTML = options.map(food => {
+            const selected = comboDraft.parts.has(food.id);
+            const qty = selected ? comboDraft.parts.get(food.id) : 1;
+            const unit = food.servingUnit ? `${food.servingSize || 1}${food.servingUnit}` : 'serving';
+            return `
+                <div class="combo-ingredient${selected ? ' selected' : ''}">
+                    <button type="button" class="combo-ingredient-toggle"
+                            data-combo-toggle="${escapeHtml(food.id)}"
+                            aria-pressed="${selected}">
+                        <span class="combo-ingredient-check">${selected ? '&#10003;' : '+'}</span>
+                        <span class="combo-ingredient-body">
+                            <span class="combo-ingredient-name">${escapeHtml(food.name)}</span>
+                            <span class="combo-ingredient-meta">1 &times; ${escapeHtml(unit)} &middot;
+                                ${Math.round(parseFloat(food.calories) || 0)} kcal</span>
+                        </span>
+                    </button>
+                    ${selected ? `
+                    <div class="combo-qty">
+                        <button type="button" class="combo-qty-btn" data-combo-step="${escapeHtml(food.id)}|-1"
+                                aria-label="Less ${escapeHtml(food.name)}">&minus;</button>
+                        <span class="combo-qty-value">${qty}</span>
+                        <button type="button" class="combo-qty-btn" data-combo-step="${escapeHtml(food.id)}|1"
+                                aria-label="More ${escapeHtml(food.name)}">+</button>
+                    </div>` : ''}
+                </div>`;
+        }).join('');
+
+        list.querySelectorAll('[data-combo-toggle]').forEach(btn => {
+            btn.addEventListener('click', () => toggleComboIngredient(btn.getAttribute('data-combo-toggle')));
+        });
+        list.querySelectorAll('[data-combo-step]').forEach(btn => {
+            const [id, step] = btn.getAttribute('data-combo-step').split('|');
+            btn.addEventListener('click', () => stepComboIngredient(id, parseFloat(step)));
+        });
+    }
+
+    updateComboPreview();
+}
+
+function toggleComboIngredient(foodId) {
+    if (!comboDraft) return;
+    if (comboDraft.parts.has(foodId)) comboDraft.parts.delete(foodId);
+    else comboDraft.parts.set(foodId, 1);
+    renderComboBuilder(document.getElementById('combo-ingredient-search').value);
+}
+
+function stepComboIngredient(foodId, step) {
+    if (!comboDraft || !comboDraft.parts.has(foodId)) return;
+    // Quarter-serving steps: a scoop and a half of whey is a real amount, three
+    // and a bit scoops is not.
+    const next = Math.round((comboDraft.parts.get(foodId) + step * 0.25) * 100) / 100;
+    if (next < 0.25) return;
+    comboDraft.parts.set(foodId, next);
+    renderComboBuilder(document.getElementById('combo-ingredient-search').value);
+}
+
+function comboDraftComponents() {
+    const parts = [];
+    comboDraft.parts.forEach((qty, foodId) => {
+        const food = savedFoods.find(f => f.id === foodId);
+        if (!food) return;
+        parts.push({
+            name: food.name,
+            calories: parseFloat(food.calories) || 0,
+            protein: parseFloat(food.protein) || 0,
+            carbs: parseFloat(food.carbs) || 0,
+            fats: parseFloat(food.fats) || 0,
+            quantity: qty
+        });
+    });
+    return parts;
+}
+
+function updateComboPreview() {
+    const preview = document.getElementById('combo-preview');
+    const saveBtn = document.getElementById('combo-save-btn');
+    const parts = comboDraftComponents();
+
+    if (parts.length === 0) {
+        preview.innerHTML = '<span class="combo-preview-empty">Pick the foods this is made of.</span>';
+        saveBtn.disabled = true;
+        return;
+    }
+
+    const totals = comboTotals(parts);
+    preview.innerHTML = `
+        <div class="combo-preview-line">${parts.map(p =>
+        `${escapeHtml(p.name)}${p.quantity !== 1 ? ` &times;${p.quantity}` : ''}`).join(' + ')}</div>
+        <div class="combo-preview-macros">
+            <strong>${Math.round(totals.calories)}</strong> kcal &middot;
+            ${Math.round(totals.protein)}g protein &middot;
+            ${Math.round(totals.carbs)}g carbs &middot;
+            ${Math.round(totals.fats)}g fat
+        </div>`;
+    saveBtn.disabled = false;
+}
+
+window.saveCombo = async function () {
+    if (!comboDraft) return;
+
+    const name = document.getElementById('combo-name-input').value.trim();
+    const components = comboDraftComponents();
+    const message = document.getElementById('combo-builder-message');
+
+    if (!name) {
+        message.textContent = 'Give it a name so you can find it later.';
+        document.getElementById('combo-name-input').focus();
+        return;
+    }
+    if (components.length === 0) {
+        message.textContent = 'Pick at least one food.';
+        return;
+    }
+    const clash = savedFoods.some(f =>
+        f.id !== comboDraft.editingId && normalizeLabel(f.name) === normalizeLabel(name));
+    if (clash) {
+        message.textContent = `Something in your library is already called "${name}".`;
+        return;
+    }
+
+    const totals = comboTotals(components);
+    const record = {
+        name,
+        isCombo: true,
+        components,
+        // Totals mirrored onto the normal fields so every existing code path
+        // that reads a saved food keeps working unchanged.
+        calories: Math.round(totals.calories * 10) / 10,
+        protein: Math.round(totals.protein * 10) / 10,
+        carbs: Math.round(totals.carbs * 10) / 10,
+        fats: Math.round(totals.fats * 10) / 10,
+        servingSize: 1,
+        servingUnit: 'serving',
+        portionInputPreference: 'servings'
+    };
+
+    const saveBtn = document.getElementById('combo-save-btn');
+    saveBtn.disabled = true;
+
+    try {
+        if (comboDraft.editingId) {
+            await updateDoc(doc(db, "savedFoods", comboDraft.editingId), record);
+            const idx = savedFoods.findIndex(f => f.id === comboDraft.editingId);
+            if (idx !== -1) savedFoods[idx] = { ...savedFoods[idx], ...record };
+        } else {
+            const docRef = await addDoc(collection(db, "savedFoods"), {
+                ...record,
+                createdAt: new Date().toISOString(),
+                lastUsed: new Date().toISOString(),
+                useCount: 0
+            });
+            savedFoods.push({ id: docRef.id, ...record, useCount: 0 });
+        }
+        window.savedFoods = savedFoods;
+        renderSavedFoods();
+        closeComboBuilder();
+        showToast(`"${name}" saved. It is one tap from now on.`, 'success');
+    } catch (e) {
+        console.error('Could not save combo:', e);
+        message.textContent = 'Could not save that. Your connection may be down.';
+        saveBtn.disabled = false;
+    }
+};
+
 // Add Food Modal Functions
 window.showAddFoodModal = function () {
     const modal = document.getElementById('add-food-modal');
@@ -5210,32 +5634,42 @@ window.showPortionModal = function (food) {
         originalFood: food
     };
 
-    // Set food info
+    // Set food info. A combo lists what it is made of; grams mean nothing for
+    // "yogurt bowl", so it shows its ingredients instead of a serving weight.
     document.getElementById('portion-food-name').textContent = food.name;
-    const servingInfo = food.servingSize && food.servingUnit
-        ? `1 serving = ${food.servingSize}${food.servingUnit}`
-        : '1 serving';
+    const servingInfo = isCombo(food)
+        ? food.components.map(p => p.name).join(' + ')
+        : (food.servingSize && food.servingUnit
+            ? `1 serving = ${food.servingSize}${food.servingUnit}`
+            : '1 serving');
     document.getElementById('portion-food-serving').textContent = servingInfo;
 
-    // Reset inputs
-    currentServings = 1;
+    // Measuring a combo by weight is meaningless, so that mode is hidden and it
+    // is always counted in whole units.
+    const modeToggle = document.getElementById('portion-mode-toggle');
+    if (modeToggle) modeToggle.style.display = isCombo(food) ? 'none' : '';
+
+    // Default to the amount logged last time rather than always 1: the usual
+    // case becomes "that's right, save" instead of re-deciding every day.
+    currentServings = parseFloat(food.lastQuantity) || 1;
     document.getElementById('servings-display').textContent = currentServings;
     document.getElementById('measured-amount-input').value = '';
     document.getElementById('measured-unit-select').value = food.servingUnit || 'g';
     document.getElementById('calculated-servings').style.display = 'none';
-    selectedMealTag = null;
 
-    // Reset meal tag buttons
+    // Pre-select the meal that matches the clock. Still one tap to change, but
+    // it is right nearly always, and nothing here is tied to a fixed meal.
+    selectedMealTag = defaultMealTypeForNow();
     ['breakfast', 'lunch', 'dinner', 'snack'].forEach(tag => {
-        document.getElementById(`tag-${tag}`).classList.remove('selected');
+        const btn = document.getElementById(`tag-${tag}`);
+        if (btn) btn.classList.toggle('selected', tag === selectedMealTag.toLowerCase());
     });
 
     // Set default mode based on food preference
-    const defaultMode = food.portionInputPreference || 'servings';
+    const defaultMode = isCombo(food) ? 'servings' : (food.portionInputPreference || 'servings');
     switchPortionMode(defaultMode);
 
-    // Disable add button until meal tag is selected
-    document.getElementById('add-to-log-btn').disabled = true;
+    document.getElementById('add-to-log-btn').disabled = false;
 
     backdrop.style.display = 'block';
     setTimeout(() => {
@@ -5367,44 +5801,21 @@ window.selectMealTag = function (tag) {
 };
 
 window.addFoodToLog = async function () {
-    if (!selectedMealTag || !pendingFoodData) {
-        alert('Please select a meal tag');
-        return;
-    }
+    if (!pendingFoodData) return;
 
     const food = pendingFoodData.originalFood;
-    const currentTime = getCurrentTimeString();
-
-    const foodEntry = {
-        date: currentNutritionDate,
-        mealType: selectedMealTag,
-        time: currentTime,
-        foods: [{
-            name: food.name,
-            protein: food.protein,
-            carbs: food.carbs,
-            fats: food.fats,
-            calories: food.calories,
-            quantity: currentServings
-        }]
-    };
+    const btn = document.getElementById('add-to-log-btn');
+    btn.disabled = true;
 
     try {
-        const docRef = await addDoc(collection(db, "nutrition"), foodEntry);
-        const newEntry = { id: docRef.id, ...foodEntry };
-        nutritionData.unshift(newEntry);
-
-        // Auto-expand this meal group
-        const groupId = `${selectedMealTag}-${currentNutritionDate}`;
-        collapsedMeals[groupId] = false;
-
+        // Shared with quick add, so a combo expands into its ingredients the
+        // same way whichever route logged it.
+        await logItemToDiary(food, currentServings, selectedMealTag || defaultMealTypeForNow());
         closePortionModal();
-        renderMeals();
-
-        console.log('Food logged successfully');
     } catch (e) {
         console.error("Error logging food:", e);
-        alert('Error logging food. Please try again.');
+        showToast('Could not save that. Try again in a moment.', 'error');
+        btn.disabled = false;
     }
 };
 
@@ -5836,6 +6247,10 @@ window.confirmSaveFood = async function () {
 };
 
 function renderSavedFoods(searchTerm = '') {
+    // The quick-add strip is driven by the same library, so refreshing it here
+    // keeps it in step with every path that changes a saved food.
+    renderQuickAdd();
+
     const container = document.getElementById('saved-food-list');
     const mobileContainer = document.getElementById('saved-food-list-mobile');
 
@@ -5939,11 +6354,6 @@ window.closeSavedFoodsModal = function () {
     }
 };
 
-
-// Legacy quickAddFood - now redirects to new flow
-window.quickAddFood = function (foodId) {
-    selectSavedFood(foodId);
-};
 
 window.editSavedFood = function (foodId) {
     const food = savedFoods.find(f => f.id === foodId);
