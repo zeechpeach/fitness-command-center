@@ -38,6 +38,7 @@ service cloud.firestore {
     match /sickDays/{document}       { allow read, write: if signedIn(); }
     match /bodyGoals/{document}      { allow read, write: if signedIn(); }
     match /dailyRoutines/{document}  { allow read, write: if signedIn(); }
+    match /fencing/{document}        { allow read, write: if signedIn(); }
 
     // `photos` and `alternativeExercises` are gone: progress photos could never
     // work (a phone photo base64s to several MB against a 1MB document limit)
