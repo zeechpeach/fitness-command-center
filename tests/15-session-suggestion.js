@@ -19,6 +19,7 @@ function sundayOffset() { return -new Date().getDay(); }
 
 const suggest = (page, minutes) => page.evaluate(m => {
   window.suggestSessionFor(m);
+  window.suggestPlaceFor('full');   // the location step; tests default to everything available
   const el = document.getElementById('today-panel');
   return {
     text: el.innerText.replace(/\s+/g, ' ').trim(),

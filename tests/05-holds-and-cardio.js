@@ -9,8 +9,8 @@ const { holdsAndCardioProgram } = require('./harness/seed');
   let fails = 0;
   const F = (n, c, d) => { if (!ok(n, c, d)) fails++; };
 
-  // Make sure we are on the holds day.
-  await page.evaluate(() => window.selectDay && window.selectDay('day1'));
+  // Holds Day is unscheduled, so it renders as a pill - tap it.
+  await page.locator('.day-btn[data-substitute="Holds Day"]').click();
   await page.waitForTimeout(600);
 
   const rendered = await page.evaluate(() => {

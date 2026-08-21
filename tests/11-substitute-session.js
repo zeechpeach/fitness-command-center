@@ -36,11 +36,8 @@ const offered = (page) => page.evaluate(() => {
   const circuit = pills.find(p => p.substitute === 'Tournament Circuit');
   F('Tournament Circuit appears as a selectable session', !!circuit, JSON.stringify(pills.map(p => p.label)));
   F('it is visible on screen', circuit && circuit.visible === true, JSON.stringify(circuit));
-  F('the seven scheduled days are still there',
-    pills.filter(p => !p.substitute).length === 7, String(pills.filter(p => !p.substitute).length));
-
-  const owedBefore = await offered(page);
-  console.log('owed before substituting: ' + JSON.stringify(owedBefore));
+  F('no scheduled day pills render - the circuit is the only pill',
+    pills.filter(p => !p.substitute).length === 0, String(pills.filter(p => !p.substitute).length));
 
   // --- select it by tapping, the way a thumb would ---
   const box = await page.locator('.day-btn[data-substitute="Tournament Circuit"]').boundingBox();
@@ -98,10 +95,13 @@ const offered = (page) => page.evaluate(() => {
     exercises: { 0: { exercise: 'Circuit', trackingType: 'weight_reps', sets: [{ weight: '60', reps: '10' }] } }
   };
   const s2 = await boot({ seed: { programs: [prog], workouts: [sub] } });
+  // The queue is gone, so "consuming the owed day" is no longer a thing that
+  // can go wrong. What must hold instead: yesterday's circuit does not
+  // pre-select anything today, and the week's volume counted it.
   const stillOwed = await offered(s2.page);
-  console.log('\nafter logging the circuit, owed session: ' + JSON.stringify(stillOwed));
-  F('the substitute does NOT consume the owed session',
-    /Upper A/.test(stillOwed || ''), `expected Upper A, got ${stillOwed}`);
+  console.log('\nactive pill the day after logging the circuit: ' + JSON.stringify(stillOwed));
+  F('a logged substitute does not pre-select itself the next day',
+    stillOwed === null, `expected null, got ${stillOwed}`);
 
   // it should also not be painted as a missed day
   const calText = await s2.page.evaluate(() => {

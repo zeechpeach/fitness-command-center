@@ -156,4 +156,16 @@ function finish(fails) {
   if (fails > 0) process.exitCode = 1;
 }
 
-module.exports = { boot, ok, tap, dayStr, finish, ROOT };
+// Drive the suggestion panel end to end: length, location, Start this. The
+// scheduled day pills are gone, so this is how most tests get a loggable form.
+async function startSuggested(page, minutes = 45, place = 'full') {
+  await page.evaluate(({ m, p }) => {
+    window.suggestSessionFor(m);
+    window.suggestPlaceFor(p);
+  }, { m: minutes, p: place });
+  await page.waitForTimeout(200);
+  await page.locator('.today-start').click();
+  await page.waitForTimeout(1200);
+}
+
+module.exports = { boot, ok, tap, dayStr, finish, startSuggested, ROOT };

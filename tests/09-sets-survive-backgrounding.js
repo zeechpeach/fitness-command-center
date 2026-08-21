@@ -1,8 +1,10 @@
 // Clean run: guarantee a blank form before each scenario.
-const { boot, ok, finish } = require('./harness/drive');
+const { boot, ok, finish, startSuggested } = require('./harness/drive');
 const { realProgram } = require('./harness/seed');
 
 async function freshForm(page) {
+  // Nothing is pre-assigned any more: get a loggable form from the suggestion.
+  await startSuggested(page, 45, 'full');
   const wIdx = await page.evaluate(() => [...document.querySelectorAll('.set-row')].findIndex(r => r.querySelector('.weight-input')));
   const blank = await page.evaluate((i) => {
     const r = document.querySelectorAll('.set-row')[i];
@@ -86,14 +88,16 @@ async function freshForm(page) {
   await page.keyboard.type('145', { delay: 60 });
   await row.locator('.reps-input').first().click();
   await page.keyboard.type('9', { delay: 60 });
-  const pills = await page.locator('#workout-day-selector .day-btn').count();
-  if (pills > 1) {
-    await page.locator('#workout-day-selector .day-btn').nth(1).click();
-    await page.waitForTimeout(900);
-    // come back
-    await page.locator('#workout-day-selector .day-btn').nth(0).click();
-    await page.waitForTimeout(900);
-  }
+  // Switch away to the Tournament Circuit pill and come back to the
+  // generated session's pill.
+  const activeLabel = await page.evaluate(() => {
+    const a = document.querySelector('#workout-day-selector .day-btn.active');
+    return a ? a.getAttribute('data-substitute') : null;
+  });
+  await page.locator('.day-btn[data-substitute="Tournament Circuit"]').click();
+  await page.waitForTimeout(900);
+  await page.locator(`.day-btn[data-substitute="${activeLabel}"]`).click();
+  await page.waitForTimeout(900);
   const afterSwitch = await page.evaluate((i) => {
     const r = document.querySelectorAll('.set-row')[i];
     return r ? { w: r.querySelector('.weight-input')?.value, reps: r.querySelector('.reps-input')?.value } : null;

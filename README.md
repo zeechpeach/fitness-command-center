@@ -60,10 +60,25 @@ let the generator prescribe squats the morning after a night on the strip.
   and the panel says why it was trimmed.
 
 ### Today's suggestion
-Tap how long you have - 15, 30, 45 or 60 minutes - and the app builds a session
-from three things: what the week still owes, what was trained in the last 48
-hours, and the time available. It is regenerated on every look rather than
-assigned in advance, so there is nothing to fall behind on.
+Tap how long you have - 15, 30, 45 or 60 minutes - then where you are, and the
+app builds a session from what the week still owes, what was trained in the
+last 48 hours, the time available, and the equipment actually in the room. It
+is regenerated on every look rather than assigned in advance, so there is
+nothing to fall behind on.
+
+The location is asked fresh every time, deliberately: which gym today is the
+one fact that changes day to day.
+
+- **Main gym** - squat rack, barbell, dumbbells, bench, cable stack, pull-up
+  bar. No leg machines and no back-extension bench, so leg work comes as
+  squats, Romanian deadlifts, good mornings, lunges and cable back extensions
+  instead of leg press and leg curls.
+- **Full gym** - everything, machines included.
+- **Home** - a pull-up bar and bodyweight.
+
+When the program's own exercises for a muscle all need kit today's location
+does not have, built-in fallbacks stand in, so a session is never blank and
+never impossible.
 
 - Trained chest hard yesterday? It picks back and legs today.
 - Four hours of fencing last night? Legs drop down the order and it leads with
@@ -78,13 +93,13 @@ assigned in advance, so there is nothing to fall behind on.
 - Exercise choice favours movements already logged often, so the same lifts
   recur and progressive overload still has something to track.
 
-### Schedule
+### Sessions
 - Custom programs of any length, built in Settings or pasted in as JSON
-- **The schedule is a queue, not a calendar rotation.** A slot is consumed only
-  when that session is actually completed, so a missed session rolls to
-  tomorrow and everything behind it slides. Rest slots are consumed by time.
-- A session done out of order resumes the cycle after it
-- Calendar view with completed, scheduled and missed days
+- **Nothing is assigned.** The scheduled day pills are gone: a queue that
+  picked a day and marked it active was a daily assignment you could fail.
+  The suggestion above is the way into a session; sessions the program
+  defines but never schedules (the Tournament Circuit) stay one tap away.
+- Calendar view of completed sessions
 - Delete a mis-logged session from the calendar
 
 ### Nutrition
