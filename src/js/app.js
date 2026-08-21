@@ -3892,14 +3892,25 @@ function getWeeklyTargets() {
     return { ...DEFAULT_WEEKLY_TARGETS };
 }
 
-// The training week runs Monday to Sunday, so "this week" means the same thing
-// on Sunday night as it does on Tuesday morning. A rolling 7-day window would
-// quietly drop Monday's work partway through the week.
+// The training week runs Sunday to Saturday and resets on Saturday night, which
+// is how the owner thinks about his week. A fixed week, rather than a rolling
+// 7-day window, means "this week" says the same thing on Saturday night as it
+// did on Monday morning; a rolling window quietly drops the earliest day's work
+// partway through.
+const WEEK_STARTS_ON = 0;   // 0 = Sunday
+
 function getWeekStartDate(dateString = getTodayDateString()) {
     const [y, m, d] = dateString.split('-').map(Number);
     const date = new Date(y, m - 1, d);
-    const weekday = (date.getDay() + 6) % 7;      // 0 = Monday
-    return addDaysToDateString(dateString, -weekday);
+    const offset = (date.getDay() - WEEK_STARTS_ON + 7) % 7;
+    return addDaysToDateString(dateString, -offset);
+}
+
+// Days remaining in the week INCLUDING today, so both panels say the same
+// thing. Two different definitions of "days left" sitting next to each other
+// read as a bug even when both are defensible.
+function getDaysLeftInWeek(dateString = getTodayDateString()) {
+    return 7 - daysBetween(getWeekStartDate(dateString), dateString);
 }
 
 function getSetsThisWeek() {
@@ -3937,10 +3948,7 @@ function getSetsThisWeek() {
 function getWeeklyDebt() {
     const targets = getWeeklyTargets();
     const done = getSetsThisWeek();
-    const today = getTodayDateString();
-    const weekStart = getWeekStartDate(today);
-    // Days left including today, so Sunday is 1 rather than 0.
-    const daysLeft = Math.max(1, 7 - daysBetween(weekStart, today));
+    const daysLeft = Math.max(1, getDaysLeftInWeek());
 
     return Object.keys(targets).map(group => {
         const target = targets[group];
@@ -3977,19 +3985,334 @@ function getWeeklyVolumeScore() {
     };
 }
 
+// ---------------------------------------------------------------------------
+// Today's suggestion.
+//
+// A named weekly grid - Lower B on Thursday - is an assignment you can fail. On
+// a week that runs 7:30-4 at work and 5-9 coaching, you fail it most weeks, and
+// the app turns into a list of your shortcomings.
+//
+// A suggestion is different: it is regenerated from today's facts every time you
+// look, so there is nothing to fall behind on. What it offers depends on how
+// much of the week's volume is still owed, what was trained in the last 48
+// hours, and how long you say you have.
+//
+// The two behaviours this needs both fall out of the recovery factor:
+//   - trained chest yesterday, back today  -> chest scores 0, so it picks others
+//   - nothing logged for three days        -> everything recovered, biggest
+//                                             debts win, which is a full body day
+// ---------------------------------------------------------------------------
+
+// A hard set plus its rest and setup runs about 2.7 minutes in practice.
+const MINUTES_PER_SET = 2.7;
+
+// Options offered as chips. "Whatever I've got" covers a session with no clock.
+const SESSION_LENGTHS = [15, 30, 45, 60];
+
+// Past roughly this many hard sets for one muscle in one session, extra sets
+// cost full fatigue for progressively less return. Cramming a week of missed
+// volume into one day does not work, so the generator spreads across more
+// muscle groups instead of piling onto one.
+const MAX_SETS_PER_GROUP_PER_SESSION = 8;
+
+function setsForMinutes(minutes) {
+    return Math.max(2, Math.round(minutes / MINUTES_PER_SET));
+}
+
+// Hard sets per muscle group over the last N days, used to back off anything
+// that has not recovered yet.
+function getRecentSetsByGroup(days = 2) {
+    const today = getTodayDateString();
+    const from = addDaysToDateString(today, -days);
+    const counts = {};
+
+    allWorkouts.forEach(workout => {
+        if (!workout || workout.date <= from || workout.date > today) return;
+        if (isNonTrainingLabel(workout.day)) return;
+        Object.values(workout.exercises || {}).forEach(exercise => {
+            if (!exercise || !exercise.exercise) return;
+            const name = exercise.substitution || exercise.exercise;
+            const group = classifyMuscleGroup(name);
+            if (!group) return;
+            const sets = (exercise.sets || []).filter(isWorkingSet).length;
+            if (sets > 0) counts[group] = (counts[group] || 0) + sets;
+        });
+    });
+    return counts;
+}
+
+// 1.0 = fresh, 0 = trained hard within a day. Anything trained yesterday drops
+// down the order without being banned outright, so a light touch is still
+// possible if nothing else is owed.
+function recoveryFactor(group) {
+    const yesterday = getRecentSetsByGroup(1)[group] || 0;
+    const twoDays = getRecentSetsByGroup(2)[group] || 0;
+    if (yesterday >= 4) return 0;
+    if (yesterday > 0) return 0.3;
+    if (twoDays >= 4) return 0.6;
+    return 1;
+}
+
+// Every exercise the active program knows about, grouped by muscle. Includes
+// sessions that are not on the schedule, so a circuit or a home session is
+// available to draw from.
+function getExercisePool() {
+    const pool = {};
+    const workouts = (activeProgram && activeProgram.workouts) || {};
+
+    Object.values(workouts).forEach(list => {
+        (Array.isArray(list) ? list : []).forEach(exercise => {
+            if (!exercise || !exercise.name) return;
+            const type = exercise.trackingType || guessTrackingType(exercise.name);
+            if (type === 'checkoff') return;          // mobility is not a hard set
+            const group = classifyMuscleGroup(exercise.name);
+            if (!group) return;
+            if (!pool[group]) pool[group] = [];
+            if (!pool[group].some(e => normalizeLabel(e.name) === normalizeLabel(exercise.name))) {
+                pool[group].push(exercise);
+            }
+        });
+    });
+    return pool;
+}
+
+// How often each exercise has actually been logged. Used to keep picking the
+// SAME movement for a group session after session: varying the exercise every
+// time would mean never repeating a lift enough to progress it, which costs the
+// main thing that protects muscle in a deficit.
+function getExerciseFrequency() {
+    const freq = {};
+    allWorkouts.forEach(workout => {
+        Object.values(workout.exercises || {}).forEach(exercise => {
+            if (!exercise || !exercise.exercise) return;
+            const key = normalizeLabel(exercise.substitution || exercise.exercise);
+            freq[key] = (freq[key] || 0) + 1;
+        });
+    });
+    return freq;
+}
+
+// Returns { minutes, totalSets, groups: [...], exercises: [...], rest, reason }
+function generateSession(minutes) {
+    const budget = setsForMinutes(minutes);
+    const pool = getExercisePool();
+    const freq = getExerciseFrequency();
+
+    const candidates = getWeeklyDebt()
+        .filter(row => row.debt > 0 && (pool[row.group] || []).length > 0)
+        .map(row => ({ ...row, recovery: recoveryFactor(row.group) }))
+        .map(row => ({ ...row, score: row.urgency * row.recovery }))
+        .filter(row => row.score > 0)
+        .sort((a, b) => b.score - a.score);
+
+    if (candidates.length === 0) {
+        const anyDebt = getWeeklyDebt().some(r => r.debt > 0);
+        return {
+            minutes, totalSets: 0, groups: [], exercises: [], rest: true,
+            reason: anyDebt
+                ? 'Everything still owed this week was trained in the last day or two. Let it recover - the primer is enough today.'
+                : 'The week is done. Nothing is owed, so today is a rest day.'
+        };
+    }
+
+    const chosen = [];
+    let remaining = budget;
+
+    for (const row of candidates) {
+        if (remaining <= 0) break;
+        const allocation = Math.min(row.debt, MAX_SETS_PER_GROUP_PER_SESSION, remaining);
+        // Two sets of something is not worth a trip; fold small leftovers into
+        // the groups already picked rather than adding a token exercise.
+        if (allocation < 2) continue;
+        chosen.push({ ...row, sets: allocation });
+        remaining -= allocation;
+    }
+
+    if (chosen.length === 0) {
+        // Budget too small to give any group a real share: put it all on the
+        // most urgent one.
+        const top = candidates[0];
+        chosen.push({ ...top, sets: Math.min(budget, top.debt, MAX_SETS_PER_GROUP_PER_SESSION) });
+    }
+
+    const exercises = [];
+    chosen.forEach(entry => {
+        const options = (pool[entry.group] || []).slice().sort((a, b) =>
+            (freq[normalizeLabel(b.name)] || 0) - (freq[normalizeLabel(a.name)] || 0));
+        // One movement up to 4 sets, two beyond that, so a big allocation is
+        // split rather than becoming six sets of the same thing.
+        const count = entry.sets > 4 && options.length > 1 ? 2 : 1;
+        const picks = options.slice(0, count);
+        picks.forEach((exercise, i) => {
+            const share = Math.round(entry.sets / picks.length) || 1;
+            const sets = i === picks.length - 1
+                ? entry.sets - share * (picks.length - 1)
+                : share;
+            if (sets <= 0) return;
+            exercises.push({
+                name: exercise.name,
+                group: entry.group,
+                sets,
+                reps: exercise.reps || '',
+                trackingType: exercise.trackingType || guessTrackingType(exercise.name),
+                notes: exercise.notes || ''
+            });
+        });
+    });
+
+    const totalSets = exercises.reduce((sum, e) => sum + e.sets, 0);
+    return {
+        minutes,
+        totalSets,
+        groups: chosen.map(c => c.group),
+        exercises,
+        rest: false,
+        reason: ''
+    };
+}
+
+// How many more sessions the week needs, so the week ahead can be planned
+// without turning into a grid of named days you can fall behind on.
+function getWeekOutlook() {
+    const rows = getWeeklyDebt();
+    const debt = rows.reduce((sum, r) => sum + r.debt, 0);
+    const daysLeft = getDaysLeftInWeek();
+
+    // Against a normal 45 minute session.
+    const perSession = setsForMinutes(45);
+    const sessions = debt > 0 ? Math.max(1, Math.round(debt / perSession)) : 0;
+
+    return { debt, daysLeft, sessions, behind: sessions > daysLeft };
+}
+
+// ---- Today's suggestion, rendered ------------------------------------------
+
+let suggestedMinutes = null;     // null until a length is chosen
+let suggestedSession = null;
+
+window.suggestSessionFor = function (minutes) {
+    suggestedMinutes = minutes;
+    suggestedSession = generateSession(minutes);
+    renderTodayPanel();
+};
+
+window.dismissSuggestion = function () {
+    suggestedMinutes = null;
+    suggestedSession = null;
+    renderTodayPanel();
+};
+
+// Load the suggestion into the logger as a one-off session, using the same
+// substitute mechanism as an unscheduled session: it consumes no scheduled day
+// and is saved under its own descriptive name.
+let lastGeneratedLabel = null;
+
+window.startSuggestedSession = function () {
+    if (!suggestedSession || suggestedSession.rest) return;
+    if (!activeProgram) return;
+    if (!activeProgram.workouts) activeProgram.workouts = {};
+
+    // Only ever one generated session at a time. Without this, asking twice
+    // leaves yesterday's suggestion sitting in the pill row forever.
+    if (lastGeneratedLabel && activeProgram.workouts[lastGeneratedLabel]) {
+        delete activeProgram.workouts[lastGeneratedLabel];
+    }
+
+    const label = suggestedSessionName(suggestedSession);
+    // Held in memory only. Writing generated sessions into the saved program
+    // would fill the library with one-offs named after a Tuesday. The logged
+    // session still records its own name, so history keeps it.
+    activeProgram.workouts[label] = suggestedSession.exercises.map(e => ({
+        name: e.name, sets: e.sets, reps: e.reps,
+        trackingType: e.trackingType, notes: e.notes
+    }));
+    lastGeneratedLabel = label;
+
+    // The pill has to exist before selectDay can mark it active.
+    renderWorkoutDaySelector();
+    selectDay(substituteDayKeyFor(label));
+    dismissSuggestion();
+    showToast(`${label} loaded. Log it like any other session.`, 'success');
+};
+
+// Named for what it trains, not for a slot in a plan. "Back & Quads - 30 min"
+// carries no implication that you were meant to do it on a particular day.
+function suggestedSessionName(session) {
+    const groups = [...new Set(session.groups)];
+    const head = groups.slice(0, 2).join(' & ');
+    const more = groups.length > 2 ? ` +${groups.length - 2}` : '';
+    return `${head}${more} - ${session.minutes} min`;
+}
+
+function renderTodayPanel() {
+    const container = document.getElementById('today-panel');
+    if (!container) return;
+
+    const outlook = getWeekOutlook();
+
+    let html = '<div class="today-head">';
+    if (outlook.debt === 0) {
+        html += `<span class="today-title">Week complete</span>
+                 <span class="today-sub">Everything is covered. Anything more is a bonus.</span>`;
+    } else {
+        const sessionWord = outlook.sessions === 1 ? 'session' : 'sessions';
+        html += `<span class="today-title">About ${outlook.sessions} more ${sessionWord} this week</span>
+                 <span class="today-sub">${outlook.debt} sets still owed across
+                    ${outlook.daysLeft} day${outlook.daysLeft === 1 ? '' : 's'}${outlook.behind
+            ? ' &middot; more than there are days, so take what you can get'
+            : ''}</span>`;
+    }
+    html += '</div>';
+
+    if (!suggestedSession) {
+        html += `<div class="today-ask">How long have you got today?</div>
+                 <div class="today-chips">`;
+        SESSION_LENGTHS.forEach(m => {
+            html += `<button type="button" class="today-chip" data-minutes="${m}">${m} min</button>`;
+        });
+        html += `</div>`;
+    } else if (suggestedSession.rest) {
+        html += `<div class="today-rest">${escapeHtml(suggestedSession.reason)}</div>
+                 <button type="button" class="today-back" data-dismiss="1">Pick a different length</button>`;
+    } else {
+        html += `<div class="today-plan">
+                    <div class="today-plan-head">
+                        <span class="today-plan-name">${escapeHtml(suggestedSessionName(suggestedSession))}</span>
+                        <span class="today-plan-meta">${suggestedSession.totalSets} sets</span>
+                    </div>
+                    <ul class="today-plan-list">`;
+        suggestedSession.exercises.forEach(e => {
+            const reps = e.reps ? ` &times; ${escapeHtml(e.reps)}` : '';
+            html += `<li><span class="today-ex">${escapeHtml(e.name)}</span>
+                         <span class="today-ex-meta">${e.sets}${reps}</span></li>`;
+        });
+        html += `</ul>
+                    <button type="button" class="today-start" data-start="1">Start this</button>
+                    <button type="button" class="today-back" data-dismiss="1">Different length</button>
+                 </div>`;
+    }
+
+    container.innerHTML = html;
+
+    container.querySelectorAll('[data-minutes]').forEach(btn => {
+        btn.addEventListener('click', () => suggestSessionFor(Number(btn.getAttribute('data-minutes'))));
+    });
+    const startBtn = container.querySelector('[data-start]');
+    if (startBtn) startBtn.addEventListener('click', () => startSuggestedSession());
+    const backBtn = container.querySelector('[data-dismiss]');
+    if (backBtn) backBtn.addEventListener('click', () => dismissSuggestion());
+}
+
 function renderWeeklyVolume() {
     const container = document.getElementById('weekly-volume-panel');
     if (!container) return;
 
     const rows = getWeeklyDebt();
     const summary = getWeeklyVolumeScore();
-    const today = getTodayDateString();
-    const weekStart = getWeekStartDate(today);
-    const daysLeft = Math.max(0, 6 - daysBetween(weekStart, today));
-
-    const dayNote = daysLeft === 0
+    const daysLeft = getDaysLeftInWeek();
+    const dayNote = daysLeft === 1
         ? 'Last day of the week'
-        : `${daysLeft} day${daysLeft === 1 ? '' : 's'} left this week`;
+        : `${daysLeft} days left this week`;
 
     let html = `
         <div class="week-head">
@@ -7317,6 +7640,7 @@ function renderWorkoutDaySelector() {
     // rebuilds the selector: boot, a completed session, a deleted one, a
     // program change.
     renderWeeklyVolume();
+    renderTodayPanel();
 
     const container = document.getElementById('workout-day-selector');
     if (!container) return;
