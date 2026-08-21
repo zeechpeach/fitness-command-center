@@ -1,6 +1,7 @@
 // Journey: log part of a session, complete, add more, complete again.
-// Must end as ONE saved session, not two.
-const { boot, ok } = require('./harness/drive');
+// Must end as ONE saved session, not two. Nothing is pre-assigned any more,
+// so the session comes from the suggestion panel.
+const { boot, ok, startSuggested } = require('./harness/drive');
 const { realProgram } = require('./harness/seed');
 
 (async () => {
@@ -10,11 +11,13 @@ const { realProgram } = require('./harness/seed');
   let fails = 0;
   const F = (n, c, d) => { if (!ok(n, c, d)) fails++; };
 
+  await startSuggested(page, 45, 'full');
   const day = await page.evaluate(() => {
-    const active = document.querySelector('#workout-day-selector .day-btn.active, #workout-day-selector button.active');
+    const active = document.querySelector('#workout-day-selector .day-btn.active');
     return active ? active.innerText.replace(/\s+/g, ' ').trim() : null;
   });
   console.log('logger opened on: ' + JSON.stringify(day));
+  F('starting the suggestion selects its pill', /min$/.test(day || ''), JSON.stringify(day));
 
   // ---- lunchtime: fill the first exercise only ----
   const firstRows = await page.locator('.set-row').count();
@@ -57,14 +60,17 @@ const { realProgram } = require('./harness/seed');
   F('completed sets reload into the form', hydrated.some(v => v.w === '95' || v.r === '8' || v.r === '30'),
     JSON.stringify(hydrated));
 
-  // add a second exercise's set
-  const rowCount = await page.locator('.set-row').count();
+  // add a set that belongs to a DIFFERENT exercise, not set 2 of the first
+  const cards = await page.locator('.exercise-card').count();
   let filled = false;
-  for (let i = 1; i < rowCount && !filled; i++) {
-    const row = page.locator('.set-row').nth(i);
-    if (await row.locator('.weight-input').count()) {
-      await row.locator('.weight-input').fill('135');
-      await row.locator('.reps-input').fill('6');
+  for (let c = 1; c < cards && !filled; c++) {
+    const card = page.locator('.exercise-card').nth(c);
+    if (await card.locator('.weight-input').count()) {
+      await card.locator('.weight-input').first().fill('135');
+      await card.locator('.reps-input').first().fill('6');
+      filled = true;
+    } else if (await card.locator('.reps-input').count()) {
+      await card.locator('.reps-input').first().fill('12');
       filled = true;
     }
   }

@@ -97,14 +97,12 @@ const fs = require('fs');
     };
   });
   console.log('day pills: ' + JSON.stringify(pills));
-  // 7 scheduled days + the Tournament Circuit, which the program defines but
-  // never schedules and which is now offered as a substitute session.
+  // Scheduled days no longer render as pills - the suggestion panel is the way
+  // in. What the import must surface is the Tournament Circuit, which the
+  // program defines but never schedules.
   const scheduledPills = (pills.labels || []).filter(l => /^Day \d/.test(l));
-  F('day pills render from the import', pills.found && scheduledPills.length === 7, JSON.stringify(pills));
+  F('no scheduled day pills render', pills.found && scheduledPills.length === 0, JSON.stringify(pills));
   F('day pills are visible', pills.visible === pills.count, JSON.stringify(pills));
-
-  const pillText = (pills.labels || []).join(' ');
-  F('pills show the imported day names', /Upper A/.test(pillText), pillText.slice(0, 160));
 
   // --- Tournament Circuit: in the program, but reachable? ---
   F('Tournament Circuit is in the exercise lists',

@@ -35,7 +35,7 @@ enableIndexedDbPersistence(db)
 let currentUser = null;
 
 // Global state
-let currentDay = 'Upper';
+let currentDay = '';    // empty until a session is chosen - nothing is assigned
 let currentWorkout = {};
 let allWorkouts = [];
 let workoutIntensity = {
@@ -1137,16 +1137,9 @@ window.setActiveProgram = async function (programId) {
             activeProgram = program;
 
             // Reset currentDay to first day of new program before initialization
-            if (activeProgram && activeProgram.schedule) {
-                const dayKeys = Object.keys(activeProgram.schedule).sort((a, b) => {
-                    const numA = parseInt(a.replace('day', ''));
-                    const numB = parseInt(b.replace('day', ''));
-                    return numA - numB;
-                });
-                if (dayKeys.length > 0) {
-                    currentDay = dayKeys[0];
-                }
-            }
+            // Nothing is pre-selected. The suggestion panel is the way into a
+            // session; activating a program only changes what it draws from.
+            currentDay = '';
 
             alert(`${program.name} is now your active program!`);
             renderPrograms();
@@ -2087,7 +2080,6 @@ async function saveProgramToFirestore() {
         if (saved.active) {
             activeProgram = saved;
             invalidateScheduleTimeline();
-            currentDay = getScheduleDayKeyForToday() || currentDay;
             renderWorkoutDaySelector();
             initializeWorkout();
         }
@@ -2390,31 +2382,6 @@ function getScheduledWorkout(date) {
     const daysDiff = daysBetween(SCHEDULE_REFERENCE_DATE, date);
     const idx = ((daysDiff % scheduleArray.length) + scheduleArray.length) % scheduleArray.length;
     return scheduleArray[idx];
-}
-
-// Which program day key is owed today. Used to open the logger on the right
-// session instead of always on day one.
-function getScheduleDayKeyForToday() {
-    if (!activeProgram || !activeProgram.schedule) return null;
-
-    // If a session is already logged today, STAY on it. Advancing to tomorrow
-    // hid the half-finished session behind a day pill the user had no reason to
-    // tap, and anything typed on the day the logger opened on was saved as a
-    // second, wrongly-labelled session. Staying put is what makes finishing a
-    // workout later in the day actually work.
-    const today = getTodayDateString();
-    const loggedToday = getWorkoutForDate(today);
-    const todaysType = loggedToday ? loggedToday.day : getScheduledWorkout(today);
-    if (!todaysType) return null;
-
-    const dayKeys = Object.keys(activeProgram.schedule).sort((a, b) =>
-        parseInt(a.replace('day', ''), 10) - parseInt(b.replace('day', ''), 10));
-
-    const wanted = normalizeLabel(todaysType);
-    for (const key of dayKeys) {
-        if (normalizeLabel(getWorkoutTypeForDay(activeProgram, key)) === wanted) return key;
-    }
-    return null;
 }
 
 function getWorkoutForDate(dateString) {
@@ -3814,6 +3781,116 @@ function classifyMuscleGroup(exerciseName) {
     return best;
 }
 
+// ---------------------------------------------------------------------------
+// Equipment.
+//
+// A session you cannot physically do is worse than no suggestion at all. The
+// main gym has a rack, barbell, dumbbells, a bench, a cable stack and a pull-up
+// bar - but no leg press, no leg curl or extension machines, and no back
+// extension bench. Those live at the full gym. Home is a pull-up bar and
+// bodyweight.
+//
+// Every exercise is classified by the one piece of kit it cannot happen
+// without, using the same longest-match scoring as the muscle classifier, and
+// the generator only offers what today's location can actually provide.
+// ---------------------------------------------------------------------------
+
+const LOCATIONS = {
+    main: { label: 'Main gym', has: ['bodyweight', 'pullup', 'dipbars', 'dumbbell', 'barbell', 'cable'] },
+    full: { label: 'Full gym', has: ['bodyweight', 'pullup', 'dipbars', 'dumbbell', 'barbell', 'cable', 'machine'] },
+    home: { label: 'Home',     has: ['bodyweight', 'pullup'] }
+};
+
+// Longest match wins, so 'cable back extension' is cable work even though
+// 'back extension' alone means the 45-degree bench the main gym does not have,
+// and 'goblet squat' is a dumbbell even though a bare 'squat' needs the rack.
+// A trap bar is filed under 'machine': not literally a machine, but the same
+// class of kit - only the full gym has one.
+const EQUIPMENT_PATTERNS = [
+    { equipment: 'machine',   match: ['leg press', 'leg extension', 'seated leg curl', 'lying leg curl',
+                                      'leg curl', 'hack squat', 'pec deck', 'smith', 'machine',
+                                      'seated calf raise', 'back extension', 'hip abduction machine',
+                                      'chest press machine', 'assisted', 'trap bar'] },
+    { equipment: 'cable',     match: ['cable', 'pulldown', 'pushdown', 'face pull', 'pallof',
+                                      'cable back extension', 'triceps rope', 'rope extension'] },
+    { equipment: 'barbell',   match: ['barbell', 'back squat', 'front squat', 'deadlift', 'romanian deadlift',
+                                      'rdl', 'good morning', 'hip thrust', 'bench press', 'overhead press',
+                                      'military press', 'close-grip bench', 'skull crusher'] },
+    { equipment: 'dumbbell',  match: ['dumbbell', 'goblet squat', 'goblet', 'hammer curl', 'lateral raise',
+                                      'side raise', 'rear delt', 'incline curl', 'preacher curl', 'curl',
+                                      'shoulder press', 'chest press', 'fly', 'row', 'shrug', 'step-up',
+                                      'step up', 'lunge', 'split squat', 'weighted'] },
+    { equipment: 'dipbars',   match: ['dip'] },
+    { equipment: 'pullup',    match: ['pull-up', 'pullup', 'pull up', 'chin-up', 'chinup', 'dead hang',
+                                      'front lever', 'scapular pull', 'hanging leg raise', 'hanging knee raise',
+                                      'inverted row'] }
+];
+
+// Anything unmatched is bodyweight: push-ups, planks, holds, handstands, walks.
+function classifyEquipment(exerciseName) {
+    const name = normalizeLabel(exerciseName);
+    if (!name) return 'bodyweight';
+
+    let best = 'bodyweight';
+    let bestLength = 0;
+    for (const entry of EQUIPMENT_PATTERNS) {
+        for (const token of entry.match) {
+            if (name.includes(token) && token.length > bestLength) {
+                bestLength = token.length;
+                best = entry.equipment;
+            }
+        }
+    }
+    return best;
+}
+
+function availableAt(exerciseName, locationKey) {
+    const location = LOCATIONS[locationKey];
+    if (!location) return true;
+    return location.has.includes(classifyEquipment(exerciseName));
+}
+
+// When the program's own exercises for a group all need kit today's gym does
+// not have, these stand in - rack, dumbbell, cable and bodyweight staples, so
+// every group is coverable at the main gym and most of them at home. Seated
+// Leg Curl at the full gym becomes a Romanian Deadlift at the main one, not a
+// blank.
+const FALLBACK_EXERCISES = {
+    Chest:      [{ name: 'Barbell Bench Press', reps: '6-8' }, { name: 'Dumbbell Bench Press', reps: '8-10' },
+                 { name: 'Push-Up', reps: '10-15', trackingType: 'reps' }],
+    Back:       [{ name: 'Barbell Row', reps: '6-10' }, { name: 'One-Arm Dumbbell Row', reps: '8-12' },
+                 { name: 'Pull-Up', reps: '5-8', trackingType: 'reps' }],
+    Shoulders:  [{ name: 'Overhead Press', reps: '6-8' }, { name: 'Dumbbell Shoulder Press', reps: '8-10' },
+                 { name: 'Pike Push-Up', reps: '8-12', trackingType: 'reps' }],
+    Biceps:     [{ name: 'Dumbbell Curl', reps: '8-12' },
+                 { name: 'Chin-Up', reps: '5-8', trackingType: 'reps' }],
+    Triceps:    [{ name: 'Close-Grip Bench Press', reps: '6-10' },
+                 { name: 'Overhead Dumbbell Triceps Extension', reps: '10-12' },
+                 { name: 'Diamond Push-Up', reps: '8-12', trackingType: 'reps' }],
+    Quads:      [{ name: 'Back Squat', reps: '5-8' }, { name: 'Goblet Squat', reps: '8-12' },
+                 { name: 'Bulgarian Split Squat', reps: '8-10' },
+                 { name: 'Bodyweight Squat', reps: '15-20', trackingType: 'reps' }],
+    Hamstrings: [{ name: 'Romanian Deadlift', reps: '6-10' }, { name: 'Good Morning', reps: '8-10' },
+                 { name: 'Cable Back Extension', reps: '10-15' }, { name: 'Dumbbell Romanian Deadlift', reps: '8-12' }],
+    Glutes:     [{ name: 'Barbell Hip Thrust', reps: '8-12' }, { name: 'Dumbbell Step-Up', reps: '8-10' },
+                 { name: 'Glute Bridge', reps: '15-20', trackingType: 'reps' }],
+    Calves:     [{ name: 'Standing Calf Raise', reps: '12-15' }],
+    Core:       [{ name: 'Hanging Knee Raise', reps: '8-12', trackingType: 'reps' },
+                 { name: 'Hollow Body Hold', reps: '20-30s', trackingType: 'time' },
+                 { name: 'Plank', reps: '30-45s', trackingType: 'time' }]
+};
+
+// The program's own exercises first (their history is what progressive overload
+// tracks), the fallbacks only when the location rules everything out.
+function usableOptionsFor(group, pool, locationKey) {
+    const own = (pool[group] || []).filter(e => availableAt(e.name, locationKey));
+    if (own.length > 0) return own;
+    return (FALLBACK_EXERCISES[group] || [])
+        .filter(e => availableAt(e.name, locationKey))
+        .map(e => ({ name: e.name, reps: e.reps,
+                     trackingType: e.trackingType || guessTrackingType(e.name) }));
+}
+
 // A set counts when it was actually performed: any reps logged, or a completed
 // checkbox for a hold. Weight is deliberately not required.
 function isWorkingSet(set) {
@@ -4132,7 +4209,9 @@ function refreshAfterFencingChange() {
     renderWeeklyVolume();
     // A logged session changes what today should be, so any suggestion already
     // on screen is stale the moment fencing is added.
-    if (suggestedMinutes !== null) suggestedSession = generateSession(suggestedMinutes);
+    if (suggestedMinutes !== null && suggestedLocation !== null) {
+        suggestedSession = generateSession(suggestedMinutes, suggestedLocation);
+    }
     renderTodayPanel();
 }
 
@@ -4370,7 +4449,7 @@ function getExerciseFrequency() {
 }
 
 // Returns { minutes, totalSets, groups, exercises, rest, reason, fatigueNote }
-function generateSession(minutes) {
+function generateSession(minutes, locationKey = 'full') {
     // A twelve-hour tournament Saturday does not make any one muscle sore, but
     // it does mean Sunday is not a full session. Scale the whole budget down
     // rather than dropping groups, so what is left is a real short session
@@ -4384,7 +4463,7 @@ function generateSession(minutes) {
     const freq = getExerciseFrequency();
 
     const candidates = getWeeklyDebt()
-        .filter(row => row.debt > 0 && (pool[row.group] || []).length > 0)
+        .filter(row => row.debt > 0 && usableOptionsFor(row.group, pool, locationKey).length > 0)
         .map(row => ({ ...row, recovery: recoveryFactor(row.group) }))
         .map(row => ({ ...row, score: row.urgency * row.recovery }))
         .filter(row => row.score > 0)
@@ -4429,7 +4508,7 @@ function generateSession(minutes) {
 
     const exercises = [];
     chosen.forEach(entry => {
-        const options = (pool[entry.group] || []).slice().sort((a, b) =>
+        const options = usableOptionsFor(entry.group, pool, locationKey).slice().sort((a, b) =>
             (freq[normalizeLabel(b.name)] || 0) - (freq[normalizeLabel(a.name)] || 0));
         // One movement up to 4 sets, two beyond that, so a big allocation is
         // split rather than becoming six sets of the same thing.
@@ -4481,16 +4560,26 @@ function getWeekOutlook() {
 // ---- Today's suggestion, rendered ------------------------------------------
 
 let suggestedMinutes = null;     // null until a length is chosen
+let suggestedLocation = null;    // asked fresh every time - gyms change daily
 let suggestedSession = null;
 
 window.suggestSessionFor = function (minutes) {
     suggestedMinutes = minutes;
-    suggestedSession = generateSession(minutes);
+    suggestedLocation = null;
+    suggestedSession = null;
+    renderTodayPanel();
+};
+
+window.suggestPlaceFor = function (locationKey) {
+    if (!LOCATIONS[locationKey] || suggestedMinutes === null) return;
+    suggestedLocation = locationKey;
+    suggestedSession = generateSession(suggestedMinutes, locationKey);
     renderTodayPanel();
 };
 
 window.dismissSuggestion = function () {
     suggestedMinutes = null;
+    suggestedLocation = null;
     suggestedSession = null;
     renderTodayPanel();
 };
@@ -4557,13 +4646,24 @@ function renderTodayPanel() {
     }
     html += '</div>';
 
-    if (!suggestedSession) {
+    if (suggestedMinutes === null) {
         html += `<div class="today-ask">How long have you got today?</div>
                  <div class="today-chips">`;
         SESSION_LENGTHS.forEach(m => {
             html += `<button type="button" class="today-chip" data-minutes="${m}">${m} min</button>`;
         });
         html += `</div>`;
+    } else if (suggestedLocation === null) {
+        // Asked fresh every time, deliberately: which gym today is the one
+        // fact that changes day to day, and a remembered answer would build
+        // sessions around machines that are not in the room.
+        html += `<div class="today-ask">${suggestedMinutes} min &middot; Where are you?</div>
+                 <div class="today-chips">`;
+        Object.keys(LOCATIONS).forEach(key => {
+            html += `<button type="button" class="today-chip" data-place="${key}">${LOCATIONS[key].label}</button>`;
+        });
+        html += `</div>
+                 <button type="button" class="today-back" data-dismiss="1">Different length</button>`;
     } else if (suggestedSession.rest) {
         html += `<div class="today-rest">${escapeHtml(suggestedSession.reason)}</div>
                  <button type="button" class="today-back" data-dismiss="1">Pick a different length</button>`;
@@ -4571,7 +4671,8 @@ function renderTodayPanel() {
         html += `<div class="today-plan">
                     <div class="today-plan-head">
                         <span class="today-plan-name">${escapeHtml(suggestedSessionName(suggestedSession))}</span>
-                        <span class="today-plan-meta">${suggestedSession.totalSets} sets</span>
+                        <span class="today-plan-meta">${suggestedSession.totalSets} sets &middot; ${
+                            escapeHtml((LOCATIONS[suggestedLocation] || {}).label || '')}</span>
                     </div>
                     <ul class="today-plan-list">`;
         suggestedSession.exercises.forEach(e => {
@@ -4592,6 +4693,9 @@ function renderTodayPanel() {
 
     container.querySelectorAll('[data-minutes]').forEach(btn => {
         btn.addEventListener('click', () => suggestSessionFor(Number(btn.getAttribute('data-minutes'))));
+    });
+    container.querySelectorAll('[data-place]').forEach(btn => {
+        btn.addEventListener('click', () => suggestPlaceFor(btn.getAttribute('data-place')));
     });
     const startBtn = container.querySelector('[data-start]');
     if (startBtn) startBtn.addEventListener('click', () => startSuggestedSession());
@@ -5374,7 +5478,6 @@ window.confirmImportProgram = async function () {
         await loadWorkoutsFromFirebase();
         refreshStartupCache();
 
-        currentDay = getScheduleDayKeyForToday() || currentDay;
         renderWorkoutDaySelector();
         initializeWorkout();
         renderPrograms();
@@ -7961,98 +8064,28 @@ function renderWorkoutDaySelector() {
 
     const container = document.getElementById('workout-day-selector');
     if (!container) return;
-    
-    // If no active program, use default ULPPL structure
-    if (!activeProgram || !activeProgram.schedule) {
-        // Default ULPPL program mapping
-        const defaultDays = [
-            { key: 'Upper', label: 'Upper' },
-            { key: 'Lower', label: 'Lower' },
-            { key: 'Rest', label: 'Rest' },
-            { key: 'Push', label: 'Push' },
-            { key: 'Pull', label: 'Pull' },
-            { key: 'Legs', label: 'Legs' }
-        ];
-        
-        // Open on the session the queue owes today, not always on Upper.
-        const validKeys = defaultDays.map(d => d.key);
-        if (!validKeys.includes(currentDay) && !isSubstituteDayKey(currentDay)) {
-            const owed = getScheduledWorkout(getTodayDateString());
-            currentDay = validKeys.includes(owed) ? owed : defaultDays[0].key;
-        }
-        
-        let html = '';
-        defaultDays.forEach((day) => {
-            const isActive = currentDay === day.key;
-            html += `<button class="day-btn ${isActive ? 'active' : ''}" id="${day.key.toLowerCase()}-btn">${day.label}</button>`;
-        });
-        
-        container.innerHTML = html;
-        
-        // Attach event listeners for default buttons
-        defaultDays.forEach(day => {
-            const btn = document.getElementById(`${day.key.toLowerCase()}-btn`);
-            if (btn) {
-                btn.addEventListener('click', () => selectDay(day.key));
-            }
-        });
-        
-        return;
-    }
-    
-    // Build buttons from active program schedule
-    const schedule = activeProgram.schedule;
-    // Numeric sort: a lexicographic sort puts day10 before day2.
-    const dayKeys = Object.keys(schedule).sort((a, b) =>
-        parseInt(a.replace('day', ''), 10) - parseInt(b.replace('day', ''), 10));
 
-    // Open on whatever the schedule queue owes today rather than always on day
-    // one. Previously currentDay started as 'Upper', never matched a day key,
-    // and so every load reset the logger to the first day of the program.
-    // A substitute (sub:Tournament Circuit) is a valid selection even though it
-    // is not one of the scheduled day keys, so it must survive this reset.
-    if (!dayKeys.includes(currentDay) && !isSubstituteDayKey(currentDay)) {
-        currentDay = getScheduleDayKeyForToday() || dayKeys[0];
-    }
-    
-    let html = '';
-    dayKeys.forEach((dayKey) => {
-        const dayNumber = parseInt(dayKey.replace('day', ''));
-        const displayName = getDisplayNameForDay(activeProgram, dayKey);
-        const isActive = currentDay === dayKey;
-        // Format: "Day X (DayName)" or just "Day X" if no name
-        const buttonLabel = displayName && displayName !== '(click to name)' 
-            ? `Day ${dayNumber} (${displayName})` 
-            : `Day ${dayNumber}`;
-        html += `<button class="day-btn ${isActive ? 'active' : ''}" id="${dayKey}-btn">${escapeHtml(buttonLabel)}</button>`;
-    });
-
-    // Sessions the program defines but never schedules, so they can be trained
-    // without editing the program. Logging one does not consume the day the
-    // queue owes, so the displaced session still comes up tomorrow.
+    // The scheduled day pills are gone deliberately. A row of named days was a
+    // daily assignment wearing a different hat - the queue picked one, marked
+    // it active, and every glance at the row was a reminder of the plan not
+    // being followed. The suggestion above is now the way in; what remains
+    // here are the sessions the program defines but never schedules (the
+    // Tournament Circuit, a just-generated session), which are genuinely a
+    // menu rather than an obligation.
     const substitutes = getSubstituteWorkoutTypes();
+    let html = '';
     substitutes.forEach((type) => {
         const key = substituteDayKeyFor(type);
         const isActive = currentDay === key;
         html += `<button class="day-btn day-btn-substitute ${isActive ? 'active' : ''}"
                          data-substitute="${escapeHtml(type)}"
-                         title="Train this instead of today's session. Today's session stays owed."
                          >${escapeHtml(type)}</button>`;
     });
-
     container.innerHTML = html;
 
     container.querySelectorAll('[data-substitute]').forEach(btn => {
         btn.addEventListener('click', () =>
             selectDay(substituteDayKeyFor(btn.getAttribute('data-substitute'))));
-    });
-
-    // Attach event listeners to all buttons
-    dayKeys.forEach(dayKey => {
-        const btn = document.getElementById(`${dayKey}-btn`);
-        if (btn) {
-            btn.addEventListener('click', () => selectDay(dayKey));
-        }
     });
 }
 
@@ -8392,7 +8425,9 @@ function renderWorkout(workoutType = null) {
     
     // Handle case where workout type doesn't exist
     if (!exercises || !Array.isArray(exercises)) {
-        container.innerHTML = '<p style="color: var(--color-text-secondary); text-align: center; padding: 2rem;">No exercises found for this day.</p>';
+        container.innerHTML = `<p class="no-session-hint">No session loaded.<br>
+            Tell the panel above how long you have and where you are,
+            or pick a saved session.</p>`;
         return;
     }
     
@@ -8895,7 +8930,9 @@ async function completeWorkout() {
     document.querySelectorAll('.intensity-btn').forEach(b => b.classList.remove('active'));
 
     invalidateScheduleTimeline();
-    currentDay = getScheduleDayKeyForToday() || currentDay;
+    // currentDay stays where it is: the session just completed re-hydrates
+    // into the form, so more sets added tonight join it instead of starting
+    // over on whatever a queue would have owed.
     renderWorkoutDaySelector();
     initializeWorkout();
     updateSuggestions();

@@ -549,6 +549,13 @@
             border-color: transparent;
         }
 
+        .no-session-hint {
+            color: var(--color-text-secondary);
+            text-align: center;
+            padding: 2rem 1rem;
+            line-height: 1.6;
+        }
+
         .day-btn {
             padding: 0.875rem 1.5rem;
             background: var(--color-surface);

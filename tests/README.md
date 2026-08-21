@@ -30,8 +30,8 @@ Playwright will not find on its own, point at it with `PW_CHROMIUM=/path/to/chro
 | `03-day-name-editor.js` | Naming a day: Save and Cancel actually close the box, typing is not wiped, Enter works |
 | `04-import-program.js` | Paste the real 49-exercise program in; all five tracking types survive, day pills render, rubbish input does not crash |
 | `05-holds-and-cardio.js` | A session of only holds and walks saves, in seconds and minutes, with no weight boxes |
-| `06-split-session.js` | Log at lunch, add to it in the evening: one saved session, not two |
-| `07-missed-session.js` | A missed session rolls forward and is offered again; the queue does not advance by calendar days |
+| `06-split-session.js` | Start a suggested session, log at lunch, add to it in the evening: one saved session, not two |
+| `07-no-assigned-day.js` | Nothing is pre-assigned: no scheduled pills, an honest empty logger, and the calendar still shows logged history |
 | `08-saved-foods.js` | The Saved Foods sheet is genuinely visible at phone width, its buttons are tappable, its search filters |
 | `09-sets-survive-backgrounding.js` | A number typed but not tabbed away from survives the phone locking, Complete Session, and switching days |
 | `10-all-tabs.js` | Six weeks of realistic history across every tab: no page errors, no `NaN` on screen, no sideways scrolling |
@@ -41,6 +41,7 @@ Playwright will not find on its own, point at it with `PW_CHROMIUM=/path/to/chro
 | `14-weekly-volume.js` | The week panel: sets done against sets owed, credit capped per group, ordering by what is furthest behind |
 | `15-session-suggestion.js` | "How long have you got" builds a session from debt and recovery, is willing to say rest, and Start this loads it as a loggable session |
 | `16-fencing.js` | Two-tap fencing logging; a coaching night pushes the next day to upper body, a tournament day trims the session, and fencing credit quiets a leg bar without filling it |
+| `17-equipment.js` | The suggestion asks where you are and never prescribes a machine that is not in the room; the main gym gets rack and dumbbell alternatives, home gets bodyweight |
 | `sweep-inline-handlers.js` | Every inline `onclick`/`oninput` in the app resolves to a function that actually exists |
 | `sweep-dead-code.js` | No unreferenced functions, handlers or variables; no `getElementById` pointing at an element that is not there |
 | `sweep-unused-css.js` | No CSS rules for classes nothing uses |

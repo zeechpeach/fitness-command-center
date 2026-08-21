@@ -11,6 +11,7 @@ function sundayOffset() { return -new Date().getDay(); }
 
 const suggest = (page, minutes) => page.evaluate(m => {
   window.suggestSessionFor(m);
+  window.suggestPlaceFor('full');   // the location step; tests default to everything available
   const el = document.getElementById('today-panel');
   return {
     text: el.innerText.replace(/\s+/g, ' ').trim(),
@@ -174,6 +175,7 @@ const setsIn = s => s.exercises.reduce((sum, e) => sum + parseInt(e.meta), 0);
     const stillOwed = await page.evaluate(() => {
       const el = document.getElementById('today-panel');
       window.suggestSessionFor(60);
+      window.suggestPlaceFor('full');
       return {
         text: el.innerText.replace(/\s+/g, ' ').trim(),
         names: [...el.querySelectorAll('.today-ex')].map(n => n.innerText.trim())

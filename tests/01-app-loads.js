@@ -17,12 +17,22 @@ const { boot, ok } = require('./harness/drive');
   // --- a program was auto-created ---
   // Observed through the UI, not through internals: the day selector is what
   // the user actually sees when a program is live.
+  // With no program there are no pills - the day pills are gone by design.
+  // What must be there instead is the suggestion panel's opening question and
+  // an honest empty logger, not a broken one.
   const progInfo = await page.evaluate(() => {
     const sel = document.getElementById('workout-day-selector');
     const btns = sel ? [...sel.querySelectorAll('.day-btn')] : [];
-    return { pills: btns.length, labels: btns.map(b => b.innerText.trim()).slice(0, 8) };
+    const today = document.getElementById('today-panel');
+    return {
+      pills: btns.length,
+      labels: btns.map(b => b.innerText.trim()).slice(0, 8),
+      asksHowLong: !!today && /How long have you got/i.test(today.innerText),
+      chips: today ? today.querySelectorAll('.today-chip').length : 0
+    };
   });
-  F('default program bootstrapped', progInfo.pills > 0, JSON.stringify(progInfo));
+  F('no scheduled day pills are assigned', progInfo.pills === 0, JSON.stringify(progInfo));
+  F('the suggestion panel is the way in', progInfo.asksHowLong && progInfo.chips === 4, JSON.stringify(progInfo));
 
   // --- centre of screen is real content, not a backdrop ---
   const hit = await page.evaluate(() => {

@@ -35,9 +35,10 @@ function holdsAndCardioProgram() {
     active: true,
     createdAt: '2026-06-01T08:00:00.000Z',
     activatedAt: '2026-06-01T08:00:00.000Z',
+    // Holds Day is deliberately unscheduled: with the scheduled day pills
+    // gone, an unscheduled session is the one kind that renders a pill.
     schedule: {
-      day1: { workoutType: 'Holds Day', customName: 'Holds Day' },
-      day2: { workoutType: 'Rest', customName: 'Rest' }
+      day1: { workoutType: 'Rest', customName: 'Rest' }
     },
     workouts: {
       'Holds Day': [
