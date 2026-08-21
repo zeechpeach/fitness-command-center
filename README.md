@@ -31,9 +31,30 @@ committed is live within about two minutes.
 - **Weekly volume targets** per muscle group, shown at the top of the Workout
   tab: sets done against sets owed, ordered by what is furthest behind for the
   days remaining. The week is the unit, not the day - hit the volume across
-  whatever days open up and the week is a success.
+  whatever days open up and the week is a success. The week runs Sunday to
+  Saturday.
 - Credit is capped per group, so a big day on one muscle cannot paper over
   another that was never trained.
+- **How many sessions are left**, rather than a grid of named days. A named
+  weekly plan is an assignment you can fail; a session count is something you
+  can plan around.
+
+### Today's suggestion
+Tap how long you have - 15, 30, 45 or 60 minutes - and the app builds a session
+from three things: what the week still owes, what was trained in the last 48
+hours, and the time available. It is regenerated on every look rather than
+assigned in advance, so there is nothing to fall behind on.
+
+- Trained chest hard yesterday? It picks back and legs today.
+- Nothing logged for three days? Everything has recovered, so the biggest debts
+  win and you get a full-body session.
+- Capped at 8 hard sets per muscle group in one session: past roughly that,
+  extra sets cost full fatigue for progressively less return, so it spreads
+  across more groups rather than cramming.
+- It will say **rest** when everything owed was trained too recently, or when
+  the week is already covered.
+- Exercise choice favours movements already logged often, so the same lifts
+  recur and progressive overload still has something to track.
 
 ### Schedule
 - Custom programs of any length, built in Settings or pasted in as JSON

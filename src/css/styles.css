@@ -277,6 +277,145 @@
 
         .week-row.done .week-row-count { color: var(--color-accent-primary); }
 
+        /* ---- Today ---------------------------------------------------------
+           A suggestion, not an assignment. Regenerated on every look from what
+           the week still owes, what has recovered, and the time available. */
+        .today-panel:not(:empty) {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            padding: 1rem;
+            margin-bottom: 1.25rem;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .today-head {
+            display: flex;
+            flex-direction: column;
+            gap: 0.2rem;
+            margin-bottom: 0.875rem;
+        }
+
+        .today-title {
+            font-weight: 600;
+            font-size: 1rem;
+            color: var(--color-text-primary);
+        }
+
+        .today-sub {
+            font-size: 0.8125rem;
+            color: var(--color-text-secondary);
+        }
+
+        .today-ask {
+            font-size: 0.875rem;
+            color: var(--color-text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .today-chips {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .today-chip {
+            flex: 1 1 auto;
+            min-width: 4.5rem;
+            min-height: 44px;
+            padding: 0.5rem 0.875rem;
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-full);
+            color: var(--color-text-primary);
+            font-size: 0.9375rem;
+            cursor: pointer;
+        }
+
+        .today-chip:active {
+            background: var(--color-accent-primary);
+            color: var(--color-surface);
+            border-color: transparent;
+        }
+
+        .today-rest {
+            font-size: 0.9375rem;
+            color: var(--color-text-secondary);
+            padding: 0.5rem 0 0.875rem;
+        }
+
+        .today-plan-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 0.75rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .today-plan-name {
+            font-weight: 500;
+            color: var(--color-text-primary);
+        }
+
+        .today-plan-meta {
+            font-size: 0.8125rem;
+            color: var(--color-text-secondary);
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+        }
+
+        .today-plan-list {
+            list-style: none;
+            margin: 0 0 0.875rem;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+        }
+
+        .today-plan-list li {
+            display: flex;
+            justify-content: space-between;
+            gap: 0.75rem;
+            font-size: 0.875rem;
+            padding: 0.35rem 0;
+            border-bottom: 1px solid var(--color-rule, var(--color-border));
+        }
+
+        .today-plan-list li:last-child { border-bottom: none; }
+
+        .today-ex { color: var(--color-text-primary); }
+
+        .today-ex-meta {
+            color: var(--color-text-secondary);
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+        }
+
+        .today-start {
+            width: 100%;
+            min-height: 48px;
+            padding: 0.75rem;
+            background: var(--color-accent-primary);
+            color: var(--color-surface);
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .today-back {
+            width: 100%;
+            min-height: 44px;
+            margin-top: 0.5rem;
+            background: none;
+            border: none;
+            color: var(--color-text-secondary);
+            font-size: 0.875rem;
+            cursor: pointer;
+        }
+
         .day-btn {
             padding: 0.875rem 1.5rem;
             background: var(--color-surface);
