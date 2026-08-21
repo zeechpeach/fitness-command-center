@@ -27,6 +27,14 @@ committed is live within about two minutes.
   it stays one saved session
 - Sets autosave to the device as you type and survive backgrounding the tab
 
+### The week
+- **Weekly volume targets** per muscle group, shown at the top of the Workout
+  tab: sets done against sets owed, ordered by what is furthest behind for the
+  days remaining. The week is the unit, not the day - hit the volume across
+  whatever days open up and the week is a success.
+- Credit is capped per group, so a big day on one muscle cannot paper over
+  another that was never trained.
+
 ### Schedule
 - Custom programs of any length, built in Settings or pasted in as JSON
 - **The schedule is a queue, not a calendar rotation.** A slot is consumed only

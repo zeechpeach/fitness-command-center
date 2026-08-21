@@ -175,6 +175,108 @@
             padding-bottom: 0.5rem;
         }
 
+        /* ---- The week -----------------------------------------------------
+           Leads the Workout tab: what is still owed this week, per muscle
+           group. Replaces "what do I owe today" as the thing being steered by. */
+        .weekly-volume-panel:not(:empty) {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            padding: 1rem;
+            margin-bottom: 1.25rem;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .week-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 1rem;
+            margin-bottom: 0.875rem;
+        }
+
+        .week-score {
+            font-size: 1.75rem;
+            font-weight: 600;
+            line-height: 1;
+            font-variant-numeric: tabular-nums;
+            color: var(--color-text-primary);
+        }
+
+        .week-sub {
+            font-size: 0.8125rem;
+            color: var(--color-text-secondary);
+            margin-top: 0.25rem;
+        }
+
+        .week-groups {
+            text-align: right;
+            font-size: 1.125rem;
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+            color: var(--color-text-primary);
+        }
+
+        .week-groups span {
+            display: block;
+            font-size: 0.6875rem;
+            font-weight: 400;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: var(--color-text-secondary);
+        }
+
+        .week-bars {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        .week-row {
+            display: grid;
+            grid-template-columns: 5.5rem 1fr auto;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.8125rem;
+        }
+
+        .week-row-name {
+            color: var(--color-text-secondary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .week-row-track {
+            height: 8px;
+            background: var(--color-border);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .week-row-fill {
+            display: block;
+            height: 100%;
+            background: var(--color-accent-secondary);
+            border-radius: 4px;
+        }
+
+        .week-row.done .week-row-fill { background: var(--color-accent-primary); }
+        /* Behind on the days remaining, not behind in absolute terms - owing 8
+           sets on Sunday is urgent, owing 8 on Tuesday is not. */
+        .week-row.behind .week-row-fill { background: var(--color-warning); }
+
+        .week-row-count {
+            font-variant-numeric: tabular-nums;
+            color: var(--color-text-primary);
+            min-width: 3rem;
+            text-align: right;
+        }
+
+        .week-row-target { color: var(--color-text-secondary); }
+
+        .week-row.done .week-row-count { color: var(--color-accent-primary); }
+
         .day-btn {
             padding: 0.875rem 1.5rem;
             background: var(--color-surface);
