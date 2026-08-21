@@ -3948,21 +3948,40 @@ function getSetsThisWeek() {
 function getWeeklyDebt() {
     const targets = getWeeklyTargets();
     const done = getSetsThisWeek();
-    const daysLeft = Math.max(1, getDaysLeftInWeek());
+    // Capped per group: fencing can quiet a leg bar but never fill it, because
+    // footwork is not loaded work and loaded work is what holds muscle through
+    // a deficit. Without the cap, fifteen hours of coaching would report legs
+    // as covered every week and direct leg work would never get suggested.
+    const fenced = getFencingSetsThisWeek();
 
     return Object.keys(targets).map(group => {
         const target = targets[group];
         const doneSets = done[group] || 0;
-        const debt = Math.max(0, target - doneSets);
+        const fencingSets = Math.min(
+            Math.round(fenced[group] || 0),
+            Math.floor(target * FENCING_CREDIT_SHARE)
+        );
+        const credited = doneSets + fencingSets;
+        const debt = Math.max(0, target - credited);
+        const daysLeft = Math.max(1, getDaysLeftInWeek());
+        const pct = target > 0 ? Math.min(100, Math.round((doneSets / target) * 100)) : 100;
+        const fencingPct = target > 0
+            ? Math.min(100 - pct, Math.round((fencingSets / target) * 100))
+            : 0;
         return {
             group,
             target,
             done: doneSets,
+            fencing: fencingSets,
+            credited,
             debt,
             // Per remaining day: owing 8 sets on Sunday is louder than owing 8
             // on Tuesday, which is what makes the ordering useful.
             urgency: debt / daysLeft,
-            pct: target > 0 ? Math.min(100, Math.round((doneSets / target) * 100)) : 100
+            // pct is lifted sets only; fencingPct is the segment stacked after
+            // it, so the bar shows which part of the week was actually loaded.
+            pct,
+            fencingPct
         };
     }).sort((a, b) => b.urgency - a.urgency || b.debt - a.debt);
 }
@@ -3974,15 +3993,267 @@ function getWeeklyVolumeScore() {
     if (rows.length === 0) return { score: 0, done: 0, target: 0, groupsHit: 0, groups: 0 };
 
     const totalTarget = rows.reduce((sum, r) => sum + r.target, 0);
-    const credited = rows.reduce((sum, r) => sum + Math.min(r.done, r.target), 0);
+    const credited = rows.reduce((sum, r) => sum + Math.min(r.credited, r.target), 0);
 
     return {
         score: totalTarget > 0 ? Math.round((credited / totalTarget) * 100) : 0,
         done: rows.reduce((sum, r) => sum + r.done, 0),
+        fencing: rows.reduce((sum, r) => sum + r.fencing, 0),
         target: totalTarget,
         groupsHit: rows.filter(r => r.debt === 0).length,
         groups: rows.length
     };
+}
+
+// ---------------------------------------------------------------------------
+// Fencing.
+//
+// Fifteen hours a week of coaching, plus twelve-hour tournament days, was
+// invisible to this app. That made two things wrong at once: the week looked
+// like a week of sitting still, and the generator happily prescribed squats the
+// morning after eight hours on a strip.
+//
+// Fencing is logged as hours, not sets, because that is how it is actually
+// experienced, and converted into an equivalent-set load for the muscles it
+// really taxes. The conversion is deliberately conservative - coaching is not
+// the same stimulus as a loaded set - but a nudge in the right direction beats
+// a zero.
+// ---------------------------------------------------------------------------
+
+// What fencing actually loads. Legs and calves take the footwork, core takes
+// the trunk position; the pull and press muscles are barely touched, which is
+// why a heavy coaching night pushes the generator toward upper body rather than
+// toward rest.
+const FENCING_GROUP_LOAD = {
+    Quads: 1, Calves: 0.9, Glutes: 0.6, Hamstrings: 0.5, Core: 0.4
+};
+
+// Hours are not equal. Coaching is mostly instructing on your feet; a lesson or
+// a training night is you doing the work; a tournament is that plus a day of
+// standing, waiting and adrenaline.
+const FENCING_KINDS = {
+    Coaching:   { weight: 0.6, label: 'Coaching' },
+    Training:   { weight: 1.0, label: 'Training / lesson' },
+    Tournament: { weight: 1.2, label: 'Tournament' }
+};
+
+// One hour of fencing is worth roughly this many hard sets to the legs before
+// the kind weighting. Three hours of coaching lands near 2.7 quad-equivalent
+// sets, so three coaching nights a week covers most of a maintenance dose.
+const FENCING_SETS_PER_HOUR = 1.5;
+
+// Hour twelve of a tournament is not hour one. Past this the day stops adding
+// training stimulus and only adds fatigue, which the fatigue factor handles
+// separately.
+const FENCING_HOURS_CAP = 8;
+
+// Fencing can cover at most this share of a group's weekly target. Footwork
+// keeps legs busy but it is not loaded work, and loaded work is what protects
+// muscle in a deficit - so it can quiet the bar, never fill it.
+const FENCING_CREDIT_SHARE = 0.5;
+
+function fencingEntries() {
+    return Array.isArray(window.fencingData) ? window.fencingData : [];
+}
+
+function fencingEntriesBetween(fromDate, toDate) {
+    return fencingEntries().filter(e => e && e.date >= fromDate && e.date <= toDate);
+}
+
+function fencingKindWeight(kind) {
+    return (FENCING_KINDS[kind] || FENCING_KINDS.Coaching).weight;
+}
+
+// Raw hours, for the fatigue calculation and the week header.
+function fencingHoursBetween(fromDate, toDate) {
+    return fencingEntriesBetween(fromDate, toDate)
+        .reduce((sum, e) => sum + (Number(e.hours) || 0), 0);
+}
+
+// Equivalent hard sets per muscle group over a date range.
+function fencingSetsByGroup(fromDate, toDate) {
+    const counts = {};
+    fencingEntriesBetween(fromDate, toDate).forEach(entry => {
+        const hours = Math.min(Number(entry.hours) || 0, FENCING_HOURS_CAP);
+        if (hours <= 0) return;
+        const base = hours * FENCING_SETS_PER_HOUR * fencingKindWeight(entry.kind);
+        Object.keys(FENCING_GROUP_LOAD).forEach(group => {
+            counts[group] = (counts[group] || 0) + base * FENCING_GROUP_LOAD[group];
+        });
+    });
+    Object.keys(counts).forEach(g => { counts[g] = Math.round(counts[g] * 10) / 10; });
+    return counts;
+}
+
+// Equivalent sets over the same window getRecentSetsByGroup uses, so the two
+// can simply be added together inside recoveryFactor.
+function getRecentFencingSets(days = 2) {
+    const today = getTodayDateString();
+    return fencingSetsByGroup(addDaysToDateString(today, -(days - 1)), today);
+}
+
+function getFencingSetsThisWeek() {
+    const today = getTodayDateString();
+    return fencingSetsByGroup(getWeekStartDate(today), today);
+}
+
+// Whole-body tiredness, separate from any one muscle. A tournament Saturday
+// does not make your chest sore, but it does mean Sunday is not the day for a
+// full session. Yesterday counts half: you have slept since.
+function fencingFatigueFactor() {
+    const today = getTodayDateString();
+    const yesterday = addDaysToDateString(today, -1);
+    const load = fencingHoursBetween(today, today)
+        + fencingHoursBetween(yesterday, yesterday) * 0.5;
+
+    if (load >= 8) return { factor: 0.4, load, note: 'a long day on the strip' };
+    if (load >= 5) return { factor: 0.6, load, note: 'a heavy fencing day' };
+    if (load >= 3) return { factor: 0.8, load, note: 'a coaching night' };
+    return { factor: 1, load, note: '' };
+}
+
+// ---- Logging ---------------------------------------------------------------
+
+async function loadFencingData() {
+    try {
+        const snapshot = await getDocs(query(collection(db, 'fencing'), orderBy('date', 'desc')));
+        window.fencingData = [];
+        snapshot.forEach(document => {
+            window.fencingData.push({ id: document.id, ...document.data() });
+        });
+    } catch (e) {
+        console.error('Error loading fencing data:', e);
+        if (!Array.isArray(window.fencingData)) window.fencingData = [];
+    }
+}
+
+function refreshAfterFencingChange() {
+    renderFencingPanel();
+    renderWeeklyVolume();
+    // A logged session changes what today should be, so any suggestion already
+    // on screen is stale the moment fencing is added.
+    if (suggestedMinutes !== null) suggestedSession = generateSession(suggestedMinutes);
+    renderTodayPanel();
+}
+
+window.logFencing = async function (kind, hours) {
+    if (!FENCING_KINDS[kind]) return;
+    const entry = {
+        date: getTodayDateString(),
+        kind,
+        hours: Number(hours),
+        createdAt: new Date().toISOString()
+    };
+    // Shown before the write lands. The panel is a tap target on a phone in a
+    // gym car park; waiting on a round trip to redraw feels broken.
+    if (!Array.isArray(window.fencingData)) window.fencingData = [];
+    window.fencingData.unshift(entry);
+    fencingKind = null;
+    refreshAfterFencingChange();
+
+    try {
+        const ref = await addDoc(collection(db, 'fencing'), entry);
+        entry.id = ref.id;
+        showToast(`${hours}h ${FENCING_KINDS[kind].label.toLowerCase()} logged.`, 'success');
+    } catch (e) {
+        console.error('Error saving fencing:', e);
+        window.fencingData = fencingEntries().filter(x => x !== entry);
+        refreshAfterFencingChange();
+        showToast('Could not save that. Check your connection.', 'error');
+    }
+};
+
+window.removeFencing = async function (id) {
+    const entry = fencingEntries().find(e => e.id === id);
+    if (!entry) return;
+    if (!confirm(`Remove ${entry.hours}h ${FENCING_KINDS[entry.kind]
+        ? FENCING_KINDS[entry.kind].label.toLowerCase() : 'fencing'} on ${entry.date}?`)) return;
+
+    window.fencingData = fencingEntries().filter(e => e.id !== id);
+    refreshAfterFencingChange();
+    try {
+        await deleteDoc(doc(db, 'fencing', id));
+    } catch (e) {
+        console.error('Error removing fencing:', e);
+        window.fencingData.unshift(entry);
+        refreshAfterFencingChange();
+        showToast('Could not remove that.', 'error');
+    }
+};
+
+// ---- Panel -----------------------------------------------------------------
+
+// Hours offered as chips rather than typed. Every real answer is on this list,
+// and a number pad on a phone is three taps and a dismissed keyboard.
+const FENCING_HOUR_CHIPS = [1, 1.5, 2, 3, 4, 6, 8, 12];
+
+let fencingKind = null;     // null until a kind is picked, then hours show
+
+window.pickFencingKind = function (kind) {
+    fencingKind = fencingKind === kind ? null : kind;
+    renderFencingPanel();
+};
+
+function renderFencingPanel() {
+    const container = document.getElementById('fencing-panel');
+    if (!container) return;
+
+    const today = getTodayDateString();
+    const weekHours = fencingHoursBetween(getWeekStartDate(today), today);
+    const todayEntries = fencingEntriesBetween(today, today);
+
+    let html = `
+        <div class="fencing-head">
+            <span class="fencing-title">Fencing</span>
+            <span class="fencing-hours">${formatFencingHours(weekHours)} this week</span>
+        </div>`;
+
+    if (todayEntries.length) {
+        html += '<div class="fencing-today">';
+        todayEntries.forEach(entry => {
+            const label = FENCING_KINDS[entry.kind] ? FENCING_KINDS[entry.kind].label : entry.kind;
+            html += `<span class="fencing-entry">${formatFencingHours(entry.hours)} ${escapeHtml(label)}`;
+            if (entry.id) {
+                html += `<button type="button" class="fencing-remove" data-remove="${escapeHtml(entry.id)}"
+                                 aria-label="Remove">&times;</button>`;
+            }
+            html += '</span>';
+        });
+        html += '</div>';
+    }
+
+    html += '<div class="fencing-kinds">';
+    Object.keys(FENCING_KINDS).forEach(kind => {
+        const active = fencingKind === kind ? ' active' : '';
+        html += `<button type="button" class="fencing-kind${active}" data-kind="${kind}">${
+            escapeHtml(FENCING_KINDS[kind].label)}</button>`;
+    });
+    html += '</div>';
+
+    if (fencingKind) {
+        html += '<div class="fencing-hour-chips">';
+        FENCING_HOUR_CHIPS.forEach(h => {
+            html += `<button type="button" class="fencing-hour" data-hours="${h}">${formatFencingHours(h)}</button>`;
+        });
+        html += '</div>';
+    }
+
+    container.innerHTML = html;
+
+    container.querySelectorAll('[data-kind]').forEach(btn => {
+        btn.addEventListener('click', () => pickFencingKind(btn.getAttribute('data-kind')));
+    });
+    container.querySelectorAll('[data-hours]').forEach(btn => {
+        btn.addEventListener('click', () => logFencing(fencingKind, Number(btn.getAttribute('data-hours'))));
+    });
+    container.querySelectorAll('[data-remove]').forEach(btn => {
+        btn.addEventListener('click', () => removeFencing(btn.getAttribute('data-remove')));
+    });
+}
+
+function formatFencingHours(hours) {
+    const n = Number(hours) || 0;
+    return `${Number.isInteger(n) ? n : n.toFixed(1)}h`;
 }
 
 // ---------------------------------------------------------------------------
@@ -4041,15 +4312,21 @@ function getRecentSetsByGroup(days = 2) {
     return counts;
 }
 
-// 1.0 = fresh, 0 = trained hard within a day. Anything trained yesterday drops
+// 1.0 = fresh, 0 = already worked hard today. Anything trained yesterday drops
 // down the order without being banned outright, so a light touch is still
 // possible if nothing else is owed.
+//
+// Fencing counts here at its equivalent-set value. Three hours of footwork on
+// Thursday night is real quad work whether or not it came off a rack, and a
+// generator that cannot see it will keep prescribing squats on Friday morning.
 function recoveryFactor(group) {
-    const yesterday = getRecentSetsByGroup(1)[group] || 0;
-    const twoDays = getRecentSetsByGroup(2)[group] || 0;
-    if (yesterday >= 4) return 0;
-    if (yesterday > 0) return 0.3;
-    if (twoDays >= 4) return 0.6;
+    const todaySets = (getRecentSetsByGroup(1)[group] || 0)
+        + (getRecentFencingSets(1)[group] || 0);
+    const last48 = (getRecentSetsByGroup(2)[group] || 0)
+        + (getRecentFencingSets(2)[group] || 0);
+    if (todaySets >= 4) return 0;
+    if (todaySets > 0) return 0.3;
+    if (last48 >= 4) return 0.6;
     return 1;
 }
 
@@ -4092,9 +4369,17 @@ function getExerciseFrequency() {
     return freq;
 }
 
-// Returns { minutes, totalSets, groups: [...], exercises: [...], rest, reason }
+// Returns { minutes, totalSets, groups, exercises, rest, reason, fatigueNote }
 function generateSession(minutes) {
-    const budget = setsForMinutes(minutes);
+    // A twelve-hour tournament Saturday does not make any one muscle sore, but
+    // it does mean Sunday is not a full session. Scale the whole budget down
+    // rather than dropping groups, so what is left is a real short session
+    // instead of a truncated long one.
+    const fatigue = fencingFatigueFactor();
+    const budget = Math.max(2, Math.round(setsForMinutes(minutes) * fatigue.factor));
+    const fatigueNote = fatigue.factor < 1
+        ? `Trimmed for ${fatigue.note} - ${formatFencingHours(fatigue.load)} of fencing load behind you.`
+        : '';
     const pool = getExercisePool();
     const freq = getExerciseFrequency();
 
@@ -4107,11 +4392,18 @@ function generateSession(minutes) {
 
     if (candidates.length === 0) {
         const anyDebt = getWeeklyDebt().some(r => r.debt > 0);
+        let reason;
+        if (!anyDebt) {
+            reason = 'The week is done. Nothing is owed, so today is a rest day.';
+        } else if (fatigue.load >= 3) {
+            reason = `Everything still owed was worked in the last day or two, fencing included - ${
+                formatFencingHours(fatigue.load)} of it. Let it recover; the primer is enough today.`;
+        } else {
+            reason = 'Everything still owed this week was trained in the last day or two. Let it recover - the primer is enough today.';
+        }
         return {
             minutes, totalSets: 0, groups: [], exercises: [], rest: true,
-            reason: anyDebt
-                ? 'Everything still owed this week was trained in the last day or two. Let it recover - the primer is enough today.'
-                : 'The week is done. Nothing is owed, so today is a rest day.'
+            reason, fatigueNote
         };
     }
 
@@ -4167,7 +4459,8 @@ function generateSession(minutes) {
         groups: chosen.map(c => c.group),
         exercises,
         rest: false,
-        reason: ''
+        reason: '',
+        fatigueNote
     };
 }
 
@@ -4287,6 +4580,9 @@ function renderTodayPanel() {
                          <span class="today-ex-meta">${e.sets}${reps}</span></li>`;
         });
         html += `</ul>
+                    ${suggestedSession.fatigueNote
+                        ? `<div class="today-fatigue">${escapeHtml(suggestedSession.fatigueNote)}</div>`
+                        : ''}
                     <button type="button" class="today-start" data-start="1">Start this</button>
                     <button type="button" class="today-back" data-dismiss="1">Different length</button>
                  </div>`;
@@ -4321,16 +4617,31 @@ function renderWeeklyVolume() {
                 <div class="week-sub">${summary.done} of ${summary.target} sets &middot; ${dayNote}</div>
             </div>
             <div class="week-groups">${summary.groupsHit}/${summary.groups}<span>groups done</span></div>
-        </div>
-        <div class="week-bars">`;
+        </div>`;
+
+    if (summary.fencing > 0) {
+        html += `<div class="week-fencing-note">${summary.fencing} of those sets are credited from
+                    ${formatFencingHours(fencingHoursBetween(getWeekStartDate(), getTodayDateString()))}
+                    of fencing, capped at half of each target - footwork keeps legs busy, it does not load them.</div>`;
+    }
+
+    html += `<div class="week-bars">`;
 
     rows.forEach(row => {
         const state = row.debt === 0 ? 'done' : (row.urgency >= 2 ? 'behind' : 'open');
+        // The fencing segment sits after the lifted one in a different shade,
+        // so a leg bar that is quiet because of coaching never reads as a leg
+        // bar that is quiet because of squats.
+        const fencedBar = row.fencingPct > 0
+            ? `<span class="week-row-fenced" style="width:${row.fencingPct}%"
+                     title="${row.fencing} from fencing"></span>`
+            : '';
+        const fencedCount = row.fencing > 0 ? `<span class="week-row-fenced-count">+${row.fencing}</span>` : '';
         html += `
             <div class="week-row ${state}">
                 <span class="week-row-name">${escapeHtml(row.group)}</span>
-                <span class="week-row-track"><span class="week-row-fill" style="width:${row.pct}%"></span></span>
-                <span class="week-row-count">${row.done}<span class="week-row-target">/${row.target}</span></span>
+                <span class="week-row-track"><span class="week-row-fill" style="width:${row.pct}%"></span>${fencedBar}</span>
+                <span class="week-row-count">${row.done}${fencedCount}<span class="week-row-target">/${row.target}</span></span>
             </div>`;
     });
 
@@ -5083,7 +5394,7 @@ window.exportAllData = async function () {
         showToast('Gathering your data...', 'info');
 
         const collections = ['workouts', 'programs', 'weight', 'nutrition', 'bodyGoals',
-                             'savedFoods', 'travelMode', 'sickDays'];
+                             'savedFoods', 'travelMode', 'sickDays', 'dailyRoutines', 'fencing'];
         const payload = {
             exportedAt: new Date().toISOString(),
             app: 'Unison',
@@ -7360,6 +7671,11 @@ async function initializeFitnessApp() {
         })
         .catch(err => console.error('Failed to load travel mode data:', err));
     loadSickDayData().catch(err => console.error('Failed to load sick day data:', err));
+    // Fencing feeds both the week panel and the generator, so both are redrawn
+    // once it lands rather than showing a week with fifteen hours missing.
+    loadFencingData()
+        .then(() => { renderFencingPanel(); renderWeeklyVolume(); renderTodayPanel(); })
+        .catch(err => console.error('Failed to load fencing data:', err));
     loadDailyRoutines().catch(err => console.error('Failed to load daily routines:', err));
 
     // Nutrition and weight data stay lazy until their tab is opened.
@@ -7641,6 +7957,7 @@ function renderWorkoutDaySelector() {
     // program change.
     renderWeeklyVolume();
     renderTodayPanel();
+    renderFencingPanel();
 
     const container = document.getElementById('workout-day-selector');
     if (!container) return;

@@ -248,6 +248,7 @@
         }
 
         .week-row-track {
+            display: flex;
             height: 8px;
             background: var(--color-border);
             border-radius: 4px;
@@ -274,6 +275,32 @@
         }
 
         .week-row-target { color: var(--color-text-secondary); }
+
+        /* Fencing sits after the lifted segment, hatched rather than solid: it
+           counts, but it is not the same thing as a loaded set, and the bar
+           should never let those two read as identical. */
+        .week-row-fenced {
+            display: block;
+            height: 100%;
+            background: repeating-linear-gradient(
+                135deg,
+                var(--color-accent-secondary) 0 3px,
+                transparent 3px 6px);
+            opacity: 0.65;
+        }
+
+        .week-row-fenced-count {
+            color: var(--color-text-secondary);
+            font-size: 0.75rem;
+            margin-left: 0.15rem;
+        }
+
+        .week-fencing-note {
+            font-size: 0.75rem;
+            line-height: 1.4;
+            color: var(--color-text-secondary);
+            margin-bottom: 0.75rem;
+        }
 
         .week-row.done .week-row-count { color: var(--color-accent-primary); }
 
@@ -414,6 +441,112 @@
             color: var(--color-text-secondary);
             font-size: 0.875rem;
             cursor: pointer;
+        }
+
+        /* Why the session is shorter than the time you said you had. Without
+           this the generator looks like it is ignoring you. */
+        .today-fatigue {
+            font-size: 0.8125rem;
+            line-height: 1.4;
+            color: var(--color-warning);
+            padding: 0 0 0.75rem;
+        }
+
+        /* ---- Fencing -------------------------------------------------------
+           Two taps, no keyboard, no date picker: kind, then hours. Anything
+           longer than that does not get logged on the walk to the car. */
+        .fencing-panel:not(:empty) {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            padding: 0.875rem 1rem;
+            margin-bottom: 1.25rem;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .fencing-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 0.75rem;
+            margin-bottom: 0.625rem;
+        }
+
+        .fencing-title {
+            font-weight: 600;
+            font-size: 0.9375rem;
+            color: var(--color-text-primary);
+        }
+
+        .fencing-hours {
+            font-size: 0.8125rem;
+            color: var(--color-text-secondary);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .fencing-today {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.375rem;
+            margin-bottom: 0.625rem;
+        }
+
+        .fencing-entry {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.25rem 0.5rem;
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-full);
+            font-size: 0.8125rem;
+            color: var(--color-text-primary);
+        }
+
+        .fencing-remove {
+            background: none;
+            border: none;
+            color: var(--color-text-secondary);
+            font-size: 1rem;
+            line-height: 1;
+            padding: 0 0.125rem;
+            cursor: pointer;
+        }
+
+        .fencing-kinds,
+        .fencing-hour-chips {
+            display: flex;
+            gap: 0.4rem;
+            flex-wrap: wrap;
+        }
+
+        .fencing-hour-chips { margin-top: 0.5rem; }
+
+        .fencing-kind,
+        .fencing-hour {
+            flex: 1 1 auto;
+            min-height: 44px;
+            padding: 0.5rem 0.75rem;
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-full);
+            color: var(--color-text-primary);
+            font-size: 0.875rem;
+            cursor: pointer;
+        }
+
+        .fencing-hour { min-width: 3.25rem; flex: 0 1 auto; }
+
+        .fencing-kind.active {
+            background: var(--color-accent-primary);
+            color: var(--color-surface);
+            border-color: transparent;
+        }
+
+        .fencing-hour:active {
+            background: var(--color-accent-primary);
+            color: var(--color-surface);
+            border-color: transparent;
         }
 
         .day-btn {
