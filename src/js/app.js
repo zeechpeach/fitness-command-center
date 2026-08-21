@@ -3862,6 +3862,159 @@ function getWeeklySetCounts(days = 7) {
     return counts;
 }
 
+// ---------------------------------------------------------------------------
+// The week as the unit.
+//
+// The schedule queue answers "what do I owe today", which assumes training is
+// the main event in the day. For someone working 7:30-4 and coaching fencing
+// 5-9 three nights a week, that question has no good answer most days, and a
+// score built on it punishes exactly the thing the schedule forces.
+//
+// Weekly volume is the honest measure: hit the sets across whatever days open
+// up and the week is a success, whether that took two sessions or five.
+//
+// Targets are hard sets per muscle group per week. Roughly 4-6 maintains and
+// ~10 grows, so these sit in the range that keeps muscle through a deficit
+// without needing five gym days. Direct leg work is deliberately low: three
+// hours a night of coaching is already loading them.
+// ---------------------------------------------------------------------------
+
+const DEFAULT_WEEKLY_TARGETS = {
+    Chest: 9, Back: 9, Shoulders: 7, Biceps: 5, Triceps: 5,
+    Quads: 7, Hamstrings: 6, Glutes: 5, Calves: 4, Core: 6
+};
+
+function getWeeklyTargets() {
+    const custom = activeProgram && activeProgram.weeklyTargets;
+    if (custom && typeof custom === 'object' && Object.keys(custom).length) {
+        return { ...DEFAULT_WEEKLY_TARGETS, ...custom };
+    }
+    return { ...DEFAULT_WEEKLY_TARGETS };
+}
+
+// The training week runs Monday to Sunday, so "this week" means the same thing
+// on Sunday night as it does on Tuesday morning. A rolling 7-day window would
+// quietly drop Monday's work partway through the week.
+function getWeekStartDate(dateString = getTodayDateString()) {
+    const [y, m, d] = dateString.split('-').map(Number);
+    const date = new Date(y, m - 1, d);
+    const weekday = (date.getDay() + 6) % 7;      // 0 = Monday
+    return addDaysToDateString(dateString, -weekday);
+}
+
+function getSetsThisWeek() {
+    const today = getTodayDateString();
+    const from = getWeekStartDate(today);
+    const counts = {};
+
+    allWorkouts.forEach(workout => {
+        if (!workout || workout.date < from || workout.date > today) return;
+        if (isNonTrainingLabel(workout.day)) return;
+
+        Object.values(workout.exercises || {}).forEach(exercise => {
+            if (!exercise || !exercise.exercise) return;
+            const name = exercise.substitution || exercise.exercise;
+            if (normalizeLabel(name).includes('stretch')) return;
+
+            const group = classifyMuscleGroup(name);
+            if (!group) return;
+
+            const type = exercise.trackingType && TRACKING_TYPES[exercise.trackingType]
+                ? exercise.trackingType
+                : guessTrackingType(name);
+            if (type === 'checkoff') return;
+
+            const sets = (exercise.sets || []).filter(isWorkingSet).length;
+            if (sets > 0) counts[group] = (counts[group] || 0) + sets;
+        });
+    });
+
+    return counts;
+}
+
+// What is still owed this week, per group, and how loudly. Shared by the week
+// view and (later) the session generator, so both read one answer.
+function getWeeklyDebt() {
+    const targets = getWeeklyTargets();
+    const done = getSetsThisWeek();
+    const today = getTodayDateString();
+    const weekStart = getWeekStartDate(today);
+    // Days left including today, so Sunday is 1 rather than 0.
+    const daysLeft = Math.max(1, 7 - daysBetween(weekStart, today));
+
+    return Object.keys(targets).map(group => {
+        const target = targets[group];
+        const doneSets = done[group] || 0;
+        const debt = Math.max(0, target - doneSets);
+        return {
+            group,
+            target,
+            done: doneSets,
+            debt,
+            // Per remaining day: owing 8 sets on Sunday is louder than owing 8
+            // on Tuesday, which is what makes the ordering useful.
+            urgency: debt / daysLeft,
+            pct: target > 0 ? Math.min(100, Math.round((doneSets / target) * 100)) : 100
+        };
+    }).sort((a, b) => b.urgency - a.urgency || b.debt - a.debt);
+}
+
+// One number for the week: how much of the prescribed volume actually landed.
+// Capped at 100 per group so a big chest day cannot paper over untouched legs.
+function getWeeklyVolumeScore() {
+    const rows = getWeeklyDebt();
+    if (rows.length === 0) return { score: 0, done: 0, target: 0, groupsHit: 0, groups: 0 };
+
+    const totalTarget = rows.reduce((sum, r) => sum + r.target, 0);
+    const credited = rows.reduce((sum, r) => sum + Math.min(r.done, r.target), 0);
+
+    return {
+        score: totalTarget > 0 ? Math.round((credited / totalTarget) * 100) : 0,
+        done: rows.reduce((sum, r) => sum + r.done, 0),
+        target: totalTarget,
+        groupsHit: rows.filter(r => r.debt === 0).length,
+        groups: rows.length
+    };
+}
+
+function renderWeeklyVolume() {
+    const container = document.getElementById('weekly-volume-panel');
+    if (!container) return;
+
+    const rows = getWeeklyDebt();
+    const summary = getWeeklyVolumeScore();
+    const today = getTodayDateString();
+    const weekStart = getWeekStartDate(today);
+    const daysLeft = Math.max(0, 6 - daysBetween(weekStart, today));
+
+    const dayNote = daysLeft === 0
+        ? 'Last day of the week'
+        : `${daysLeft} day${daysLeft === 1 ? '' : 's'} left this week`;
+
+    let html = `
+        <div class="week-head">
+            <div>
+                <div class="week-score">${summary.score}%</div>
+                <div class="week-sub">${summary.done} of ${summary.target} sets &middot; ${dayNote}</div>
+            </div>
+            <div class="week-groups">${summary.groupsHit}/${summary.groups}<span>groups done</span></div>
+        </div>
+        <div class="week-bars">`;
+
+    rows.forEach(row => {
+        const state = row.debt === 0 ? 'done' : (row.urgency >= 2 ? 'behind' : 'open');
+        html += `
+            <div class="week-row ${state}">
+                <span class="week-row-name">${escapeHtml(row.group)}</span>
+                <span class="week-row-track"><span class="week-row-fill" style="width:${row.pct}%"></span></span>
+                <span class="week-row-count">${row.done}<span class="week-row-target">/${row.target}</span></span>
+            </div>`;
+    });
+
+    html += `</div>`;
+    container.innerHTML = html;
+}
+
 function updateWeeklySets() {
     const container = document.getElementById('weekly-sets-content');
     if (!container) return;
@@ -7159,6 +7312,12 @@ function showTab(tabName) {
 
 // Render dynamic workout day selector based on active program schedule
 function renderWorkoutDaySelector() {
+    // The week panel sits directly above the pills and is driven by the same
+    // data, so refreshing it here keeps the two in step on every path that
+    // rebuilds the selector: boot, a completed session, a deleted one, a
+    // program change.
+    renderWeeklyVolume();
+
     const container = document.getElementById('workout-day-selector');
     if (!container) return;
     
