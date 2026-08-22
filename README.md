@@ -74,7 +74,9 @@ one fact that changes day to day.
   squats, Romanian deadlifts, good mornings, lunges and cable back extensions
   instead of leg press and leg curls.
 - **Full gym** - everything, machines included.
-- **Home** - a pull-up bar and bodyweight.
+- **Home** - a pull-up bar, dumbbells (one to 50 lb, two 25s), a flat bench,
+  a bike, a treadmill and a Vitruvian, which covers cable-style loading. No
+  barbell, no rack, no incline bench, no machines.
 
 When the program's own exercises for a muscle all need kit today's location
 does not have, built-in fallbacks stand in, so a session is never blank and
@@ -125,14 +127,19 @@ never impossible.
 - Estimated 1RM (Epley) per lift, so extra reps at the same load count
 - Hard sets per muscle group per week, which counts bodyweight and skill work
   that volume-in-pounds scores as zero
-- Workout streak and adherence, measured against the pace the program
-  prescribes over the days actually available
+- **Discipline score: did you show up at all.** A lifted session counts, a
+  logged fencing night counts; which session it was does not matter. Scored
+  over the last 30 days as active days out of available days, with rest days
+  reported plainly rather than as failures. The streak works the same way,
+  and fencing-only days paint on the calendar in their own shade. The
+  calendar is a record of what happened - it projects nothing forward and
+  never paints a day as missed.
 - Strength progression and plateau detection
 - Session comparison by exercise type
 
 ### Travel and sick days
-Both pause the schedule without counting as missed workouts or breaking the
-streak, and are removed from the adherence denominator.
+Both leave the discipline score's denominator entirely and are transparent to
+the streak - they neither count nor break it.
 
 ## Data storage
 

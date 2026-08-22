@@ -64,15 +64,68 @@ const { realProgram } = require('./harness/seed');
 
     await page.evaluate(() => { const b = document.getElementById('calendar-tab-btn'); if (b) b.click(); });
     await page.waitForTimeout(1200);
-    const cal = await page.evaluate(() => {
-      const cells = [...document.querySelectorAll('.calendar-day, .calendar-cell, [class*="calendar-day"]')];
-      return cells.map(c => (c.innerText || '').replace(/\s+/g, ' ').trim()).filter(Boolean).slice(0, 45);
-    });
+    const cal = await page.evaluate(() =>
+      [...document.querySelectorAll('.calendar-day.has-workout')]
+        .map(c => (c.innerText || '').replace(/\s+/g, ' ').trim()));
     const completed = cal.filter(t => /Upper A|Back & Quads/.test(t));
     console.log('calendar cells with logged sessions: ' + JSON.stringify(completed));
     F('logged sessions appear on the calendar, generated ones included',
       completed.length >= 2, JSON.stringify(completed));
     F('no page errors on the calendar', errors.length === 0, JSON.stringify(errors.map(e => e.message)));
+    await browser.close();
+  }
+
+  // --- The discipline score measures showing up, not obeying a plan ---
+  {
+    const seed = {
+      programs: [prog],
+      workouts: [
+        { id: 'w1', date: dayStr(-2), day: 'Upper A', programId: 'prog-real',
+          timestamp: dayStr(-2) + 'T10:00:00.000Z',
+          exercises: { 0: { exercise: 'Incline Dumbbell Press', trackingType: 'weight_reps', sets: [{ weight: '95', reps: '8' }] } } }
+      ],
+      // Yesterday was fencing only - that is an active day, not a rest day.
+      fencing: [{ id: 'f1', date: dayStr(-1), kind: 'Coaching', hours: 3,
+                  createdAt: dayStr(-1) + 'T21:00:00.000Z' }],
+      // Three days ago was sick - it leaves the denominator entirely.
+      sickDays: [{ id: 's1', date: dayStr(-3), createdAt: dayStr(-3) + 'T08:00:00.000Z' }]
+    };
+    const { browser, page, errors } = await boot({ seed });
+    await page.evaluate(() => document.getElementById('calendar-tab-btn')?.click());
+    await page.waitForTimeout(1200);
+
+    const card = await page.evaluate(() => ({
+      score: document.getElementById('adherence-score').textContent,
+      active: document.getElementById('workouts-completed').textContent,
+      available: document.getElementById('workouts-scheduled').textContent,
+      rest: document.getElementById('workouts-missed').textContent,
+      labels: [...document.querySelectorAll('.adherence-stat-label')].map(l => l.textContent.trim()),
+      fencedCell: document.querySelector('.calendar-day.fenced')?.innerText.replace(/\s+/g, ' ').trim() || null,
+      missedCells: document.querySelectorAll('.calendar-day.missed, .calendar-day.scheduled').length
+    }));
+    console.log('\ndiscipline card: ' + JSON.stringify(card));
+    F('a lifted day and a fencing-only day both count as active', card.active === '2', JSON.stringify(card));
+    // 30-day window minus today (not yet earned) minus the sick day = 28.
+    F('the sick day and today leave the denominator', Number(card.available) === 28, JSON.stringify(card));
+    F('the tiles say active/available/rest, not completed/scheduled/missed',
+      card.labels.join(',') === 'Active days,Available,Rest days', JSON.stringify(card.labels));
+    F('a fencing-only day paints on the calendar with its hours',
+      /Fencing 3h/i.test(card.fencedCell || ''), JSON.stringify(card.fencedCell));
+    F('no day is ever painted missed or scheduled', card.missedCells === 0, String(card.missedCells));
+
+    // Streak: fencing yesterday bridges to the workout two days ago, sick day
+    // is transparent, today still in play -> 2.
+    const streak = await page.evaluate(() => {
+      const b = document.getElementById('analytics-tab-btn'); if (b) b.click();
+      return null;
+    });
+    await page.waitForTimeout(1200);
+    const streakShown = await page.evaluate(() =>
+      document.getElementById('workout-streak')?.textContent ?? null);
+    console.log('streak: ' + JSON.stringify(streakShown));
+    F('the streak spans lifted days, fencing days and a sick day', streakShown === '2', JSON.stringify(streakShown));
+
+    F('no page errors', errors.length === 0, JSON.stringify(errors.map(e => e.message)));
     await browser.close();
   }
 

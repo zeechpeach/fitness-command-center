@@ -1251,14 +1251,12 @@
             border-color: rgba(93, 138, 102, 0.4);
         }
 
-        .calendar-day.scheduled {
-            background: rgba(93, 138, 102, 0.08);
-            border-color: rgba(93, 138, 102, 0.25);
-        }
-
-        .calendar-day.missed {
-            background: rgba(244, 67, 54, 0.1);
-            border-color: rgba(244, 67, 54, 0.35);
+        /* A fencing-only day: real activity, shown in its own shade so it
+           never reads as a lifted session. The old .scheduled and .missed
+           paints are gone with the queue - the calendar is a record now. */
+        .calendar-day.fenced {
+            background: rgba(93, 111, 138, 0.12);
+            border-color: rgba(93, 111, 138, 0.35);
         }
 
         .calendar-day-number {
@@ -1283,6 +1281,7 @@
         .calendar-day-label.Rest { color: var(--color-text-secondary); }
         .calendar-day-label.Travel { color: var(--color-accent-primary); }
         .calendar-day-label.Sick { color: var(--color-error); }
+        .calendar-day-label.Fencing { color: #5D6F8A; }
 
         .adherence-card {
             background: rgba(255, 255, 255, 0.65);

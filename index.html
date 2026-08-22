@@ -270,8 +270,11 @@
 
         <!-- CALENDAR TAB -->
         <div id="calendar-content" class="tab-content">
+            <!-- Scored on showing up at all - a session or a fencing night -
+                 not on matching a plan. Sick and travel days leave the
+                 denominator; rest days are counted plainly, not as failures. -->
             <div class="adherence-card">
-                <h3 class="analytics-title">Workout Adherence</h3>
+                <h3 class="analytics-title">Showing Up &middot; last 30 days</h3>
                 <div class="adherence-score">
                     <div class="adherence-score-value" id="adherence-score">0%</div>
                     <div class="stat-label">Discipline Score</div>
@@ -279,15 +282,15 @@
                 <div class="adherence-stats">
                     <div class="adherence-stat">
                         <div class="adherence-stat-value" id="workouts-completed">0</div>
-                        <div class="adherence-stat-label">Completed</div>
+                        <div class="adherence-stat-label">Active days</div>
                     </div>
                     <div class="adherence-stat">
                         <div class="adherence-stat-value" id="workouts-scheduled">0</div>
-                        <div class="adherence-stat-label">Scheduled</div>
+                        <div class="adherence-stat-label">Available</div>
                     </div>
                     <div class="adherence-stat">
                         <div class="adherence-stat-value" id="workouts-missed">0</div>
-                        <div class="adherence-stat-label">Missed</div>
+                        <div class="adherence-stat-label">Rest days</div>
                     </div>
                 </div>
             </div>
@@ -344,7 +347,7 @@
                                 Travel Dates</button>
                         </div>
                         <div style="color: var(--color-text-secondary); font-size: 0.8125rem; line-height: 1.5;">
-                            Travel mode pauses your workout schedule and excludes days from discipline scores. Your
+                            Travel days are left out of the discipline score, and your
                             streak won't break during travel.
                         </div>
                     </div>

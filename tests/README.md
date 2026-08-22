@@ -31,7 +31,7 @@ Playwright will not find on its own, point at it with `PW_CHROMIUM=/path/to/chro
 | `04-import-program.js` | Paste the real 49-exercise program in; all five tracking types survive, day pills render, rubbish input does not crash |
 | `05-holds-and-cardio.js` | A session of only holds and walks saves, in seconds and minutes, with no weight boxes |
 | `06-split-session.js` | Start a suggested session, log at lunch, add to it in the evening: one saved session, not two |
-| `07-no-assigned-day.js` | Nothing is pre-assigned: no scheduled pills, an honest empty logger, and the calendar still shows logged history |
+| `07-no-assigned-day.js` | Nothing is pre-assigned: no scheduled pills, an honest empty logger; the calendar shows history only, and the discipline score counts fencing days, skips sick days, and never says missed |
 | `08-saved-foods.js` | The Saved Foods sheet is genuinely visible at phone width, its buttons are tappable, its search filters |
 | `09-sets-survive-backgrounding.js` | A number typed but not tabbed away from survives the phone locking, Complete Session, and switching days |
 | `10-all-tabs.js` | Six weeks of realistic history across every tab: no page errors, no `NaN` on screen, no sideways scrolling |

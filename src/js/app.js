@@ -213,7 +213,6 @@ async function loadWorkoutsFromFirebase() {
         // Filtering is a separate step so this query can start before the
         // programs query has resolved.
         applyProgramFilterToWorkouts();
-        invalidateScheduleTimeline();
         console.log(`Loaded ${rawWorkouts.length} workouts (${allWorkouts.length} for active program)`);
         return allWorkouts;
     } catch (e) {
@@ -228,7 +227,6 @@ async function loadWorkoutsFromFirebase() {
             });
             rawWorkouts = workouts;
             applyProgramFilterToWorkouts();
-            invalidateScheduleTimeline();
             console.log(`Loaded ${rawWorkouts.length} workouts (fallback, ${allWorkouts.length} for active program)`);
             return allWorkouts;
         } catch (fallbackError) {
@@ -756,40 +754,6 @@ function calculateTotalCalories() {
         }
     });
     return total;
-}
-
-// Workout Schedule Cycle: upper/lower/rest/push/pull/legs/rest
-// NOTE: This is kept for backward compatibility with ULPPL program
-// New programs use their own schedule defined in program.schedule
-const workoutSchedule = ['Upper', 'Lower', 'Rest', 'Push', 'Pull', 'Legs', 'Rest'];
-
-// Reference date for schedule calculation when no completed workouts exist
-// 2025-01-01 maps to workoutSchedule[0] = 'Upper'
-const SCHEDULE_REFERENCE_DATE = '2025-01-01';
-
-// Helper: Get schedule array from a program
-function getProgramScheduleArray(program) {
-    if (!program || !program.schedule) {
-        // For backward compatibility, return ULPPL schedule if no program schedule defined
-        return workoutSchedule;
-    }
-    
-    const schedule = program.schedule;
-    const scheduleArray = [];
-    
-    // Sort by day number and extract workout types
-    const dayKeys = Object.keys(schedule).sort((a, b) => {
-        const numA = parseInt(a.replace('day', ''));
-        const numB = parseInt(b.replace('day', ''));
-        return numA - numB;
-    });
-    
-    dayKeys.forEach(dayKey => {
-        const workoutType = getWorkoutTypeForDay(program, dayKey);
-        scheduleArray.push(workoutType);
-    });
-    
-    return scheduleArray;
 }
 
 // Configuration for schedule calculation
@@ -1556,8 +1520,7 @@ window.removeProgramDay = function (dayNumber) {
         if (!confirm(`Remove Day ${dayNumber} (${removedType})${detail}?`)) return;
     }
 
-    // Re-key the remaining days so they stay day1..dayN with no gaps. A gap
-    // would leave getProgramScheduleArray with an undefined slot.
+    // Re-key the remaining days so they stay day1..dayN with no gaps.
     const remaining = keys
         .filter(k => k !== `day${dayNumber}`)
         .map(k => currentEditingProgram.schedule[k]);
@@ -2079,7 +2042,6 @@ async function saveProgramToFirestore() {
 
         if (saved.active) {
             activeProgram = saved;
-            invalidateScheduleTimeline();
             renderWorkoutDaySelector();
             initializeWorkout();
         }
@@ -2181,32 +2143,18 @@ function daysBetween(date1Str, date2Str) {
 }
 
 // ---------------------------------------------------------------------------
-// Scheduling engine
-//
-// PREVIOUS BEHAVIOUR (removed): the cycle advanced by CALENDAR DAYS from the
-// last logged workout. Because a 7-entry cycle and a 7-day week advance in
-// lockstep, every workout type became pinned to a fixed weekday, and a missed
-// session was silently deleted rather than re-offered. Missing the same weekday
-// four times meant that workout was never trained, which is the exact
-// asymmetry the schedule was supposed to prevent. Two in-app alerts claimed
-// sessions were "pushed back by one day"; nothing was.
-//
-// CURRENT BEHAVIOUR: the schedule is a QUEUE. A slot is consumed only when its
-// workout is actually done. Rest slots are consumed by the passage of time.
-// Anything else leaves the slot pending, so a missed session becomes tomorrow's
-// session and everything behind it slides by a day.
+// The scheduling engine is gone. It went through two lives - a calendar
+// rotation, then a queue - and both answered a question the app no longer
+// asks: "which session does the plan owe today?" The weekly volume model and
+// the suggestion panel answer "what does TODAY need?" instead, and the
+// discipline score below measures showing up rather than obeying.
 // ---------------------------------------------------------------------------
 
-const SCHEDULE_LOOKBACK_DAYS = 180;   // bounds the walk; older history cannot change today
-const SCHEDULE_LOOKAHEAD_DAYS = 90;   // enough for the calendar to render future months
-
-// Slots that time alone consumes. An unnamed program day ('') is treated as
-// rest so it cannot wedge the queue forever.
+// Day names that mean rest. An unnamed program day ('') counts as rest too.
 const REST_SLOT_NAMES = ['rest', 'rest day', 'off', 'off day', 'recovery', 'recovery day', 'active recovery'];
 
-// Only the literal string "rest" counted, so naming a day "Off" or "Recovery"
-// made it a workout that could never be completed. The queue then never
-// advanced past it and the logger opened on that day forever.
+// A saved session with one of these names is rest, not training, so it never
+// counts as a working session anywhere sets are tallied.
 function isRestSlot(slotName) {
     const n = normalizeLabel(slotName);
     return n === '' || REST_SLOT_NAMES.includes(n);
@@ -2218,172 +2166,6 @@ function addDaysToDateString(dateStr, days) {
     return d.toISOString().split('T')[0];
 }
 
-// Earliest date the queue can be anchored to.
-function getScheduleAnchorDate() {
-    const today = getTodayDateString();
-    const floor = addDaysToDateString(today, -SCHEDULE_LOOKBACK_DAYS);
-
-    const candidates = [];
-    if (activeProgram && activeProgram.activatedAt) {
-        const activated = String(activeProgram.activatedAt).split('T')[0];
-        if (/^\d{4}-\d{2}-\d{2}$/.test(activated)) candidates.push(activated);
-    }
-    if (allWorkouts.length) {
-        const earliest = allWorkouts
-            .map(w => w.date)
-            .filter(d => typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d))
-            .sort()[0];
-        if (earliest) candidates.push(earliest);
-    }
-    if (!candidates.length) return floor;
-
-    const anchor = candidates.sort()[0];
-    return anchor < floor ? floor : anchor;
-}
-
-let scheduleTimelineCache = null;
-let scheduleTimelineCacheKey = '';
-
-function getScheduleTimelineKey() {
-    const newest = allWorkouts.length ? (allWorkouts[0].id || '') + (allWorkouts[0].date || '') : '';
-    return [
-        activeProgram ? activeProgram.id : 'none',
-        activeProgram ? (activeProgram.activatedAt || '') : '',
-        allWorkouts.length,
-        newest,
-        (window.sickDayData || []).length,
-        ((window.travelModeData) || []).length,
-        getTodayDateString()
-    ].join('|');
-}
-
-// One pass builds the whole timeline, so the calendar, the streak and the
-// adherence score all read the same answer instead of each re-deriving it.
-// Returns { timeline, slots }. `timeline` is what the day IS (a logged
-// session, Sick, Travel, or the queued slot); `slots` is the session the queue
-// owed on that date regardless of sick/travel, which is what the calendar needs
-// to say "Travel (Upper A)".
-function buildScheduleTimeline() {
-    const timeline = new Map();
-    const slots = new Map();
-    const scheduleArray = activeProgram ? getProgramScheduleArray(activeProgram) : workoutSchedule;
-    if (!scheduleArray || scheduleArray.length === 0) return { timeline, slots };
-
-    // Where each workout type sits in the cycle, for resuming after a session
-    // done out of order.
-    const slotPositions = new Map();
-    scheduleArray.forEach((slot, idx) => {
-        const key = normalizeLabel(slot);
-        if (key && !slotPositions.has(key)) slotPositions.set(key, idx);
-    });
-
-    const workoutsByDate = new Map();
-    allWorkouts.forEach(w => { if (w && w.date && !workoutsByDate.has(w.date)) workoutsByDate.set(w.date, w); });
-
-    const today = getTodayDateString();
-    const start = getScheduleAnchorDate();
-    const end = addDaysToDateString(today, SCHEDULE_LOOKAHEAD_DAYS);
-
-    let index = 0;
-    let cursor = start;
-
-    while (cursor <= end) {
-        const slot = scheduleArray[index % scheduleArray.length];
-        const logged = workoutsByDate.get(cursor);
-
-        slots.set(cursor, slot);
-
-        if (logged) {
-            timeline.set(cursor, logged.day);   // what you actually did wins
-        } else if (isDateSickDay(cursor)) {
-            timeline.set(cursor, 'Sick');
-        } else if (isDateInTravelMode(cursor)) {
-            timeline.set(cursor, 'Travel');
-        } else {
-            timeline.set(cursor, slot);
-        }
-
-        // Advance the queue for the NEXT day.
-        //
-        // Past and today: a slot is owed until it is done, so a missed session
-        // rolls forward. The FUTURE cannot work that way, because no future day
-        // can have a logged workout, so the index would freeze and every day
-        // for the next three months would show the same session. Beyond today
-        // the schedule is a projection, so it simply advances.
-        if (cursor > today) {
-            index++;
-        } else if (isRestSlot(slot)) {
-            index++;                            // rest is consumed by time
-        } else if (logged) {
-            const loggedKey = normalizeLabel(logged.day);
-            if (loggedKey === normalizeLabel(slot)) {
-                index++;                        // did what was queued
-            } else if (slotPositions.has(loggedKey) && !isRestSlot(logged.day)) {
-                // Resume after the session that was actually done. Rest is
-                // excluded: 'rest' is in the schedule array, so a logged Rest
-                // day used to jump the index BACKWARDS to just after the first
-                // Rest slot, discarding whatever session was owed and quietly
-                // erasing a miss from the discipline score.
-                index = slotPositions.get(loggedKey) + 1;
-            }
-            // A logged Rest, or a substitute session not in the program (a
-            // tournament circuit), consumes nothing. The queued session is
-            // still owed, so it rolls to tomorrow.
-        }
-        // Missed, sick or travelling with nothing logged: index holds, so the
-        // slot becomes tomorrow's workout and the rest of the week slides.
-
-        cursor = addDaysToDateString(cursor, 1);
-    }
-
-    return { timeline, slots };
-}
-
-function getScheduleTimelineBundle() {
-    const key = getScheduleTimelineKey();
-    if (scheduleTimelineCache && scheduleTimelineCacheKey === key) return scheduleTimelineCache;
-    scheduleTimelineCacheKey = key;
-    scheduleTimelineCache = buildScheduleTimeline();
-    return scheduleTimelineCache;
-}
-
-function getScheduleTimeline() {
-    return getScheduleTimelineBundle().timeline;
-}
-
-// The session the queue owed on this date, ignoring sick and travel. Replaces
-// getWouldBeScheduledWorkout, which re-derived an answer from the OLD calendar
-// rotation (advance one slot per calendar day from the most recent workout) and
-// so contradicted the queue everywhere it was shown.
-function getQueuedSlotForDate(date) {
-    const { slots } = getScheduleTimelineBundle();
-    return slots.get(date) || getScheduledWorkout(date);
-}
-
-function invalidateScheduleTimeline() {
-    scheduleTimelineCache = null;
-    scheduleTimelineCacheKey = '';
-}
-
-function getScheduledWorkout(date) {
-    const actualWorkout = getWorkoutForDate(date);
-    if (actualWorkout) return actualWorkout.day;
-
-    const timeline = getScheduleTimeline();
-    if (timeline.has(date)) return timeline.get(date);
-
-    // Outside the modelled window, fall back to the plain cycle so nothing throws.
-    if (isDateSickDay(date)) return 'Sick';
-    if (isDateInTravelMode(date)) return 'Travel';
-    let scheduleArray = activeProgram ? getProgramScheduleArray(activeProgram) : workoutSchedule;
-    // A program saved with zero days made this `% 0` -> NaN, which produced no
-    // day buttons and a blank logger with no error.
-    if (!scheduleArray || scheduleArray.length === 0) scheduleArray = workoutSchedule;
-    const daysDiff = daysBetween(SCHEDULE_REFERENCE_DATE, date);
-    const idx = ((daysDiff % scheduleArray.length) + scheduleArray.length) % scheduleArray.length;
-    return scheduleArray[idx];
-}
-
 function getWorkoutForDate(dateString) {
     return allWorkouts.find(w => w.date === dateString);
 }
@@ -2391,159 +2173,69 @@ function getWorkoutForDate(dateString) {
 // ---------------------------------------------------------------------------
 // Discipline score.
 //
-// Fixed here:
-//  - Today counted toward `scheduled` but could not yet count as missed, so the
-//    three tiles on screen literally did not reconcile (completed + missed was
-//    never equal to scheduled) and the score was docked for a session still
-//    hours away.
-//  - The loop stepped local dates but read them via toISOString(), i.e. UTC, so
-//    every evening a day that had not happened yet joined the denominator.
-//  - T-30d through T inclusive is 31 days, not 30.
-// ---------------------------------------------------------------------------
-// ---------------------------------------------------------------------------
-// Discipline score.
+// Used to measure "did you do the workout the program prescribed", against the
+// pace of a schedule that no longer assigns anything. It now measures the only
+// thing the owner actually cares about: did you show up at all. A lifted
+// session counts. A logged fencing night counts - three hours of coaching is
+// not a day off. Which session it was, and whether a plan would have called it
+// something else, does not matter.
 //
-// The queue change broke the old per-day count. Because an unmade session now
-// rolls forward, walking the calendar and counting "scheduled but nothing
-// logged" charged the SAME missed session once per day, and the denominator
-// grew the longer you were away. A week off produced 7 misses of one session
-// and a `scheduled` total higher than a perfect user's, so the percentage was
-// not a rate of anything.
-//
-// It now measures against the pace the program prescribes. Over N available
-// days, a cycle with T training slots out of C days expects N * T / C
-// sessions. Sick and travel days are removed from N rather than counted
-// against you, and today is excluded until something is logged.
+// Sick and travel days leave the denominator entirely, and today is not
+// counted until something is logged - a day cannot be failed while it is
+// still happening.
 // ---------------------------------------------------------------------------
+function isActiveDay(dateStr) {
+    const workout = getWorkoutForDate(dateStr);
+    if (workout && !isNonTrainingLabel(workout.day)) return true;
+    return fencingEntriesBetween(dateStr, dateStr).length > 0;
+}
+
 function calculateAdherence() {
     const today = getTodayDateString();
-    const thirtyDaysAgo = addDaysToDateString(today, -29);   // 30 days inclusive
+    const startDate = addDaysToDateString(today, -29);   // 30 days inclusive
 
-    let startDate = thirtyDaysAgo;
-    if (activeProgram && activeProgram.activatedAt) {
-        const activated = String(activeProgram.activatedAt).split('T')[0];
-        if (/^\d{4}-\d{2}-\d{2}$/.test(activated) && activated > startDate) {
-            startDate = activated;
-        }
-    }
-
-    const scheduleArray = activeProgram ? getProgramScheduleArray(activeProgram) : workoutSchedule;
-    const cycleLength = (scheduleArray && scheduleArray.length) ? scheduleArray.length : 7;
-    const trainingSlots = (scheduleArray || []).filter(slot => !isRestSlot(slot)).length;
-
-    let availableDays = 0;
-    let completed = 0;
+    let available = 0;
+    let active = 0;
 
     for (let dateStr = startDate; dateStr <= today; dateStr = addDaysToDateString(dateStr, 1)) {
-        const logged = getWorkoutForDate(dateStr);
-
-        if (logged) {
-            // A session logged on a sick or travel day still counts for you.
-            if (!isRestSlot(logged.day)) completed++;
-            availableDays++;
+        if (isActiveDay(dateStr)) {
+            active++;
+            available++;
             continue;
         }
-
-        // Nothing logged. Absences you declared do not count against you.
+        // Absences you declared do not count against you.
         if (isDateSickDay(dateStr) || isDateInTravelMode(dateStr)) continue;
-
         // Today has not been earned or lost yet.
         if (dateStr === today) continue;
-
-        availableDays++;
+        available++;
     }
 
-    // A program with no training days, or a window with no days in it, has
-    // nothing to be measured against. Returning scheduled:0 alongside a
-    // non-zero completed made the three tiles contradict each other, so report
-    // the sessions and a full score rather than 0% of nothing.
-    if (trainingSlots === 0 || availableDays === 0) {
-        return { score: completed > 0 ? 100 : 0, completed, scheduled: completed, missed: 0 };
-    }
-
-    // Math.max(completed, expected) used to raise the denominator to whatever
-    // had been completed, so banked over-training erased every later miss:
-    // training daily for three weeks then skipping nine days straight still
-    // reported 100% and 0 missed. Expected pace is now independent of what was
-    // actually done, and only the SCORE is capped.
-    const expected = Math.round(availableDays * (trainingSlots / cycleLength));
-    const missed = Math.max(0, expected - completed);
-    const score = expected > 0 ? Math.round((completed / expected) * 100) : 100;
-
-    return { score: Math.min(100, score), completed, scheduled: Math.max(expected, completed), missed };
+    const score = available > 0 ? Math.round((active / available) * 100) : 0;
+    return { score, active, available, restDays: available - active };
 }
-// Enhanced Analytics Functions
+// Streak, redefined the same way as the discipline score: a day counts when
+// you were active at all - a session or a fencing night - and sick and travel
+// days are transparent rather than streak-breaking. Today not being logged yet
+// does not end the streak; yesterday not being logged does.
 function calculateWorkoutStreak() {
-    if (allWorkouts.length === 0) return 0;
+    const today = getTodayDateString();
+    let streak = 0;
+    let dateStr = today;
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    // Sort workouts by date (most recent first)
-    const sortedWorkouts = allWorkouts.sort((a, b) => new Date(b.date) - new Date(a.date));
-
-    // Check if the most recent workout is within the last scheduled workout day
-    const mostRecentWorkout = sortedWorkouts[0];
-    const mostRecentDate = new Date(mostRecentWorkout.date);
-    mostRecentDate.setHours(0, 0, 0, 0);
-
-    // Calculate days since last workout
-    const daysSinceLastWorkout = Math.floor((today - mostRecentDate) / (1000 * 60 * 60 * 24));
-
-    // Check if there's a missed workout (excluding rest days and travel days)
-    let hasMissedWorkout = false;
-    for (let i = 0; i < daysSinceLastWorkout; i++) {
-        const checkDate = new Date(today);
-        checkDate.setDate(checkDate.getDate() - i - 1);
-        const dateStr = checkDate.toISOString().split('T')[0];
-        const scheduled = getScheduledWorkout(dateStr);
-        const actual = getWorkoutForDate(dateStr);
-
-        // Only count as missed if it was a scheduled workout (not rest or travel)
-        // Was a literal 'Rest'/'Travel' check, so a day named "Off" or
-        // "Recovery" broke the streak, and being ill zeroed it while being on a
-        // plane did not.
-        if (!isNonTrainingLabel(scheduled) && !actual) {
-            hasMissedWorkout = true;
+    for (let guard = 0; guard < 365; guard++) {
+        if (isActiveDay(dateStr)) {
+            streak++;
+        } else if (isDateSickDay(dateStr) || isDateInTravelMode(dateStr)) {
+            // transparent: neither counts nor breaks
+        } else if (dateStr === today) {
+            // today is still in play
+        } else {
             break;
         }
+        dateStr = addDaysToDateString(dateStr, -1);
     }
-
-    // If there's a missed workout day, streak is broken
-    if (hasMissedWorkout) {
-        return 0;
-    }
-
-    // Count consecutive workouts (not days, but completed scheduled workout days)
-    let streak = 0;
-    let checkDate = new Date(today);
-    checkDate.setHours(0, 0, 0, 0);
-
-    // Go backwards day by day and check for completed scheduled workouts
-    for (let daysBack = 0; daysBack < 365; daysBack++) {
-        const dateStr = checkDate.toISOString().split('T')[0];
-        const scheduled = getScheduledWorkout(dateStr);
-        const actual = getWorkoutForDate(dateStr);
-
-        // Only count scheduled workout days (not rest or travel)
-        if (!isNonTrainingLabel(scheduled)) {
-            // This was a scheduled workout day
-            if (actual) {
-                streak++;
-            } else if (checkDate < today) {
-                // Missed a past scheduled workout - streak ends
-                break;
-            }
-        }
-
-        checkDate.setDate(checkDate.getDate() - 1);
-    }
-
     return streak;
 }
-
-
-
 function detectPlateaus() {
     const plateaus = [];
     const workoutsByDay = {};
@@ -3787,8 +3479,10 @@ function classifyMuscleGroup(exerciseName) {
 // A session you cannot physically do is worse than no suggestion at all. The
 // main gym has a rack, barbell, dumbbells, a bench, a cable stack and a pull-up
 // bar - but no leg press, no leg curl or extension machines, and no back
-// extension bench. Those live at the full gym. Home is a pull-up bar and
-// bodyweight.
+// extension bench. Those live at the full gym. Home has a pull-up bar,
+// dumbbells (one to 50 lb, two 25s), a flat bench, a bike, a treadmill and a
+// Vitruvian - which covers cable-style loading, so 'cable' work is available
+// at home too. What home lacks is a barbell with a rack, and the machines.
 //
 // Every exercise is classified by the one piece of kit it cannot happen
 // without, using the same longest-match scoring as the muscle classifier, and
@@ -3796,9 +3490,9 @@ function classifyMuscleGroup(exerciseName) {
 // ---------------------------------------------------------------------------
 
 const LOCATIONS = {
-    main: { label: 'Main gym', has: ['bodyweight', 'pullup', 'dipbars', 'dumbbell', 'barbell', 'cable'] },
-    full: { label: 'Full gym', has: ['bodyweight', 'pullup', 'dipbars', 'dumbbell', 'barbell', 'cable', 'machine'] },
-    home: { label: 'Home',     has: ['bodyweight', 'pullup'] }
+    main: { label: 'Main gym', has: ['bodyweight', 'pullup', 'dipbars', 'dumbbell', 'barbell', 'cable', 'incline'] },
+    full: { label: 'Full gym', has: ['bodyweight', 'pullup', 'dipbars', 'dumbbell', 'barbell', 'cable', 'incline', 'machine'] },
+    home: { label: 'Home',     has: ['bodyweight', 'pullup', 'dumbbell', 'cable'] }
 };
 
 // Longest match wins, so 'cable back extension' is cable work even though
@@ -3820,7 +3514,12 @@ const EQUIPMENT_PATTERNS = [
                                       'side raise', 'rear delt', 'incline curl', 'preacher curl', 'curl',
                                       'shoulder press', 'chest press', 'fly', 'row', 'shrug', 'step-up',
                                       'step up', 'lunge', 'split squat', 'weighted'] },
-    { equipment: 'dipbars',   match: ['dip'] },
+    { equipment: 'dipbars',   match: ['dip', 'weighted dip'] },
+    // The home bench is flat, so anything on an incline stays at the gyms.
+    // The full phrases outrank 'dumbbell' in longest-match scoring.
+    { equipment: 'incline',   match: ['incline', 'incline press', 'incline dumbbell press',
+                                      'incline curl', 'incline dumbbell curl', 'incline fly',
+                                      'incline bench press', 'incline row'] },
     { equipment: 'pullup',    match: ['pull-up', 'pullup', 'pull up', 'chin-up', 'chinup', 'dead hang',
                                       'front lever', 'scapular pull', 'hanging leg raise', 'hanging knee raise',
                                       'inverted row'] }
@@ -5127,47 +4826,37 @@ function renderCalendar() {
         // cell used to query the previous day's data and the whole grid was
         // shifted by one square.
         const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-        const scheduledWorkout = getScheduledWorkout(dateStr);
         const actualWorkout = getWorkoutForDate(dateStr);
+        const fenced = fencingEntriesBetween(dateStr, dateStr);
 
         let classes = ['calendar-day'];
         if (dateStr === today) classes.push('today');
 
-        // Determine display label and workout type
-        let displayLabel;
-        let labelClass;
+        // The calendar is a record now, not a plan. It shows what happened -
+        // sessions, fencing, sick and travel days - and says nothing about
+        // days where nothing happened, past or future. The red "missed" paint
+        // and the projected future sessions were the queue's last outposts.
+        let displayLabel = '';
+        let labelClass = '';
 
-        // Priority 1: If there's an actual logged workout, show it (overrides sick/travel)
         if (actualWorkout && actualWorkout.day) {
             classes.push('has-workout');
             displayLabel = actualWorkout.day;
             labelClass = actualWorkout.day;
+            if (fenced.length) displayLabel += ' + fencing';
+        } else if (fenced.length) {
+            classes.push('fenced');
+            const hours = fenced.reduce((sum, e) => sum + (Number(e.hours) || 0), 0);
+            displayLabel = `Fencing ${formatFencingHours(hours)}`;
+            labelClass = 'Fencing';
         } else if (isDateSickDay(dateStr)) {
-            // Priority 2: Sick day (only if no workout logged)
             classes.push('sick');
             displayLabel = 'Sick Day';
             labelClass = 'Sick';
-        } else if (scheduledWorkout === 'Travel') {
-            // Priority 3: Travel day (only if no workout logged)
+        } else if (isDateInTravelMode(dateStr)) {
             classes.push('travel');
-            const wouldBeWorkout = getQueuedSlotForDate(dateStr);
-            displayLabel = `Travel (${wouldBeWorkout})`;
-            labelClass = scheduledWorkout;
-        } else if (!isNonTrainingLabel(scheduledWorkout) && dateStr < today) {
-            // Was `date < new Date()`, comparing today's LOCAL MIDNIGHT against
-            // the current moment, which is true from 00:00 onward. Today was
-            // painted red as missed before you had any chance to train.
-            classes.push('missed');
-            displayLabel = scheduledWorkout;
-            labelClass = scheduledWorkout;
-        } else if (!isNonTrainingLabel(scheduledWorkout)) {
-            classes.push('scheduled');
-            displayLabel = scheduledWorkout;
-            labelClass = scheduledWorkout;
-        } else {
-            // Rest day
-            displayLabel = scheduledWorkout;
-            labelClass = scheduledWorkout;
+            displayLabel = 'Travel';
+            labelClass = 'Travel';
         }
 
         html += `<div class="${classes.join(' ')}" onclick="selectCalendarDay('${dateStr}')">
@@ -5189,9 +4878,9 @@ function renderCalendar() {
     // Update adherence
     const adherence = calculateAdherence();
     document.getElementById('adherence-score').textContent = `${adherence.score}%`;
-    document.getElementById('workouts-completed').textContent = adherence.completed;
-    document.getElementById('workouts-scheduled').textContent = adherence.scheduled;
-    document.getElementById('workouts-missed').textContent = adherence.missed;
+    document.getElementById('workouts-completed').textContent = adherence.active;
+    document.getElementById('workouts-scheduled').textContent = adherence.available;
+    document.getElementById('workouts-missed').textContent = adherence.restDays;
 }
 
 // Helper function to format date string correctly without timezone issues
@@ -5205,7 +4894,6 @@ function formatDateString(dateStr) {
 window.selectCalendarDay = function (dateStr) {
     selectedCalendarDay = dateStr;
     const workout = getWorkoutForDate(dateStr);
-    const scheduledWorkout = getScheduledWorkout(dateStr);
 
     const container = document.getElementById('selected-day-workout');
     const content = document.getElementById('selected-day-content');
@@ -5265,15 +4953,21 @@ window.selectCalendarDay = function (dateStr) {
         html += '</div>';
         content.innerHTML = html;
     } else {
-        title.textContent = `${scheduledWorkout} - ${formatDateString(dateStr)}`;
-        if (scheduledWorkout === 'Sick') {
-            content.innerHTML = `<p style="color: #f472b6;">This day is marked as a sick day. Workout was canceled and schedule adjusted.</p>`;
-        } else if (scheduledWorkout === 'Travel') {
-            const wouldBeWorkout = getQueuedSlotForDate(dateStr);
-            content.innerHTML = `<p style="color: #a855f7;">Travel day - workout schedule paused.</p>
-                        <p style="color: var(--color-text-secondary); margin-top: 0.5rem;">Scheduled workout if not traveling: <strong style="color: var(--color-text-secondary);">${wouldBeWorkout}</strong></p>`;
+        const fenced = fencingEntriesBetween(dateStr, dateStr);
+        if (fenced.length) {
+            const parts = fenced.map(e => `${formatFencingHours(e.hours)} ${
+                (FENCING_KINDS[e.kind] || { label: 'fencing' }).label.toLowerCase()}`);
+            title.textContent = `Fencing - ${formatDateString(dateStr)}`;
+            content.innerHTML = `<p style="color: var(--color-text-secondary);">${parts.join(', ')}. No lifting logged.</p>`;
+        } else if (isDateSickDay(dateStr)) {
+            title.textContent = `Sick Day - ${formatDateString(dateStr)}`;
+            content.innerHTML = `<p style="color: #f472b6;">This day is marked as a sick day. It is left out of the discipline score.</p>`;
+        } else if (isDateInTravelMode(dateStr)) {
+            title.textContent = `Travel - ${formatDateString(dateStr)}`;
+            content.innerHTML = `<p style="color: #a855f7;">Travel day. It is left out of the discipline score.</p>`;
         } else {
-            content.innerHTML = `<p style="color: var(--color-text-secondary);">No workout logged for this day. Scheduled: ${scheduledWorkout}</p>`;
+            title.textContent = formatDateString(dateStr);
+            content.innerHTML = `<p style="color: var(--color-text-secondary);">Nothing logged.</p>`;
         }
     }
 
@@ -5304,7 +4998,6 @@ window.deleteLoggedWorkout = async function (workoutId, dateString) {
         await deleteDoc(doc(db, "workouts", workoutId));
         await loadWorkoutsFromFirebase();
         refreshStartupCache();
-        invalidateScheduleTimeline();
         renderCalendar();
         renderWorkoutDaySelector();
         initializeWorkout();
@@ -5474,7 +5167,6 @@ window.confirmImportProgram = async function () {
         activeProgram = saved;
         window._pendingImport = null;
 
-        invalidateScheduleTimeline();
         await loadWorkoutsFromFirebase();
         refreshStartupCache();
 
@@ -5592,7 +5284,6 @@ window.enableTravelMode = async function () {
 
         await loadTravelModeData();
         updateTravelModeBanner();
-        invalidateScheduleTimeline();
         renderCalendar();
 
         // Clear inputs
@@ -5642,7 +5333,6 @@ window.resumeWorkoutProgram = async function (mode) {
                     activatedAt: activeProgram.activatedAt
                 });
             }
-            invalidateScheduleTimeline();
             await loadWorkoutsFromFirebase();
         }
 
@@ -5650,7 +5340,6 @@ window.resumeWorkoutProgram = async function (mode) {
         // The 'restart' branch invalidated but 'resume' did not, so the same
         // button refreshed the calendar or not depending on which option was
         // picked.
-        invalidateScheduleTimeline();
         updateTravelModeBanner();
         renderCalendar();
 
@@ -5716,11 +5405,10 @@ window.markSickDay = async function () {
                     console.log('Sick day removed');
 
                     await loadSickDayData();
-                    invalidateScheduleTimeline();
         renderCalendar();
 
                     document.getElementById('sick-day-date').value = '';
-                    alert('Sick day removed. Schedule will adjust accordingly.');
+                    alert('Sick day removed. It counts as a normal day again.');
                 }
             } catch (e) {
                 console.error('Error removing sick day:', e);
@@ -5751,13 +5439,12 @@ window.markSickDay = async function () {
         console.log('Sick day marked:', docRef.id);
 
         await loadSickDayData();
-        invalidateScheduleTimeline();
         renderCalendar();
 
         // Clear input
         document.getElementById('sick-day-date').value = '';
 
-        alert('Day marked as sick. All remaining workouts have been pushed back by one day.');
+        alert('Day marked as sick. It is left out of the discipline score.');
     } catch (e) {
         console.error('Error marking sick day:', e);
         alert('Failed to mark sick day');
@@ -7769,7 +7456,6 @@ async function initializeFitnessApp() {
             // "End Travel Mode" button lives inside that banner, closing the
             // tab left travel mode permanently on with no way to turn it off.
             updateTravelModeBanner();
-            invalidateScheduleTimeline();
             renderCalendar();
         })
         .catch(err => console.error('Failed to load travel mode data:', err));
@@ -7777,7 +7463,12 @@ async function initializeFitnessApp() {
     // Fencing feeds both the week panel and the generator, so both are redrawn
     // once it lands rather than showing a week with fifteen hours missing.
     loadFencingData()
-        .then(() => { renderFencingPanel(); renderWeeklyVolume(); renderTodayPanel(); })
+        .then(() => {
+            renderFencingPanel(); renderWeeklyVolume(); renderTodayPanel();
+            // Fencing days paint on the calendar and count in the discipline
+            // score, both of which rendered before this load finished.
+            renderCalendar();
+        })
         .catch(err => console.error('Failed to load fencing data:', err));
     loadDailyRoutines().catch(err => console.error('Failed to load daily routines:', err));
 
@@ -8929,7 +8620,6 @@ async function completeWorkout() {
     };
     document.querySelectorAll('.intensity-btn').forEach(b => b.classList.remove('active'));
 
-    invalidateScheduleTimeline();
     // currentDay stays where it is: the session just completed re-hydrates
     // into the form, so more sets added tonight join it instead of starting
     // over on whatever a queue would have owed.

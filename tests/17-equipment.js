@@ -96,15 +96,17 @@ const MACHINE_ONLY = /Leg Press|Leg Extension|Leg Curl|Hack Squat|Pec Deck|Machi
     await browser.close();
   }
 
-  // ---------- 4. HOME: bodyweight and the pull-up bar only ----------
+  // ---------- 4. HOME: dumbbells and the Vitruvian, but no barbell, no machines ----------
   {
     const { browser, page } = await boot({ seed: { programs: [realProgram()], workouts: [] } });
     await page.waitForTimeout(600);
     const s = await suggest(page, 30, 'home');
     console.log('\nfresh week at home -> ' + JSON.stringify(s.exercises));
-    F('home never asks for a barbell, dumbbell, cable or machine',
-      !s.exercises.some(e => /Barbell|Dumbbell|Cable|Machine|Leg Press|Leg Curl|Bench Press|Goblet|Dip\b/i.test(e)),
+    F('home never asks for a barbell, a rack lift, an incline bench or a machine',
+      !s.exercises.some(e => /Barbell|Machine|Leg Press|Leg Curl|Back Squat|Bench Press|Deadlift\b|Good Morning|Weighted Dip|Trap Bar|Incline/i.test(e)),
       JSON.stringify(s.exercises));
+    F('home still gets loaded work, not just bodyweight - the Vitruvian and dumbbells count',
+      s.exercises.some(e => /Dumbbell|Cable|Goblet/i.test(e)), JSON.stringify(s.exercises));
     F('home still gets a session', !s.isRest && s.exercises.length >= 2,
       JSON.stringify({ rest: s.isRest, n: s.exercises.length }));
     await browser.close();
