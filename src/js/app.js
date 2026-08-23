@@ -159,6 +159,66 @@ const workoutPlans = {
 };
 
 // Firebase functions
+// completeWorkout writes every session to localStorage BEFORE trying the
+// network, but until now nothing ever read that backup back: a failed save
+// left the session invisible on the device forever. On boot, any backup from
+// the last 14 days with no matching Firestore row is re-saved automatically.
+async function reconcileLocalBackups() {
+    let backups;
+    try { backups = JSON.parse(localStorage.getItem('fitnessData') || '{}'); }
+    catch (e) { return; }
+    const keys = Object.keys(backups);
+    if (!keys.length) return;
+
+    const cutoff = addDaysToDateString(getTodayDateString(), -14);
+    // Several backups of the same session exist when Complete was pressed more
+    // than once (a split session, or retries after an error). The LAST write
+    // per (date, day) is the most complete form.
+    const latest = new Map();
+    let changed = false;
+
+    keys.sort().forEach(key => {
+        const data = backups[key];
+        if (!data || !data.date || !data.day || data.date < cutoff) {
+            delete backups[key];
+            changed = true;
+            return;
+        }
+        latest.set(data.date + '|' + normalizeLabel(data.day), { key, data });
+    });
+
+    let recovered = 0;
+    for (const { key, data } of latest.values()) {
+        const inCloud = allWorkouts.some(w =>
+            w.date === data.date && normalizeLabel(w.day) === normalizeLabel(data.day));
+        if (inCloud) {
+            delete backups[key];
+            changed = true;
+            continue;
+        }
+        try {
+            await saveWorkoutToFirebase(data);
+            delete backups[key];
+            changed = true;
+            recovered++;
+        } catch (e) {
+            // Still offline or still failing - the backup stays for next boot.
+            console.error('Backup recovery failed, will retry next load:', e);
+        }
+    }
+
+    if (changed) {
+        try { localStorage.setItem('fitnessData', JSON.stringify(backups)); } catch (e) { }
+    }
+    if (recovered > 0) {
+        await loadWorkoutsFromFirebase();
+        refreshStartupCache();
+        renderWorkoutDaySelector();
+        updateAnalytics();
+        showToast(`Recovered ${recovered} unsaved session${recovered === 1 ? '' : 's'} from this device.`, 'success');
+    }
+}
+
 async function saveWorkoutToFirebase(workoutData) {
     try {
         const docRef = await addDoc(collection(db, "workouts"), {
@@ -3992,7 +4052,10 @@ function refreshAfterFencingChange() {
     updateNutritionCalories();   // the activity component just changed
     // A logged session changes what today should be, so any suggestion already
     // on screen is stale the moment fencing is added.
-    if (suggestedMinutes !== null && suggestedLocation !== null) {
+    // A persisted session is a plan the user may be mid-way through - fencing
+    // logged later in the day must not rewrite it. Only a transient rest
+    // verdict gets recomputed.
+    if (!generatedToday && suggestedMinutes !== null && suggestedLocation !== null) {
         suggestedSession = generateSession(suggestedMinutes, suggestedLocation);
     }
     renderTodayPanel();
@@ -4362,6 +4425,15 @@ function generateSession(minutes, locationKey = 'full') {
         });
     });
 
+    // Compounds first, isolation after, core last. The volume-day lead stays
+    // pinned at the front - it is the day's entire point. The sort is stable,
+    // so within a class the urgency ordering above still holds.
+    const pinned = exercises.slice(0, exercisesPrefix.length);
+    const rest = exercises.slice(exercisesPrefix.length)
+        .sort((a, b) => movementOrder(a.name) - movementOrder(b.name));
+    exercises.length = 0;
+    exercises.push(...pinned, ...rest);
+
     const totalSets = exercises.reduce((sum, e) => sum + e.sets, 0);
     return {
         minutes,
@@ -4394,6 +4466,58 @@ let suggestedMinutes = null;     // null until a length is chosen
 let suggestedLocation = null;    // asked fresh every time - gyms change daily
 let suggestedSession = null;
 
+// The generated session used to live only in memory, so a page refresh threw
+// away the day's plan mid-workout: the pill vanished, the draft under its name
+// became unreachable, and the panel went back to "how long have you got?" as
+// if the morning had not happened. Today's generation now persists on the
+// device for the rest of the day - refreshed, backgrounded, or completed, it
+// stays until it is scrapped or the date changes.
+const GENERATED_KEY = 'fcc:generated:v1';
+let generatedToday = null;
+
+function readGeneratedToday() {
+    try {
+        const raw = JSON.parse(localStorage.getItem(GENERATED_KEY) || 'null');
+        if (!raw || raw.date !== getTodayDateString() || !Array.isArray(raw.exercises)) return null;
+        return raw;
+    } catch (e) { return null; }
+}
+
+function writeGeneratedToday(value) {
+    try {
+        if (value) localStorage.setItem(GENERATED_KEY, JSON.stringify(value));
+        else localStorage.removeItem(GENERATED_KEY);
+    } catch (e) { /* storage unavailable - the session still works, it just won't survive a refresh */ }
+}
+
+// Rebuilds the in-memory side of a persisted generation at boot: the session
+// type back into the program (so its pill exists and its draft can hydrate),
+// and the logger reopened on it if it was started.
+function restoreGeneratedSession() {
+    generatedToday = readGeneratedToday();
+    if (!generatedToday || !activeProgram) return;
+    if (!activeProgram.workouts) activeProgram.workouts = {};
+    if (!activeProgram.workouts[generatedToday.label]) {
+        activeProgram.workouts[generatedToday.label] = generatedToday.exercises.map(e => ({
+            name: e.name, sets: e.sets, reps: e.reps,
+            trackingType: e.trackingType, notes: e.notes
+        }));
+    }
+    lastGeneratedLabel = generatedToday.label;
+    if (generatedToday.started) {
+        currentDay = substituteDayKeyFor(generatedToday.label);
+    }
+}
+
+// A workout saved today under the generated session's name means it was
+// completed - used for the panel's status line.
+function generatedSessionLoggedToday() {
+    if (!generatedToday) return false;
+    const today = getTodayDateString();
+    return allWorkouts.some(w =>
+        w.date === today && normalizeLabel(w.day) === normalizeLabel(generatedToday.label));
+}
+
 window.suggestSessionFor = function (minutes) {
     suggestedMinutes = minutes;
     suggestedLocation = null;
@@ -4405,13 +4529,33 @@ window.suggestPlaceFor = function (locationKey) {
     if (!LOCATIONS[locationKey] || suggestedMinutes === null) return;
     suggestedLocation = locationKey;
     suggestedSession = generateSession(suggestedMinutes, locationKey);
+    // A real session persists for the day; a rest verdict does not need to -
+    // it re-derives instantly and correctly on every look.
+    if (!suggestedSession.rest) {
+        generatedToday = {
+            date: getTodayDateString(),
+            minutes: suggestedMinutes,
+            location: locationKey,
+            label: suggestedSessionName(suggestedSession),
+            exercises: suggestedSession.exercises,
+            totalSets: suggestedSession.totalSets,
+            groups: suggestedSession.groups,
+            fatigueNote: suggestedSession.fatigueNote || '',
+            started: false
+        };
+        writeGeneratedToday(generatedToday);
+    }
     renderTodayPanel();
 };
 
+// "Suggest something else": scraps today's generation and returns to the
+// chips. The logger is untouched - anything already loaded or typed stays.
 window.dismissSuggestion = function () {
     suggestedMinutes = null;
     suggestedLocation = null;
     suggestedSession = null;
+    generatedToday = null;
+    writeGeneratedToday(null);
     renderTodayPanel();
 };
 
@@ -4421,32 +4565,56 @@ window.dismissSuggestion = function () {
 let lastGeneratedLabel = null;
 
 window.startSuggestedSession = function () {
-    if (!suggestedSession || suggestedSession.rest) return;
+    if (!generatedToday) return;
     if (!activeProgram) return;
     if (!activeProgram.workouts) activeProgram.workouts = {};
 
     // Only ever one generated session at a time. Without this, asking twice
     // leaves yesterday's suggestion sitting in the pill row forever.
-    if (lastGeneratedLabel && activeProgram.workouts[lastGeneratedLabel]) {
+    if (lastGeneratedLabel && lastGeneratedLabel !== generatedToday.label
+        && activeProgram.workouts[lastGeneratedLabel]) {
         delete activeProgram.workouts[lastGeneratedLabel];
     }
 
-    const label = suggestedSessionName(suggestedSession);
-    // Held in memory only. Writing generated sessions into the saved program
-    // would fill the library with one-offs named after a Tuesday. The logged
-    // session still records its own name, so history keeps it.
-    activeProgram.workouts[label] = suggestedSession.exercises.map(e => ({
+    const label = generatedToday.label;
+    // Kept out of the saved program document. Writing generated sessions into
+    // the program would fill the library with one-offs named after a Tuesday;
+    // instead the session lives in memory plus the on-device generation store,
+    // and the logged session records its own name so history keeps it.
+    activeProgram.workouts[label] = generatedToday.exercises.map(e => ({
         name: e.name, sets: e.sets, reps: e.reps,
         trackingType: e.trackingType, notes: e.notes
     }));
     lastGeneratedLabel = label;
+    generatedToday.started = true;
+    writeGeneratedToday(generatedToday);
 
     // The pill has to exist before selectDay can mark it active.
     renderWorkoutDaySelector();
     selectDay(substituteDayKeyFor(label));
-    dismissSuggestion();
+    // The panel stays on today's session rather than resetting to the chips -
+    // the transient choosing state is cleared, the persisted session is not.
+    suggestedMinutes = null;
+    suggestedLocation = null;
+    suggestedSession = null;
+    renderTodayPanel();
     showToast(`${label} loaded. Log it like any other session.`, 'success');
 };
+
+// Big multi-joint lifts come first in a session, isolation after them, core
+// and holds last. The generator once ordered purely by urgency, which put
+// Cable Lateral Raise before Seated Dumbbell Shoulder Press - the press then
+// ran pre-exhausted, logged weaker numbers than usual, and history read it as
+// regression when it was really just sequencing.
+const COMPOUND_TOKENS = ['squat', 'deadlift', 'press', 'row', 'pull-up', 'pullup', 'pull up',
+    'chin-up', 'chinup', 'pulldown', 'dip', 'thrust', 'lunge', 'step-up', 'step up',
+    'good morning', 'rdl', 'push-up', 'pushup', 'push up'];
+
+function movementOrder(name) {
+    if (classifyMuscleGroup(name) === 'Core') return 2;
+    const n = normalizeLabel(name);
+    return COMPOUND_TOKENS.some(token => n.includes(token)) ? 0 : 1;
+}
 
 // Named for what it trains, not for a slot in a plan. "Back & Quads - 30 min"
 // carries no implication that you were meant to do it on a particular day.
@@ -4477,7 +4645,46 @@ function renderTodayPanel() {
     }
     html += '</div>';
 
-    if (suggestedMinutes === null) {
+    // A generation from a previous day silently expires.
+    if (generatedToday && generatedToday.date !== getTodayDateString()) {
+        generatedToday = null;
+        writeGeneratedToday(null);
+    }
+
+    if (generatedToday) {
+        // Today already has a session. It stays here - previewed, started or
+        // completed - until the day ends or it is scrapped, so a refresh can
+        // never bounce the panel back to "how long have you got?".
+        const completed = generatedSessionLoggedToday();
+        const status = completed
+            ? 'Completed. Tap its pill below to add to it.'
+            : (generatedToday.started
+                ? 'Started. Its pill below reopens it any time today.'
+                : '');
+        html += `<div class="today-plan">
+                    <div class="today-plan-head">
+                        <span class="today-plan-name">${escapeHtml(generatedToday.label)}</span>
+                        <span class="today-plan-meta">${generatedToday.totalSets} sets &middot; ${
+                            escapeHtml((LOCATIONS[generatedToday.location] || {}).label || '')}</span>
+                    </div>
+                    ${completed ? '<div class="today-status done">&#10003; ' + escapeHtml(status) + '</div>'
+                        : (generatedToday.started ? '<div class="today-status">' + escapeHtml(status) + '</div>' : '')}
+                    <ul class="today-plan-list">`;
+        generatedToday.exercises.forEach(e => {
+            const reps = e.reps ? ` &times; ${escapeHtml(e.reps)}` : '';
+            html += `<li><span class="today-ex">${escapeHtml(e.name)}</span>
+                         <span class="today-ex-meta">${e.sets}${reps}</span></li>`;
+        });
+        html += `</ul>
+                    ${generatedToday.fatigueNote
+                        ? `<div class="today-fatigue">${escapeHtml(generatedToday.fatigueNote)}</div>`
+                        : ''}
+                    ${!generatedToday.started && !completed
+                        ? '<button type="button" class="today-start" data-start="1">Start this</button>'
+                        : ''}
+                    <button type="button" class="today-back" data-dismiss="1">Scrap it and suggest something else</button>
+                 </div>`;
+    } else if (suggestedMinutes === null) {
         html += `<div class="today-ask">How long have you got today?</div>
                  <div class="today-chips">`;
         SESSION_LENGTHS.forEach(m => {
@@ -4495,29 +4702,11 @@ function renderTodayPanel() {
         });
         html += `</div>
                  <button type="button" class="today-back" data-dismiss="1">Different length</button>`;
-    } else if (suggestedSession.rest) {
+    } else {
+        // Reaching here with both answers given means the verdict was rest -
+        // a real session would have been persisted and rendered above.
         html += `<div class="today-rest">${escapeHtml(suggestedSession.reason)}</div>
                  <button type="button" class="today-back" data-dismiss="1">Pick a different length</button>`;
-    } else {
-        html += `<div class="today-plan">
-                    <div class="today-plan-head">
-                        <span class="today-plan-name">${escapeHtml(suggestedSessionName(suggestedSession))}</span>
-                        <span class="today-plan-meta">${suggestedSession.totalSets} sets &middot; ${
-                            escapeHtml((LOCATIONS[suggestedLocation] || {}).label || '')}</span>
-                    </div>
-                    <ul class="today-plan-list">`;
-        suggestedSession.exercises.forEach(e => {
-            const reps = e.reps ? ` &times; ${escapeHtml(e.reps)}` : '';
-            html += `<li><span class="today-ex">${escapeHtml(e.name)}</span>
-                         <span class="today-ex-meta">${e.sets}${reps}</span></li>`;
-        });
-        html += `</ul>
-                    ${suggestedSession.fatigueNote
-                        ? `<div class="today-fatigue">${escapeHtml(suggestedSession.fatigueNote)}</div>`
-                        : ''}
-                    <button type="button" class="today-start" data-start="1">Start this</button>
-                    <button type="button" class="today-back" data-dismiss="1">Different length</button>
-                 </div>`;
     }
 
     container.innerHTML = html;
@@ -7559,6 +7748,10 @@ async function initializeFitnessApp() {
     applyProgramFilterToWorkouts();
     refreshStartupCache();
 
+    // Today's generated session survives the refresh: rebuild its pill and, if
+    // it was started, reopen the logger on it before anything renders.
+    restoreGeneratedSession();
+
     // Typing during the Firebase round trip is already covered: the 400ms
     // debounce persists it, and initializeWorkout now always restores the
     // current day's draft. Flushing here instead parked the hydrated,
@@ -7571,6 +7764,10 @@ async function initializeFitnessApp() {
 
     updateSuggestions();
     updateAnalytics();
+
+    // Any session that failed to reach Firestore on a previous visit is
+    // re-saved from its on-device backup. Deliberately after first paint.
+    reconcileLocalBackups().catch(err => console.error('Backup reconcile failed:', err));
 
     console.log('Fitness Command Center initialized with fresh data.');
 

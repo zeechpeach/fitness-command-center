@@ -29,6 +29,10 @@ committed is live within about two minutes.
 - A session can be logged in parts: log at lunch, add to it in the evening, and
   it stays one saved session
 - Sets autosave to the device as you type and survive backgrounding the tab
+- **Every completed session is backed up on the device before the network is
+  tried.** If the save fails - dead connection, auth lapse - the session is
+  re-saved automatically on the next load, with a toast saying so. A failed
+  save can inconvenience you; it can no longer lose a workout.
 
 ### The week
 - **Weekly volume targets** per muscle group, shown at the top of the Workout
@@ -65,9 +69,15 @@ let the generator prescribe squats the morning after a night on the strip.
 ### Today's suggestion
 Tap how long you have - 15, 30, 45 or 60 minutes - then where you are, and the
 app builds a session from what the week still owes, what was trained in the
-last 48 hours, the time available, and the equipment actually in the room. It
-is regenerated on every look rather than assigned in advance, so there is
-nothing to fall behind on.
+last 48 hours, the time available, and the equipment actually in the room.
+Nothing is assigned in advance, so there is nothing to fall behind on - but
+**once generated, the session is the day's plan and it stays**: previewed,
+started or completed, it survives page refreshes and hours away, until it is
+scrapped or the day ends.
+
+Exercises come in training order: big multi-joint lifts first, isolation work
+after them, core last - so a press is never run pre-exhausted after laterals
+and logged as false regression.
 
 The location is asked fresh every time, deliberately: which gym today is the
 one fact that changes day to day.

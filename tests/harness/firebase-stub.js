@@ -110,6 +110,9 @@ export function getDocs(q) {
 }
 
 export function addDoc(ref, data) {
+  // Simulated outage: set window.__failWrites = true and every write rejects,
+  // the way a dead connection or an auth lapse looks to the app.
+  if (window.__failWrites) return Promise.reject(new Error('simulated write failure'));
   const name = ref.name;
   const id = nextId(name);
   store[name] = store[name] || [];
@@ -122,6 +125,7 @@ export function addDoc(ref, data) {
 }
 
 export function updateDoc(ref, data) {
+  if (window.__failWrites) return Promise.reject(new Error('simulated write failure'));
   const name = ref.name, id = ref.id;
   const arr = store[name] || [];
   const row = arr.find(r => r.id === id);
