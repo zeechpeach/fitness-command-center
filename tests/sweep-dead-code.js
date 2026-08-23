@@ -18,6 +18,19 @@ function report(label, names) {
   return dead;
 }
 
+// Conflict markers that survive a bad merge resolution render as literal text
+// on the page ("<<<<<<< HEAD"). This shipped once; never again.
+const cssSrc = fs.readFileSync(ROOT + '/src/css/styles.css', 'utf8');
+const markerHits = [];
+[['src/js/app.js', js], ['index.html', html], ['src/css/styles.css', cssSrc]].forEach(([name, text]) => {
+  text.split('\n').forEach((line, i) => {
+    if (/^(<{7}|={7}|>{7})([ \t]|$)/.test(line)) markerHits.push(`${name}:${i + 1}  ${line.slice(0, 40)}`);
+  });
+});
+console.log(`\n=== merge conflict markers: ${markerHits.length} ===`);
+markerHits.forEach(h => console.log('  ' + h));
+if (markerHits.length) process.exitCode = 1;
+
 // module-scoped function declarations
 const fns = [...js.matchAll(/^\s*(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\s*\(/gm)].map(m => m[1]);
 report('module functions', [...new Set(fns)]);

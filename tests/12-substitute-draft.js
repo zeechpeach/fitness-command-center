@@ -16,13 +16,13 @@ const { realProgram } = require('./harness/seed');
   const draftKeys = await page.evaluate(() => Object.keys(JSON.parse(localStorage.getItem('fcc:draft:v2')||'{}').days||{}));
   console.log('draft day keys: ' + JSON.stringify(draftKeys));
 
-  // switch to a scheduled day and back
-  await page.locator('#day3-btn').click().catch(()=>{});
-  await page.waitForTimeout(900);
-  await page.locator(sel).scrollIntoViewIfNeeded();
-  await page.waitForTimeout(200);
+  // leave and return: with scheduled pills gone, leaving is deselecting -
+  // tap the active pill to put it away, then tap it again to come back.
   const b2 = await page.locator(sel).boundingBox();
-  await page.touchscreen.tap(b2.x+b2.width/2, b2.y+b2.height/2);
+  await page.touchscreen.tap(b2.x+b2.width/2, b2.y+b2.height/2);   // away
+  await page.waitForTimeout(900);
+  const b3 = await page.locator(sel).boundingBox();
+  await page.touchscreen.tap(b3.x+b3.width/2, b3.y+b3.height/2);   // back
   await page.waitForTimeout(900);
   const back = await page.locator('.set-row').first().locator('.reps-input').first().inputValue();
   console.log('value after leaving and returning: ' + JSON.stringify(back));

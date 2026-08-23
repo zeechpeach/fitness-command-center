@@ -50,6 +50,34 @@ const offered = (page) => page.evaluate(() => {
   console.log('active after tapping: ' + JSON.stringify(active));
   F('tapping it selects it', /Tournament Circuit/.test(active || ''), JSON.stringify(active));
 
+  // --- an accidental tap is not a commitment: tap again to put it away ---
+  await page.locator('.day-btn[data-substitute="Tournament Circuit"]').click();
+  await page.waitForTimeout(700);
+  const deselected = await page.evaluate(() => ({
+    active: document.querySelector('#workout-day-selector .day-btn.active')?.innerText || null,
+    hint: !!document.querySelector('.no-session-hint'),
+    setRows: document.querySelectorAll('.set-row').length
+  }));
+  console.log('after tapping it again: ' + JSON.stringify(deselected));
+  F('tapping the selected pill deselects it', deselected.active === null, JSON.stringify(deselected));
+  F('the logger returns to its honest empty state', deselected.hint && deselected.setRows === 0,
+    JSON.stringify(deselected));
+
+  // --- typed sets survive the round trip ---
+  await page.locator('.day-btn[data-substitute="Tournament Circuit"]').click();
+  await page.waitForTimeout(700);
+  await page.locator('.set-row .reps-input').first().fill('12');
+  await page.waitForTimeout(400);
+  await page.locator('.day-btn[data-substitute="Tournament Circuit"]').click();   // away
+  await page.waitForTimeout(700);
+  await page.locator('.day-btn[data-substitute="Tournament Circuit"]').click();   // and back
+  await page.waitForTimeout(700);
+  const restored = await page.evaluate(() =>
+    document.querySelector('.set-row .reps-input')?.value ?? null);
+  console.log('typed value after deselect and reselect: ' + JSON.stringify(restored));
+  F('sets typed before an accidental deselect come back on reselect', restored === '12',
+    JSON.stringify(restored));
+
   // --- its exercises render ---
   const rendered = await page.evaluate(() => ({
     rows: document.querySelectorAll('.set-row').length,
