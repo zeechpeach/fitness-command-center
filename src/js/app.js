@@ -238,13 +238,16 @@ async function saveWorkoutToFirebase(workoutData) {
 // lets the programs and workouts queries run concurrently at startup.
 let rawWorkouts = [];
 
-function filterWorkoutsByActiveProgram(workouts) {
-    return (workouts || []).filter(workout =>
-        !activeProgram || !workout.programId || workout.programId === activeProgram.id);
-}
-
+// History is history. This used to filter out any workout whose programId did
+// not match the active program - and because more than one program document
+// can end up marked active (deactivating the old one is a separate write that
+// can fail silently), WHICH program counted as active could differ between
+// loads. A session saved under one pick was invisible under the other: still
+// in Firestore, gone from every panel. That is how a logged workout "vanished"
+// on Aug 18 and how a fresh session showed a week of 0% bars. Nothing is
+// filtered any more; a logged session counts, whatever program stamped it.
 function applyProgramFilterToWorkouts() {
-    allWorkouts = filterWorkoutsByActiveProgram(rawWorkouts);
+    allWorkouts = rawWorkouts;
     return allWorkouts;
 }
 
@@ -273,7 +276,7 @@ async function loadWorkoutsFromFirebase() {
         // Filtering is a separate step so this query can start before the
         // programs query has resolved.
         applyProgramFilterToWorkouts();
-        console.log(`Loaded ${rawWorkouts.length} workouts (${allWorkouts.length} for active program)`);
+        console.log(`Loaded ${rawWorkouts.length} workouts`);
         return allWorkouts;
     } catch (e) {
         console.error("Error loading workouts:", e);
@@ -287,7 +290,7 @@ async function loadWorkoutsFromFirebase() {
             });
             rawWorkouts = workouts;
             applyProgramFilterToWorkouts();
-            console.log(`Loaded ${rawWorkouts.length} workouts (fallback, ${allWorkouts.length} for active program)`);
+            console.log(`Loaded ${rawWorkouts.length} workouts (fallback query)`);
             return allWorkouts;
         } catch (fallbackError) {
             console.error("Fallback query also failed:", fallbackError);
@@ -937,8 +940,23 @@ async function loadPrograms() {
 
         console.log(`Loaded ${programs.length} programs`);
 
-        // Find active program
-        activeProgram = programs.find(p => p.active) || null;
+        // Find the active program. More than one document can be marked
+        // active when a deactivation write failed; an unordered find() then
+        // picked whichever came back first, and the pick could change between
+        // loads. Take the most recently activated, deterministically, and
+        // repair the stragglers in the background so the ambiguity heals.
+        const activeCandidates = programs.filter(p => p.active);
+        if (activeCandidates.length > 1) {
+            activeCandidates.sort((a, b) =>
+                String(b.activatedAt || '').localeCompare(String(a.activatedAt || '')));
+            console.warn(`${activeCandidates.length} programs marked active; using "${activeCandidates[0].name}" (most recently activated) and repairing the rest.`);
+            activeCandidates.slice(1).forEach(p => {
+                p.active = false;
+                updateDoc(doc(db, 'programs', p.id), { active: false })
+                    .catch(err => console.error('Could not repair duplicate active program:', err));
+            });
+        }
+        activeProgram = activeCandidates[0] || null;
 
         // If no programs exist, migrate hardcoded program
         if (programs.length === 0) {
