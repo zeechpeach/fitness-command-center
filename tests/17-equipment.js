@@ -31,6 +31,8 @@ const suggest = (page, minutes, place) => page.evaluate(({ m, p }) => {
 }, { m: minutes, p: place });
 
 const MACHINE_ONLY = /Leg Press|Leg Extension|Leg Curl|Hack Squat|Pec Deck|Machine/i;
+// Floor work needs a floor you would touch; the gyms' floors are not that.
+const FLOOR_WORK = /Push-?Up|Handstand|Plank|Hollow|Dead Bug|Glute Bridge|Side-Lying|Ab Wheel|L-Sit|Nordic|Swimmer|Crunch/i;
 
 (async () => {
   let fails = 0;
@@ -77,6 +79,8 @@ const MACHINE_ONLY = /Leg Press|Leg Extension|Leg Curl|Hack Squat|Pec Deck|Machi
     console.log('\nlegs at the full gym -> ' + JSON.stringify(s.exercises));
     F('the full gym may use the leg machines', s.exercises.some(e => MACHINE_ONLY.test(e)),
       JSON.stringify(s.exercises));
+    F('no floor work at the full gym - its floor is not one to touch',
+      !s.exercises.some(e => FLOOR_WORK.test(e)), JSON.stringify(s.exercises));
     await browser.close();
   }
 
@@ -88,6 +92,8 @@ const MACHINE_ONLY = /Leg Press|Leg Extension|Leg Curl|Hack Squat|Pec Deck|Machi
     console.log('legs at the main gym -> ' + JSON.stringify(s.exercises));
     F('the main gym is never told to use a machine it does not have',
       !s.exercises.some(e => MACHINE_ONLY.test(e)), JSON.stringify(s.exercises));
+    F('no floor work at the main gym either', !s.exercises.some(e => FLOOR_WORK.test(e)),
+      JSON.stringify(s.exercises));
     F('legs are still trained, with rack and dumbbell work instead',
       s.exercises.some(e => /Squat|Deadlift|Good Morning|Lunge|Step-Up|Hip Thrust|Glute Bridge|Calf/i.test(e)),
       JSON.stringify(s.exercises));
@@ -107,6 +113,7 @@ const MACHINE_ONLY = /Leg Press|Leg Extension|Leg Curl|Hack Squat|Pec Deck|Machi
       JSON.stringify(s.exercises));
     F('home still gets loaded work, not just bodyweight - the Vitruvian and dumbbells count',
       s.exercises.some(e => /Dumbbell|Cable|Goblet/i.test(e)), JSON.stringify(s.exercises));
+    F('floor work is allowed at home - the one clean floor', true, 'by construction');
     F('home still gets a session', !s.isRest && s.exercises.length >= 2,
       JSON.stringify({ rest: s.isRest, n: s.exercises.length }));
     await browser.close();
