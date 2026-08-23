@@ -7915,11 +7915,26 @@ function renderWorkoutDaySelector() {
 }
 
 function selectDay(dayKey) {
+    // Tapping the pill that is already selected DESELECTS it. An accidental
+    // tap on Tournament Circuit was otherwise a commitment: no unselect, no
+    // way back to the empty logger, so the mis-tap became the day's session.
+    // Anything already typed is parked in the draft and comes back if the same
+    // pill is tapped again.
+    if (dayKey === currentDay) {
+        if (currentWorkoutHasData()) persistWorkoutDraft();
+        currentDay = '';
+        pendingDraftDay = null;
+        renderWorkoutDaySelector();
+        initializeWorkout();
+        updateSuggestions();
+        return;
+    }
+
     // Tapping a day pill used to call initializeWorkout(), whose first line is
     // `currentWorkout = {}`. Four exercises into a session, a stray tap on the
     // horizontally scrolling pill row erased everything with no confirm and no
     // undo. Park the draft instead of destroying it.
-    if (dayKey !== currentDay && currentWorkoutHasData()) {
+    if (currentWorkoutHasData()) {
         persistWorkoutDraft();   // park this day's work before leaving it
         const ok = confirm('You have sets logged in this session. Switch days anyway? Your entries are saved and come back when you return to this day.');
         if (!ok) return;
