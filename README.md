@@ -19,7 +19,10 @@ committed is live within about two minutes.
   - **Time (seconds)** - holds, planks, balance, levers, hangs
   - **Duration (minutes)** - walking, cycling, rowing, steady cardio
   - **Check it off** - stretches, mobility and primer work
-- Previous-session numbers beside every set, with a one-tap Copy
+- Previous-session numbers beside every set, with a one-tap Copy. History
+  follows the exercise, not the session name - a generated session inherits
+  the numbers logged under "Upper A" - and matches by rep scheme, so a light
+  10x10 volume day never becomes the reference for a normal 3x8 day.
 - Exercise approach variations (Standard, Heavy, Form Focus)
 - Skill progression ladders for front lever, handstand and L-sit
 - Pre- and post-session intensity ratings
@@ -60,10 +63,27 @@ let the generator prescribe squats the morning after a night on the strip.
   and the panel says why it was trimmed.
 
 ### Today's suggestion
-Tap how long you have - 15, 30, 45 or 60 minutes - and the app builds a session
-from three things: what the week still owes, what was trained in the last 48
-hours, and the time available. It is regenerated on every look rather than
-assigned in advance, so there is nothing to fall behind on.
+Tap how long you have - 15, 30, 45 or 60 minutes - then where you are, and the
+app builds a session from what the week still owes, what was trained in the
+last 48 hours, the time available, and the equipment actually in the room. It
+is regenerated on every look rather than assigned in advance, so there is
+nothing to fall behind on.
+
+The location is asked fresh every time, deliberately: which gym today is the
+one fact that changes day to day.
+
+- **Main gym** - squat rack, barbell, dumbbells, bench, cable stack, pull-up
+  bar. No leg machines and no back-extension bench, so leg work comes as
+  squats, Romanian deadlifts, good mornings, lunges and cable back extensions
+  instead of leg press and leg curls.
+- **Full gym** - everything, machines included.
+- **Home** - a pull-up bar, dumbbells (one to 50 lb, two 25s), a flat bench,
+  a bike, a treadmill and a Vitruvian, which covers cable-style loading. No
+  barbell, no rack, no incline bench, no machines.
+
+When the program's own exercises for a muscle all need kit today's location
+does not have, built-in fallbacks stand in, so a session is never blank and
+never impossible.
 
 - Trained chest hard yesterday? It picks back and legs today.
 - Four hours of fencing last night? Legs drop down the order and it leads with
@@ -77,14 +97,18 @@ assigned in advance, so there is nothing to fall behind on.
   the week is already covered.
 - Exercise choice favours movements already logged often, so the same lifts
   recur and progressive overload still has something to track.
+- **Catch-up volume day**: when one muscle is essentially untouched with three
+  or fewer days left in the week, a 45+ minute session leads with a 10x10 at
+  ~60% - a light German-volume scheme, deliberately gated to late week so a
+  catch-up tool never becomes the default.
 
-### Schedule
+### Sessions
 - Custom programs of any length, built in Settings or pasted in as JSON
-- **The schedule is a queue, not a calendar rotation.** A slot is consumed only
-  when that session is actually completed, so a missed session rolls to
-  tomorrow and everything behind it slides. Rest slots are consumed by time.
-- A session done out of order resumes the cycle after it
-- Calendar view with completed, scheduled and missed days
+- **Nothing is assigned.** The scheduled day pills are gone: a queue that
+  picked a day and marked it active was a daily assignment you could fail.
+  The suggestion above is the way into a session; sessions the program
+  defines but never schedules (the Tournament Circuit) stay one tap away.
+- Calendar view of completed sessions
 - Delete a mis-logged session from the calendar
 
 ### Nutrition
@@ -98,7 +122,11 @@ assigned in advance, so there is nothing to fall behind on.
   and stays overridable
 - Meals by type (breakfast, lunch, dinner, snack) with per-food macros
 - Daily totals, a saved-foods library, and measured or serving-based portions
-- Calorie and protein targets scaled to bodyweight and goal
+- **Calorie target that follows your real week.** Maintenance is a sedentary
+  baseline (13 kcal/lb of the 7-day average weight) plus the last 7 days of
+  logged activity - fencing hours by kind, hard sets at ~7 kcal each -
+  averaged per day. A tournament weekend raises the target; a quiet week
+  lowers it. Cutting takes 500 off; protein holds at 1 g/lb on a cut.
 - Training-day vs rest-day comparison over the last 14 days
 
 ### Body metrics
@@ -110,14 +138,19 @@ assigned in advance, so there is nothing to fall behind on.
 - Estimated 1RM (Epley) per lift, so extra reps at the same load count
 - Hard sets per muscle group per week, which counts bodyweight and skill work
   that volume-in-pounds scores as zero
-- Workout streak and adherence, measured against the pace the program
-  prescribes over the days actually available
+- **Discipline score: did you show up at all.** A lifted session counts, a
+  logged fencing night counts; which session it was does not matter. Scored
+  over the last 30 days as active days out of available days, with rest days
+  reported plainly rather than as failures. The streak works the same way,
+  and fencing-only days paint on the calendar in their own shade. The
+  calendar is a record of what happened - it projects nothing forward and
+  never paints a day as missed.
 - Strength progression and plateau detection
 - Session comparison by exercise type
 
 ### Travel and sick days
-Both pause the schedule without counting as missed workouts or breaking the
-streak, and are removed from the adherence denominator.
+Both leave the discipline score's denominator entirely and are transparent to
+the streak - they neither count nor break it.
 
 ## Data storage
 
