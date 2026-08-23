@@ -443,6 +443,14 @@
             cursor: pointer;
         }
 
+        .today-status {
+            font-size: 0.8125rem;
+            color: var(--color-text-secondary);
+            padding: 0 0 0.625rem;
+        }
+
+        .today-status.done { color: var(--color-accent-primary); }
+
         /* Why the session is shorter than the time you said you had. Without
            this the generator looks like it is ignoring you. */
         .today-fatigue {

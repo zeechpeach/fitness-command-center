@@ -84,6 +84,20 @@ const suggest = (page, minutes) => page.evaluate(m => {
     console.log('60 min total sets: ' + totalSets);
     F('a 60 minute session is about 20 sets', totalSets >= 15 && totalSets <= 24, String(totalSets));
 
+    // Compounds before isolation, core last: laterals before a press left the
+    // press pre-exhausted and made history read as regression.
+    const names = long.exercises.map(e => e.name);
+    const isCompound = n => /squat|deadlift|press|row|pull|chin|dip|thrust|lunge|step|good morning|push-up|pushup/i.test(n);
+    const isCore = n => /hollow|plank|l-sit|dead bug|ab wheel|leg raise|knee raise|pallof/i.test(n);
+    const lastCompound = names.reduce((acc, n, i) => (isCompound(n) && !isCore(n) ? i : acc), -1);
+    const firstIsolation = names.findIndex(n => !isCompound(n) && !isCore(n));
+    const firstCore = names.findIndex(isCore);
+    console.log('order: ' + JSON.stringify(names));
+    F('compound lifts come before isolation work',
+      firstIsolation === -1 || lastCompound === -1 || lastCompound < firstIsolation,
+      JSON.stringify(names));
+    F('core comes last', firstCore === -1 || firstCore > lastCompound, JSON.stringify(names));
+
     F('no page errors', errors.length === 0, JSON.stringify(errors.map(e => e.message)));
     await browser.close();
   }
@@ -152,13 +166,15 @@ const suggest = (page, minutes) => page.evaluate(m => {
       return {
         active: active ? active.innerText.replace(/\s+/g, ' ').trim() : null,
         setRows: document.querySelectorAll('.set-row').length,
-        panelReset: /How long have you got/i.test(document.getElementById('today-panel').innerText)
+        panelKeepsSession: /min\b/.test(document.querySelector('.today-plan-name')?.innerText || '')
+          && !/How long have you got/i.test(document.getElementById('today-panel').innerText)
       };
     });
     console.log('\nafter Start this: ' + JSON.stringify(loaded));
     F('the suggested session becomes the active session', /min$/.test(loaded.active || ''), JSON.stringify(loaded.active));
     F('its exercises are loaded and loggable', loaded.setRows > 0, String(loaded.setRows));
-    F('the panel resets after starting', loaded.panelReset === true, String(loaded.panelReset));
+    F('the panel keeps showing the started session instead of resetting',
+      loaded.panelKeepsSession === true, String(loaded.panelKeepsSession));
     F('no page errors', errors.length === 0, JSON.stringify(errors.map(e => e.message)));
     await browser.close();
   }
