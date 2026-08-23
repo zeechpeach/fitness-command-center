@@ -89,7 +89,9 @@ one fact that changes day to day.
 - **Full gym** - everything, machines included.
 - **Home** - a pull-up bar, dumbbells (one to 50 lb, two 25s), a flat bench,
   a bike, a treadmill and a Vitruvian, which covers cable-style loading. No
-  barbell, no rack, no incline bench, no machines.
+  barbell, no rack, no incline bench, no machines. Home is also the only
+  place with a floor clean enough to touch, so floor work - push-ups,
+  handstands, planks, anything lying down - is suggested at home only.
 
 When the program's own exercises for a muscle all need kit today's location
 does not have, built-in fallbacks stand in, so a session is never blank and

@@ -3627,6 +3627,9 @@ function classifyMuscleGroup(exerciseName) {
 // Vitruvian - which covers cable-style loading, so 'cable' work is available
 // at home too. What home lacks is a barbell with a rack, and the machines.
 //
+// Home is also the only place with a floor clean enough to touch: floor work
+// (push-ups, handstands, planks, anything lying down) is home-only.
+//
 // Every exercise is classified by the one piece of kit it cannot happen
 // without, using the same longest-match scoring as the muscle classifier, and
 // the generator only offers what today's location can actually provide.
@@ -3635,7 +3638,7 @@ function classifyMuscleGroup(exerciseName) {
 const LOCATIONS = {
     main: { label: 'Main gym', has: ['bodyweight', 'pullup', 'dipbars', 'dumbbell', 'barbell', 'cable', 'incline'] },
     full: { label: 'Full gym', has: ['bodyweight', 'pullup', 'dipbars', 'dumbbell', 'barbell', 'cable', 'incline', 'machine'] },
-    home: { label: 'Home',     has: ['bodyweight', 'pullup', 'dumbbell', 'cable'] }
+    home: { label: 'Home',     has: ['bodyweight', 'pullup', 'dumbbell', 'cable', 'floor'] }
 };
 
 // Longest match wins, so 'cable back extension' is cable work even though
@@ -3658,6 +3661,13 @@ const EQUIPMENT_PATTERNS = [
                                       'shoulder press', 'chest press', 'fly', 'row', 'shrug', 'step-up',
                                       'step up', 'lunge', 'split squat', 'weighted'] },
     { equipment: 'dipbars',   match: ['dip', 'weighted dip'] },
+    // Anything with hands or body on the floor needs a floor you would touch.
+    // The gyms' floors are not that; home's is. Standing bodyweight work
+    // (squats, calf raises) is unaffected.
+    { equipment: 'floor',     match: ['push-up', 'pushup', 'push up', 'handstand', 'plank',
+                                      'hollow', 'dead bug', 'glute bridge', 'side-lying',
+                                      'ab wheel', 'l-sit', 'l sit', 'nordic', 'swimmer',
+                                      'bird dog', 'superman', 'crunch'] },
     // The home bench is flat, so anything on an incline stays at the gyms.
     // The full phrases outrank 'dumbbell' in longest-match scoring.
     { equipment: 'incline',   match: ['incline', 'incline press', 'incline dumbbell press',
