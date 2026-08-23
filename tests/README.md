@@ -37,6 +37,10 @@ Playwright will not find on its own, point at it with `PW_CHROMIUM=/path/to/chro
 | `10-all-tabs.js` | Six weeks of realistic history across every tab: no page errors, no `NaN` on screen, no sideways scrolling |
 | `11-substitute-session.js` | The Tournament Circuit is selectable, saves under its own name, and does not consume the day the queue owes |
 | `12-substitute-draft.js` | A draft typed on a substitute day survives leaving, returning and reloading |
+| `13-combos.js` | Building a combo from saved foods, its Save button reachable at 390x844, and one tap logging every component |
+| `14-weekly-volume.js` | The week panel: sets done against sets owed, credit capped per group, ordering by what is furthest behind |
+| `15-session-suggestion.js` | "How long have you got" builds a session from debt and recovery, is willing to say rest, and Start this loads it as a loggable session |
+| `16-fencing.js` | Two-tap fencing logging; a coaching night pushes the next day to upper body, a tournament day trims the session, and fencing credit quiets a leg bar without filling it |
 | `sweep-inline-handlers.js` | Every inline `onclick`/`oninput` in the app resolves to a function that actually exists |
 | `sweep-dead-code.js` | No unreferenced functions, handlers or variables; no `getElementById` pointing at an element that is not there |
 | `sweep-unused-css.js` | No CSS rules for classes nothing uses |

@@ -39,6 +39,26 @@ committed is live within about two minutes.
   weekly plan is an assignment you can fail; a session count is something you
   can plan around.
 
+### Fencing
+Fifteen hours a week of coaching and twelve-hour tournament days used to be
+invisible to this app, which made the week look like a week of sitting still and
+let the generator prescribe squats the morning after a night on the strip.
+
+- Logged in two taps: the kind of day (coaching, training, tournament) and the
+  hours. No keyboard, no date picker - it assumes today.
+- Converted into an equivalent-set load for the muscles fencing actually taxes -
+  quads, calves, glutes, hamstrings, core - weighted by kind, since coaching is
+  not the same as competing.
+- **It counts toward the week, capped at half of each target.** Footwork keeps
+  legs busy but it is not loaded work, and loaded work is what holds muscle
+  through a deficit, so fencing can quiet a leg bar and never fill it. The
+  fencing share is drawn as a separate hatched segment so the two never read as
+  the same thing.
+- It feeds the recovery side of the suggestion, so a heavy coaching night pushes
+  the next day toward upper body rather than toward nothing.
+- A long day shrinks the whole session rather than dropping exercises from it,
+  and the panel says why it was trimmed.
+
 ### Today's suggestion
 Tap how long you have - 15, 30, 45 or 60 minutes - and the app builds a session
 from three things: what the week still owes, what was trained in the last 48
@@ -46,6 +66,8 @@ hours, and the time available. It is regenerated on every look rather than
 assigned in advance, so there is nothing to fall behind on.
 
 - Trained chest hard yesterday? It picks back and legs today.
+- Four hours of fencing last night? Legs drop down the order and it leads with
+  upper body.
 - Nothing logged for three days? Everything has recovered, so the biggest debts
   win and you get a full-body session.
 - Capped at 8 hard sets per muscle group in one session: past roughly that,
@@ -112,6 +134,7 @@ Firestore collections:
 | `dailyRoutines` | Morning primer and pre-bed routine completions |
 | `travelMode` | Travel period date ranges |
 | `sickDays` | Individual sick days |
+| `fencing` | Coaching, training and tournament hours |
 
 Export everything as JSON from Settings.
 
