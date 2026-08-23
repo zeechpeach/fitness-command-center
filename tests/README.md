@@ -41,6 +41,8 @@ Playwright will not find on its own, point at it with `PW_CHROMIUM=/path/to/chro
 | `14-weekly-volume.js` | The week panel: sets done against sets owed, credit capped per group, ordering by what is furthest behind |
 | `15-session-suggestion.js` | "How long have you got" builds a session from debt and recovery, is willing to say rest, and Start this loads it as a loggable session |
 | `16-fencing.js` | Two-tap fencing logging; a coaching night pushes the next day to upper body, a tournament day trims the session, and fencing credit quiets a leg bar without filling it |
+| `18-calorie-target.js` | Maintenance is baseline plus the last 7 days of logged fencing and lifting; the notice says how much activity added |
+| `19-rep-history.js` | Last-session hints follow the exercise across session names, a 10x10 never pollutes the 3x8 reference, and GVT only leads late in the week |
 | `17-equipment.js` | The suggestion asks where you are and never prescribes a machine that is not in the room; the main gym gets rack and dumbbell alternatives, home gets bodyweight |
 | `sweep-inline-handlers.js` | Every inline `onclick`/`oninput` in the app resolves to a function that actually exists |
 | `sweep-dead-code.js` | No unreferenced functions, handlers or variables; no `getElementById` pointing at an element that is not there |

@@ -16,25 +16,26 @@ function session(id, date, day, exercise, sets) {
 }
 
 // Monday of the current week, so the seeded sessions always land inside it.
-function mondayOffset() {
+function sundayOffset() {
   const d = new Date();
-  return -((d.getDay() + 6) % 7);
+  return -d.getDay();   // the week starts on SUNDAY - anchoring on Monday put
+                        // "this week's" seeds into last week every Sunday
 }
 
 (async () => {
   let fails = 0;
   const F = (n, c, d) => { if (!ok(n, c, d)) fails++; };
 
-  const mon = mondayOffset();
+  const sun = sundayOffset();
   const { browser, page, errors } = await boot({
     seed: {
       programs: [realProgram()],
       workouts: [
         // 6 chest sets and 9 back sets already done this week.
-        session('w1', dayStr(mon), 'Upper A', 'Incline Dumbbell Press', 6),
-        session('w2', dayStr(mon), 'Upper A', 'Barbell Row', 9),
+        session('w1', dayStr(sun), 'Upper A', 'Incline Dumbbell Press', 6),
+        session('w2', dayStr(sun), 'Upper A', 'Barbell Row', 9),
         // Last week's work must NOT count toward this week.
-        session('w0', dayStr(mon - 3), 'Lower A', 'Back Squat', 12)
+        session('w0', dayStr(sun - 3), 'Lower A', 'Back Squat', 12)
       ]
     }
   });
@@ -90,7 +91,7 @@ function mondayOffset() {
   const s2 = await boot({
     seed: {
       programs: [realProgram()],
-      workouts: [session('w9', dayStr(mon), 'Upper B', 'Cable Fly', 30)]
+      workouts: [session('w9', dayStr(sun), 'Upper B', 'Cable Fly', 30)]
     }
   });
   await s2.page.waitForTimeout(600);

@@ -377,8 +377,46 @@ window.saveBodyGoal = async function () {
     }
 };
 
+// ---------------------------------------------------------------------------
+// The calorie target, made honest.
+//
+// This was a flat weight x 14.5 - one multiplier standing in for every life.
+// For someone coaching fencing fifteen hours a week it undershot badly, and an
+// undershot target on a cut is how training quality and muscle go.
+//
+// Maintenance is now a sedentary baseline plus the activity actually logged in
+// the last 7 days, averaged per day. A tournament weekend raises the target
+// that week; a quiet week lowers it. Nothing is estimated from promises - only
+// from what was logged.
+// ---------------------------------------------------------------------------
+
+const BASELINE_CALS_PER_LB = 13;      // sedentary maintenance, desk job
+const FENCING_CALS_PER_HOUR = 350;    // scaled by kind: coaching 210, training 350, tournament 420
+const CALS_PER_HARD_SET = 7;          // a set plus its rest, averaged
+
+function getDailyActivityCalories() {
+    const today = getTodayDateString();
+    const from = addDaysToDateString(today, -6);
+    let total = 0;
+
+    fencingEntriesBetween(from, today).forEach(entry => {
+        const hours = Math.min(Number(entry.hours) || 0, FENCING_HOURS_CAP);
+        total += hours * FENCING_CALS_PER_HOUR * fencingKindWeight(entry.kind);
+    });
+
+    allWorkouts.forEach(workout => {
+        if (!workout || workout.date < from || workout.date > today) return;
+        if (isNonTrainingLabel(workout.day)) return;
+        Object.values(workout.exercises || {}).forEach(exercise => {
+            total += ((exercise && exercise.sets) || []).filter(isWorkingSet).length * CALS_PER_HARD_SET;
+        });
+    });
+
+    return Math.round(total / 7);
+}
+
 function calculateMaintenanceCalories(weight) {
-    return Math.round(weight * 14.5);
+    return Math.round(weight * BASELINE_CALS_PER_LB) + getDailyActivityCalories();
 }
 
 function calculateTargetCalories(weight, bodyGoal) {
@@ -709,6 +747,16 @@ function updateNutritionCalories() {
     };
     document.getElementById('target-calories-label').textContent =
         labelMap[bodyGoalData.bodyGoal] || 'Your Goal';
+
+    // Say where the number comes from. A target that visibly moves with logged
+    // activity would otherwise look broken.
+    const notice = document.getElementById('calorie-update-notice');
+    if (notice) {
+        const activity = getDailyActivityCalories();
+        notice.textContent = activity > 0
+            ? `Follows your 7-day average weight, plus ${activity} kcal/day from logged training and fencing`
+            : 'Follows your 7-day average weight. Log training and fencing to raise it with your real week.';
+    }
 
     // Calculate remaining calories
     const totalCalories = calculateTotalCalories();
@@ -2965,11 +3013,30 @@ function getExerciseNameCandidates(workoutExercise, fallbackName) {
     return names;
 }
 
+// A 10x10 volume day and a 3x8 strength day are different exercises wearing
+// the same name: the loads are deliberately far apart, and using one as the
+// "previous" reference for the other corrupts progression in both directions.
+// Set count is the honest tell - nobody does 8+ working sets of one movement
+// except on a volume day.
+const VOLUME_SCHEME_MIN_SETS = 8;
+
+function schemeClassOfSetCount(count) {
+    return count >= VOLUME_SCHEME_MIN_SETS ? 'volume' : 'standard';
+}
+
 // Matches by exercise NAME rather than by position, so reordering a program or
 // inserting an exercise no longer compares bench press against rows.
-function findPreviousExercise(day, exerciseIndex, exerciseNames, approach = null) {
+//
+// History is searched in widening circles: this day's sessions first, then ALL
+// sessions. Day-scoped-only lookup meant a generated session ("Back & Quads -
+// 30 min") never found the Barbell Row numbers logged under "Upper A", so the
+// suggestion flow - the app's main path now - had no last-session hints and no
+// Copy buttons at all. Within each circle, an instance with a comparable set
+// scheme is preferred, so a 10x10 day never becomes the reference for a 3x8
+// day or vice versa.
+function findPreviousExercise(day, exerciseIndex, exerciseNames, approach = null, plannedSetCount = null) {
     const dayWorkouts = getWorkoutsForDay(day);
-    if (dayWorkouts.length === 0) return null;
+    const allSorted = allWorkouts.slice().sort((a, b) => workoutRecency(b) - workoutRecency(a));
 
     // Must recognise EVERY tracking type. Checking only weight and reps meant a
     // hold logged as {seconds:'30'} counted as no data, so time-based and
@@ -2994,26 +3061,42 @@ function findPreviousExercise(day, exerciseIndex, exerciseNames, approach = null
     const approachOf = (ex) => normalizeLabel(ex && ex.approach ? ex.approach : 'standard');
     const wantedApproach = approach ? normalizeLabel(approach) : null;
 
-    // Pass 1 - same exercise, same approach. Comparing heavy against heavy.
-    if (wantedApproach) {
-        for (const workout of dayWorkouts) {
-            const match = Object.values(workout.exercises || {})
-                .find(ex => matchesName(ex) && approachOf(ex) === wantedApproach && hasLoggedData(ex));
+    const loggedSetCount = (ex) => (ex.sets || []).filter(isWorkingSet).length;
+    const wantedScheme = plannedSetCount != null ? schemeClassOfSetCount(plannedSetCount) : null;
+    const matchesScheme = (ex) =>
+        wantedScheme === null || schemeClassOfSetCount(loggedSetCount(ex)) === wantedScheme;
+
+    const search = (workouts, wantApproach, wantScheme) => {
+        for (const workout of workouts) {
+            const match = Object.values(workout.exercises || {}).find(ex =>
+                matchesName(ex) && hasLoggedData(ex)
+                && (!wantApproach || approachOf(ex) === wantApproach)
+                && (!wantScheme || matchesScheme(ex)));
             if (match) return { workout, exercise: match };
         }
+        return null;
+    };
+
+    // Widening circles; the first hit wins. Scheme match is dropped last, so a
+    // first-ever volume day still shows SOMETHING rather than a blank.
+    const passes = [
+        [dayWorkouts, wantedApproach, true],
+        [dayWorkouts, null, true],
+        [allSorted, wantedApproach, true],
+        [allSorted, null, true],
+        [dayWorkouts, null, false],
+        [allSorted, null, false]
+    ];
+    for (const [workouts, wantApproach, wantScheme] of passes) {
+        if (!workouts.length) continue;
+        const found = search(workouts, wantApproach, wantScheme);
+        if (found) return found;
     }
 
-    // Pass 2 - same exercise under any approach.
-    for (const workout of dayWorkouts) {
-        const match = Object.values(workout.exercises || {})
-            .find(ex => matchesName(ex) && hasLoggedData(ex));
-        if (match) return { workout, exercise: match };
-    }
-
-    // Pass 3 - legacy position fallback, most recent session only. This is the
-    // old behaviour, kept so rows saved without usable names still show data.
+    // Legacy position fallback, most recent same-day session only, so rows
+    // saved without usable names still show data.
     const mostRecent = dayWorkouts[0];
-    const byIndex = (mostRecent.exercises || {})[exerciseIndex];
+    const byIndex = mostRecent ? (mostRecent.exercises || {})[exerciseIndex] : null;
     if (hasLoggedData(byIndex)) return { workout: mostRecent, exercise: byIndex };
 
     return null;
@@ -3906,6 +3989,7 @@ async function loadFencingData() {
 function refreshAfterFencingChange() {
     renderFencingPanel();
     renderWeeklyVolume();
+    updateNutritionCalories();   // the activity component just changed
     // A logged session changes what today should be, so any suggestion already
     // on screen is stale the moment fencing is added.
     if (suggestedMinutes !== null && suggestedLocation !== null) {
@@ -4064,6 +4148,22 @@ const SESSION_LENGTHS = [15, 30, 45, 60];
 // muscle groups instead of piling onto one.
 const MAX_SETS_PER_GROUP_PER_SESSION = 8;
 
+// The one sanctioned exception: when a single group is essentially untouched
+// (8+ sets behind - the weekly targets top out at 9, so this means nothing
+// happened all week) AND the week is nearly over, the session leads with a
+// German-volume-style 10x10 on ONE movement at a deliberately light load. Ten
+// sets at ~60% is a designed scheme, not ten maximal sets - the light load is
+// what makes the volume survivable, and the per-scheme history matching keeps
+// those light numbers from ever becoming the reference for a normal day.
+//
+// The late-week gate matters: without it, every fresh week's first long
+// session would open with a 10x10, which is a catch-up tool promoted to a
+// default.
+const VOLUME_DAY_DEBT_THRESHOLD = 8;
+const VOLUME_DAY_SETS = 10;
+const VOLUME_DAY_MIN_MINUTES = 45;
+const VOLUME_DAY_MAX_DAYS_LEFT = 3;
+
 function setsForMinutes(minutes) {
     return Math.max(2, Math.round(minutes / MINUTES_PER_SET));
 }
@@ -4186,10 +4286,42 @@ function generateSession(minutes, locationKey = 'full') {
     }
 
     const chosen = [];
+    const exercisesPrefix = [];
     let remaining = budget;
+
+    // Volume day: one group massively behind, enough time, fresh enough to
+    // carry it (recovery 1 means nothing recent), and a loaded movement
+    // available here. It claims 10 sets up front; the normal fill covers
+    // whatever budget is left with other groups.
+    let volumeDayGroup = null;
+    const vdCandidate = candidates[0];
+    if (minutes >= VOLUME_DAY_MIN_MINUTES
+        && getDaysLeftInWeek() <= VOLUME_DAY_MAX_DAYS_LEFT
+        && vdCandidate && vdCandidate.debt >= VOLUME_DAY_DEBT_THRESHOLD
+        && vdCandidate.recovery === 1
+        && budget >= VOLUME_DAY_SETS + 2) {
+        const loaded = usableOptionsFor(vdCandidate.group, pool, locationKey)
+            .filter(e => (e.trackingType || guessTrackingType(e.name)) === 'weight_reps');
+        if (loaded.length > 0) {
+            volumeDayGroup = vdCandidate.group;
+            const freqSorted = loaded.slice().sort((a, b) =>
+                (freq[normalizeLabel(b.name)] || 0) - (freq[normalizeLabel(a.name)] || 0));
+            const movement = freqSorted[0];
+            exercisesPrefix.push({
+                name: movement.name,
+                group: vdCandidate.group,
+                sets: VOLUME_DAY_SETS,
+                reps: '10 @ ~60%',
+                trackingType: 'weight_reps',
+                notes: 'Volume day: 10x10 light. About 60% of your usual 8-rep weight - it should feel easy until set 6.'
+            });
+            remaining -= VOLUME_DAY_SETS;
+        }
+    }
 
     for (const row of candidates) {
         if (remaining <= 0) break;
+        if (row.group === volumeDayGroup) continue;
         const allocation = Math.min(row.debt, MAX_SETS_PER_GROUP_PER_SESSION, remaining);
         // Two sets of something is not worth a trip; fold small leftovers into
         // the groups already picked rather than adding a token exercise.
@@ -4198,14 +4330,14 @@ function generateSession(minutes, locationKey = 'full') {
         remaining -= allocation;
     }
 
-    if (chosen.length === 0) {
+    if (chosen.length === 0 && exercisesPrefix.length === 0) {
         // Budget too small to give any group a real share: put it all on the
         // most urgent one.
         const top = candidates[0];
         chosen.push({ ...top, sets: Math.min(budget, top.debt, MAX_SETS_PER_GROUP_PER_SESSION) });
     }
 
-    const exercises = [];
+    const exercises = exercisesPrefix.slice();
     chosen.forEach(entry => {
         const options = usableOptionsFor(entry.group, pool, locationKey).slice().sort((a, b) =>
             (freq[normalizeLabel(b.name)] || 0) - (freq[normalizeLabel(a.name)] || 0));
@@ -4234,7 +4366,7 @@ function generateSession(minutes, locationKey = 'full') {
     return {
         minutes,
         totalSets,
-        groups: chosen.map(c => c.group),
+        groups: (volumeDayGroup ? [volumeDayGroup] : []).concat(chosen.map(c => c.group)),
         exercises,
         rest: false,
         reason: '',
@@ -7465,9 +7597,11 @@ async function initializeFitnessApp() {
     loadFencingData()
         .then(() => {
             renderFencingPanel(); renderWeeklyVolume(); renderTodayPanel();
-            // Fencing days paint on the calendar and count in the discipline
-            // score, both of which rendered before this load finished.
+            // Fencing days paint on the calendar, count in the discipline
+            // score, and feed the calorie target's activity component - all of
+            // which rendered before this load finished.
             renderCalendar();
+            updateNutritionCalories();
         })
         .catch(err => console.error('Failed to load fencing data:', err));
     loadDailyRoutines().catch(err => console.error('Failed to load daily routines:', err));
@@ -8164,7 +8298,8 @@ function renderWorkout(workoutType = null) {
             currentDay,
             exerciseIndex,
             getExerciseNameCandidates(workoutExercise, exercise.name),
-            currentApproach
+            currentApproach,
+            (workoutExercise.sets || []).length
         );
         const lastWorkout = previousMatch ? previousMatch.workout : null;
         const previousExercise = previousMatch ? previousMatch.exercise : null;
@@ -8447,7 +8582,8 @@ window.copyPrevious = function (exerciseIndex, setIndex) {
         currentDay,
         exerciseIndex,
         getExerciseNameCandidates(workoutExercise, workoutExercise.exercise),
-        currentApproach
+        currentApproach,
+        (workoutExercise.sets || []).length
     );
     const previousSet = previousMatch?.exercise?.sets?.[setIndex];
 

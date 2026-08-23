@@ -19,7 +19,10 @@ committed is live within about two minutes.
   - **Time (seconds)** - holds, planks, balance, levers, hangs
   - **Duration (minutes)** - walking, cycling, rowing, steady cardio
   - **Check it off** - stretches, mobility and primer work
-- Previous-session numbers beside every set, with a one-tap Copy
+- Previous-session numbers beside every set, with a one-tap Copy. History
+  follows the exercise, not the session name - a generated session inherits
+  the numbers logged under "Upper A" - and matches by rep scheme, so a light
+  10x10 volume day never becomes the reference for a normal 3x8 day.
 - Exercise approach variations (Standard, Heavy, Form Focus)
 - Skill progression ladders for front lever, handstand and L-sit
 - Pre- and post-session intensity ratings
@@ -94,6 +97,10 @@ never impossible.
   the week is already covered.
 - Exercise choice favours movements already logged often, so the same lifts
   recur and progressive overload still has something to track.
+- **Catch-up volume day**: when one muscle is essentially untouched with three
+  or fewer days left in the week, a 45+ minute session leads with a 10x10 at
+  ~60% - a light German-volume scheme, deliberately gated to late week so a
+  catch-up tool never becomes the default.
 
 ### Sessions
 - Custom programs of any length, built in Settings or pasted in as JSON
@@ -115,7 +122,11 @@ never impossible.
   and stays overridable
 - Meals by type (breakfast, lunch, dinner, snack) with per-food macros
 - Daily totals, a saved-foods library, and measured or serving-based portions
-- Calorie and protein targets scaled to bodyweight and goal
+- **Calorie target that follows your real week.** Maintenance is a sedentary
+  baseline (13 kcal/lb of the 7-day average weight) plus the last 7 days of
+  logged activity - fencing hours by kind, hard sets at ~7 kcal each -
+  averaged per day. A tournament weekend raises the target; a quiet week
+  lowers it. Cutting takes 500 off; protein holds at 1 g/lb on a cut.
 - Training-day vs rest-day comparison over the last 14 days
 
 ### Body metrics
