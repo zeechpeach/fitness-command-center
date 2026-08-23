@@ -146,6 +146,13 @@ never impossible.
 - Weight progress chart
 - Body goal (cutting, bulking, maintaining) with a projected completion date
 
+### Nothing is ever hidden
+A logged session counts and displays whatever program stamped it. Workouts
+used to be filtered against the active program's id - and with two program
+documents accidentally marked active, which one won could change between
+loads, silently hiding real history. The filter is gone, and a duplicate
+"active" program is now detected and repaired automatically.
+
 ### Analytics
 - Estimated 1RM (Epley) per lift, so extra reps at the same load count
 - Hard sets per muscle group per week, which counts bodyweight and skill work
