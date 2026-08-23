@@ -236,6 +236,10 @@ async function saveWorkoutToFirebase(workoutData) {
 // Raw, unfiltered result of the last workouts query. Kept so the active
 // program filter can be re-applied without another network round trip, which
 // lets the programs and workouts queries run concurrently at startup.
+// Shown in Settings -> Data health and bumped with the ?v= cache-buster in
+// index.html, so "which code is this phone actually running" is answerable.
+const APP_VERSION = '77';
+
 let rawWorkouts = [];
 
 // History is history. This used to filter out any workout whose programId did
@@ -294,6 +298,9 @@ async function loadWorkoutsFromFirebase() {
             return allWorkouts;
         } catch (fallbackError) {
             console.error("Fallback query also failed:", fallbackError);
+            // Silent failure here looked exactly like "all my workouts are
+            // gone": 0% bars, an empty calendar, no explanation anywhere.
+            showConnectionNotice('Could not load your workouts. Showing what is saved on this device.');
             return [];
         }
     }
@@ -919,6 +926,7 @@ function getCurrentTimeString() {
 window.openSettings = function () {
     document.getElementById('settings-modal').classList.add('active');
     renderPrograms();
+    renderDataHealth();
 };
 
 window.closeSettings = function () {
@@ -974,6 +982,78 @@ async function loadPrograms() {
         return programs;
     }
 }
+
+// ---------------------------------------------------------------------------
+// Data health: what this device actually has, read live. Exists because "my
+// bars are at 0%" arrived with no way to tell a failed save from a failed
+// load from a stale cache from hidden data - four different problems with
+// identical symptoms and only console.log to tell them apart.
+// ---------------------------------------------------------------------------
+function countUnsyncedBackups() {
+    try {
+        const backups = JSON.parse(localStorage.getItem('fitnessData') || '{}');
+        const seen = new Set();
+        Object.values(backups).forEach(b => {
+            if (!b || !b.date || !b.day) return;
+            const inCloud = allWorkouts.some(w =>
+                w.date === b.date && normalizeLabel(w.day) === normalizeLabel(b.day));
+            if (!inCloud) seen.add(b.date + '|' + normalizeLabel(b.day));
+        });
+        return seen.size;
+    } catch (e) { return 0; }
+}
+
+function renderDataHealth() {
+    const container = document.getElementById('data-health');
+    if (!container) return;
+
+    const today = getTodayDateString();
+    const newest = allWorkouts.length
+        ? allWorkouts.slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''))[0].date
+        : null;
+    const todaysWorkout = allWorkouts.find(w => w.date === today);
+    const unsynced = countUnsyncedBackups();
+    const activeCount = programs.filter(p => p.active).length;
+
+    const row = (label, value, tone = '') =>
+        `<div class="health-row${tone ? ' ' + tone : ''}">
+            <span class="health-label">${label}</span>
+            <span class="health-value">${value}</span>
+         </div>`;
+
+    container.innerHTML =
+        row('App version', APP_VERSION) +
+        row('Signed in', currentUser ? 'Yes' : 'NO - nothing can load or save', currentUser ? '' : 'bad') +
+        row('Workouts on this device', String(allWorkouts.length), allWorkouts.length ? '' : 'bad') +
+        row('Most recent session', newest || 'none') +
+        row("Today's session", todaysWorkout
+            ? `Saved (${escapeHtml(todaysWorkout.day)})`
+            : 'Not saved yet', todaysWorkout ? 'good' : '') +
+        row('Unsynced device backups', String(unsynced), unsynced ? 'bad' : '') +
+        row('Programs / marked active', `${programs.length} / ${activeCount}`,
+            activeCount > 1 ? 'bad' : '') +
+        row('Active program', activeProgram ? escapeHtml(activeProgram.name) : 'none');
+}
+
+window.runDataHealthSync = async function () {
+    const btn = document.getElementById('data-health-sync');
+    if (btn) { btn.disabled = true; btn.textContent = 'Syncing...'; }
+    try {
+        await Promise.allSettled([loadPrograms(), loadWorkoutsFromFirebase()]);
+        applyProgramFilterToWorkouts();
+        await reconcileLocalBackups();
+        refreshStartupCache();
+        renderWorkoutDaySelector();
+        renderCalendar();
+        updateAnalytics();
+        showToast('Sync finished.', 'success');
+    } catch (e) {
+        console.error('Manual sync failed:', e);
+        showToast('Sync hit an error. The numbers below show where it stands.', 'error');
+    }
+    renderDataHealth();
+    if (btn) { btn.disabled = false; btn.textContent = 'Sync now'; }
+};
 
 // One non-blocking banner for load failures, so a backend problem stops looking
 // like data loss to someone who cannot open a console.

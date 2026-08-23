@@ -190,6 +190,13 @@ Firestore collections:
 
 Export everything as JSON from Settings.
 
+**Settings -> Data health** shows what the device actually has, live: app
+version, sign-in state, how many workouts loaded, whether today's session is
+saved, and any session stranded in the on-device backup - with a Sync now
+button that loads, reconciles and re-renders on the spot. Asset URLs carry a
+version query that is bumped on every release, so a phone cannot quietly run
+last week's code.
+
 ### Security rules
 
 `firestore.rules` requires an authenticated session for every collection and
