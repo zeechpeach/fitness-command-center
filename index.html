@@ -18,7 +18,7 @@
     <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js" crossorigin>
     <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js" crossorigin>
 
-    <link rel="stylesheet" href="src/css/styles.css">
+    <link rel="stylesheet" href="src/css/styles.css?v=77">
 
     <!-- Inter is third in the font stack, behind the system font every Apple
          device already uses, so it must never block the first paint. -->
@@ -1088,6 +1088,15 @@
                 <button class="btn" onclick="openImportProgram()" style="width: 100%; margin-top: 0.5rem;">Import a
                     program</button>
             </div>
+
+            <!-- What the device actually has: turns "my bars are at 0%" from a
+                 mystery into a report. Every number here is read live. -->
+            <div class="settings-section">
+                <h3 class="settings-section-title">Data health</h3>
+                <div id="data-health" class="data-health"></div>
+                <button class="btn" onclick="runDataHealthSync()" id="data-health-sync"
+                    style="width: 100%; margin-top: 0.75rem;">Sync now</button>
+            </div>
         </div>
     </div>
 
@@ -1204,7 +1213,7 @@
         </div>
     </div>
 
-    <script type="module" src="src/js/app.js"></script>
+    <script type="module" src="src/js/app.js?v=77"></script>
 </body>
 
 </html>
