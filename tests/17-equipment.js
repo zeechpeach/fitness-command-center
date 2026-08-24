@@ -39,10 +39,11 @@ const FLOOR_WORK = /Push-?Up|Handstand|Plank|Hollow|Dead Bug|Glute Bridge|Side-L
   const F = (n, c, d) => { if (!ok(n, c, d)) fails++; };
   const sun = sundayOffset();
 
-  // Upper body fully covered this week, so the generator is forced onto legs.
+  // Upper body fully covered this week (fractional credit included), so the
+  // generator is forced onto legs.
   const upperDone = [
-    ['Incline Dumbbell Press', 9], ['Barbell Row', 9], ['Cable Lateral Raise', 7],
-    ['Hammer Curl', 5], ['Overhead Cable Triceps Extension', 5], ['Hollow Body Hold', 6]
+    ['Incline Dumbbell Press', 16], ['Barbell Row', 16], ['Cable Lateral Raise', 8],
+    ['Hammer Curl', 4], ['Overhead Cable Triceps Extension', 4], ['Hollow Body Hold', 6]
   ].map(([name, sets], i) => session('u' + i, sun, 'Upper A', name, sets));
 
   // ---------- 1. The flow asks where you are, every time ----------

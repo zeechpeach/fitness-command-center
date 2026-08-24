@@ -238,7 +238,7 @@ async function saveWorkoutToFirebase(workoutData) {
 // lets the programs and workouts queries run concurrently at startup.
 // Shown in Settings -> Data health and bumped with the ?v= cache-buster in
 // index.html, so "which code is this phone actually running" is answerable.
-const APP_VERSION = '79';
+const APP_VERSION = '80';
 
 let rawWorkouts = [];
 
@@ -3910,15 +3910,20 @@ function getWeeklySetCounts(days = 7) {
 // + biceps 0.5). Counting only primaries undersold real training - a heavy
 // press day left triceps reading untouched.
 //
-// The upper-body numbers sit in the 12-16 growth range rather than the 4-6
-// maintenance floor: on ~1 g/lb of protein a recomp trains FOR growth, and
-// the fractional credit means these are reached faster than they look.
+// Because the units are fractional, the targets are set in fractional units:
+// the 12-16 direct sets the literature calls a growth dose becomes ~16 here
+// once spillover is part of the count. Calibrated so one focused 8-set day
+// covers about HALF a pressing or pulling muscle's week - each big muscle
+// genuinely needs two days, which is the frequency that grows it. The first
+// pass set chest at 12 and one session immediately read 8/12: a target one
+// day nearly fills is a maintenance number wearing a growth label.
+//
 // Direct leg work stays deliberately low - fifteen hours a week of fencing
 // already loads legs and calves, and fencing credit lands on those bars too.
 // ---------------------------------------------------------------------------
 
 const DEFAULT_WEEKLY_TARGETS = {
-    Chest: 12, Back: 14, Shoulders: 12, Biceps: 8, Triceps: 8,
+    Chest: 16, Back: 16, Shoulders: 16, Biceps: 12, Triceps: 12,
     Quads: 7, Hamstrings: 6, Glutes: 5, Calves: 4, Core: 6
 };
 

@@ -135,8 +135,8 @@ const suggest = (page, minutes) => page.evaluate(m => {
     // Isolation-only movements, so each hits exactly one target with no
     // secondary spillover, and the totals land precisely on the new targets.
     const covered = [];
-    [['Cable Fly', 12], ['Shrug', 14], ['Cable Lateral Raise', 12],
-     ['Hammer Curl', 8], ['Overhead Cable Triceps Extension', 8], ['Leg Extension', 7],
+    [['Cable Fly', 16], ['Shrug', 16], ['Cable Lateral Raise', 16],
+     ['Hammer Curl', 12], ['Overhead Cable Triceps Extension', 12], ['Leg Extension', 7],
      ['Seated Leg Curl', 6], ['Hip Abduction', 5], ['Standing Calf Raise', 4],
      ['Hollow Body Hold', 6]].forEach(([name, sets], i) => {
       covered.push(session('c' + i, sun, 'Upper A', name, sets));
