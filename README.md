@@ -43,9 +43,11 @@ committed is live within about two minutes.
 - **Counting is fractional.** An exercise credits its primary muscle a full
   set and each meaningfully-worked secondary half a set: dips are chest 1.0 +
   triceps 0.5 + front delts 0.5, rows are back 1.0 + biceps 0.5, squats are
-  quads 1.0 + glutes 0.5. Upper-body targets sit in the 12-16 growth range
-  (Chest 12, Back 14, Shoulders 12, arms 8 direct plus press/pull spillover);
-  lower-body targets stay low on purpose - fencing already loads legs, and
+  quads 1.0 + glutes 0.5. Because the units are fractional, targets are too:
+  Chest 16, Back 16, Shoulders 16, arms 12 - calibrated so one focused 8-set
+  day covers about half a muscle's week, and every big muscle genuinely needs
+  two days. Lower-body targets stay low on purpose - fencing already loads
+  legs, and
   fencing credit lands on those bars too. Recovery uses the same fractions, so
   a heavy press day part-fatigues triceps even with no pushdown logged.
 - Credit is capped per group, so a big day on one muscle cannot paper over
