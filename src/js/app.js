@@ -238,7 +238,7 @@ async function saveWorkoutToFirebase(workoutData) {
 // lets the programs and workouts queries run concurrently at startup.
 // Shown in Settings -> Data health and bumped with the ?v= cache-buster in
 // index.html, so "which code is this phone actually running" is answerable.
-const APP_VERSION = '78';
+const APP_VERSION = '79';
 
 let rawWorkouts = [];
 
@@ -3871,8 +3871,8 @@ function getWeeklySetCounts(days = 7) {
             const name = exercise.substitution || exercise.exercise;
             if (normalizeLabel(name).includes('stretch')) return;
 
-            const group = classifyMuscleGroup(name);
-            if (!group) return;
+            const contributions = classifyMuscleContributions(name);
+            if (!contributions.length) return;
 
             // A ticked mobility drill is not a hard set. Counting check-offs
             // put stretches into the muscle-group totals alongside real work.
@@ -3882,7 +3882,11 @@ function getWeeklySetCounts(days = 7) {
             if (type === 'checkoff') return;
 
             const sets = (exercise.sets || []).filter(isWorkingSet).length;
-            if (sets > 0) counts[group] = (counts[group] || 0) + sets;
+            if (sets > 0) {
+                contributions.forEach(({ group, weight }) => {
+                    counts[group] = (counts[group] || 0) + sets * weight;
+                });
+            }
         });
     });
 
@@ -3900,16 +3904,80 @@ function getWeeklySetCounts(days = 7) {
 // Weekly volume is the honest measure: hit the sets across whatever days open
 // up and the week is a success, whether that took two sessions or five.
 //
-// Targets are hard sets per muscle group per week. Roughly 4-6 maintains and
-// ~10 grows, so these sit in the range that keeps muscle through a deficit
-// without needing five gym days. Direct leg work is deliberately low: three
-// hours a night of coaching is already loading them.
+// Targets are FRACTIONAL sets per muscle group per week: an exercise credits
+// its primary muscle a full set and each meaningfully-worked secondary half a
+// set (dips are chest 1.0 + triceps 0.5 + front delts 0.5; rows are back 1.0
+// + biceps 0.5). Counting only primaries undersold real training - a heavy
+// press day left triceps reading untouched.
+//
+// The upper-body numbers sit in the 12-16 growth range rather than the 4-6
+// maintenance floor: on ~1 g/lb of protein a recomp trains FOR growth, and
+// the fractional credit means these are reached faster than they look.
+// Direct leg work stays deliberately low - fifteen hours a week of fencing
+// already loads legs and calves, and fencing credit lands on those bars too.
 // ---------------------------------------------------------------------------
 
 const DEFAULT_WEEKLY_TARGETS = {
-    Chest: 9, Back: 9, Shoulders: 7, Biceps: 5, Triceps: 5,
+    Chest: 12, Back: 14, Shoulders: 12, Biceps: 8, Triceps: 8,
     Quads: 7, Hamstrings: 6, Glutes: 5, Calves: 4, Core: 6
 };
+
+// Which secondary muscles an exercise meaningfully works, at half credit.
+// Longest match wins, same as everywhere else. Deliberately conservative:
+// only contributions big enough to affect recovery and weekly stimulus.
+const SECONDARY_MUSCLE_PATTERNS = [
+    { match: ['bench press', 'incline press', 'incline dumbbell press', 'chest press',
+              'decline press', 'push-up', 'pushup', 'push up', 'dip'],
+      secondaries: ['Triceps', 'Shoulders'] },
+    { match: ['overhead press', 'shoulder press', 'military press', 'pike push-up'],
+      secondaries: ['Triceps'] },
+    { match: ['barbell row', 'dumbbell row', 'cable row', 'chest-supported row', 'row',
+              'lat pulldown', 'pulldown', 'pull-up', 'pullup', 'pull up',
+              'chin-up', 'chinup'],
+      secondaries: ['Biceps'] },
+    { match: ['back squat', 'front squat', 'goblet squat', 'hack squat', 'squat',
+              'leg press', 'lunge', 'reverse lunge', 'split squat', 'step-up', 'step up'],
+      secondaries: ['Glutes'] },
+    { match: ['romanian deadlift', 'stiff leg deadlift', 'deadlift', 'rdl', 'good morning'],
+      secondaries: ['Glutes'] },
+    { match: ['hip thrust', 'glute bridge'],
+      secondaries: ['Hamstrings'] }
+];
+
+// [{ group, weight }] - primary at 1.0 plus secondaries at 0.5.
+function classifyMuscleContributions(exerciseName) {
+    const primary = classifyMuscleGroup(exerciseName);
+    if (!primary) return [];
+    const contributions = [{ group: primary, weight: 1 }];
+
+    const name = normalizeLabel(exerciseName);
+    let best = null;
+    let bestLength = 0;
+    for (const entry of SECONDARY_MUSCLE_PATTERNS) {
+        for (const token of entry.match) {
+            if (name.includes(token) && token.length > bestLength) {
+                bestLength = token.length;
+                best = entry;
+            }
+        }
+    }
+    if (best) {
+        best.secondaries.forEach(group => {
+            if (group !== primary) contributions.push({ group, weight: 0.5 });
+        });
+    }
+    return contributions;
+}
+
+// Fractions come out of 0.5 credits; one decimal is exact.
+function roundSets(value) {
+    return Math.round(value * 10) / 10;
+}
+
+function formatSets(value) {
+    const n = roundSets(value);
+    return Number.isInteger(n) ? String(n) : n.toFixed(1);
+}
 
 function getWeeklyTargets() {
     const custom = activeProgram && activeProgram.weeklyTargets;
@@ -3954,8 +4022,8 @@ function getSetsThisWeek() {
             const name = exercise.substitution || exercise.exercise;
             if (normalizeLabel(name).includes('stretch')) return;
 
-            const group = classifyMuscleGroup(name);
-            if (!group) return;
+            const contributions = classifyMuscleContributions(name);
+            if (!contributions.length) return;
 
             const type = exercise.trackingType && TRACKING_TYPES[exercise.trackingType]
                 ? exercise.trackingType
@@ -3963,10 +4031,15 @@ function getSetsThisWeek() {
             if (type === 'checkoff') return;
 
             const sets = (exercise.sets || []).filter(isWorkingSet).length;
-            if (sets > 0) counts[group] = (counts[group] || 0) + sets;
+            if (sets > 0) {
+                contributions.forEach(({ group, weight }) => {
+                    counts[group] = (counts[group] || 0) + sets * weight;
+                });
+            }
         });
     });
 
+    Object.keys(counts).forEach(g => { counts[g] = roundSets(counts[g]); });
     return counts;
 }
 
@@ -4352,12 +4425,16 @@ function getRecentSetsByGroup(days = 2) {
         Object.values(workout.exercises || {}).forEach(exercise => {
             if (!exercise || !exercise.exercise) return;
             const name = exercise.substitution || exercise.exercise;
-            const group = classifyMuscleGroup(name);
-            if (!group) return;
             const sets = (exercise.sets || []).filter(isWorkingSet).length;
-            if (sets > 0) counts[group] = (counts[group] || 0) + sets;
+            if (sets <= 0) return;
+            // Secondaries count toward recovery too: a heavy press day leaves
+            // triceps part-worked even though no pushdown was logged.
+            classifyMuscleContributions(name).forEach(({ group, weight }) => {
+                counts[group] = (counts[group] || 0) + sets * weight;
+            });
         });
     });
+    Object.keys(counts).forEach(g => { counts[g] = roundSets(counts[g]); });
     return counts;
 }
 
@@ -4466,9 +4543,12 @@ function generateSession(minutes, locationKey = 'full') {
     // whatever budget is left with other groups.
     let volumeDayGroup = null;
     const vdCandidate = candidates[0];
+    // "Essentially untouched": nothing credited all week, direct or secondary,
+    // for a group whose target is big enough to justify ten sets at once.
     if (minutes >= VOLUME_DAY_MIN_MINUTES
         && getDaysLeftInWeek() <= VOLUME_DAY_MAX_DAYS_LEFT
-        && vdCandidate && vdCandidate.debt >= VOLUME_DAY_DEBT_THRESHOLD
+        && vdCandidate && vdCandidate.done === 0 && vdCandidate.fencing === 0
+        && vdCandidate.target >= VOLUME_DAY_DEBT_THRESHOLD
         && vdCandidate.recovery === 1
         && budget >= VOLUME_DAY_SETS + 2) {
         const loaded = usableOptionsFor(vdCandidate.group, pool, locationKey)
@@ -4493,7 +4573,8 @@ function generateSession(minutes, locationKey = 'full') {
     for (const row of candidates) {
         if (remaining <= 0) break;
         if (row.group === volumeDayGroup) continue;
-        const allocation = Math.min(row.debt, MAX_SETS_PER_GROUP_PER_SESSION, remaining);
+        // Debt is fractional (secondary credit); a session plans whole sets.
+        const allocation = Math.min(Math.ceil(row.debt), MAX_SETS_PER_GROUP_PER_SESSION, remaining);
         // Two sets of something is not worth a trip; fold small leftovers into
         // the groups already picked rather than adding a token exercise.
         if (allocation < 2) continue;
@@ -4505,7 +4586,7 @@ function generateSession(minutes, locationKey = 'full') {
         // Budget too small to give any group a real share: put it all on the
         // most urgent one.
         const top = candidates[0];
-        chosen.push({ ...top, sets: Math.min(budget, top.debt, MAX_SETS_PER_GROUP_PER_SESSION) });
+        chosen.push({ ...top, sets: Math.min(budget, Math.ceil(top.debt), MAX_SETS_PER_GROUP_PER_SESSION) });
     }
 
     const exercises = exercisesPrefix.slice();
@@ -4558,7 +4639,7 @@ function generateSession(minutes, locationKey = 'full') {
 // without turning into a grid of named days you can fall behind on.
 function getWeekOutlook() {
     const rows = getWeeklyDebt();
-    const debt = rows.reduce((sum, r) => sum + r.debt, 0);
+    const debt = roundSets(rows.reduce((sum, r) => sum + r.debt, 0));
     const daysLeft = getDaysLeftInWeek();
 
     // Against a normal 45 minute session.
@@ -4746,7 +4827,7 @@ function renderTodayPanel() {
     } else {
         const sessionWord = outlook.sessions === 1 ? 'session' : 'sessions';
         html += `<span class="today-title">About ${outlook.sessions} more ${sessionWord} this week</span>
-                 <span class="today-sub">${outlook.debt} sets still owed across
+                 <span class="today-sub">${formatSets(outlook.debt)} sets still owed across
                     ${outlook.daysLeft} day${outlook.daysLeft === 1 ? '' : 's'}${outlook.behind
             ? ' &middot; more than there are days, so take what you can get'
             : ''}</span>`;
@@ -4861,7 +4942,7 @@ function renderWeeklyVolume() {
         <div class="week-head">
             <div>
                 <div class="week-score">${summary.score}%</div>
-                <div class="week-sub">${summary.done} of ${summary.target} sets &middot; ${dayNote}</div>
+                <div class="week-sub">${formatSets(summary.done)} of ${summary.target} sets &middot; ${dayNote}</div>
             </div>
             <div class="week-groups">${summary.groupsHit}/${summary.groups}<span>groups done</span></div>
         </div>`;
@@ -4888,7 +4969,7 @@ function renderWeeklyVolume() {
             <div class="week-row ${state}">
                 <span class="week-row-name">${escapeHtml(row.group)}</span>
                 <span class="week-row-track"><span class="week-row-fill" style="width:${row.pct}%"></span>${fencedBar}</span>
-                <span class="week-row-count">${row.done}${fencedCount}<span class="week-row-target">/${row.target}</span></span>
+                <span class="week-row-count">${formatSets(row.done)}${fencedCount}<span class="week-row-target">/${row.target}</span></span>
             </div>`;
     });
 

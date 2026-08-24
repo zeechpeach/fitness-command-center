@@ -40,6 +40,14 @@ committed is live within about two minutes.
   days remaining. The week is the unit, not the day - hit the volume across
   whatever days open up and the week is a success. The week runs Sunday to
   Saturday.
+- **Counting is fractional.** An exercise credits its primary muscle a full
+  set and each meaningfully-worked secondary half a set: dips are chest 1.0 +
+  triceps 0.5 + front delts 0.5, rows are back 1.0 + biceps 0.5, squats are
+  quads 1.0 + glutes 0.5. Upper-body targets sit in the 12-16 growth range
+  (Chest 12, Back 14, Shoulders 12, arms 8 direct plus press/pull spillover);
+  lower-body targets stay low on purpose - fencing already loads legs, and
+  fencing credit lands on those bars too. Recovery uses the same fractions, so
+  a heavy press day part-fatigues triceps even with no pushdown logged.
 - Credit is capped per group, so a big day on one muscle cannot paper over
   another that was never trained.
 - **How many sessions are left**, rather than a grid of named days. A named
