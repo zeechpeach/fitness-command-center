@@ -238,7 +238,7 @@ async function saveWorkoutToFirebase(workoutData) {
 // lets the programs and workouts queries run concurrently at startup.
 // Shown in Settings -> Data health and bumped with the ?v= cache-buster in
 // index.html, so "which code is this phone actually running" is answerable.
-const APP_VERSION = '77';
+const APP_VERSION = '78';
 
 let rawWorkouts = [];
 
@@ -4793,7 +4793,22 @@ function renderTodayPanel() {
                     <button type="button" class="today-back" data-dismiss="1">Scrap it and suggest something else</button>
                  </div>`;
     } else if (suggestedMinutes === null) {
-        html += `<div class="today-ask">How long have you got today?</div>
+        // Sessions logged today, read from the DATA rather than this device's
+        // memory of a generation. Without this, a second phone - or a cleared
+        // store - showed the blank starting point as if the morning had not
+        // happened, while the week panel above plainly counted its sets.
+        const today = getTodayDateString();
+        const trainedToday = allWorkouts.filter(w =>
+            w.date === today && !isNonTrainingLabel(w.day));
+        trainedToday.forEach(w => {
+            const sets = Object.values(w.exercises || {}).reduce((sum, ex) =>
+                sum + ((ex && ex.sets) || []).filter(isWorkingSet).length, 0);
+            html += `<div class="today-status done">&#10003; Logged today:
+                        ${escapeHtml(w.day)} &middot; ${sets} set${sets === 1 ? '' : 's'}</div>`;
+        });
+        html += `<div class="today-ask">${trainedToday.length
+            ? 'Adding more? How long have you got?'
+            : 'How long have you got today?'}</div>
                  <div class="today-chips">`;
         SESSION_LENGTHS.forEach(m => {
             html += `<button type="button" class="today-chip" data-minutes="${m}">${m} min</button>`;

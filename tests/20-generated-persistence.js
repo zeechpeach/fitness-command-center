@@ -1,7 +1,7 @@
 // Journey: the day's generated session is a commitment the APP keeps, not one
 // it forgets. It survives a page refresh mid-workout, and a session that
 // failed to save reaches Firestore on the next load from its device backup.
-const { boot, ok, startSuggested, finish } = require('./harness/drive');
+const { boot, ok, dayStr, startSuggested, finish } = require('./harness/drive');
 const { realProgram } = require('./harness/seed');
 
 (async () => {
@@ -115,6 +115,41 @@ const { realProgram } = require('./harness/seed');
     console.log('after scrapping: ' + JSON.stringify(state));
     F('scrapping returns to the chips', state.askedAgain === true, JSON.stringify(state));
     F('the stored generation is gone', state.stored === null, JSON.stringify(state.stored));
+    F('no page errors', errors.length === 0, JSON.stringify(errors.map(e => e.message)));
+    await browser.close();
+  }
+
+  // ---------- 4. Another device: the logged session shows from the DATA ----------
+  {
+    // No localStorage generation exists here - only the Firestore row, which
+    // is what a second phone would see.
+    const { browser, page, errors } = await boot({
+      seed: {
+        programs: [realProgram()],
+        workouts: [{
+          id: 'w1', date: dayStr(0), day: 'Chest & Back - 45 min', programId: 'prog-real',
+          timestamp: dayStr(0) + 'T10:00:00.000Z',
+          exercises: {
+            0: { exercise: 'Incline Dumbbell Press', trackingType: 'weight_reps',
+                 sets: Array.from({ length: 8 }, () => ({ weight: '95', reps: '8' })) }
+          }
+        }]
+      }
+    });
+    await page.waitForTimeout(800);
+    const panel = await page.evaluate(() => {
+      const el = document.getElementById('today-panel');
+      return {
+        text: el.innerText.replace(/\s+/g, ' ').trim(),
+        chips: el.querySelectorAll('.today-chip').length
+      };
+    });
+    console.log('\nother device: ' + JSON.stringify(panel.text.slice(0, 140)));
+    F('a session logged today shows on every device, from the data',
+      /Logged today: Chest & Back - 45 min/.test(panel.text), panel.text.slice(0, 140));
+    F('its set count shows', /8 sets/.test(panel.text), panel.text.slice(0, 140));
+    F('a second session stays one tap away', panel.chips === 4 && /Adding more/.test(panel.text),
+      JSON.stringify({ chips: panel.chips }));
     F('no page errors', errors.length === 0, JSON.stringify(errors.map(e => e.message)));
     await browser.close();
   }
