@@ -44,9 +44,10 @@ function session(id, dayOffset, day, programId, exercise, sets) {
     const chest = week.find(r => r.group === 'Chest');
     const back = week.find(r => r.group === 'Back');
     const biceps = week.find(r => r.group === 'Biceps');
-    F('a session with the matching programId counts', chest && /^4/.test(chest.count), JSON.stringify(chest));
-    F('a session stamped by another program STILL counts', back && /^5/.test(back.count), JSON.stringify(back));
-    F('a session with no programId counts', biceps && /^3/.test(biceps.count), JSON.stringify(biceps));
+    F('a session with the matching programId counts', chest && /^4\//.test(chest.count), JSON.stringify(chest));
+    F('a session stamped by another program STILL counts', back && /^5\//.test(back.count), JSON.stringify(back));
+    // 3 direct curl sets plus half-credit from the other program's 5 rows.
+    F('a session with no programId counts', biceps && /^5.5\//.test(biceps.count), JSON.stringify(biceps));
 
     // and all three appear on the calendar
     await page.evaluate(() => document.getElementById('calendar-tab-btn')?.click());

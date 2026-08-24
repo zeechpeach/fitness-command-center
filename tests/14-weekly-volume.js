@@ -67,15 +67,21 @@ function sundayOffset() {
   const back = panel.rows.find(r => r.group === 'Back');
   const quads = panel.rows.find(r => r.group === 'Quads');
 
-  F('chest counts this week only', chest && chest.count === '6/9', JSON.stringify(chest));
-  F('back counts this week only', back && back.count === '9/9', JSON.stringify(back));
-  F('a completed group is marked done', back && back.state === 'done', JSON.stringify(back));
+  // Fractional credit: 6 incline presses = chest 6 + shoulders 3 + triceps 3;
+  // 9 rows = back 9 + biceps 4.5.
+  F('chest counts this week only', chest && chest.count === '6/12', JSON.stringify(chest));
+  F('back counts this week only', back && back.count === '9/14', JSON.stringify(back));
+  const biceps = panel.rows.find(r => r.group === 'Biceps');
+  const shoulders = panel.rows.find(r => r.group === 'Shoulders');
+  F('rows credit biceps half a set each', biceps && biceps.count === '4.5/8', JSON.stringify(biceps));
+  F('presses credit shoulders half a set each', shoulders && shoulders.count === '3/12', JSON.stringify(shoulders));
   F('last week does NOT leak into this week', quads && quads.count === '0/7', JSON.stringify(quads));
 
-  // The most urgent group should lead the list.
+  // The least-touched groups should lead the list; back, the most trained, sits low.
   console.log('order: ' + JSON.stringify(panel.rows.map(r => r.group)));
-  F('finished groups sink to the bottom',
-    panel.rows[panel.rows.length - 1].group === 'Back', JSON.stringify(panel.rows.map(r => r.group)));
+  const orderIdx = (g) => panel.rows.findIndex(r => r.group === g);
+  F('the most trained group sinks below untouched ones',
+    orderIdx('Back') > orderIdx('Quads'), JSON.stringify(panel.rows.map(r => r.group)));
 
   // Score should reflect credited sets, capped per group.
   const expected = await page.evaluate(() => {
@@ -83,7 +89,7 @@ function sundayOffset() {
     return el.querySelector('.week-sub').innerText;
   });
   console.log('summary line: ' + expected);
-  F('the summary counts total sets done', /15 of \d+ sets/.test(expected), expected);
+  F('the summary counts fractional sets done', /25.5 of \d+ sets/.test(expected), expected);
 
   await browser.close();
 
@@ -103,10 +109,10 @@ function sundayOffset() {
     return { score: el.querySelector('.week-score').innerText.trim(), chest: row('Chest'), back: row('Back') };
   });
   console.log('after 30 chest sets and nothing else: ' + JSON.stringify(after));
-  F('the overshoot is shown honestly', after.chest === '30/9', JSON.stringify(after.chest));
+  F('the overshoot is shown honestly', after.chest === '30/12', JSON.stringify(after.chest));
   F('but credit is capped, so untouched groups still drag the score',
     parseInt(after.score) < 20, JSON.stringify(after.score));
-  F('untouched groups read zero', after.back === '0/9', JSON.stringify(after.back));
+  F('untouched groups read zero', after.back === '0/14', JSON.stringify(after.back));
   await s2.browser.close();
 
   F('no page errors', errors.length === 0, JSON.stringify(errors.map(e => e.message)));
