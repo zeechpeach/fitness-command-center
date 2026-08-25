@@ -48,6 +48,7 @@ Playwright will not find on its own, point at it with `PW_CHROMIUM=/path/to/chro
 | `21-nothing-hidden.js` | Sessions count and display whatever programId stamped them; two programs marked active resolve deterministically and the duplicate is repaired |
 | `22-data-health.js` | The Settings Data health card reads live state - version, sign-in, counts, today's save state, stranded backups - and Sync now delivers a stranded session |
 | `23-variation.js` | The week's second session is not a replay - fresh movements lead, at most one repeat rides along - and no axial barbell lift is prescribed within two days of heavy squats |
+| `24-library-supersets.js` | The library gives a third session of the week fresh movements; 30-minute sessions pair A1/A2 antagonist supersets with a tighter set budget, 60-minute sessions keep straight sets |
 | `sweep-inline-handlers.js` | Every inline `onclick`/`oninput` in the app resolves to a function that actually exists |
 | `sweep-dead-code.js` | No unreferenced functions, handlers or variables; no `getElementById` pointing at an element that is not there |
 | `sweep-unused-css.js` | No CSS rules for classes nothing uses |

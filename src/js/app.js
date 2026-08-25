@@ -238,7 +238,7 @@ async function saveWorkoutToFirebase(workoutData) {
 // lets the programs and workouts queries run concurrently at startup.
 // Shown in Settings -> Data health and bumped with the ?v= cache-buster in
 // index.html, so "which code is this phone actually running" is answerable.
-const APP_VERSION = '81';
+const APP_VERSION = '82';
 
 let rawWorkouts = [];
 
@@ -3771,8 +3771,9 @@ const EQUIPMENT_PATTERNS = [
     { equipment: 'incline',   match: ['incline', 'incline press', 'incline dumbbell press',
                                       'incline curl', 'incline dumbbell curl', 'incline fly',
                                       'incline bench press', 'incline row'] },
-    { equipment: 'pullup',    match: ['pull-up', 'pullup', 'pull up', 'chin-up', 'chinup', 'dead hang',
-                                      'front lever', 'scapular pull', 'hanging leg raise', 'hanging knee raise',
+    { equipment: 'pullup',    match: ['pull-up', 'pullup', 'pull up', 'weighted pull-up', 'chin-up',
+                                      'chinup', 'weighted chin-up', 'dead hang', 'front lever',
+                                      'scapular pull', 'hanging leg raise', 'hanging knee raise',
                                       'inverted row'] }
 ];
 
@@ -3800,45 +3801,134 @@ function availableAt(exerciseName, locationKey) {
     return location.has.includes(classifyEquipment(exerciseName));
 }
 
-// When the program's own exercises for a group all need kit today's gym does
-// not have, these stand in - rack, dumbbell, cable and bodyweight staples, so
-// every group is coverable at the main gym and most of them at home. Seated
-// Leg Curl at the full gym becomes a Romanian Deadlift at the main one, not a
-// blank.
-const FALLBACK_EXERCISES = {
-    Chest:      [{ name: 'Barbell Bench Press', reps: '6-8' }, { name: 'Dumbbell Bench Press', reps: '8-10' },
-                 { name: 'Push-Up', reps: '10-15', trackingType: 'reps' }],
-    Back:       [{ name: 'Barbell Row', reps: '6-10' }, { name: 'One-Arm Dumbbell Row', reps: '8-12' },
-                 { name: 'Pull-Up', reps: '5-8', trackingType: 'reps' }],
-    Shoulders:  [{ name: 'Overhead Press', reps: '6-8' }, { name: 'Dumbbell Shoulder Press', reps: '8-10' },
-                 { name: 'Pike Push-Up', reps: '8-12', trackingType: 'reps' }],
-    Biceps:     [{ name: 'Dumbbell Curl', reps: '8-12' },
-                 { name: 'Chin-Up', reps: '5-8', trackingType: 'reps' }],
-    Triceps:    [{ name: 'Close-Grip Bench Press', reps: '6-10' },
-                 { name: 'Overhead Dumbbell Triceps Extension', reps: '10-12' },
-                 { name: 'Diamond Push-Up', reps: '8-12', trackingType: 'reps' }],
-    Quads:      [{ name: 'Back Squat', reps: '5-8' }, { name: 'Goblet Squat', reps: '8-12' },
-                 { name: 'Bulgarian Split Squat', reps: '8-10' },
-                 { name: 'Bodyweight Squat', reps: '15-20', trackingType: 'reps' }],
-    Hamstrings: [{ name: 'Romanian Deadlift', reps: '6-10' }, { name: 'Good Morning', reps: '8-10' },
-                 { name: 'Cable Back Extension', reps: '10-15' }, { name: 'Dumbbell Romanian Deadlift', reps: '8-12' }],
-    Glutes:     [{ name: 'Barbell Hip Thrust', reps: '8-12' }, { name: 'Dumbbell Step-Up', reps: '8-10' },
-                 { name: 'Glute Bridge', reps: '15-20', trackingType: 'reps' }],
-    Calves:     [{ name: 'Standing Calf Raise', reps: '12-15' }],
-    Core:       [{ name: 'Hanging Knee Raise', reps: '8-12', trackingType: 'reps' },
-                 { name: 'Hollow Body Hold', reps: '20-30s', trackingType: 'time' },
-                 { name: 'Plank', reps: '30-45s', trackingType: 'time' }]
-};
+// ---------------------------------------------------------------------------
+// The exercise library: the variation reservoir.
+//
+// The program's own exercises come first - their history is what progressive
+// overload tracks - but a program lists maybe three movements per muscle, and
+// the variation rule needs somewhere to reach when those were all trained
+// this week. This is that reservoir: staple movements a coach would actually
+// program, named so the muscle and equipment classifiers both read them
+// correctly (a test enforces it). Muscle group and equipment are derived from
+// the name, never stored, so there is one source of truth.
+// ---------------------------------------------------------------------------
+
+const EXERCISE_LIBRARY = [
+    // Chest
+    { name: 'Barbell Bench Press', reps: '6-8' },
+    { name: 'Dumbbell Bench Press', reps: '8-10' },
+    { name: 'Incline Dumbbell Press', reps: '8-10' },
+    { name: 'Incline Bench Press', reps: '6-8' },
+    { name: 'Weighted Dip', reps: '6-10' },
+    { name: 'Cable Fly', reps: '12-15' },
+    { name: 'Dumbbell Fly', reps: '10-12' },
+    { name: 'Pec Deck', reps: '12-15' },
+    { name: 'Push-Up', reps: '10-15', trackingType: 'reps' },
+    { name: 'Deficit Push-Up', reps: '8-12', trackingType: 'reps' },
+    // Back
+    { name: 'Barbell Row', reps: '6-10' },
+    { name: 'One-Arm Dumbbell Row', reps: '8-12' },
+    { name: 'Chest-Supported Row', reps: '8-12' },
+    { name: 'Seated Cable Row', reps: '10-12' },
+    { name: 'Lat Pulldown', reps: '10-12' },
+    { name: 'Straight-Arm Cable Pulldown', reps: '12-15' },
+    { name: 'Pull-Up', reps: '5-8', trackingType: 'reps' },
+    { name: 'Weighted Pull-Up', reps: '5-8' },
+    { name: 'Chin-Up', reps: '6-10', trackingType: 'reps' },
+    { name: 'Inverted Row', reps: '8-12', trackingType: 'reps' },
+    { name: 'Dumbbell Shrug', reps: '12-15' },
+    // Shoulders
+    { name: 'Overhead Press', reps: '6-8' },
+    { name: 'Seated Dumbbell Shoulder Press', reps: '8-10' },
+    { name: 'Arnold Shoulder Press', reps: '8-12' },
+    { name: 'Dumbbell Lateral Raise', reps: '12-15' },
+    { name: 'Cable Lateral Raise', reps: '12-15' },
+    { name: 'Rear Delt Fly', reps: '12-15' },
+    { name: 'Face Pull', reps: '15-20' },
+    { name: 'Pike Push-Up', reps: '8-12', trackingType: 'reps' },
+    // Biceps
+    { name: 'Barbell Curl', reps: '8-10' },
+    { name: 'Dumbbell Curl', reps: '10-12' },
+    { name: 'Incline Dumbbell Curl', reps: '10-12' },
+    { name: 'Hammer Curl', reps: '10-12' },
+    { name: 'Cable Curl', reps: '12-15' },
+    { name: 'Preacher Curl', reps: '10-12' },
+    // Triceps
+    { name: 'Close-Grip Bench Press', reps: '6-10' },
+    { name: 'Skull Crusher', reps: '10-12' },
+    { name: 'Triceps Pushdown', reps: '10-12' },
+    { name: 'Overhead Cable Triceps Extension', reps: '10-12' },
+    { name: 'Overhead Dumbbell Triceps Extension', reps: '10-12' },
+    // Quads
+    { name: 'Back Squat', reps: '5-8' },
+    { name: 'Front Squat', reps: '6-8' },
+    { name: 'Goblet Squat', reps: '8-12' },
+    { name: 'Heel-Elevated Goblet Squat', reps: '8-12' },
+    { name: 'Bulgarian Split Squat', reps: '8-10' },
+    { name: 'Leg Press', reps: '10-12' },
+    { name: 'Hack Squat', reps: '8-10' },
+    { name: 'Leg Extension', reps: '12-15' },
+    { name: 'Walking Lunge', reps: '10-12' },
+    { name: 'Reverse Lunge', reps: '10-12' },
+    { name: 'Dumbbell Step-Up', reps: '8-10' },
+    { name: 'Bodyweight Squat', reps: '15-20', trackingType: 'reps' },
+    // Hamstrings
+    { name: 'Romanian Deadlift', reps: '6-10' },
+    { name: 'Dumbbell Romanian Deadlift', reps: '8-12' },
+    { name: 'Good Morning', reps: '8-10' },
+    { name: 'Seated Leg Curl', reps: '10-12' },
+    { name: 'Lying Leg Curl', reps: '10-12' },
+    { name: 'Cable Back Extension', reps: '10-15' },
+    { name: 'Nordic Curl', reps: '3-6', trackingType: 'reps' },
+    // Glutes
+    { name: 'Barbell Hip Thrust', reps: '8-12' },
+    { name: 'Glute Bridge', reps: '15-20', trackingType: 'reps' },
+    { name: 'Single-Leg Glute Bridge', reps: '10-12', trackingType: 'reps' },
+    // Calves
+    { name: 'Standing Calf Raise', reps: '12-15' },
+    { name: 'Seated Calf Raise', reps: '15-20' },
+    { name: 'Single-Leg Calf Raise', reps: '12-15', trackingType: 'reps' },
+    // Core
+    { name: 'Hanging Knee Raise', reps: '8-12', trackingType: 'reps' },
+    { name: 'Hanging Leg Raise', reps: '8-12', trackingType: 'reps' },
+    { name: 'Pallof Press', reps: '10-12' },
+    { name: 'Plank', reps: '30-45s', trackingType: 'time' },
+    { name: 'Side Plank', reps: '20-30s', trackingType: 'time' },
+    { name: 'Hollow Body Hold', reps: '20-30s', trackingType: 'time' },
+    { name: 'Dead Bug', reps: '10-12', trackingType: 'reps' },
+    { name: 'Ab Wheel Rollout', reps: '8-12', trackingType: 'reps' }
+];
+
+// Grouped once, by the same classifier that counts the sets.
+let libraryByGroupCache = null;
+function getLibraryByGroup() {
+    if (libraryByGroupCache) return libraryByGroupCache;
+    libraryByGroupCache = {};
+    EXERCISE_LIBRARY.forEach(entry => {
+        const group = classifyMuscleGroup(entry.name);
+        if (!group) return;
+        if (!libraryByGroupCache[group]) libraryByGroupCache[group] = [];
+        libraryByGroupCache[group].push(entry);
+    });
+    return libraryByGroupCache;
+}
 
 // The program's own exercises first (their history is what progressive overload
 // tracks), the fallbacks only when the location rules everything out.
 function usableOptionsFor(group, pool, locationKey) {
-    const own = (pool[group] || []).filter(e => availableAt(e.name, locationKey));
-    if (own.length > 0) return own;
-    return (FALLBACK_EXERCISES[group] || [])
-        .filter(e => availableAt(e.name, locationKey))
-        .map(e => ({ name: e.name, reps: e.reps,
-                     trackingType: e.trackingType || guessTrackingType(e.name) }));
+    const seen = new Set();
+    const options = [];
+    const add = (entry) => {
+        const key = normalizeLabel(entry.name);
+        if (seen.has(key) || !availableAt(entry.name, locationKey)) return;
+        seen.add(key);
+        options.push({ name: entry.name, reps: entry.reps || '',
+                       trackingType: entry.trackingType || guessTrackingType(entry.name),
+                       notes: entry.notes || '' });
+    };
+    (pool[group] || []).forEach(add);
+    (getLibraryByGroup()[group] || []).forEach(add);
+    return options;
 }
 
 // A set counts when it was actually performed: any reps logged, or a completed
@@ -4388,6 +4478,33 @@ function formatFencingHours(hours) {
 // A hard set plus its rest and setup runs about 2.7 minutes in practice.
 const MINUTES_PER_SET = 2.7;
 
+// Short sessions run as antagonist-paired supersets: while one muscle rests,
+// the other works, which the research prices at roughly 40% less time for
+// nearly identical performance. A paired set therefore costs less clock.
+const SUPERSET_MAX_MINUTES = 30;
+const SUPERSET_MINUTES_PER_SET = 2.0;
+
+// Pairing quality: two exercises can share a superset when they do not
+// compete for the same prime movers. Push and pull are the classic pairing;
+// legs pair with each other across different muscles (leg extension + leg
+// curl), and core pairs with anything.
+function muscleCluster(group) {
+    if (group === 'Chest' || group === 'Shoulders' || group === 'Triceps') return 'push';
+    if (group === 'Back' || group === 'Biceps') return 'pull';
+    if (group === 'Core') return 'core';
+    return 'legs';
+}
+
+function canSuperset(a, b) {
+    if (!a || !b) return false;
+    if (a.group === b.group) return false;
+    const ca = muscleCluster(a.group);
+    const cb = muscleCluster(b.group);
+    if (ca === 'core' || cb === 'core') return true;
+    if (ca === 'legs' && cb === 'legs') return true;
+    return ca !== cb;
+}
+
 // Options offered as chips. "Whatever I've got" covers a session with no clock.
 const SESSION_LENGTHS = [15, 30, 45, 60];
 
@@ -4414,7 +4531,8 @@ const VOLUME_DAY_MIN_MINUTES = 45;
 const VOLUME_DAY_MAX_DAYS_LEFT = 3;
 
 function setsForMinutes(minutes) {
-    return Math.max(2, Math.round(minutes / MINUTES_PER_SET));
+    const rate = minutes <= SUPERSET_MAX_MINUTES ? SUPERSET_MINUTES_PER_SET : MINUTES_PER_SET;
+    return Math.max(2, Math.round(minutes / rate));
 }
 
 // Hard sets per muscle group over the last N days, used to back off anything
@@ -4741,6 +4859,35 @@ function generateSession(minutes, locationKey = 'full') {
     exercises.length = 0;
     exercises.push(...pinned, ...rest);
 
+    // Short session: pair non-competing exercises into supersets, partner
+    // adjacent, labelled A1/A2, B1/B2... The pairing is what makes the
+    // tighter time budget honest.
+    if (minutes <= SUPERSET_MAX_MINUTES && exercises.length > 1) {
+        let pairIndex = 0;
+        for (let i = 0; i < exercises.length; i++) {
+            if (exercises[i].superset) continue;
+            let partner = -1;
+            for (let j = i + 1; j < exercises.length; j++) {
+                if (!exercises[j].superset && canSuperset(exercises[i], exercises[j])) {
+                    partner = j;
+                    break;
+                }
+            }
+            if (partner === -1) continue;
+            const tag = String.fromCharCode(65 + pairIndex);   // A, B, C...
+            pairIndex++;
+            const [p] = exercises.splice(partner, 1);
+            exercises.splice(i + 1, 0, p);
+            exercises[i].superset = tag + '1';
+            exercises[i + 1].superset = tag + '2';
+            const note = (a, b) =>
+                `Superset ${a.superset} with ${b.name}: alternate sets, minimal rest between the pair, ~60s after.`;
+            exercises[i].notes = [exercises[i].notes, note(exercises[i], exercises[i + 1])].filter(Boolean).join(' ');
+            exercises[i + 1].notes = [exercises[i + 1].notes, note(exercises[i + 1], exercises[i])].filter(Boolean).join(' ');
+            i++;   // skip the partner we just placed
+        }
+    }
+
     const totalSets = exercises.reduce((sum, e) => sum + e.sets, 0);
     return {
         minutes,
@@ -4979,7 +5126,8 @@ function renderTodayPanel() {
                     <ul class="today-plan-list">`;
         generatedToday.exercises.forEach(e => {
             const reps = e.reps ? ` &times; ${escapeHtml(e.reps)}` : '';
-            html += `<li><span class="today-ex">${escapeHtml(e.name)}</span>
+            const tag = e.superset ? `<span class="today-ss">${escapeHtml(e.superset)}</span> ` : '';
+            html += `<li><span class="today-ex">${tag}${escapeHtml(e.name)}</span>
                          <span class="today-ex-meta">${e.sets}${reps}</span></li>`;
         });
         html += `</ul>
