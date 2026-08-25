@@ -126,6 +126,15 @@ never impossible.
   RDLs, good mornings) trained in the last two days rule axial lifts out of
   today's suggestion - the same muscles come back through leg presses, split
   squats, leg curls and hip thrusts instead.
+- **A real exercise library** sits behind the program: ~75 staple movements a
+  coach would actually program, per muscle and per location, so the variation
+  rule always has somewhere fresh to reach. The program's own exercises keep
+  priority - their history is what progressive overload tracks.
+- **Short sessions run as antagonist-paired supersets** (30 minutes and
+  under): press pairs with pull, leg extensions with leg curls, core with
+  anything - labelled A1/A2 in the plan and the logger notes, with a tighter
+  time budget that fits roughly 40% more sets, which is what the pairing
+  research prices supersets at.
 - **Catch-up volume day**: when one muscle is essentially untouched with three
   or fewer days left in the week, a 45+ minute session leads with a 10x10 at
   ~60% - a light German-volume scheme, deliberately gated to late week so a
