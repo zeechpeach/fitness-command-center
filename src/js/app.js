@@ -238,7 +238,7 @@ async function saveWorkoutToFirebase(workoutData) {
 // lets the programs and workouts queries run concurrently at startup.
 // Shown in Settings -> Data health and bumped with the ?v= cache-buster in
 // index.html, so "which code is this phone actually running" is answerable.
-const APP_VERSION = '80';
+const APP_VERSION = '81';
 
 let rawWorkouts = [];
 
@@ -4484,10 +4484,11 @@ function getExercisePool() {
     return pool;
 }
 
-// How often each exercise has actually been logged. Used to keep picking the
-// SAME movement for a group session after session: varying the exercise every
-// time would mean never repeating a lift enough to progress it, which costs the
-// main thing that protects muscle in a deficit.
+// How often each exercise has actually been logged. Familiar movements are
+// preferred - varying the exercise every time would mean never repeating a
+// lift enough to progress it - but familiarity is only the tiebreak within
+// the variation rules below, not a license to serve the identical session
+// twice in one week.
 function getExerciseFrequency() {
     const freq = {};
     allWorkouts.forEach(workout => {
@@ -4498,6 +4499,83 @@ function getExerciseFrequency() {
         });
     });
     return freq;
+}
+
+// ---------------------------------------------------------------------------
+// Variation and CNS cost.
+//
+// Two rules of session structure, both standard sports science:
+//
+// 1. VARIATION WITH ANCHORS. A movement used in the last few days is demoted,
+//    so the second chest day of a week reaches for a different press or fly
+//    instead of replaying the first day verbatim - different angles and
+//    resistance profiles cover different regions of the muscle. Because the
+//    demotion decays after a few days, each variation still recurs on a
+//    weekly rhythm and progressive overload keeps its thread. Per-scheme
+//    history matching tracks each variation's own numbers.
+//
+// 2. AXIAL / CNS COST. Heavy barbell lifts loaded through the spine - squats,
+//    deadlifts, RDLs, good mornings - generate systemic fatigue well beyond
+//    the local muscle damage, and repeating them on consecutive days costs
+//    more than it builds. If one was trained in the last two days, today's
+//    session substitutes a non-axial movement for the same muscle when one
+//    exists (leg press or split squat instead of a back squat, a leg curl or
+//    cable back extension instead of an RDL).
+// ---------------------------------------------------------------------------
+
+const VARIATION_LOOKBACK_DAYS = 4;
+
+const AXIAL_TOKENS = ['back squat', 'front squat', 'barbell squat', 'deadlift',
+    'romanian deadlift', 'rdl', 'good morning'];
+
+function isAxialLift(name) {
+    const n = normalizeLabel(name);
+    return AXIAL_TOKENS.some(token => n.includes(token));
+}
+
+// Exercise names trained recently, for the variation demotion.
+function getRecentExerciseNames(days = VARIATION_LOOKBACK_DAYS) {
+    const today = getTodayDateString();
+    const from = addDaysToDateString(today, -days);
+    const names = new Set();
+    allWorkouts.forEach(workout => {
+        if (!workout || workout.date < from || workout.date > today) return;
+        Object.values(workout.exercises || {}).forEach(exercise => {
+            if (!exercise || !exercise.exercise) return;
+            if (((exercise.sets || []).filter(isWorkingSet).length) === 0) return;
+            names.add(normalizeLabel(exercise.substitution || exercise.exercise));
+        });
+    });
+    return names;
+}
+
+// True when a heavy axial lift was logged in the last N days (3+ working
+// sets - one warm-up single does not spend the CNS budget).
+function axialLiftTrainedRecently(days = 2) {
+    const today = getTodayDateString();
+    const from = addDaysToDateString(today, -days);
+    return allWorkouts.some(workout => {
+        if (!workout || workout.date < from || workout.date > today) return false;
+        return Object.values(workout.exercises || {}).some(exercise => {
+            if (!exercise || !exercise.exercise) return false;
+            const name = exercise.substitution || exercise.exercise;
+            return isAxialLift(name)
+                && (exercise.sets || []).filter(isWorkingSet).length >= 3;
+        });
+    });
+}
+
+// The first exercise of the last logged session: it got the best output, so
+// it should not automatically lead again today.
+function lastSessionLeadExercise() {
+    const sorted = allWorkouts.slice().sort((a, b) => workoutRecency(b) - workoutRecency(a));
+    for (const workout of sorted) {
+        if (isNonTrainingLabel(workout.day)) continue;
+        const first = Object.values(workout.exercises || {})
+            .find(ex => ex && ex.exercise && (ex.sets || []).filter(isWorkingSet).length > 0);
+        if (first) return normalizeLabel(first.substitution || first.exercise);
+    }
+    return null;
 }
 
 // Returns { minutes, totalSets, groups, exercises, rest, reason, fatigueNote }
@@ -4595,9 +4673,31 @@ function generateSession(minutes, locationKey = 'full') {
     }
 
     const exercises = exercisesPrefix.slice();
+    const recentNames = getRecentExerciseNames();
+    const axialSpent = axialLiftTrainedRecently();
+
     chosen.forEach(entry => {
-        const options = usableOptionsFor(entry.group, pool, locationKey).slice().sort((a, b) =>
-            (freq[normalizeLabel(b.name)] || 0) - (freq[normalizeLabel(a.name)] || 0));
+        let options = usableOptionsFor(entry.group, pool, locationKey).slice();
+
+        // CNS rule: a heavy axial lift in the last two days rules axial lifts
+        // out today - but only when the group has a non-axial alternative, so
+        // the muscle is never abandoned over the rule.
+        if (axialSpent && options.some(o => !isAxialLift(o.name))) {
+            options = options.filter(o => !isAxialLift(o.name));
+        }
+
+        options.sort((a, b) => {
+            // Variation rule first: anything trained in the last few days
+            // drops behind everything that was not, so the week's second
+            // session for a muscle reaches for a different movement.
+            const aRecent = recentNames.has(normalizeLabel(a.name)) ? 1 : 0;
+            const bRecent = recentNames.has(normalizeLabel(b.name)) ? 1 : 0;
+            if (aRecent !== bRecent) return aRecent - bRecent;
+            // Familiarity as the tiebreak: progressive overload wants the
+            // lifts you actually have history on.
+            return (freq[normalizeLabel(b.name)] || 0) - (freq[normalizeLabel(a.name)] || 0);
+        });
+
         // One movement up to 4 sets, two beyond that, so a big allocation is
         // split rather than becoming six sets of the same thing.
         const count = entry.sets > 4 && options.length > 1 ? 2 : 1;
@@ -4625,6 +4725,19 @@ function generateSession(minutes, locationKey = 'full') {
     const pinned = exercises.slice(0, exercisesPrefix.length);
     const rest = exercises.slice(exercisesPrefix.length)
         .sort((a, b) => movementOrder(a.name) - movementOrder(b.name));
+
+    // Order rotation: whatever leads gets the day's best output, so the
+    // movement that led LAST session does not lead again when another
+    // compound is available to take the front.
+    if (!pinned.length && rest.length > 1) {
+        const lastLead = lastSessionLeadExercise();
+        if (lastLead && normalizeLabel(rest[0].name) === lastLead
+            && movementOrder(rest[1].name) === movementOrder(rest[0].name)) {
+            const [repeatLead] = rest.splice(0, 1);
+            rest.splice(1, 0, repeatLead);
+        }
+    }
+
     exercises.length = 0;
     exercises.push(...pinned, ...rest);
 
