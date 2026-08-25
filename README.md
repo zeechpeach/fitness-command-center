@@ -118,7 +118,14 @@ never impossible.
 - It will say **rest** when everything owed was trained too recently, or when
   the week is already covered.
 - Exercise choice favours movements already logged often, so the same lifts
-  recur and progressive overload still has something to track.
+  recur and progressive overload still has something to track - but a
+  movement used in the last few days is demoted, so the week's second session
+  for a muscle reaches for a different variation instead of replaying the
+  first, and the exercise that led last session does not lead again.
+- **CNS cost is respected**: heavy axial barbell lifts (squats, deadlifts,
+  RDLs, good mornings) trained in the last two days rule axial lifts out of
+  today's suggestion - the same muscles come back through leg presses, split
+  squats, leg curls and hip thrusts instead.
 - **Catch-up volume day**: when one muscle is essentially untouched with three
   or fewer days left in the week, a 45+ minute session leads with a 10x10 at
   ~60% - a light German-volume scheme, deliberately gated to late week so a
