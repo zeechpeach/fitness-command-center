@@ -56,13 +56,26 @@ committed is live within about two minutes.
   weekly plan is an assignment you can fail; a session count is something you
   can plan around.
 
-### Fencing
+### Plan programs
+A program can carry an 8-week plan: a weekly session checklist (gym or
+bodyweight-home version ticks the same slot), the current week's prescription
+(reps in reserve, set additions, deload, retest), and program-specific weekly
+targets that override the defaults. The built-in **8-Week Recomp** program
+(Settings -> Start the 8-Week Recomp Program) trains shoulders and abs twice
+a week with 48h between, chest and back once, arms folded into the shoulder
+days, and one short no-failure leg session - with injury rules baked into
+every exercise choice and a pure-bodyweight home twin for every session.
+Missed days carry no red: any session runs on any open day.
+
+### Activity (fencing and cardio)
 Fifteen hours a week of coaching and twelve-hour tournament days used to be
 invisible to this app, which made the week look like a week of sitting still and
 let the generator prescribe squats the morning after a night on the strip.
 
-- Logged in two taps: the kind of day (coaching, training, tournament) and the
-  hours. No keyboard, no date picker - it assumes today.
+- Logged in two taps: the kind (coaching, training, tournament, incline walk,
+  bike) and the hours. No keyboard, no date picker - it assumes today.
+- Deliberate cardio (walks, bike) burns calories and counts the day active,
+  but barely touches leg recovery or the weekly leg bars.
 - Converted into an equivalent-set load for the muscles fencing actually taxes -
   quads, calves, glutes, hamstrings, core - weighted by kind, since coaching is
   not the same as competing.
@@ -168,7 +181,8 @@ never impossible.
 - Training-day vs rest-day comparison over the last 14 days
 
 ### Body metrics
-- Daily weight logging with a 7-day moving average
+- Daily weight logging with a 7-day moving average, plus optional waist and
+  shoulder tape measurements for the program's week-1 / week-8 tests
 - Weight progress chart
 - Body goal (cutting, bulking, maintaining) with a projected completion date
 

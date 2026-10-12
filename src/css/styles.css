@@ -304,6 +304,84 @@
 
         .week-row.done .week-row-count { color: var(--color-accent-primary); }
 
+        /* ---- Plan program --------------------------------------------------
+           Which week of the plan this is and which sessions are done. A slot
+           is a slot, not a date - the checklist carries no red. */
+        .program-panel:not(:empty) {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            padding: 1rem;
+            margin-bottom: 1.25rem;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .plan-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .plan-title {
+            font-weight: 600;
+            font-size: 1rem;
+            color: var(--color-text-primary);
+        }
+
+        .plan-note {
+            font-size: 0.8125rem;
+            color: var(--color-text-secondary);
+            margin-top: 0.2rem;
+            line-height: 1.4;
+        }
+
+        .plan-count {
+            text-align: right;
+            font-size: 1.125rem;
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+            color: var(--color-text-primary);
+            white-space: nowrap;
+        }
+
+        .plan-count span {
+            display: block;
+            font-size: 0.6875rem;
+            font-weight: 400;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: var(--color-text-secondary);
+        }
+
+        .plan-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+        }
+
+        .plan-row {
+            display: grid;
+            grid-template-columns: 1.25rem 2.5rem 1fr;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 0.875rem;
+            padding: 0.25rem 0;
+        }
+
+        .plan-check { color: var(--color-accent-primary); font-weight: 700; }
+        .plan-day { color: var(--color-text-secondary); font-size: 0.75rem; }
+        .plan-name { color: var(--color-text-primary); }
+        .plan-row.done .plan-name { color: var(--color-text-secondary); }
+
+        .plan-foot {
+            margin-top: 0.625rem;
+            font-size: 0.75rem;
+            line-height: 1.4;
+            color: var(--color-text-secondary);
+        }
+
         /* ---- Today ---------------------------------------------------------
            A suggestion, not an assignment. Regenerated on every look from what
            the week still owes, what has recovered, and the time available. */

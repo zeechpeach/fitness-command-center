@@ -238,7 +238,7 @@ async function saveWorkoutToFirebase(workoutData) {
 // lets the programs and workouts queries run concurrently at startup.
 // Shown in Settings -> Data health and bumped with the ?v= cache-buster in
 // index.html, so "which code is this phone actually running" is answerable.
-const APP_VERSION = '82';
+const APP_VERSION = '83';
 
 let rawWorkouts = [];
 
@@ -471,7 +471,8 @@ function getDailyActivityCalories() {
 
     fencingEntriesBetween(from, today).forEach(entry => {
         const hours = Math.min(Number(entry.hours) || 0, FENCING_HOURS_CAP);
-        total += hours * FENCING_CALS_PER_HOUR * fencingKindWeight(entry.kind);
+        const kind = FENCING_KINDS[entry.kind];
+        total += hours * (kind ? kind.calsPerHour : FENCING_CALS_PER_HOUR * fencingKindWeight(entry.kind));
     });
 
     allWorkouts.forEach(workout => {
@@ -4225,11 +4226,15 @@ const FENCING_GROUP_LOAD = {
 
 // Hours are not equal. Coaching is mostly instructing on your feet; a lesson or
 // a training night is you doing the work; a tournament is that plus a day of
-// standing, waiting and adrenaline.
+// standing, waiting and adrenaline. The logger also takes deliberate cardio -
+// incline walking and the bike - which burns calories and counts the day as
+// active but barely touches leg recovery (weight) or the weekly leg bars.
 const FENCING_KINDS = {
-    Coaching:   { weight: 0.6, label: 'Coaching' },
-    Training:   { weight: 1.0, label: 'Training / lesson' },
-    Tournament: { weight: 1.2, label: 'Tournament' }
+    Coaching:   { weight: 0.6,  label: 'Coaching',     calsPerHour: 210 },
+    Training:   { weight: 1.0,  label: 'Training / lesson', calsPerHour: 350 },
+    Tournament: { weight: 1.2,  label: 'Tournament',   calsPerHour: 420 },
+    Walk:       { weight: 0.15, label: 'Incline walk', calsPerHour: 330 },
+    Bike:       { weight: 0.15, label: 'Bike',         calsPerHour: 400 }
 };
 
 // One hour of fencing is worth roughly this many hard sets to the legs before
@@ -4386,7 +4391,7 @@ window.removeFencing = async function (id) {
 
 // Hours offered as chips rather than typed. Every real answer is on this list,
 // and a number pad on a phone is three taps and a dismissed keyboard.
-const FENCING_HOUR_CHIPS = [1, 1.5, 2, 3, 4, 6, 8, 12];
+const FENCING_HOUR_CHIPS = [0.5, 1, 1.5, 2, 3, 4, 6, 8, 12];
 
 let fencingKind = null;     // null until a kind is picked, then hours show
 
@@ -4405,7 +4410,7 @@ function renderFencingPanel() {
 
     let html = `
         <div class="fencing-head">
-            <span class="fencing-title">Fencing</span>
+            <span class="fencing-title">Activity</span>
             <span class="fencing-hours">${formatFencingHours(weekHours)} this week</span>
         </div>`;
 
@@ -4456,6 +4461,256 @@ function formatFencingHours(hours) {
     const n = Number(hours) || 0;
     return `${Number.isInteger(n) ? n : n.toFixed(1)}h`;
 }
+
+// ---------------------------------------------------------------------------
+// The 8-Week Recomp program (October 2026).
+//
+// A fixed plan, by request - the first since the app stopped assigning days.
+// Priorities are ranked: shoulders and abs twice a week with 48h+ between
+// (Mon/Fri, which may be coaching days, so both are upper/core only), chest
+// and back once (Wed), arms folded into the shoulder days (biceps Monday,
+// triceps Friday), and one short no-failure leg session (Sat) because fencing
+// already trains legs. Sunday rests.
+//
+// Injury rules are baked into exercise choice, not left to memory: no heavy
+// deadlifts, no barbell back squats, no standing barbell overhead pressing,
+// no heavy spinal loading anywhere. Pressing is seated with back support.
+// Squat and lunge depth stays in the pain-free hip range. Ab work is
+// rollouts, cable crunches, Pallofs, dead bugs, side planks and bent-knee
+// hanging raises - never straight-leg raises.
+//
+// Every gym session has a pure-bodyweight home twin that trains the same
+// muscles and counts toward the same checklist slot.
+// ---------------------------------------------------------------------------
+
+const RECOMP_PROGRAM_NAME = '8-Week Recomp (Shoulders & Abs First)';
+
+function buildRecompProgram() {
+    const w = (name, sets, reps, extra = {}) => ({ name, sets, reps, ...extra });
+    return {
+        name: RECOMP_PROGRAM_NAME,
+        active: true,
+        schedule: {},   // nothing is date-assigned; the plan panel tracks the week
+        weeklyTargets: {
+            Shoulders: 16, Core: 12, Chest: 10, Back: 12, Biceps: 8, Triceps: 8,
+            Quads: 4, Hamstrings: 3, Glutes: 3, Calves: 2
+        },
+        plan: {
+            weeks: 8,
+            // startDate is stamped at install time to the current week's Sunday.
+            startDate: null,
+            sessions: [
+                { day: 'Mon', name: 'Shoulders · Abs · Biceps (A)', home: 'Home: Shoulders · Abs · Biceps (A)' },
+                { day: 'Wed', name: 'Chest · Back', home: 'Home: Chest · Back' },
+                { day: 'Fri', name: 'Shoulders · Abs · Triceps (B)', home: 'Home: Shoulders · Abs · Triceps (B)' },
+                { day: 'Sat', name: 'Legs (Short)', home: 'Home: Legs (Short)' }
+            ],
+            testSession: 'Test Day (Week 1 & 8)'
+        },
+        workouts: {
+            'Shoulders · Abs · Biceps (A)': [
+                w('Seated Dumbbell Shoulder Press', 3, '6-10',
+                  { notes: 'MAIN LIFT. Seated, back supported - never standing barbell. Weeks 3-4 add a 4th set.' }),
+                w('Dumbbell Lateral Raise', 3, '12-15'),
+                w('Rear Delt Fly', 3, '12-15'),
+                w('Ab Wheel Rollout', 3, '8-12', { trackingType: 'reps', notes: 'From knees. Brace hard, no lower-back sag.' }),
+                w('Pallof Press', 3, '10-12', { notes: 'Per side. Anti-rotation - slow.' }),
+                w('Hanging Knee Raise', 3, '8-12', { trackingType: 'reps', notes: 'Knees bent, controlled - no straight-leg raises.' }),
+                w('Dumbbell Curl', 3, '10-12', { notes: 'Superset with an ab movement to stay inside the hour.' }),
+                w('Hammer Curl', 2, '10-12')
+            ],
+            'Chest · Back': [
+                w('Incline Dumbbell Press', 3, '6-10', { notes: 'MAIN LIFT. Weeks 3-4 add a 4th set.' }),
+                w('Weighted Pull-Up', 3, '5-8', { notes: 'MAIN LIFT. Weeks 3-4 add a 4th set. Bodyweight only if reps fall under 5.' }),
+                w('Weighted Dip', 3, '6-10', { notes: 'Superset-friendly with rows (A1/A2).' }),
+                w('Chest-Supported Row', 3, '8-12', { notes: 'Chest supported keeps the spine unloaded.' }),
+                w('Cable Fly', 3, '12-15'),
+                w('Lat Pulldown', 3, '10-12')
+            ],
+            'Shoulders · Abs · Triceps (B)': [
+                w('Arnold Shoulder Press', 3, '8-12',
+                  { notes: 'MAIN LIFT. Seated, back supported. Weeks 3-4 add a 4th set.' }),
+                w('Cable Lateral Raise', 3, '12-15'),
+                w('Face Pull', 3, '15-20', { notes: 'Rear delts and rotator cuff - fencing shoulder insurance.' }),
+                w('Cable Crunch', 3, '10-15', { notes: 'Kneeling on a pad. Flex the spine under control - this loading is fine; compression is not.' }),
+                w('Side Plank', 3, '20-30s', { trackingType: 'time', notes: 'Per side.' }),
+                w('Dead Bug', 3, '10-12', { trackingType: 'reps', notes: 'Per side, slow, lower back pressed down.' }),
+                w('Overhead Cable Triceps Extension', 3, '10-12'),
+                w('Triceps Pushdown', 2, '12-15')
+            ],
+            'Legs (Short)': [
+                w('Leg Press', 2, '10-12', { notes: 'Pain-free hip depth ONLY. Stop 2+ reps before failure - every set.' }),
+                w('Seated Leg Curl', 2, '10-12', { notes: 'No failure.' }),
+                w('Barbell Hip Thrust', 2, '8-12', { notes: 'Pain-free hip range. Moderate load.' }),
+                w('Leg Extension', 2, '12-15', { notes: 'No failure.' }),
+                w('Standing Calf Raise', 2, '12-15')
+            ],
+            'Home: Shoulders · Abs · Biceps (A)': [
+                w('Pike Push-Up', 3, '8-12', { trackingType: 'reps', notes: 'Shoulder-press pattern. Elevate the feet to progress.' }),
+                w('Wall Handstand Hold', 3, '30-45s', { trackingType: 'time', notes: 'Belly to wall if comfortable.' }),
+                w('Prone Rear Delt Swimmers', 3, '12-15', { trackingType: 'reps' }),
+                w('Hanging Knee Raise', 3, '8-12', { trackingType: 'reps', notes: 'On the pull-up bar. Knees bent.' }),
+                w('Dead Bug', 3, '10-12', { trackingType: 'reps' }),
+                w('Side Plank', 3, '20-30s', { trackingType: 'time', notes: 'Per side.' }),
+                w('Chin-Up', 3, '6-10', { trackingType: 'reps', notes: 'Underhand - the biceps slot.' })
+            ],
+            'Home: Chest · Back': [
+                w('Push-Up', 4, '12-20', { trackingType: 'reps', notes: 'MAIN. Two reps shy of failure per the week\'s RIR.' }),
+                w('Pull-Up', 4, '5-8', { trackingType: 'reps', notes: 'MAIN.' }),
+                w('Deficit Push-Up', 3, '8-12', { trackingType: 'reps', notes: 'Hands on books/steps for range.' }),
+                w('Inverted Row', 3, '8-12', { trackingType: 'reps', notes: 'Under a sturdy table, or rings if available.' }),
+                w('Diamond Push-Up', 2, '8-12', { trackingType: 'reps' }),
+                w('Scapular Pull-Up', 2, '8-10', { trackingType: 'reps' })
+            ],
+            'Home: Shoulders · Abs · Triceps (B)': [
+                w('Feet-Elevated Pike Push-Up', 3, '6-10', { trackingType: 'reps', notes: 'MAIN. Feet on the bench.' }),
+                w('Wall Handstand Hold', 3, '30-45s', { trackingType: 'time' }),
+                w('Prone Rear Delt Swimmers', 3, '12-15', { trackingType: 'reps' }),
+                w('Hollow Body Hold', 3, '20-30s', { trackingType: 'time' }),
+                w('Dead Bug', 3, '10-12', { trackingType: 'reps' }),
+                w('Hanging Knee Raise', 3, '8-12', { trackingType: 'reps' }),
+                w('Diamond Push-Up', 3, '8-12', { trackingType: 'reps', notes: 'The triceps slot.' })
+            ],
+            'Home: Legs (Short)': [
+                w('Bodyweight Squat', 2, '15-20', { trackingType: 'reps', notes: 'Pain-free hip depth only. Nowhere near failure.' }),
+                w('Reverse Lunge', 2, '10-12', { trackingType: 'reps', notes: 'Per side. Shallow if the hip complains.' }),
+                w('Single-Leg Glute Bridge', 2, '10-12', { trackingType: 'reps' }),
+                w('Single-Leg Calf Raise', 2, '12-15', { trackingType: 'reps' })
+            ],
+            'Test Day (Week 1 & 8)': [
+                w('Max Pull-Up Test', 1, 'max', { trackingType: 'reps', notes: 'One all-out set after a real warm-up. Record every clean rep.' }),
+                w('Max Push-Up Test', 1, 'max', { trackingType: 'reps', notes: 'One all-out set. Chest to fist-height, full lockout.' }),
+                w('Waist & Shoulder Tape Check', 1, 'done', { trackingType: 'checkoff',
+                  notes: 'Tape waist at the navel, shoulders at the widest point. Log both on the Body tab, same time of day both weeks.' })
+            ]
+        },
+        exerciseVariations: {}
+    };
+}
+
+// Which plan week today falls in: 1-8, or null (no plan / finished).
+function getPlanWeek() {
+    const plan = activeProgram && activeProgram.plan;
+    if (!plan || !plan.startDate) return null;
+    const week = Math.floor(daysBetween(plan.startDate, getTodayDateString()) / 7) + 1;
+    if (week < 1 || week > (plan.weeks || 8)) return null;
+    return week;
+}
+
+// The week's marching orders, straight from the periodization spec.
+function getPlanPhase(week) {
+    if (week <= 2) return {
+        label: 'Base', rir: 3,
+        note: 'Leave 3 reps in reserve on every set.' + (week === 1 ? ' TEST WEEK: do the Test Day once.' : '')
+    };
+    if (week <= 4) return {
+        label: 'Build', rir: 2,
+        note: 'Add a 4th set to each MAIN lift. 2 reps in reserve.'
+    };
+    if (week === 5) return {
+        label: 'Deload', rir: 3,
+        note: 'One set fewer on every exercise. Keep the loads. Recovery week.'
+    };
+    if (week <= 7) return {
+        label: 'Peak', rir: 1,
+        note: 'Hardest weeks: 1 rep in reserve. Protect Tuesday/Thursday fencing - if sore, trim the last set.'
+    };
+    return {
+        label: 'Taper & Retest', rir: 3,
+        note: 'HALF the sets on everything, then the Test Day: max pull-ups, max push-ups, waist and shoulder tape.'
+    };
+}
+
+// A plan slot counts as done this week if its gym OR home version was logged.
+function getPlanChecklist() {
+    const plan = activeProgram && activeProgram.plan;
+    if (!plan) return [];
+    const weekStart = getWeekStartDate();
+    const today = getTodayDateString();
+    const loggedThisWeek = allWorkouts
+        .filter(w => w.date >= weekStart && w.date <= today)
+        .map(w => normalizeLabel(w.day));
+    const done = (name) => loggedThisWeek.includes(normalizeLabel(name));
+
+    const rows = (plan.sessions || []).map(s => ({
+        day: s.day, name: s.name, home: s.home,
+        done: done(s.name) || done(s.home)
+    }));
+    const week = getPlanWeek();
+    if (plan.testSession && (week === 1 || week === (plan.weeks || 8))) {
+        rows.push({ day: '', name: plan.testSession, home: null, done: done(plan.testSession) });
+    }
+    return rows;
+}
+
+function renderProgramPanel() {
+    const container = document.getElementById('program-panel');
+    if (!container) return;
+    const week = getPlanWeek();
+    if (!activeProgram || !activeProgram.plan || !week) {
+        container.innerHTML = '';
+        return;
+    }
+
+    const phase = getPlanPhase(week);
+    const rows = getPlanChecklist();
+    const doneCount = rows.filter(r => r.done).length;
+
+    let html = `
+        <div class="plan-head">
+            <div>
+                <div class="plan-title">Week ${week} of ${activeProgram.plan.weeks || 8} &middot; ${escapeHtml(phase.label)}</div>
+                <div class="plan-note">${escapeHtml(phase.note)}</div>
+            </div>
+            <div class="plan-count">${doneCount}/${rows.length}<span>sessions</span></div>
+        </div>
+        <div class="plan-list">`;
+    rows.forEach(r => {
+        html += `
+            <div class="plan-row${r.done ? ' done' : ''}">
+                <span class="plan-check">${r.done ? '&#10003;' : ''}</span>
+                <span class="plan-day">${escapeHtml(r.day || 'W' + week)}</span>
+                <span class="plan-name">${escapeHtml(r.name)}</span>
+            </div>`;
+    });
+    html += `</div>
+        <div class="plan-foot">Missed a day? Nothing is lost - any session can run on any open day,
+            or at home as its bodyweight twin. Tap its pill below to start it.</div>`;
+    container.innerHTML = html;
+}
+
+// One-tap install from Settings: deactivates the current program, saves this
+// one, stamps week 1 to the current week.
+window.installRecompProgram = async function () {
+    if (activeProgram && activeProgram.name === RECOMP_PROGRAM_NAME) {
+        showToast('The 8-week program is already active.', 'info');
+        return;
+    }
+    if (!confirm(`Start "${RECOMP_PROGRAM_NAME}"? Your current program stays saved and can be reactivated any time.`)) return;
+    try {
+        for (const p of programs.filter(p => p.active)) {
+            p.active = false;
+            await updateDoc(doc(db, 'programs', p.id), { active: false });
+        }
+        const program = buildRecompProgram();
+        program.plan.startDate = getWeekStartDate();
+        program.createdAt = new Date().toISOString();
+        program.activatedAt = program.createdAt;
+        const ref = await addDoc(collection(db, 'programs'), program);
+        program.id = ref.id;
+        programs.push(program);
+        activeProgram = program;
+        currentDay = '';
+        refreshStartupCache();
+        renderPrograms();
+        renderWorkoutDaySelector();
+        initializeWorkout();
+        showToast('Week 1 starts now. Shoulders & abs lead.', 'success');
+    } catch (e) {
+        console.error('Could not install program:', e);
+        showToast('Could not save the program. Check your connection.', 'error');
+    }
+};
 
 // ---------------------------------------------------------------------------
 // Today's suggestion.
@@ -5216,7 +5471,7 @@ function renderWeeklyVolume() {
     if (summary.fencing > 0) {
         html += `<div class="week-fencing-note">${summary.fencing} of those sets are credited from
                     ${formatFencingHours(fencingHoursBetween(getWeekStartDate(), getTodayDateString()))}
-                    of fencing, capped at half of each target - footwork keeps legs busy, it does not load them.</div>`;
+                    of logged activity, capped at half of each target - footwork keeps legs busy, it does not load them.</div>`;
     }
 
     html += `<div class="week-bars">`;
@@ -5638,7 +5893,8 @@ function renderCalendar() {
         } else if (fenced.length) {
             classes.push('fenced');
             const hours = fenced.reduce((sum, e) => sum + (Number(e.hours) || 0), 0);
-            displayLabel = `Fencing ${formatFencingHours(hours)}`;
+            const allCardio = fenced.every(e => e.kind === 'Walk' || e.kind === 'Bike');
+            displayLabel = `${allCardio ? 'Cardio' : 'Fencing'} ${formatFencingHours(hours)}`;
             labelClass = 'Fencing';
         } else if (isDateSickDay(dateStr)) {
             classes.push('sick');
@@ -5748,7 +6004,7 @@ window.selectCalendarDay = function (dateStr) {
         if (fenced.length) {
             const parts = fenced.map(e => `${formatFencingHours(e.hours)} ${
                 (FENCING_KINDS[e.kind] || { label: 'fencing' }).label.toLowerCase()}`);
-            title.textContent = `Fencing - ${formatDateString(dateStr)}`;
+            title.textContent = `Activity - ${formatDateString(dateStr)}`;
             content.innerHTML = `<p style="color: var(--color-text-secondary);">${parts.join(', ')}. No lifting logged.</p>`;
         } else if (isDateSickDay(dateStr)) {
             title.textContent = `Sick Day - ${formatDateString(dateStr)}`;
@@ -7973,6 +8229,12 @@ window.logWeight = async function () {
     }
 
     const weightData = { date, weight };
+    // Tape measurements ride along when filled: the 8-week program tests
+    // waist and shoulder circumference in weeks 1 and 8.
+    const waist = parseFloat(document.getElementById('waist-value-input')?.value);
+    const shoulders = parseFloat(document.getElementById('shoulders-value-input')?.value);
+    if (Number.isFinite(waist) && waist > 0) weightData.waist = waist;
+    if (Number.isFinite(shoulders) && shoulders > 0) weightData.shoulders = shoulders;
 
     try {
         const docRef = await addDoc(collection(db, "weight"), weightData);
@@ -7986,7 +8248,12 @@ window.logWeight = async function () {
         window.weightData.unshift(weightData);
 
         document.getElementById('weight-value-input').value = '';
+        const waistEl = document.getElementById('waist-value-input');
+        const shouldersEl = document.getElementById('shoulders-value-input');
+        if (waistEl) waistEl.value = '';
+        if (shouldersEl) shouldersEl.value = '';
 
+        renderLatestMeasurements();
         createWeightChart();
         updateBodyGoalDisplay();
         updateNutritionCalories();
@@ -7996,6 +8263,22 @@ window.logWeight = async function () {
         alert('Error logging weight');
     }
 };
+
+// The most recent recorded tape values, with their dates - so week 8 can be
+// read against week 1 without digging through the export.
+function renderLatestMeasurements() {
+    const el = document.getElementById('measurement-latest');
+    if (!el) return;
+    const rows = (window.weightData || []).slice()
+        .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    const lastWaist = rows.find(r => Number.isFinite(parseFloat(r.waist)));
+    const lastShoulders = rows.find(r => Number.isFinite(parseFloat(r.shoulders)));
+    if (!lastWaist && !lastShoulders) { el.textContent = ''; return; }
+    const parts = [];
+    if (lastWaist) parts.push(`Waist ${lastWaist.waist}" (${lastWaist.date})`);
+    if (lastShoulders) parts.push(`Shoulders ${lastShoulders.shoulders}" (${lastShoulders.date})`);
+    el.textContent = 'Latest tape: ' + parts.join(' · ');
+}
 
 function createWeightChart() {
     const ctx = document.getElementById('weight-chart');
@@ -8245,7 +8528,7 @@ async function initializeFitnessApp() {
     // target card lives on Nutrition and hides itself without weight data, so
     // on every fresh load the target was blank until you tabbed through Body.
     loadWeightData()
-        .then(() => { updateBodyGoalDisplay(); updateNutritionCalories(); })
+        .then(() => { updateBodyGoalDisplay(); updateNutritionCalories(); renderLatestMeasurements(); })
         .catch(err => console.error('Failed to load weight data:', err));
     loadBodyGoalData().catch(err => console.error('Failed to load body goal data:', err));
     loadTravelModeData()
@@ -8550,6 +8833,7 @@ function renderWorkoutDaySelector() {
     // data, so refreshing it here keeps the two in step on every path that
     // rebuilds the selector: boot, a completed session, a deleted one, a
     // program change.
+    renderProgramPanel();
     renderWeeklyVolume();
     renderTodayPanel();
     renderFencingPanel();
