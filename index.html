@@ -18,7 +18,7 @@
     <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js" crossorigin>
     <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js" crossorigin>
 
-    <link rel="stylesheet" href="src/css/styles.css?v=82">
+    <link rel="stylesheet" href="src/css/styles.css?v=83">
 
     <!-- Inter is third in the font stack, behind the system font every Apple
          device already uses, so it must never block the first paint. -->
@@ -73,6 +73,11 @@
 
         <!-- WORKOUT TAB -->
         <div id="workout-content" class="tab-content active">
+            <!-- When a plan program is active: which week of it this is, the
+                 week's prescription, and which sessions are done. Flexible by
+                 design - a slot is a slot, not a date. -->
+            <div class="program-panel" id="program-panel"></div>
+
             <!-- What the week still owes. The day selector below is a menu of
                  ways to pay it down, not a queue that decides for you. -->
             <div class="weekly-volume-panel" id="weekly-volume-panel"></div>
@@ -82,8 +87,9 @@
             <div class="today-panel" id="today-panel"></div>
 
             <!-- Fifteen hours a week of coaching is training whether or not it
-                 happened on a rack. Two taps to log it; it feeds the week panel
-                 above and the suggestion's rest decision. -->
+                 happened on a rack - and so is an incline walk or a bike ride.
+                 Two taps to log any of it; it feeds the week panel above, the
+                 calorie target, and the suggestion's rest decision. -->
             <div class="fencing-panel" id="fencing-panel"></div>
 
             <!-- Only unscheduled sessions (Tournament Circuit, a generated
@@ -511,6 +517,15 @@
                     <button class="btn btn-complete" onclick="logWeight()"
                         style="margin: 0; padding: 0.75rem 1.5rem;">Log Weight</button>
                 </div>
+                <!-- Tape measurements ride along with a weigh-in when filled.
+                     The 8-week program tests waist and shoulders in weeks 1 and 8. -->
+                <div class="weight-input-row" style="margin-top: 0.5rem;">
+                    <input type="number" id="waist-value-input" class="weight-input-field"
+                        placeholder="Waist (in, optional)" step="0.1">
+                    <input type="number" id="shoulders-value-input" class="weight-input-field"
+                        placeholder="Shoulders (in, optional)" step="0.1">
+                </div>
+                <div id="measurement-latest" style="margin-top: 0.5rem; font-size: 0.8125rem; color: var(--color-text-secondary);"></div>
             </div>
 
             <div class="body-goal-card">
@@ -1076,6 +1091,8 @@
                 </div>
                 <button class="btn" onclick="createNewProgram()" style="margin-top: 1rem; width: 100%;">+ Create New
                     Program</button>
+                <button class="btn" onclick="installRecompProgram()" style="margin-top: 0.5rem; width: 100%;">Start the
+                    8-Week Recomp Program</button>
             </div>
 
             <div class="settings-section">
@@ -1213,7 +1230,7 @@
         </div>
     </div>
 
-    <script type="module" src="src/js/app.js?v=82"></script>
+    <script type="module" src="src/js/app.js?v=83"></script>
 </body>
 
 </html>
