@@ -238,7 +238,7 @@ async function saveWorkoutToFirebase(workoutData) {
 // lets the programs and workouts queries run concurrently at startup.
 // Shown in Settings -> Data health and bumped with the ?v= cache-buster in
 // index.html, so "which code is this phone actually running" is answerable.
-const APP_VERSION = '83';
+const APP_VERSION = '84';
 
 let rawWorkouts = [];
 
@@ -6523,6 +6523,7 @@ window.toggleMealCollapse = function (mealId) {
 
 
 function renderMeals() {
+    renderNutritionPlanPanel();
     const foodEntries = nutritionData.filter(n => n.date === currentNutritionDate);
     const container = document.getElementById('meals-container');
 
@@ -6788,6 +6789,273 @@ function defaultMealTypeForNow(date = new Date()) {
 
 // Write one log entry. Used by both the quick-add strip and the portion sheet,
 // so they cannot drift apart.
+// ---------------------------------------------------------------------------
+// The meal plan (October 2026, runs with the 8-week program).
+//
+// The problem it solves: under-fueled all day, then a large meal after
+// late-night fencing, right before bed. That pattern hurts twice - evening
+// hunger after a stressful session makes the late meal huge, and a heavy
+// meal at bedtime degrades sleep, which is when recovery and the hormonal
+// case for training actually happens. The fix is structural, not willpower:
+// the day's biggest carbs move BEFORE evening fencing (the 3:45 keystone
+// meal), and the post-fencing meal becomes a fixed, light, protein-forward
+// shake - decided in advance, nothing to negotiate at 9:30pm.
+//
+// Built from the foods already in rotation: eggs, Fage + frozen fruit,
+// Fairlife + whey, cafeteria chicken and rice, sardines, Built bars.
+// Macros are per-meal so one tap logs the whole meal into the diary.
+// ---------------------------------------------------------------------------
+
+const MEAL_PLAN = {
+    weekday: {
+        label: 'Training / fencing day',
+        target: { calories: 2250, protein: 185 },
+        note: 'Big fuel at 3:45pm, light protein after fencing, nothing heavy within 30 minutes of bed. Coaching 3h+ tonight? Add a cup of rice at lunch.',
+        meals: [
+            { id: 'wd1', time: '7:00', title: 'Breakfast', mealType: 'Breakfast',
+              foods: [
+                { name: 'Eggs (3)', calories: 210, protein: 18, carbs: 2, fats: 15 },
+                { name: 'Whole-Grain Toast (2 slices)', calories: 180, protein: 8, carbs: 32, fats: 2 },
+                { name: 'Banana', calories: 105, protein: 1, carbs: 27, fats: 0 }
+              ] },
+            { id: 'wd2', time: '10:30', title: 'Yogurt bowl', mealType: 'Snack',
+              foods: [
+                { name: 'Fage 0% Greek Yogurt (8 oz)', calories: 150, protein: 23, carbs: 8, fats: 0 },
+                { name: 'Frozen Berries (1 cup)', calories: 70, protein: 1, carbs: 17, fats: 0 }
+              ] },
+            { id: 'wd3', time: '12:30', title: 'Cafeteria lunch', mealType: 'Lunch',
+              foods: [
+                { name: 'Grilled Chicken Breast (6 oz)', calories: 280, protein: 53, carbs: 0, fats: 6 },
+                { name: 'Rice (1.5 cups cooked)', calories: 300, protein: 6, carbs: 66, fats: 0 },
+                { name: 'Vegetables + Olive Oil (1 tsp)', calories: 90, protein: 2, carbs: 10, fats: 5 }
+              ] },
+            { id: 'wd4', time: '15:45', title: 'Pre-fencing fuel - the keystone meal', mealType: 'Snack',
+              foods: [
+                { name: 'Turkey Sandwich', calories: 380, protein: 28, carbs: 45, fats: 8 },
+                { name: 'Apple', calories: 95, protein: 0, carbs: 25, fats: 0 }
+              ] },
+            { id: 'wd5', time: '21:30', title: 'Post-fencing shake - light, then bed', mealType: 'Dinner',
+              foods: [
+                { name: 'Fairlife 2% Milk (16 oz)', calories: 240, protein: 26, carbs: 12, fats: 9 },
+                { name: 'ON Whey (1 scoop)', calories: 120, protein: 24, carbs: 3, fats: 2 }
+              ] }
+        ]
+    },
+    saturday: {
+        label: 'Saturday - legs + lessons',
+        target: { calories: 2100, protein: 185 },
+        note: 'Train legs fed. Dinner is the sardine slot. Evening is free of training, so eat dinner early and practice the sleep window.',
+        meals: [
+            { id: 'sa1', time: '8:00', title: 'Breakfast (pre-legs)', mealType: 'Breakfast',
+              foods: [
+                { name: 'Eggs (3)', calories: 210, protein: 18, carbs: 2, fats: 15 },
+                { name: 'Whole-Grain Toast (2 slices)', calories: 180, protein: 8, carbs: 32, fats: 2 },
+                { name: 'Banana', calories: 105, protein: 1, carbs: 27, fats: 0 }
+              ] },
+            { id: 'sa2', time: '11:00', title: 'Post-workout shake', mealType: 'Snack',
+              foods: [
+                { name: 'Fairlife 2% Milk (16 oz)', calories: 240, protein: 26, carbs: 12, fats: 9 },
+                { name: 'ON Whey (1 scoop)', calories: 120, protein: 24, carbs: 3, fats: 2 }
+              ] },
+            { id: 'sa3', time: '13:30', title: 'Lunch', mealType: 'Lunch',
+              foods: [
+                { name: 'Grilled Chicken Breast (6 oz)', calories: 280, protein: 53, carbs: 0, fats: 6 },
+                { name: 'Rice (1 cup cooked)', calories: 200, protein: 4, carbs: 44, fats: 0 },
+                { name: 'Vegetables + Olive Oil (1 tsp)', calories: 90, protein: 2, carbs: 10, fats: 5 }
+              ] },
+            { id: 'sa4', time: '17:00', title: 'Yogurt bowl', mealType: 'Snack',
+              foods: [
+                { name: 'Fage 0% Greek Yogurt (8 oz)', calories: 150, protein: 23, carbs: 8, fats: 0 },
+                { name: 'Frozen Berries (1 cup)', calories: 70, protein: 1, carbs: 17, fats: 0 }
+              ] },
+            { id: 'sa5', time: '19:00', title: 'Sardine dinner - early', mealType: 'Dinner',
+              foods: [
+                { name: 'Wild Planet Sardines (1 tin, drained)', calories: 190, protein: 22, carbs: 0, fats: 10 },
+                { name: 'Sourdough or Crackers', calories: 150, protein: 4, carbs: 28, fats: 2 },
+                { name: 'Side Salad + Olive Oil (1 tsp)', calories: 80, protein: 1, carbs: 5, fats: 6 }
+              ] }
+        ]
+    },
+    rest: {
+        label: 'Rest day',
+        target: { calories: 1950, protein: 170 },
+        note: 'Lowest-calorie day of the week, and dinner is DONE by 7pm - this is the night that resets the late-eating pattern and the sleep.',
+        meals: [
+            { id: 're1', time: '8:30', title: 'Breakfast', mealType: 'Breakfast',
+              foods: [
+                { name: 'Eggs (3)', calories: 210, protein: 18, carbs: 2, fats: 15 },
+                { name: 'Whole-Grain Toast (1 slice)', calories: 90, protein: 4, carbs: 16, fats: 1 },
+                { name: 'Banana', calories: 105, protein: 1, carbs: 27, fats: 0 }
+              ] },
+            { id: 're2', time: '12:30', title: 'Big chicken salad', mealType: 'Lunch',
+              foods: [
+                { name: 'Grilled Chicken Breast (6 oz)', calories: 280, protein: 53, carbs: 0, fats: 6 },
+                { name: 'Greens, Veg + Olive Oil (1 tbsp)', calories: 200, protein: 3, carbs: 12, fats: 15 }
+              ] },
+            { id: 're3', time: '15:30', title: 'Yogurt bowl', mealType: 'Snack',
+              foods: [
+                { name: 'Fage 0% Greek Yogurt (8 oz)', calories: 150, protein: 23, carbs: 8, fats: 0 },
+                { name: 'Frozen Berries (1 cup)', calories: 70, protein: 1, carbs: 17, fats: 0 }
+              ] },
+            { id: 're4', time: '18:30', title: 'Sardine dinner - done by 7pm', mealType: 'Dinner',
+              foods: [
+                { name: 'Wild Planet Sardines (1 tin, drained)', calories: 190, protein: 22, carbs: 0, fats: 10 },
+                { name: 'Rice (1 cup cooked)', calories: 200, protein: 4, carbs: 44, fats: 0 },
+                { name: 'Vegetables', calories: 50, protein: 2, carbs: 10, fats: 0 }
+              ] },
+            { id: 're5', time: '20:00', title: 'Protein top-up (only if short)', mealType: 'Snack',
+              foods: [
+                { name: 'Fairlife 2% Milk (8 oz)', calories: 120, protein: 13, carbs: 6, fats: 5 },
+                { name: 'ON Whey (1/2 scoop)', calories: 60, protein: 12, carbs: 2, fats: 1 }
+              ] }
+        ]
+    },
+    tournament: {
+        label: 'Tournament day',
+        target: { calories: 2550, protein: 175 },
+        note: 'Eat on the CLOCK between bouts, not by appetite - every 2.5 to 3 hours. Pack it all the night before. The 12-hour fasting-then-feast pattern ends here.',
+        meals: [
+            { id: 'to1', time: '6:30', title: 'Breakfast before leaving', mealType: 'Breakfast',
+              foods: [
+                { name: 'Eggs (3)', calories: 210, protein: 18, carbs: 2, fats: 15 },
+                { name: 'Whole-Grain Toast (2 slices)', calories: 180, protein: 8, carbs: 32, fats: 2 },
+                { name: 'Banana', calories: 105, protein: 1, carbs: 27, fats: 0 }
+              ] },
+            { id: 'to2', time: '9:30', title: 'Venue meal 1', mealType: 'Snack',
+              foods: [
+                { name: 'Turkey Sandwich', calories: 380, protein: 28, carbs: 45, fats: 8 }
+              ] },
+            { id: 'to3', time: '12:00', title: 'Venue meal 2', mealType: 'Lunch',
+              foods: [
+                { name: 'Built Bar', calories: 180, protein: 17, carbs: 20, fats: 6 },
+                { name: 'Banana', calories: 105, protein: 1, carbs: 27, fats: 0 },
+                { name: 'Beef Jerky (1 oz)', calories: 80, protein: 14, carbs: 3, fats: 1 }
+              ] },
+            { id: 'to4', time: '14:30', title: 'Venue meal 3', mealType: 'Snack',
+              foods: [
+                { name: 'Turkey Sandwich', calories: 380, protein: 28, carbs: 45, fats: 8 }
+              ] },
+            { id: 'to5', time: '17:00', title: 'Shake from the cooler', mealType: 'Snack',
+              foods: [
+                { name: 'Fairlife 2% Milk (16 oz)', calories: 240, protein: 26, carbs: 12, fats: 9 },
+                { name: 'ON Whey (1 scoop)', calories: 120, protein: 24, carbs: 3, fats: 2 }
+              ] },
+            { id: 'to6', time: '20:00', title: 'Real dinner after', mealType: 'Dinner',
+              foods: [
+                { name: 'Grilled Chicken Breast (6 oz)', calories: 280, protein: 53, carbs: 0, fats: 6 },
+                { name: 'Rice (1.5 cups cooked)', calories: 300, protein: 6, carbs: 66, fats: 0 },
+                { name: 'Vegetables + Olive Oil (1 tsp)', calories: 90, protein: 2, carbs: 10, fats: 5 }
+              ] }
+        ]
+    }
+};
+
+// Day type by weekday - Sunday rest, Saturday its own, Mon-Fri the evening
+// activity template - with a per-date override (the Tournament chip).
+function getMealPlanDayType(dateStr) {
+    try {
+        const override = localStorage.getItem('fcc:daytype:' + dateStr);
+        if (override && MEAL_PLAN[override]) return override;
+    } catch (e) { }
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const dow = new Date(y, m - 1, d).getDay();
+    if (dow === 0) return 'rest';
+    if (dow === 6) return 'saturday';
+    return 'weekday';
+}
+
+window.setMealPlanDayType = function (dayType) {
+    if (!MEAL_PLAN[dayType]) return;
+    try { localStorage.setItem('fcc:daytype:' + currentNutritionDate, dayType); } catch (e) { }
+    renderNutritionPlanPanel();
+};
+
+function mealTotals(meal) {
+    return meal.foods.reduce((acc, f) => ({
+        calories: acc.calories + f.calories, protein: acc.protein + f.protein
+    }), { calories: 0, protein: 0 });
+}
+
+window.logPlannedMeal = async function (dayType, mealId) {
+    const plan = MEAL_PLAN[dayType];
+    const meal = plan && plan.meals.find(m => m.id === mealId);
+    if (!meal) return;
+    const entry = {
+        date: currentNutritionDate,
+        mealType: meal.mealType,
+        time: getCurrentTimeString(),
+        planMeal: mealId,
+        foods: meal.foods.map(f => ({ ...f, quantity: 1 }))
+    };
+    try {
+        const docRef = await addDoc(collection(db, 'nutrition'), entry);
+        nutritionData.unshift({ id: docRef.id, ...entry });
+        collapsedMeals[`${entry.mealType}-${currentNutritionDate}`] = false;
+        renderMeals();
+        updateNutritionSummary();
+        showToast(`${meal.title} logged as planned.`, 'success');
+    } catch (e) {
+        console.error('Could not log planned meal:', e);
+        showToast('Could not save that meal. Check your connection.', 'error');
+    }
+};
+
+function renderNutritionPlanPanel() {
+    const container = document.getElementById('nutrition-plan-panel');
+    if (!container) return;
+
+    const dayType = getMealPlanDayType(currentNutritionDate);
+    const plan = MEAL_PLAN[dayType];
+    const loggedPlanIds = new Set(nutritionData
+        .filter(n => n.date === currentNutritionDate && n.planMeal)
+        .map(n => n.planMeal));
+
+    let html = `
+        <div class="mealplan-head">
+            <div>
+                <div class="mealplan-title">${escapeHtml(plan.label)}</div>
+                <div class="mealplan-target">${plan.target.calories} kcal &middot; ${plan.target.protein}g protein</div>
+            </div>
+            <div class="mealplan-chips">`;
+    Object.keys(MEAL_PLAN).forEach(key => {
+        const active = key === dayType ? ' active' : '';
+        const short = { weekday: 'Wk', saturday: 'Sat', rest: 'Rest', tournament: 'Tourn' }[key];
+        html += `<button type="button" class="mealplan-chip${active}" data-daytype="${key}">${short}</button>`;
+    });
+    html += `</div></div>
+        <div class="mealplan-note">${escapeHtml(plan.note)}</div>
+        <div class="mealplan-list">`;
+
+    plan.meals.forEach(meal => {
+        const done = loggedPlanIds.has(meal.id);
+        const totals = mealTotals(meal);
+        html += `
+            <div class="mealplan-row${done ? ' done' : ''}">
+                <div class="mealplan-row-main">
+                    <span class="mealplan-time">${escapeHtml(meal.time)}</span>
+                    <div class="mealplan-body">
+                        <div class="mealplan-name">${done ? '&#10003; ' : ''}${escapeHtml(meal.title)}</div>
+                        <div class="mealplan-foods">${meal.foods.map(f => escapeHtml(f.name)).join(' + ')}</div>
+                    </div>
+                </div>
+                <div class="mealplan-side">
+                    <span class="mealplan-macros">${totals.calories} kcal &middot; ${totals.protein}g</span>
+                    ${done ? '' : `<button type="button" class="mealplan-log" data-meal="${meal.id}">Log</button>`}
+                </div>
+            </div>`;
+    });
+    html += `</div>`;
+    container.innerHTML = html;
+
+    container.querySelectorAll('[data-daytype]').forEach(btn => {
+        btn.addEventListener('click', () => setMealPlanDayType(btn.getAttribute('data-daytype')));
+    });
+    container.querySelectorAll('[data-meal]').forEach(btn => {
+        btn.addEventListener('click', () =>
+            logPlannedMeal(dayType, btn.getAttribute('data-meal')).then(() => renderNutritionPlanPanel()));
+    });
+}
+
 async function logItemToDiary(item, servings, mealType) {
     const entry = {
         date: currentNutritionDate,
