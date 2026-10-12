@@ -163,6 +163,13 @@ never impossible.
 - Delete a mis-logged session from the calendar
 
 ### Nutrition
+- **The meal plan** leads the tab: exactly what to eat and when, keyed to the
+  day type (training/fencing day, Saturday, rest day, tournament - switchable
+  per date). Each meal has a clock time, its foods and macros, and a one-tap
+  Log that writes the whole meal to the diary. The structure IS the strategy:
+  the day's biggest carbs land before evening fencing, the post-fencing meal
+  is a fixed light shake, rest-day dinner ends by 7pm, and tournament days
+  are eaten on the clock instead of fasted-then-feasted.
 - **Combos** - several foods you always eat together (yogurt + frozen fruit,
   milk + protein powder) saved as one item and logged in a single tap. Built
   from foods already in your library. Not tied to a meal: the same combo can be

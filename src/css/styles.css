@@ -1998,6 +1998,115 @@
         /* ---- Quick add ---------------------------------------------------
            The things eaten most, one tap each. Sits above "Add Food" so the
            common case never opens a modal or a keyboard. */
+        /* ---- Meal plan -----------------------------------------------------
+           What to eat and when, per day type. One tap logs the whole meal. */
+        .nutrition-plan-panel:not(:empty) {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            padding: 1rem;
+            margin-bottom: 1rem;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .mealplan-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 0.5rem;
+            margin-bottom: 0.4rem;
+        }
+
+        .mealplan-title { font-weight: 600; color: var(--color-text-primary); }
+
+        .mealplan-target {
+            font-size: 0.8125rem;
+            color: var(--color-text-secondary);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .mealplan-chips { display: flex; gap: 0.25rem; flex-wrap: wrap; justify-content: flex-end; }
+
+        .mealplan-chip {
+            padding: 0.3rem 0.55rem;
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-full);
+            font-size: 0.75rem;
+            color: var(--color-text-secondary);
+            cursor: pointer;
+        }
+
+        .mealplan-chip.active {
+            background: var(--color-accent-primary);
+            color: var(--color-surface);
+            border-color: transparent;
+        }
+
+        .mealplan-note {
+            font-size: 0.75rem;
+            line-height: 1.4;
+            color: var(--color-text-secondary);
+            margin-bottom: 0.75rem;
+        }
+
+        .mealplan-list { display: flex; flex-direction: column; }
+
+        .mealplan-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.45rem 0;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .mealplan-row:last-child { border-bottom: none; }
+
+        .mealplan-row-main { display: flex; gap: 0.6rem; align-items: baseline; min-width: 0; }
+
+        .mealplan-time {
+            font-size: 0.75rem;
+            color: var(--color-text-secondary);
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+        }
+
+        .mealplan-name { font-size: 0.875rem; color: var(--color-text-primary); }
+
+        .mealplan-row.done .mealplan-name { color: var(--color-accent-primary); }
+
+        .mealplan-foods {
+            font-size: 0.75rem;
+            color: var(--color-text-secondary);
+            line-height: 1.35;
+        }
+
+        .mealplan-side {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 0.25rem;
+            white-space: nowrap;
+        }
+
+        .mealplan-macros {
+            font-size: 0.75rem;
+            color: var(--color-text-secondary);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .mealplan-log {
+            min-height: 34px;
+            padding: 0.3rem 0.9rem;
+            background: var(--color-accent-primary);
+            color: var(--color-surface);
+            border: none;
+            border-radius: var(--radius-full);
+            font-size: 0.8125rem;
+            cursor: pointer;
+        }
+
         .quick-add-strip:not(:empty) {
             margin-bottom: 1.25rem;
         }

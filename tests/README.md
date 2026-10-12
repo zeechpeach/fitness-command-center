@@ -50,6 +50,7 @@ Playwright will not find on its own, point at it with `PW_CHROMIUM=/path/to/chro
 | `23-variation.js` | The week's second session is not a replay - fresh movements lead, at most one repeat rides along - and no axial barbell lift is prescribed within two days of heavy squats |
 | `24-library-supersets.js` | The library gives a third session of the week fresh movements; 30-minute sessions pair A1/A2 antagonist supersets with a tighter set budget, 60-minute sessions keep straight sets |
 | `25-recomp-program.js` | One-tap install of the 8-week program; the plan panel shows the week's phase and prescription; a home session ticks its gym twin's slot; a half-hour walk logs in two taps and feeds the calorie target |
+| `26-meal-plan.js` | The meal plan panel: timed meals per day type, one tap logs a whole meal with macros, the tournament override, and the light post-fencing meal rule |
 | `sweep-inline-handlers.js` | Every inline `onclick`/`oninput` in the app resolves to a function that actually exists |
 | `sweep-dead-code.js` | No unreferenced functions, handlers or variables; no `getElementById` pointing at an element that is not there |
 | `sweep-unused-css.js` | No CSS rules for classes nothing uses |

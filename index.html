@@ -18,7 +18,7 @@
     <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js" crossorigin>
     <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js" crossorigin>
 
-    <link rel="stylesheet" href="src/css/styles.css?v=83">
+    <link rel="stylesheet" href="src/css/styles.css?v=84">
 
     <!-- Inter is third in the font stack, behind the system font every Apple
          device already uses, so it must never block the first paint. -->
@@ -402,6 +402,12 @@
                 <!-- Main Content Area -->
                 <div class="nutrition-main-content">
                     <!-- One tap for the things actually eaten most, no modal -->
+                    <!-- The meal plan: exactly what to eat and when, keyed to
+                         the day type. Big fuel before evening fencing, light
+                         protein after - the late-night-feast pattern ends in
+                         structure, not willpower. -->
+                    <div id="nutrition-plan-panel" class="nutrition-plan-panel"></div>
+
                     <div id="quick-add-strip" class="quick-add-strip"></div>
 
                     <!-- Add Food button at top for easy access -->
@@ -1230,7 +1236,7 @@
         </div>
     </div>
 
-    <script type="module" src="src/js/app.js?v=83"></script>
+    <script type="module" src="src/js/app.js?v=84"></script>
 </body>
 
 </html>
