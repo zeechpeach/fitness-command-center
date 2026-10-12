@@ -238,7 +238,7 @@ async function saveWorkoutToFirebase(workoutData) {
 // lets the programs and workouts queries run concurrently at startup.
 // Shown in Settings -> Data health and bumped with the ?v= cache-buster in
 // index.html, so "which code is this phone actually running" is answerable.
-const APP_VERSION = '84';
+const APP_VERSION = '85';
 
 let rawWorkouts = [];
 
@@ -4643,6 +4643,28 @@ function getPlanChecklist() {
     return rows;
 }
 
+// The plan session owed today, under flexible make-up: the earliest unticked
+// session whose scheduled weekday has already arrived this week. A missed
+// Monday is Tuesday's answer. In test weeks the Test Day becomes due once
+// nothing else is owed.
+const PLAN_DAY_INDEX = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+
+function getDuePlanSession() {
+    if (!getPlanWeek()) return null;
+    const rows = getPlanChecklist();
+    const today = getTodayDateString();
+    const [y, m, d] = today.split('-').map(Number);
+    const todayDow = new Date(y, m - 1, d).getDay();
+
+    const due = rows.filter(r => r.home && !r.done
+        && (PLAN_DAY_INDEX[r.day] !== undefined ? PLAN_DAY_INDEX[r.day] : 7) <= (todayDow === 0 ? 7 : todayDow));
+    if (due.length) return due[0];
+
+    const test = rows.find(r => !r.home && !r.done);
+    if (test) return test;
+    return null;
+}
+
 function renderProgramPanel() {
     const container = document.getElementById('program-panel');
     if (!container) return;
@@ -5174,6 +5196,33 @@ function getWeekOutlook() {
 let suggestedMinutes = null;     // null until a length is chosen
 let suggestedLocation = null;    // asked fresh every time - gyms change daily
 let suggestedSession = null;
+// Plan-led flow: the chosen location for today's due plan session, and the
+// explicit opt-out that falls back to the freeform generator.
+let planChoiceLocation = null;
+let planFreeform = false;
+
+window.pickPlanPlace = function (locationKey) {
+    if (!LOCATIONS[locationKey]) return;
+    planChoiceLocation = locationKey;
+    renderTodayPanel();
+};
+
+window.startPlanSession = function () {
+    const due = getDuePlanSession();
+    if (!due) return;
+    const label = (planChoiceLocation === 'home' && due.home) ? due.home : due.name;
+    planChoiceLocation = null;
+    renderWorkoutDaySelector();
+    selectDay(substituteDayKeyFor(label));
+    showToast(`${label} loaded. ${getPlanPhase(getPlanWeek() || 1).note}`, 'success');
+    renderTodayPanel();
+};
+
+window.usePlanFreeform = function () {
+    planFreeform = true;
+    planChoiceLocation = null;
+    renderTodayPanel();
+};
 
 // The generated session used to live only in memory, so a page refresh threw
 // away the day's plan mid-workout: the pill vanished, the draft under its name
@@ -5264,6 +5313,8 @@ window.dismissSuggestion = function () {
     suggestedLocation = null;
     suggestedSession = null;
     generatedToday = null;
+    planChoiceLocation = null;
+    planFreeform = false;
     writeGeneratedToday(null);
     renderTodayPanel();
 };
@@ -5394,6 +5445,43 @@ function renderTodayPanel() {
                         : ''}
                     <button type="button" class="today-back" data-dismiss="1">Scrap it and suggest something else</button>
                  </div>`;
+    } else if (suggestedMinutes === null && !planFreeform && getDuePlanSession()) {
+        // A plan is active and a session is owed: the suggestion IS the plan.
+        // The generator stops inventing sessions that compete with it - the
+        // only question left is where you are, which picks gym vs home twin.
+        const due = getDuePlanSession();
+        const week = getPlanWeek();
+        const phase = getPlanPhase(week);
+
+        if (planChoiceLocation === null) {
+            html += `<div class="today-ask">Today's plan: <strong>${escapeHtml(due.name)}</strong>${
+                        due.day ? ` (${escapeHtml(due.day)} slot)` : ''} &middot; Where are you?</div>
+                     <div class="today-chips">`;
+            Object.keys(LOCATIONS).forEach(key => {
+                html += `<button type="button" class="today-chip" data-planplace="${key}">${LOCATIONS[key].label}</button>`;
+            });
+            html += `</div>
+                     <button type="button" class="today-back" data-planfreeform="1">Generate something else instead</button>`;
+        } else {
+            const label = (planChoiceLocation === 'home' && due.home) ? due.home : due.name;
+            const list = (getActiveWorkouts()[label] || []);
+            html += `<div class="today-plan">
+                        <div class="today-plan-head">
+                            <span class="today-plan-name">${escapeHtml(label)}</span>
+                            <span class="today-plan-meta">Week ${week} &middot; ${escapeHtml(phase.label)}</span>
+                        </div>
+                        <div class="today-status">${escapeHtml(phase.note)}</div>
+                        <ul class="today-plan-list">`;
+            list.forEach(e => {
+                const reps = e.reps ? ` &times; ${escapeHtml(String(e.reps))}` : '';
+                html += `<li><span class="today-ex">${escapeHtml(e.name)}</span>
+                             <span class="today-ex-meta">${escapeHtml(String(e.sets))}${reps}</span></li>`;
+            });
+            html += `</ul>
+                        <button type="button" class="today-start" data-planstart="1">Start this</button>
+                        <button type="button" class="today-back" data-planback="1">Different place</button>
+                     </div>`;
+        }
     } else if (suggestedMinutes === null) {
         // Sessions logged today, read from the DATA rather than this device's
         // memory of a generation. Without this, a second phone - or a cleared
@@ -5408,6 +5496,9 @@ function renderTodayPanel() {
             html += `<div class="today-status done">&#10003; Logged today:
                         ${escapeHtml(w.day)} &middot; ${sets} set${sets === 1 ? '' : 's'}</div>`;
         });
+        if (getPlanWeek() && !getDuePlanSession()) {
+            html += `<div class="today-status done">&#10003; Plan on track - nothing owed today. Anything below is a bonus.</div>`;
+        }
         html += `<div class="today-ask">${trainedToday.length
             ? 'Adding more? How long have you got?'
             : 'How long have you got today?'}</div>
@@ -5442,6 +5533,15 @@ function renderTodayPanel() {
     container.querySelectorAll('[data-place]').forEach(btn => {
         btn.addEventListener('click', () => suggestPlaceFor(btn.getAttribute('data-place')));
     });
+    container.querySelectorAll('[data-planplace]').forEach(btn => {
+        btn.addEventListener('click', () => pickPlanPlace(btn.getAttribute('data-planplace')));
+    });
+    const planStart = container.querySelector('[data-planstart]');
+    if (planStart) planStart.addEventListener('click', () => startPlanSession());
+    const planBack = container.querySelector('[data-planback]');
+    if (planBack) planBack.addEventListener('click', () => { planChoiceLocation = null; renderTodayPanel(); });
+    const planFree = container.querySelector('[data-planfreeform]');
+    if (planFree) planFree.addEventListener('click', () => usePlanFreeform());
     const startBtn = container.querySelector('[data-start]');
     if (startBtn) startBtn.addEventListener('click', () => startSuggestedSession());
     const backBtn = container.querySelector('[data-dismiss]');

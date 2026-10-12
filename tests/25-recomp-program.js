@@ -116,5 +116,77 @@ const { realProgram } = require('./harness/seed');
     await browser.close();
   }
 
+  // ---------- 4. With the plan active, the suggestion IS the plan ----------
+  {
+    const { browser, page, errors } = await boot({
+      seed: { programs: [realProgram()], workouts: [] }
+    });
+    await page.waitForTimeout(600);
+    await page.evaluate(() => { window.__confirmAnswer = true; window.installRecompProgram(); });
+    await page.waitForTimeout(1200);
+
+    // Mirror the due-session rule for whatever real weekday this test runs on.
+    const expected = await page.evaluate(() => {
+      const dow = new Date().getDay();
+      const slots = [
+        { day: 1, name: 'Shoulders · Abs · Biceps (A)' },
+        { day: 3, name: 'Chest · Back' },
+        { day: 5, name: 'Shoulders · Abs · Triceps (B)' },
+        { day: 6, name: 'Legs (Short)' }
+      ];
+      const effDow = dow === 0 ? 7 : dow;
+      const due = slots.find(s => s.day <= effDow);
+      return due ? due.name : 'Test Day (Week 1 & 8)';
+    });
+
+    const ask = await page.evaluate(() => ({
+      text: document.getElementById('today-panel').innerText.replace(/\s+/g, ' ').trim(),
+      planPlaces: [...document.querySelectorAll('[data-planplace]')].map(b => b.innerText.trim())
+    }));
+    console.log('\nplan-led ask: ' + ask.text.slice(0, 140));
+    F('the suggestion leads with the due plan session, not a generated one',
+      ask.text.includes("Today's plan:") && ask.text.includes(expected), 
+      `expected "${expected}" in: ${ask.text.slice(0, 140)}`);
+    F('it asks only where you are', ask.planPlaces.join(',') === 'Main gym,Full gym,Home',
+      JSON.stringify(ask.planPlaces));
+    F('freeform stays one tap away', /Generate something else/.test(ask.text), ask.text.slice(0, 200));
+
+    // Home picks the bodyweight twin
+    await page.evaluate(() => window.pickPlanPlace('home'));
+    await page.waitForTimeout(300);
+    const preview = await page.evaluate(() => ({
+      name: document.querySelector('.today-plan-name')?.innerText || null,
+      note: document.querySelector('.today-status')?.innerText || null,
+      count: document.querySelectorAll('.today-plan-list li').length
+    }));
+    console.log('home preview: ' + JSON.stringify(preview));
+    const expectHome = expected.startsWith('Test') ? expected : 'Home: ' + expected;
+    F('home shows the bodyweight twin with the week prescription',
+      preview.name === expectHome && /reps in reserve|TEST WEEK|set/i.test(preview.note || '')
+      && preview.count >= 3, JSON.stringify(preview));
+
+    // Start loads it into the logger
+    await page.evaluate(() => window.startPlanSession());
+    await page.waitForTimeout(900);
+    const started = await page.evaluate(() => ({
+      active: document.querySelector('#workout-day-selector .day-btn.active')?.innerText.replace(/\s+/g, ' ').trim() || null,
+      rows: document.querySelectorAll('.set-row').length
+    }));
+    console.log('started: ' + JSON.stringify(started));
+    F('Start loads the plan session into the logger', started.active === expectHome && started.rows > 0,
+      JSON.stringify(started));
+
+    // The freeform opt-out still works
+    await page.evaluate(() => window.usePlanFreeform());
+    await page.waitForTimeout(300);
+    const freeform = await page.evaluate(() =>
+      document.getElementById('today-panel').innerText.replace(/\s+/g, ' ').trim());
+    F('the opt-out returns the freeform chips', /How long have you got/i.test(freeform),
+      freeform.slice(0, 120));
+
+    F('no page errors', errors.length === 0, JSON.stringify(errors.map(e => e.message)));
+    await browser.close();
+  }
+
   finish(fails);
 })();
