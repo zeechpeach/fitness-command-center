@@ -65,7 +65,10 @@ targets that override the defaults. The built-in **8-Week Recomp** program
 a week with 48h between, chest and back once, arms folded into the shoulder
 days, and one short no-failure leg session - with injury rules baked into
 every exercise choice and a pure-bodyweight home twin for every session.
-Missed days carry no red: any session runs on any open day. **While a plan
+Missed days carry no red: any session runs on any open day. A session cut
+short does not lose its volume: the slot shows its true fraction ("3/21 sets
+- rest rolls forward") and the leftovers become a "Finish" session that the
+suggestion panel offers next, which on completion ticks the original slot. **While a plan
 is active, the suggestion panel serves the plan**: it leads with the session
 owed today (asking only where you are, which picks the gym version or its
 bodyweight twin), and the freeform generator stays one tap away as the

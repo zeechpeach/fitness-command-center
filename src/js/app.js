@@ -238,7 +238,7 @@ async function saveWorkoutToFirebase(workoutData) {
 // lets the programs and workouts queries run concurrently at startup.
 // Shown in Settings -> Data health and bumped with the ?v= cache-buster in
 // index.html, so "which code is this phone actually running" is answerable.
-const APP_VERSION = '85';
+const APP_VERSION = '86';
 
 let rawWorkouts = [];
 
@@ -4621,24 +4621,80 @@ function getPlanPhase(week) {
     };
 }
 
-// A plan slot counts as done this week if its gym OR home version was logged.
+// How far along a plan slot is this week. A slot's workouts are any logged
+// under its gym name, its home twin, or a "Finish:" carry-over of either.
+// Leftovers are the exercises still owed, with their remaining sets - an
+// appointment that cuts a session short must not silently eat the volume.
+function getPlanSlotProgress(slot) {
+    const weekStart = getWeekStartDate();
+    const today = getTodayDateString();
+    const labels = [slot.name, slot.home, 'Finish: ' + slot.name, slot.home ? 'Finish: ' + slot.home : null]
+        .filter(Boolean).map(normalizeLabel);
+
+    const logged = allWorkouts.filter(w =>
+        w.date >= weekStart && w.date <= today && labels.includes(normalizeLabel(w.day)));
+    if (!logged.length) {
+        return { state: 'open', setsDone: 0, setsPlanned: 0, leftovers: [], startedLabel: null };
+    }
+
+    // The version actually started decides what "planned" means. The first
+    // non-Finish label wins; a pure Finish log falls back to the gym version.
+    const startedEntry = logged.find(w => !normalizeLabel(w.day).startsWith('finish:'));
+    const startedLabel = startedEntry
+        ? (normalizeLabel(startedEntry.day) === normalizeLabel(slot.home || '') ? slot.home : slot.name)
+        : slot.name;
+    const planned = (getActiveWorkouts()[startedLabel] || []);
+
+    const doneByExercise = {};
+    logged.forEach(w => {
+        Object.values(w.exercises || {}).forEach(ex => {
+            if (!ex || !ex.exercise) return;
+            const key = normalizeLabel(ex.substitution || ex.exercise);
+            doneByExercise[key] = (doneByExercise[key] || 0) +
+                (ex.sets || []).filter(isWorkingSet).length;
+        });
+    });
+
+    let setsPlanned = 0;
+    let setsDone = 0;
+    const leftovers = [];
+    planned.forEach(ex => {
+        const plannedSets = typeof ex.sets === 'number' && ex.sets > 0 ? ex.sets : 1;
+        const done = Math.min(doneByExercise[normalizeLabel(ex.name)] || 0, plannedSets);
+        setsPlanned += plannedSets;
+        setsDone += done;
+        const remaining = plannedSets - done;
+        if (remaining > 0) {
+            leftovers.push({ name: ex.name, sets: remaining, reps: ex.reps,
+                             trackingType: ex.trackingType, notes: ex.notes || '' });
+        }
+    });
+
+    // Within two sets of the plan counts as complete - one trimmed set is a
+    // judgment call, not a debt.
+    const remainingTotal = leftovers.reduce((sum, e) => sum + e.sets, 0);
+    const state = remainingTotal <= 2 ? 'done' : 'partial';
+    return { state, setsDone, setsPlanned, leftovers: state === 'done' ? [] : leftovers, startedLabel };
+}
+
 function getPlanChecklist() {
     const plan = activeProgram && activeProgram.plan;
     if (!plan) return [];
-    const weekStart = getWeekStartDate();
-    const today = getTodayDateString();
-    const loggedThisWeek = allWorkouts
-        .filter(w => w.date >= weekStart && w.date <= today)
-        .map(w => normalizeLabel(w.day));
-    const done = (name) => loggedThisWeek.includes(normalizeLabel(name));
 
-    const rows = (plan.sessions || []).map(s => ({
-        day: s.day, name: s.name, home: s.home,
-        done: done(s.name) || done(s.home)
-    }));
+    const rows = (plan.sessions || []).map(s => {
+        const progress = getPlanSlotProgress(s);
+        return { day: s.day, name: s.name, home: s.home,
+                 done: progress.state === 'done', partial: progress.state === 'partial',
+                 setsDone: progress.setsDone, setsPlanned: progress.setsPlanned,
+                 leftovers: progress.leftovers, startedLabel: progress.startedLabel };
+    });
     const week = getPlanWeek();
     if (plan.testSession && (week === 1 || week === (plan.weeks || 8))) {
-        rows.push({ day: '', name: plan.testSession, home: null, done: done(plan.testSession) });
+        const progress = getPlanSlotProgress({ name: plan.testSession, home: null });
+        rows.push({ day: '', name: plan.testSession, home: null,
+                    done: progress.state !== 'open', partial: false,
+                    setsDone: progress.setsDone, setsPlanned: progress.setsPlanned,
+                    leftovers: [], startedLabel: progress.startedLabel });
     }
     return rows;
 }
@@ -4658,7 +4714,13 @@ function getDuePlanSession() {
 
     const due = rows.filter(r => r.home && !r.done
         && (PLAN_DAY_INDEX[r.day] !== undefined ? PLAN_DAY_INDEX[r.day] : 7) <= (todayDow === 0 ? 7 : todayDow));
-    if (due.length) return due[0];
+    if (due.length) {
+        const first = due[0];
+        if (first.partial && first.leftovers.length) {
+            return { ...first, finish: true };
+        }
+        return first;
+    }
 
     const test = rows.find(r => !r.home && !r.done);
     if (test) return test;
@@ -4688,11 +4750,12 @@ function renderProgramPanel() {
         </div>
         <div class="plan-list">`;
     rows.forEach(r => {
+        const frac = r.partial ? ` <span class="plan-partial">${r.setsDone}/${r.setsPlanned} sets - rest rolls forward</span>` : '';
         html += `
             <div class="plan-row${r.done ? ' done' : ''}">
-                <span class="plan-check">${r.done ? '&#10003;' : ''}</span>
+                <span class="plan-check">${r.done ? '&#10003;' : (r.partial ? '&#189;' : '')}</span>
                 <span class="plan-day">${escapeHtml(r.day || 'W' + week)}</span>
-                <span class="plan-name">${escapeHtml(r.name)}</span>
+                <span class="plan-name">${escapeHtml(r.name)}${frac}</span>
             </div>`;
     });
     html += `</div>
@@ -5210,6 +5273,32 @@ window.pickPlanPlace = function (locationKey) {
 window.startPlanSession = function () {
     const due = getDuePlanSession();
     if (!due) return;
+
+    if (due.finish) {
+        // The carry-over session exists only for this week and only in
+        // memory + the generation store: logging it under "Finish: X" lets
+        // the slot's progress tracker sum it with the original.
+        if (!activeProgram.workouts) activeProgram.workouts = {};
+        const label = 'Finish: ' + (due.startedLabel || due.name);
+        activeProgram.workouts[label] = due.leftovers.map(e => ({
+            name: e.name, sets: e.sets, reps: e.reps,
+            trackingType: e.trackingType, notes: e.notes
+        }));
+        generatedToday = {
+            date: getTodayDateString(), minutes: 0, location: 'plan',
+            label, exercises: due.leftovers,
+            totalSets: due.leftovers.reduce((sum, e) => sum + e.sets, 0),
+            groups: [], fatigueNote: '', started: true
+        };
+        writeGeneratedToday(generatedToday);
+        lastGeneratedLabel = label;
+        renderWorkoutDaySelector();
+        selectDay(substituteDayKeyFor(label));
+        showToast(`${label} loaded - just what was left.`, 'success');
+        renderTodayPanel();
+        return;
+    }
+
     const label = (planChoiceLocation === 'home' && due.home) ? due.home : due.name;
     planChoiceLocation = null;
     renderWorkoutDaySelector();
@@ -5453,7 +5542,27 @@ function renderTodayPanel() {
         const week = getPlanWeek();
         const phase = getPlanPhase(week);
 
-        if (planChoiceLocation === null) {
+        if (due.finish) {
+            // A cut-short session: what is left IS the session. No location
+            // question - the leftovers are from the version actually started.
+            const remaining = due.leftovers.reduce((sum, e) => sum + e.sets, 0);
+            html += `<div class="today-plan">
+                        <div class="today-plan-head">
+                            <span class="today-plan-name">Finish: ${escapeHtml(due.startedLabel || due.name)}</span>
+                            <span class="today-plan-meta">${remaining} sets left &middot; Week ${week}</span>
+                        </div>
+                        <div class="today-status">You logged ${due.setsDone} of ${due.setsPlanned} sets before time ran out. The rest carries forward - nothing is lost.</div>
+                        <ul class="today-plan-list">`;
+            due.leftovers.forEach(e => {
+                const reps = e.reps ? ` &times; ${escapeHtml(String(e.reps))}` : '';
+                html += `<li><span class="today-ex">${escapeHtml(e.name)}</span>
+                             <span class="today-ex-meta">${e.sets}${reps}</span></li>`;
+            });
+            html += `</ul>
+                        <button type="button" class="today-start" data-planstart="1">Finish it</button>
+                        <button type="button" class="today-back" data-planfreeform="1">Generate something else instead</button>
+                     </div>`;
+        } else if (planChoiceLocation === null) {
             html += `<div class="today-ask">Today's plan: <strong>${escapeHtml(due.name)}</strong>${
                         due.day ? ` (${escapeHtml(due.day)} slot)` : ''} &middot; Where are you?</div>
                      <div class="today-chips">`;
