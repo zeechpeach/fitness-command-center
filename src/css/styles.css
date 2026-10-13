@@ -375,6 +375,11 @@
         .plan-name { color: var(--color-text-primary); }
         .plan-row.done .plan-name { color: var(--color-text-secondary); }
 
+        .plan-partial {
+            font-size: 0.75rem;
+            color: var(--color-warning);
+        }
+
         .plan-foot {
             margin-top: 0.625rem;
             font-size: 0.75rem;

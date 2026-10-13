@@ -56,10 +56,13 @@ const { realProgram } = require('./harness/seed');
     await page.evaluate(() => { window.__confirmAnswer = true; window.installRecompProgram(); });
     await page.waitForTimeout(1200);
 
-    // Do the HOME version of Monday's session; the slot must tick.
+    // Do the FULL home version of Monday's session; the slot must tick.
     await page.locator('.day-btn[data-substitute="Home: Shoulders · Abs · Biceps (A)"]').click();
     await page.waitForTimeout(800);
-    await page.locator('.set-row .reps-input').first().fill('10');
+    const inputs = await page.locator('.set-row .reps-input').count();
+    for (let i = 0; i < inputs; i++) {
+      await page.locator('.set-row .reps-input').nth(i).fill('10');
+    }
     await page.waitForTimeout(400);
     await page.locator('#complete-workout-btn').scrollIntoViewIfNeeded();
     await page.locator('#complete-workout-btn').click();
@@ -71,8 +74,8 @@ const { realProgram } = require('./harness/seed');
         .map(e => e.innerText.trim())
     }));
     console.log('\nafter home session: ' + JSON.stringify(panel.doneRows) + ' :: ' + panel.text.slice(0, 80));
-    F('a home session ticks the same slot as its gym twin',
-      panel.doneRows.includes('Shoulders · Abs · Biceps (A)'), JSON.stringify(panel.doneRows));
+    F('a full home session ticks the same slot as its gym twin',
+      panel.doneRows.some(n => n.startsWith('Shoulders · Abs · Biceps (A)')), JSON.stringify(panel.doneRows));
     F('the count reflects it', /1\/5/.test(panel.text), panel.text.slice(0, 60));
     F('no page errors', errors.length === 0, JSON.stringify(errors.map(e => e.message)));
     await browser.close();
