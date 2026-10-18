@@ -52,6 +52,7 @@ Playwright will not find on its own, point at it with `PW_CHROMIUM=/path/to/chro
 | `25-recomp-program.js` | One-tap install of the 8-week program; the plan panel shows the week's phase and prescription; a home session ticks its gym twin's slot; a half-hour walk logs in two taps and feeds the calorie target; with a plan active the suggestion leads with the due session and freeform is an explicit opt-out |
 | `26-meal-plan.js` | The meal plan panel: timed meals per day type, one tap logs a whole meal with macros, the tournament override, and the light post-fencing meal rule |
 | `27-carryover.js` | A cut-short session shows its true fraction instead of ticking the slot; the leftovers become a Finish session holding exactly what remains, and completing it ticks the original slot |
+| `28-program-upgrade.js` | An installed v1 program upgrades in place on load: new leg sessions and targets, same start date (still week 2), same document, no reinstall |
 | `sweep-inline-handlers.js` | Every inline `onclick`/`oninput` in the app resolves to a function that actually exists |
 | `sweep-dead-code.js` | No unreferenced functions, handlers or variables; no `getElementById` pointing at an element that is not there |
 | `sweep-unused-css.js` | No CSS rules for classes nothing uses |
