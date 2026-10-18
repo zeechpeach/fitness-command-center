@@ -238,7 +238,7 @@ async function saveWorkoutToFirebase(workoutData) {
 // lets the programs and workouts queries run concurrently at startup.
 // Shown in Settings -> Data health and bumped with the ?v= cache-buster in
 // index.html, so "which code is this phone actually running" is answerable.
-const APP_VERSION = '86';
+const APP_VERSION = '87';
 
 let rawWorkouts = [];
 
@@ -4484,16 +4484,23 @@ function formatFencingHours(hours) {
 // ---------------------------------------------------------------------------
 
 const RECOMP_PROGRAM_NAME = '8-Week Recomp (Shoulders & Abs First)';
+// Bumped when the built-in program's content changes; an installed copy with
+// an older version is upgraded in place on load, keeping its start date and
+// all logged history.
+const RECOMP_PLAN_VERSION = 2;
 
 function buildRecompProgram() {
     const w = (name, sets, reps, extra = {}) => ({ name, sets, reps, ...extra });
     return {
         name: RECOMP_PROGRAM_NAME,
         active: true,
+        planVersion: RECOMP_PLAN_VERSION,
         schedule: {},   // nothing is date-assigned; the plan panel tracks the week
+        // v2: real leg days. With fencing reduced, legs train like everything
+        // else - the old "fencing already loads them" discount is gone.
         weeklyTargets: {
             Shoulders: 16, Core: 12, Chest: 10, Back: 12, Biceps: 8, Triceps: 8,
-            Quads: 4, Hamstrings: 3, Glutes: 3, Calves: 2
+            Quads: 10, Hamstrings: 8, Glutes: 8, Calves: 6
         },
         plan: {
             weeks: 8,
@@ -4501,9 +4508,10 @@ function buildRecompProgram() {
             startDate: null,
             sessions: [
                 { day: 'Mon', name: 'Shoulders · Abs · Biceps (A)', home: 'Home: Shoulders · Abs · Biceps (A)' },
+                { day: 'Tue', name: 'Legs B (Posterior)', home: 'Home: Legs B (Posterior)' },
                 { day: 'Wed', name: 'Chest · Back', home: 'Home: Chest · Back' },
                 { day: 'Fri', name: 'Shoulders · Abs · Triceps (B)', home: 'Home: Shoulders · Abs · Triceps (B)' },
-                { day: 'Sat', name: 'Legs (Short)', home: 'Home: Legs (Short)' }
+                { day: 'Sat', name: 'Legs A (Quads)', home: 'Home: Legs A (Quads)' }
             ],
             testSession: 'Test Day (Week 1 & 8)'
         },
@@ -4538,12 +4546,21 @@ function buildRecompProgram() {
                 w('Overhead Cable Triceps Extension', 3, '10-12'),
                 w('Triceps Pushdown', 2, '12-15')
             ],
-            'Legs (Short)': [
-                w('Leg Press', 2, '10-12', { notes: 'Pain-free hip depth ONLY. Stop 2+ reps before failure - every set.' }),
-                w('Seated Leg Curl', 2, '10-12', { notes: 'No failure.' }),
-                w('Barbell Hip Thrust', 2, '8-12', { notes: 'Pain-free hip range. Moderate load.' }),
-                w('Leg Extension', 2, '12-15', { notes: 'No failure.' }),
-                w('Standing Calf Raise', 2, '12-15')
+            'Legs A (Quads)': [
+                w('Heel-Elevated Goblet Squat', 4, '8-12',
+                  { notes: 'MAIN LIFT. Pain-free hip depth ONLY - heels elevated keeps the torso upright and the spine happy. Weeks 3-4 add a 5th set. At the full gym: Leg Press or Hack Squat works here too.' }),
+                w('Bulgarian Split Squat', 3, '8-10', { notes: 'Per side. Shallow if the hip complains - range you own, not range you rent.' }),
+                w('Barbell Hip Thrust', 3, '8-12', { notes: 'Pain-free hip range. Shoulders on the bench, chin tucked.' }),
+                w('Standing Calf Raise', 4, '12-15', { notes: 'Pause at the bottom stretch.' }),
+                w('Pallof Press', 2, '10-12', { notes: 'Per side - the spine stays braced, never loaded.' })
+            ],
+            'Legs B (Posterior)': [
+                w('Dumbbell Romanian Deadlift', 4, '10-12',
+                  { notes: 'MAIN LIFT. MODERATE load only, perfect hinge, soft knees - the hamstrings stretch, the back never rounds. Any back complaint: swap to Cable Back Extension. Weeks 3-4 add a 5th set.' }),
+                w('Cable Back Extension', 3, '12-15', { notes: 'The Nippard-style hinge without spinal compression.' }),
+                w('Dumbbell Step-Up', 3, '8-10', { notes: 'Per side. Box height within pain-free hip range.' }),
+                w('Walking Lunge', 3, '10-12', { notes: 'Per side. Skip if the hip is cranky; add a 4th step-up set instead.' }),
+                w('Single-Leg Calf Raise', 3, '12-15', { trackingType: 'reps' })
             ],
             'Home: Shoulders · Abs · Biceps (A)': [
                 w('Pike Push-Up', 3, '8-12', { trackingType: 'reps', notes: 'Shoulder-press pattern. Elevate the feet to progress.' }),
@@ -4571,11 +4588,21 @@ function buildRecompProgram() {
                 w('Hanging Knee Raise', 3, '8-12', { trackingType: 'reps' }),
                 w('Diamond Push-Up', 3, '8-12', { trackingType: 'reps', notes: 'The triceps slot.' })
             ],
-            'Home: Legs (Short)': [
-                w('Bodyweight Squat', 2, '15-20', { trackingType: 'reps', notes: 'Pain-free hip depth only. Nowhere near failure.' }),
-                w('Reverse Lunge', 2, '10-12', { trackingType: 'reps', notes: 'Per side. Shallow if the hip complains.' }),
-                w('Single-Leg Glute Bridge', 2, '10-12', { trackingType: 'reps' }),
-                w('Single-Leg Calf Raise', 2, '12-15', { trackingType: 'reps' })
+            'Home: Legs A (Quads)': [
+                w('Heel-Elevated Goblet Squat', 4, '8-12',
+                  { notes: 'MAIN. The 50lb dumbbell goblet-style, heels on a book. Pain-free depth only.' }),
+                w('Bulgarian Split Squat', 3, '8-10', { notes: 'Per side, rear foot on the bench, dumbbells in hand.' }),
+                w('Single-Leg Glute Bridge', 3, '10-12', { trackingType: 'reps' }),
+                w('Single-Leg Calf Raise', 4, '12-15', { trackingType: 'reps' }),
+                w('Dead Bug', 2, '10-12', { trackingType: 'reps' })
+            ],
+            'Home: Legs B (Posterior)': [
+                w('Dumbbell Romanian Deadlift', 4, '10-12',
+                  { notes: 'MAIN. Both 25s or the 50 - moderate, perfect hinge. The Vitruvian works here too.' }),
+                w('Reverse Lunge', 3, '10-12', { trackingType: 'reps', notes: 'Per side, dumbbells optional.' }),
+                w('Dumbbell Step-Up', 3, '8-10', { notes: 'Per side, onto the bench.' }),
+                w('Single-Leg Glute Bridge', 3, '12-15', { trackingType: 'reps' }),
+                w('Single-Leg Calf Raise', 3, '15-20', { trackingType: 'reps' })
             ],
             'Test Day (Week 1 & 8)': [
                 w('Max Pull-Up Test', 1, 'max', { trackingType: 'reps', notes: 'One all-out set after a real warm-up. Record every clean rep.' }),
@@ -4762,6 +4789,35 @@ function renderProgramPanel() {
         <div class="plan-foot">Missed a day? Nothing is lost - any session can run on any open day,
             or at home as its bodyweight twin. Tap its pill below to start it.</div>`;
     container.innerHTML = html;
+}
+
+// An installed copy older than the current built-in version is upgraded in
+// place on load: sessions, targets and plan slots refresh, the start date and
+// every logged workout stay exactly as they were. This is how "update the
+// current program" ships without touching the database by hand.
+async function maybeUpgradeRecompProgram() {
+    if (!activeProgram || activeProgram.name !== RECOMP_PROGRAM_NAME) return;
+    if ((activeProgram.planVersion || 1) >= RECOMP_PLAN_VERSION) return;
+
+    const fresh = buildRecompProgram();
+    activeProgram.workouts = fresh.workouts;
+    activeProgram.weeklyTargets = fresh.weeklyTargets;
+    activeProgram.planVersion = RECOMP_PLAN_VERSION;
+    activeProgram.plan = { ...fresh.plan, startDate: (activeProgram.plan && activeProgram.plan.startDate) || getWeekStartDate() };
+
+    try {
+        await updateDoc(doc(db, 'programs', activeProgram.id), {
+            workouts: activeProgram.workouts,
+            weeklyTargets: activeProgram.weeklyTargets,
+            planVersion: activeProgram.planVersion,
+            plan: activeProgram.plan
+        });
+        refreshStartupCache();
+        showToast('Program updated: two full leg days added, leg targets raised.', 'success');
+    } catch (e) {
+        console.error('Program upgrade failed, will retry next load:', e);
+        activeProgram.planVersion = (activeProgram.planVersion || 2) - 1;
+    }
 }
 
 // One-tap install from Settings: deactivates the current program, saves this
@@ -7018,8 +7074,8 @@ function defaultMealTypeForNow(date = new Date()) {
 const MEAL_PLAN = {
     weekday: {
         label: 'Training / fencing day',
-        target: { calories: 2250, protein: 185 },
-        note: 'Big fuel at 3:45pm, light protein after fencing, nothing heavy within 30 minutes of bed. Coaching 3h+ tonight? Add a cup of rice at lunch.',
+        target: { calories: 2100, protein: 185 },
+        note: 'AGGRESSIVE CUT: skip the apple and one toast slice (-185). Big fuel at 3:45pm, light protein after training, nothing heavy within 30 minutes of bed. Coaching 3h+ tonight? Keep the apple.',
         meals: [
             { id: 'wd1', time: '7:00', title: 'Breakfast', mealType: 'Breakfast',
               foods: [
@@ -7052,7 +7108,7 @@ const MEAL_PLAN = {
     },
     saturday: {
         label: 'Saturday - legs + lessons',
-        target: { calories: 2100, protein: 185 },
+        target: { calories: 2000, protein: 185 },
         note: 'Train legs fed. Dinner is the sardine slot. Evening is free of training, so eat dinner early and practice the sleep window.',
         meals: [
             { id: 'sa1', time: '8:00', title: 'Breakfast (pre-legs)', mealType: 'Breakfast',
@@ -7087,7 +7143,7 @@ const MEAL_PLAN = {
     },
     rest: {
         label: 'Rest day',
-        target: { calories: 1950, protein: 170 },
+        target: { calories: 1850, protein: 170 },
         note: 'Lowest-calorie day of the week, and dinner is DONE by 7pm - this is the night that resets the late-eating pattern and the sleep.',
         meals: [
             { id: 're1', time: '8:30', title: 'Breakfast', mealType: 'Breakfast',
@@ -8977,6 +9033,9 @@ async function initializeFitnessApp() {
 
     applyProgramFilterToWorkouts();
     refreshStartupCache();
+
+    // Built-in program content updates ship as in-place upgrades.
+    await maybeUpgradeRecompProgram();
 
     // Today's generated session survives the refresh: rebuild its pill and, if
     // it was started, reopen the logger on it before anything renders.

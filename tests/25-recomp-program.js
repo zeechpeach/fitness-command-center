@@ -35,14 +35,15 @@ const { realProgram } = require('./harness/seed');
     F('the plan panel shows week 1 and the base prescription',
       /Week 1 of 8/.test(state.panel) && /3 reps in reserve/i.test(state.panel), state.panel.slice(0, 140));
     F('week 1 is a test week', /TEST WEEK/i.test(state.panel), state.panel.slice(0, 160));
-    F('all four slots plus the test day are listed',
+    F('all five slots plus the test day are listed',
       /Shoulders · Abs · Biceps \(A\)/.test(state.panel) && /Chest · Back/.test(state.panel)
-      && /Legs \(Short\)/.test(state.panel) && /Test Day/.test(state.panel), state.panel),
+      && /Legs A \(Quads\)/.test(state.panel) && /Legs B \(Posterior\)/.test(state.panel)
+      && /Test Day/.test(state.panel), state.panel),
     F('every session and its home twin render as pills',
-      state.pills.length >= 9, JSON.stringify(state.pills.length));
+      state.pills.length >= 11, JSON.stringify(state.pills.length));
     F('weekly targets follow the program priorities - shoulders 16',
       /\/16/.test(state.shoulderBar || ''), JSON.stringify(state.shoulderBar));
-    F('legs are deliberately small - quads 4', /\/4/.test(state.quadBar || ''), JSON.stringify(state.quadBar));
+    F('leg targets are real now - quads 10', /\/10/.test(state.quadBar || ''), JSON.stringify(state.quadBar));
     F('no page errors', errors.length === 0, JSON.stringify(errors.map(e => e.message)));
     await browser.close();
   }
@@ -76,7 +77,7 @@ const { realProgram } = require('./harness/seed');
     console.log('\nafter home session: ' + JSON.stringify(panel.doneRows) + ' :: ' + panel.text.slice(0, 80));
     F('a full home session ticks the same slot as its gym twin',
       panel.doneRows.some(n => n.startsWith('Shoulders · Abs · Biceps (A)')), JSON.stringify(panel.doneRows));
-    F('the count reflects it', /1\/5/.test(panel.text), panel.text.slice(0, 60));
+    F('the count reflects it', /1\/6/.test(panel.text), panel.text.slice(0, 60));
     F('no page errors', errors.length === 0, JSON.stringify(errors.map(e => e.message)));
     await browser.close();
   }
@@ -133,9 +134,10 @@ const { realProgram } = require('./harness/seed');
       const dow = new Date().getDay();
       const slots = [
         { day: 1, name: 'Shoulders · Abs · Biceps (A)' },
+        { day: 2, name: 'Legs B (Posterior)' },
         { day: 3, name: 'Chest · Back' },
         { day: 5, name: 'Shoulders · Abs · Triceps (B)' },
-        { day: 6, name: 'Legs (Short)' }
+        { day: 6, name: 'Legs A (Quads)' }
       ];
       const effDow = dow === 0 ? 7 : dow;
       const due = slots.find(s => s.day <= effDow);
