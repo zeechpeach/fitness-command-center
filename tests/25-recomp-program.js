@@ -129,20 +129,8 @@ const { realProgram } = require('./harness/seed');
     await page.evaluate(() => { window.__confirmAnswer = true; window.installRecompProgram(); });
     await page.waitForTimeout(1200);
 
-    // Mirror the due-session rule for whatever real weekday this test runs on.
-    const expected = await page.evaluate(() => {
-      const dow = new Date().getDay();
-      const slots = [
-        { day: 1, name: 'Shoulders · Abs · Biceps (A)' },
-        { day: 2, name: 'Legs B (Posterior)' },
-        { day: 3, name: 'Chest · Back' },
-        { day: 5, name: 'Shoulders · Abs · Triceps (B)' },
-        { day: 6, name: 'Legs A (Quads)' }
-      ];
-      const effDow = dow === 0 ? 7 : dow;
-      const due = slots.find(s => s.day <= effDow);
-      return due ? due.name : 'Test Day (Week 1 & 8)';
-    });
+    // Day-free plan: the first unticked session is always due, any weekday.
+    const expected = 'Shoulders · Abs · Biceps (A)';
 
     const ask = await page.evaluate(() => ({
       text: document.getElementById('today-panel').innerText.replace(/\s+/g, ' ').trim(),
@@ -150,7 +138,7 @@ const { realProgram } = require('./harness/seed');
     }));
     console.log('\nplan-led ask: ' + ask.text.slice(0, 140));
     F('the suggestion leads with the due plan session, not a generated one',
-      ask.text.includes("Today's plan:") && ask.text.includes(expected), 
+      ask.text.includes('Next in the plan:') && ask.text.includes(expected), 
       `expected "${expected}" in: ${ask.text.slice(0, 140)}`);
     F('it asks only where you are', ask.planPlaces.join(',') === 'Main gym,Full gym,Home',
       JSON.stringify(ask.planPlaces));
