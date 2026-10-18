@@ -63,8 +63,11 @@ bodyweight-home version ticks the same slot), the current week's prescription
 targets that override the defaults. The built-in **8-Week Recomp** program
 (Settings -> Start the 8-Week Recomp Program) trains shoulders and abs twice
 a week with 48h between, chest and back once, arms folded into the shoulder
-days, and one short no-failure leg session - with injury rules baked into
-every exercise choice and a pure-bodyweight home twin for every session.
+days, and two full leg days (quad-focused Saturday, posterior-chain Tuesday)
+built main-gym-first around goblet squats, split squats, hip thrusts and
+moderate hinges - with injury rules baked into every exercise choice and a
+home twin for every session. Installed copies upgrade in place when the
+built-in program's content changes, keeping their start date and history.
 Missed days carry no red: any session runs on any open day. A session cut
 short does not lose its volume: the slot shows its true fraction ("3/21 sets
 - rest rolls forward") and the leftovers become a "Finish" session that the
