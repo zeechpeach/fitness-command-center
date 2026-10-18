@@ -238,7 +238,7 @@ async function saveWorkoutToFirebase(workoutData) {
 // lets the programs and workouts queries run concurrently at startup.
 // Shown in Settings -> Data health and bumped with the ?v= cache-buster in
 // index.html, so "which code is this phone actually running" is answerable.
-const APP_VERSION = '87';
+const APP_VERSION = '88';
 
 let rawWorkouts = [];
 
@@ -4487,7 +4487,7 @@ const RECOMP_PROGRAM_NAME = '8-Week Recomp (Shoulders & Abs First)';
 // Bumped when the built-in program's content changes; an installed copy with
 // an older version is upgraded in place on load, keeping its start date and
 // all logged history.
-const RECOMP_PLAN_VERSION = 2;
+const RECOMP_PLAN_VERSION = 3;
 
 function buildRecompProgram() {
     const w = (name, sets, reps, extra = {}) => ({ name, sets, reps, ...extra });
@@ -4506,12 +4506,16 @@ function buildRecompProgram() {
             weeks: 8,
             // startDate is stamped at install time to the current week's Sunday.
             startDate: null,
+            // v3: no weekdays. The week owes these five sessions in this
+            // order - upper, lower, upper, upper, lower - which keeps 48h+
+            // between the two shoulder days even on consecutive training
+            // days. Do the next one whenever a window opens.
             sessions: [
-                { day: 'Mon', name: 'Shoulders · Abs · Biceps (A)', home: 'Home: Shoulders · Abs · Biceps (A)' },
-                { day: 'Tue', name: 'Legs B (Posterior)', home: 'Home: Legs B (Posterior)' },
-                { day: 'Wed', name: 'Chest · Back', home: 'Home: Chest · Back' },
-                { day: 'Fri', name: 'Shoulders · Abs · Triceps (B)', home: 'Home: Shoulders · Abs · Triceps (B)' },
-                { day: 'Sat', name: 'Legs A (Quads)', home: 'Home: Legs A (Quads)' }
+                { name: 'Shoulders · Abs · Biceps (A)', home: 'Home: Shoulders · Abs · Biceps (A)' },
+                { name: 'Legs B (Posterior)', home: 'Home: Legs B (Posterior)' },
+                { name: 'Chest · Back', home: 'Home: Chest · Back' },
+                { name: 'Shoulders · Abs · Triceps (B)', home: 'Home: Shoulders · Abs · Triceps (B)' },
+                { name: 'Legs A (Quads)', home: 'Home: Legs A (Quads)' }
             ],
             testSession: 'Test Day (Week 1 & 8)'
         },
@@ -4708,9 +4712,9 @@ function getPlanChecklist() {
     const plan = activeProgram && activeProgram.plan;
     if (!plan) return [];
 
-    const rows = (plan.sessions || []).map(s => {
+    const rows = (plan.sessions || []).map((s, i) => {
         const progress = getPlanSlotProgress(s);
-        return { day: s.day, name: s.name, home: s.home,
+        return { day: String(i + 1), name: s.name, home: s.home,
                  done: progress.state === 'done', partial: progress.state === 'partial',
                  setsDone: progress.setsDone, setsPlanned: progress.setsPlanned,
                  leftovers: progress.leftovers, startedLabel: progress.startedLabel };
@@ -4718,7 +4722,7 @@ function getPlanChecklist() {
     const week = getPlanWeek();
     if (plan.testSession && (week === 1 || week === (plan.weeks || 8))) {
         const progress = getPlanSlotProgress({ name: plan.testSession, home: null });
-        rows.push({ day: '', name: plan.testSession, home: null,
+        rows.push({ day: 'T', name: plan.testSession, home: null,
                     done: progress.state !== 'open', partial: false,
                     setsDone: progress.setsDone, setsPlanned: progress.setsPlanned,
                     leftovers: [], startedLabel: progress.startedLabel });
@@ -4726,21 +4730,14 @@ function getPlanChecklist() {
     return rows;
 }
 
-// The plan session owed today, under flexible make-up: the earliest unticked
-// session whose scheduled weekday has already arrived this week. A missed
-// Monday is Tuesday's answer. In test weeks the Test Day becomes due once
-// nothing else is owed.
-const PLAN_DAY_INDEX = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
-
+// The plan session owed next: no weekdays, no calendar - just the first
+// unticked session in the plan's order, with a cut-short session's leftovers
+// taking priority, and the Test Day due in test weeks once nothing else is.
 function getDuePlanSession() {
     if (!getPlanWeek()) return null;
     const rows = getPlanChecklist();
-    const today = getTodayDateString();
-    const [y, m, d] = today.split('-').map(Number);
-    const todayDow = new Date(y, m - 1, d).getDay();
 
-    const due = rows.filter(r => r.home && !r.done
-        && (PLAN_DAY_INDEX[r.day] !== undefined ? PLAN_DAY_INDEX[r.day] : 7) <= (todayDow === 0 ? 7 : todayDow));
+    const due = rows.filter(r => r.home && !r.done);
     if (due.length) {
         const first = due[0];
         if (first.partial && first.leftovers.length) {
@@ -4781,13 +4778,13 @@ function renderProgramPanel() {
         html += `
             <div class="plan-row${r.done ? ' done' : ''}">
                 <span class="plan-check">${r.done ? '&#10003;' : (r.partial ? '&#189;' : '')}</span>
-                <span class="plan-day">${escapeHtml(r.day || 'W' + week)}</span>
+                <span class="plan-day">${escapeHtml(r.day)}</span>
                 <span class="plan-name">${escapeHtml(r.name)}${frac}</span>
             </div>`;
     });
     html += `</div>
-        <div class="plan-foot">Missed a day? Nothing is lost - any session can run on any open day,
-            or at home as its bodyweight twin. Tap its pill below to start it.</div>`;
+        <div class="plan-foot">No days are assigned - the week owes these sessions in this order,
+            whenever windows open. Gym version or home twin, either ticks the slot.</div>`;
     container.innerHTML = html;
 }
 
@@ -4800,10 +4797,16 @@ async function maybeUpgradeRecompProgram() {
     if ((activeProgram.planVersion || 1) >= RECOMP_PLAN_VERSION) return;
 
     const fresh = buildRecompProgram();
+    const upgradingFrom = activeProgram.planVersion || 1;
     activeProgram.workouts = fresh.workouts;
     activeProgram.weeklyTargets = fresh.weeklyTargets;
     activeProgram.planVersion = RECOMP_PLAN_VERSION;
-    activeProgram.plan = { ...fresh.plan, startDate: (activeProgram.plan && activeProgram.plan.startDate) || getWeekStartDate() };
+    // v3 restarts the clock at week 1, by explicit request: the leg days made
+    // it effectively a new program, so it begins as one. Later upgrades keep
+    // the start date as before.
+    const keptStart = (activeProgram.plan && activeProgram.plan.startDate) || getWeekStartDate();
+    activeProgram.plan = { ...fresh.plan,
+        startDate: upgradingFrom < 3 ? getWeekStartDate() : keptStart };
 
     try {
         await updateDoc(doc(db, 'programs', activeProgram.id), {
@@ -4813,7 +4816,7 @@ async function maybeUpgradeRecompProgram() {
             plan: activeProgram.plan
         });
         refreshStartupCache();
-        showToast('Program updated: two full leg days added, leg targets raised.', 'success');
+        showToast('Program updated: day-free weeks, restarted at week 1.', 'success');
     } catch (e) {
         console.error('Program upgrade failed, will retry next load:', e);
         activeProgram.planVersion = (activeProgram.planVersion || 2) - 1;
@@ -5619,8 +5622,8 @@ function renderTodayPanel() {
                         <button type="button" class="today-back" data-planfreeform="1">Generate something else instead</button>
                      </div>`;
         } else if (planChoiceLocation === null) {
-            html += `<div class="today-ask">Today's plan: <strong>${escapeHtml(due.name)}</strong>${
-                        due.day ? ` (${escapeHtml(due.day)} slot)` : ''} &middot; Where are you?</div>
+            html += `<div class="today-ask">Next in the plan: <strong>${escapeHtml(due.name)}</strong>
+                        (session ${escapeHtml(due.day)} of 5 this week) &middot; Where are you?</div>
                      <div class="today-chips">`;
             Object.keys(LOCATIONS).forEach(key => {
                 html += `<button type="button" class="today-chip" data-planplace="${key}">${LOCATIONS[key].label}</button>`;

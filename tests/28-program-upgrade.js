@@ -58,11 +58,18 @@ function installedV1(startDate) {
   console.log('panel: ' + state.panel.slice(0, 140));
 
   F('the installed copy is upgraded in place', state.upgraded.length === 1
-    && state.upgraded[0].id === 'prog-recomp-v1' && state.upgraded[0].planVersion === 2,
+    && state.upgraded[0].id === 'prog-recomp-v1' && state.upgraded[0].planVersion === 3,
     JSON.stringify(state.upgraded));
-  F('the start date survives - still week 2, not reset to week 1',
-    state.upgraded[0].startDate === startDate && /Week 2 of 8/.test(state.panel),
-    JSON.stringify({ wrote: state.upgraded[0].startDate, expected: startDate, panel: state.panel.slice(0, 40) }));
+  // v3 explicitly restarts: the leg days made it a new program, so it begins
+  // as one - week 1, stamped to the current week.
+  const expectStart = await page.evaluate(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - d.getDay());
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  });
+  F('v3 restarts the clock at week 1 of the current week',
+    state.upgraded[0].startDate === expectStart && /Week 1 of 8/.test(state.panel),
+    JSON.stringify({ wrote: state.upgraded[0].startDate, expected: expectStart, panel: state.panel.slice(0, 40) }));
   F('leg targets are raised', state.upgraded[0].quads === 10, JSON.stringify(state.upgraded[0]));
   F('both new leg days are in the plan',
     state.upgraded[0].slots.includes('Legs A (Quads)') && state.upgraded[0].slots.includes('Legs B (Posterior)'),
