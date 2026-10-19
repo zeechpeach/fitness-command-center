@@ -2,6 +2,25 @@
 const { boot, ok } = require('./harness/drive');
 const { holdsAndCardioProgram } = require('./harness/seed');
 
+// A strength movement with a cardio word in its name must not be logged in
+// minutes: "Walking Lunge" is sets of reps, "Incline Treadmill Walk" is not.
+function lungeProgram() {
+  return {
+    id: 'prog-lunge', name: 'Lunge Check', active: true,
+    createdAt: '2026-06-01T08:00:00.000Z', activatedAt: '2026-06-01T08:00:00.000Z',
+    schedule: { day1: { workoutType: 'Rest', customName: 'Rest' } },
+    workouts: {
+      'Mixed Walks': [
+        { name: 'Walking Lunge', sets: 3, reps: '10-12' },
+        { name: 'Lateral Walk', sets: 2, reps: '12-15' },
+        { name: 'Incline Treadmill Walk', sets: 1, reps: '20 min', trackingType: 'duration' }
+      ],
+      'Rest': []
+    },
+    exerciseVariations: {}
+  };
+}
+
 (async () => {
   const { browser, page, errors } = await boot({
     seed: { programs: [holdsAndCardioProgram()], workouts: [] }
@@ -88,6 +107,33 @@ const { holdsAndCardioProgram } = require('./harness/seed');
 
   console.log('\n--- page errors (' + errors.length + ') ---');
   errors.slice(0, 15).forEach(e => console.log(`  [${e.type}] ${e.message}`));
-  console.log(`\nRESULT: ${fails} failed assertions`);
   await browser.close();
+
+  // ---------- Walking Lunge is reps, not minutes ----------
+  {
+    const s2 = await boot({ seed: { programs: [lungeProgram()], workouts: [] } });
+    await s2.page.locator('.day-btn[data-substitute="Mixed Walks"]').click();
+    await s2.page.waitForTimeout(800);
+    const types = await s2.page.evaluate(() => {
+      const cards = [...document.querySelectorAll('.exercise-card')];
+      return cards.map(c => ({
+        name: c.querySelector('.exercise-name')?.innerText.trim(),
+        weightInputs: c.querySelectorAll('.weight-input').length,
+        units: [...c.querySelectorAll('.set-unit')].map(u => u.textContent.trim())
+      }));
+    });
+    console.log('\nwalk-named movements: ' + JSON.stringify(types));
+    const lunge = types.find(t => /Walking Lunge/.test(t.name || ''));
+    const lateral = types.find(t => /Lateral Walk/.test(t.name || ''));
+    const treadmill = types.find(t => /Treadmill/.test(t.name || ''));
+    F('Walking Lunge logs weight and reps, not minutes',
+      lunge && lunge.weightInputs > 0 && !lunge.units.includes('min'), JSON.stringify(lunge));
+    F('Lateral Walk logs reps, not minutes',
+      lateral && !lateral.units.includes('min'), JSON.stringify(lateral));
+    F('a real treadmill walk still logs minutes',
+      treadmill && treadmill.units.includes('min'), JSON.stringify(treadmill));
+    await s2.browser.close();
+  }
+
+  console.log(`\nRESULT: ${fails} failed assertions`);
 })();

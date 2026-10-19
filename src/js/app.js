@@ -238,7 +238,7 @@ async function saveWorkoutToFirebase(workoutData) {
 // lets the programs and workouts queries run concurrently at startup.
 // Shown in Settings -> Data health and bumped with the ?v= cache-buster in
 // index.html, so "which code is this phone actually running" is answerable.
-const APP_VERSION = '89';
+const APP_VERSION = '90';
 
 let rawWorkouts = [];
 
@@ -2793,8 +2793,10 @@ const TRACKING_GUESS = [
     { type: 'checkoff', tokens: ['stretch', 'mobility', 'foam roll', 'roll the arch', 'breathing', 'cat-cow',
                                  'cat cow', 'controlled articular', 'toe spread', 'arch doming', 'short foot',
                                  'pull-apart', 'pull apart', 'legs up the wall', 'constructive rest'] },
-    // 'swim' alone matched "prone swimmers", which is a back exercise. Tokens
-    // here have to be specific enough not to swallow strength movements.
+    // 'swim' alone matched "prone swimmers", which is a back exercise, and
+    // 'walk' matched "walking lunge", which logged a loaded leg movement in
+    // MINUTES. Tokens here have to be specific enough not to swallow strength
+    // movements, and STRENGTH_EXCEPTIONS below wins over all of them.
     { type: 'duration', tokens: ['treadmill', 'walk', 'jog', 'running', 'bike', 'cycling', 'elliptical',
                                  'swimming', 'cardio', 'zone 2', 'rowing machine', 'erg', 'stair climber'] },
     { type: 'time',     tokens: ['hold', 'plank', 'balance', 'hang', 'l-sit', 'l sit', 'lever', 'handstand',
@@ -2808,9 +2810,16 @@ const TRACKING_GUESS = [
 const LOADED_TOKENS = ['weighted', 'barbell', 'dumbbell', 'cable', 'machine', 'smith', 'trap bar',
                        'goblet', 'plate', 'banded', 'leg press', 'hack squat'];
 
+// Strength movements whose names contain a cardio word. Checked before the
+// guess rules, so "Walking Lunge" is sets of reps, not minutes of walking.
+const STRENGTH_EXCEPTIONS = ['walking lunge', 'lunge walk', 'bear walk', 'duck walk',
+    'lateral walk', 'monster walk', 'walkout', 'inchworm walk'];
+
 function guessTrackingType(exerciseName) {
     const name = normalizeLabel(exerciseName);
     if (!name) return 'weight_reps';
+
+    if (STRENGTH_EXCEPTIONS.some(t => name.includes(t))) return 'weight_reps';
 
     for (const rule of TRACKING_GUESS) {
         if (rule.tokens.some(t => name.includes(t))) {
@@ -3869,7 +3878,7 @@ const EXERCISE_LIBRARY = [
     { name: 'Leg Press', reps: '10-12' },
     { name: 'Hack Squat', reps: '8-10' },
     { name: 'Leg Extension', reps: '12-15' },
-    { name: 'Walking Lunge', reps: '10-12' },
+    { name: 'Walking Lunge', reps: '10-12', trackingType: 'weight_reps' },
     { name: 'Reverse Lunge', reps: '10-12' },
     { name: 'Dumbbell Step-Up', reps: '8-10' },
     { name: 'Bodyweight Squat', reps: '15-20', trackingType: 'reps' },
@@ -4563,7 +4572,7 @@ function buildRecompProgram() {
                   { notes: 'MAIN LIFT. MODERATE load only, perfect hinge, soft knees - the hamstrings stretch, the back never rounds. Any back complaint: swap to Cable Back Extension. Weeks 3-4 add a 5th set.' }),
                 w('Cable Back Extension', 3, '12-15', { notes: 'The Nippard-style hinge without spinal compression.' }),
                 w('Dumbbell Step-Up', 3, '8-10', { notes: 'Per side. Box height within pain-free hip range.' }),
-                w('Walking Lunge', 3, '10-12', { notes: 'Per side. Skip if the hip is cranky; add a 4th step-up set instead.' }),
+                w('Walking Lunge', 3, '10-12', { trackingType: 'weight_reps', notes: 'Per side. Skip if the hip is cranky; add a 4th step-up set instead.' }),
                 w('Single-Leg Calf Raise', 3, '12-15', { trackingType: 'reps' })
             ],
             'Home: Shoulders · Abs · Biceps (A)': [
