@@ -12,6 +12,10 @@ committed is live within about two minutes.
 ## Features
 
 ### Workout tracking
+The Workout tab is ordered by priority: the plan, the next session, the
+logger. Session ratings fold into an optional collapsible, the quick activity
+log and the weekly set-distribution detail sit below the Complete button, and
+the AI suggestion cards live on the Analytics tab.
 - Five tracking types per exercise, so a hold, a walk and a bench press are each
   logged in the units that make sense:
   - **Weight & reps** - barbell, dumbbell, machine and cable work
@@ -176,8 +180,10 @@ never impossible.
 
 ### Nutrition
 - **The meal plan** leads the tab: exactly what to eat and when, keyed to the
-  day type (training/fencing day, Saturday, rest day, tournament - switchable
-  per date). Each meal has a clock time, its foods and macros, and a one-tap
+  day type (training, rest, tournament - switchable per date). The type is
+  read from evidence, never the weekday: a date with a logged session or
+  activity is a training day, today counts as one while the plan still owes
+  sessions, and a finished week or an empty past day reads as rest. Each meal has a clock time, its foods and macros, and a one-tap
   Log that writes the whole meal to the diary. The structure IS the strategy:
   the day's biggest carbs land before evening fencing, the post-fencing meal
   is a fixed light shake, rest-day dinner ends by 7pm, and tournament days

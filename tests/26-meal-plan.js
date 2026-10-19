@@ -31,7 +31,7 @@ const { realProgram } = require('./harness/seed');
   F('every meal has a clock time', panel.rows.every(r => /^\d{1,2}:\d{2}$/.test(r.time || '')),
     JSON.stringify(panel.rows));
   F('a day target is stated', /\d{4} kcal · \d+g protein/.test(panel.text), panel.text.slice(0, 120));
-  F('day types are switchable', panel.chips.join(',') === 'Wk,Sat,Rest,Tourn', JSON.stringify(panel.chips));
+  F('day types are switchable', panel.chips.join(',') === 'Train,Rest,Tourn', JSON.stringify(panel.chips));
 
   // ---------- 2. One tap logs the whole meal with its macros ----------
   await page.locator('.mealplan-log').first().click();
@@ -61,7 +61,7 @@ const { realProgram } = require('./harness/seed');
     tourn.slice(0, 200));
 
   // ---------- 4. The cortisol rule is structural: last weekday meal is light ----------
-  await page.evaluate(() => window.setMealPlanDayType('weekday'));
+  await page.evaluate(() => window.setMealPlanDayType('training'));
   await page.waitForTimeout(300);
   const weekday = await page.evaluate(() => {
     const rows = [...document.querySelectorAll('.mealplan-row')];

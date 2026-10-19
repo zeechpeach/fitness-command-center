@@ -2003,6 +2003,52 @@
         /* ---- Quick add ---------------------------------------------------
            The things eaten most, one tap each. Sits above "Add Food" so the
            common case never opens a modal or a keyboard. */
+        /* ---- Collapsed session ratings + week distribution ---------------
+           The workout tab is about the workout; the bookkeeping folds away. */
+        .ratings-panel {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            padding: 0;
+            margin-bottom: 1rem;
+        }
+
+        .ratings-summary {
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            font-size: 0.9375rem;
+            font-weight: 500;
+            color: var(--color-text-primary);
+            list-style: none;
+        }
+
+        .ratings-summary::-webkit-details-marker { display: none; }
+
+        .ratings-optional {
+            font-size: 0.75rem;
+            font-weight: 400;
+            color: var(--color-text-secondary);
+            margin-left: 0.4rem;
+        }
+
+        .ratings-body { padding: 0 1rem 0.5rem; }
+
+        .week-details {
+            margin-top: 1.25rem;
+        }
+
+        .week-details-summary {
+            padding: 0.5rem 0.25rem;
+            cursor: pointer;
+            font-size: 0.8125rem;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: var(--color-text-secondary);
+            list-style: none;
+        }
+
+        .week-details-summary::-webkit-details-marker { display: none; }
+
         /* ---- Meal plan -----------------------------------------------------
            What to eat and when, per day type. One tap logs the whole meal. */
         .nutrition-plan-panel:not(:empty) {

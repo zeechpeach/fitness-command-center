@@ -238,7 +238,7 @@ async function saveWorkoutToFirebase(workoutData) {
 // lets the programs and workouts queries run concurrently at startup.
 // Shown in Settings -> Data health and bumped with the ?v= cache-buster in
 // index.html, so "which code is this phone actually running" is answerable.
-const APP_VERSION = '88';
+const APP_VERSION = '89';
 
 let rawWorkouts = [];
 
@@ -7075,8 +7075,8 @@ function defaultMealTypeForNow(date = new Date()) {
 // ---------------------------------------------------------------------------
 
 const MEAL_PLAN = {
-    weekday: {
-        label: 'Training / fencing day',
+    training: {
+        label: 'Training day',
         target: { calories: 2100, protein: 185 },
         note: 'AGGRESSIVE CUT: skip the apple and one toast slice (-185). Big fuel at 3:45pm, light protein after training, nothing heavy within 30 minutes of bed. Coaching 3h+ tonight? Keep the apple.',
         meals: [
@@ -7106,41 +7106,6 @@ const MEAL_PLAN = {
               foods: [
                 { name: 'Fairlife 2% Milk (16 oz)', calories: 240, protein: 26, carbs: 12, fats: 9 },
                 { name: 'ON Whey (1 scoop)', calories: 120, protein: 24, carbs: 3, fats: 2 }
-              ] }
-        ]
-    },
-    saturday: {
-        label: 'Saturday - legs + lessons',
-        target: { calories: 2000, protein: 185 },
-        note: 'Train legs fed. Dinner is the sardine slot. Evening is free of training, so eat dinner early and practice the sleep window.',
-        meals: [
-            { id: 'sa1', time: '8:00', title: 'Breakfast (pre-legs)', mealType: 'Breakfast',
-              foods: [
-                { name: 'Eggs (3)', calories: 210, protein: 18, carbs: 2, fats: 15 },
-                { name: 'Whole-Grain Toast (2 slices)', calories: 180, protein: 8, carbs: 32, fats: 2 },
-                { name: 'Banana', calories: 105, protein: 1, carbs: 27, fats: 0 }
-              ] },
-            { id: 'sa2', time: '11:00', title: 'Post-workout shake', mealType: 'Snack',
-              foods: [
-                { name: 'Fairlife 2% Milk (16 oz)', calories: 240, protein: 26, carbs: 12, fats: 9 },
-                { name: 'ON Whey (1 scoop)', calories: 120, protein: 24, carbs: 3, fats: 2 }
-              ] },
-            { id: 'sa3', time: '13:30', title: 'Lunch', mealType: 'Lunch',
-              foods: [
-                { name: 'Grilled Chicken Breast (6 oz)', calories: 280, protein: 53, carbs: 0, fats: 6 },
-                { name: 'Rice (1 cup cooked)', calories: 200, protein: 4, carbs: 44, fats: 0 },
-                { name: 'Vegetables + Olive Oil (1 tsp)', calories: 90, protein: 2, carbs: 10, fats: 5 }
-              ] },
-            { id: 'sa4', time: '17:00', title: 'Yogurt bowl', mealType: 'Snack',
-              foods: [
-                { name: 'Fage 0% Greek Yogurt (8 oz)', calories: 150, protein: 23, carbs: 8, fats: 0 },
-                { name: 'Frozen Berries (1 cup)', calories: 70, protein: 1, carbs: 17, fats: 0 }
-              ] },
-            { id: 'sa5', time: '19:00', title: 'Sardine dinner - early', mealType: 'Dinner',
-              foods: [
-                { name: 'Wild Planet Sardines (1 tin, drained)', calories: 190, protein: 22, carbs: 0, fats: 10 },
-                { name: 'Sourdough or Crackers', calories: 150, protein: 4, carbs: 28, fats: 2 },
-                { name: 'Side Salad + Olive Oil (1 tsp)', calories: 80, protein: 1, carbs: 5, fats: 6 }
               ] }
         ]
     },
@@ -7218,18 +7183,30 @@ const MEAL_PLAN = {
     }
 };
 
-// Day type by weekday - Sunday rest, Saturday its own, Mon-Fri the evening
-// activity template - with a per-date override (the Tournament chip).
+// The day type is read from EVIDENCE, not the weekday - the plan stopped
+// assigning days, so Monday proves nothing. A date with a logged session or
+// logged activity is a training day. Today, before anything is logged, is a
+// training day as long as the plan still owes sessions this week - the meals
+// have to be planned before the workout happens. A finished week, and any
+// past day with nothing logged, reads as rest. The chips override any of it,
+// per date, and Tournament is only ever chosen by hand.
 function getMealPlanDayType(dateStr) {
     try {
-        const override = localStorage.getItem('fcc:daytype:' + dateStr);
+        const stored = localStorage.getItem('fcc:daytype:' + dateStr);
+        // Legacy values from the weekday era map onto the training template.
+        const override = stored === 'weekday' || stored === 'saturday' ? 'training' : stored;
         if (override && MEAL_PLAN[override]) return override;
     } catch (e) { }
-    const [y, m, d] = dateStr.split('-').map(Number);
-    const dow = new Date(y, m - 1, d).getDay();
-    if (dow === 0) return 'rest';
-    if (dow === 6) return 'saturday';
-    return 'weekday';
+
+    const trainedThatDay = allWorkouts.some(w =>
+        w.date === dateStr && !isNonTrainingLabel(w.day));
+    const activeThatDay = fencingEntriesBetween(dateStr, dateStr).length > 0;
+    if (trainedThatDay || activeThatDay) return 'training';
+
+    if (dateStr === getTodayDateString() && getPlanWeek() && getDuePlanSession()) {
+        return 'training';
+    }
+    return 'rest';
 }
 
 window.setMealPlanDayType = function (dayType) {
@@ -7287,7 +7264,7 @@ function renderNutritionPlanPanel() {
             <div class="mealplan-chips">`;
     Object.keys(MEAL_PLAN).forEach(key => {
         const active = key === dayType ? ' active' : '';
-        const short = { weekday: 'Wk', saturday: 'Sat', rest: 'Rest', tournament: 'Tourn' }[key];
+        const short = { training: 'Train', rest: 'Rest', tournament: 'Tourn' }[key];
         html += `<button type="button" class="mealplan-chip${active}" data-daytype="${key}">${short}</button>`;
     });
     html += `</div></div>
