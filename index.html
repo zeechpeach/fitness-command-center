@@ -18,7 +18,7 @@
     <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js" crossorigin>
     <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js" crossorigin>
 
-    <link rel="stylesheet" href="src/css/styles.css?v=88">
+    <link rel="stylesheet" href="src/css/styles.css?v=89">
 
     <!-- Inter is third in the font stack, behind the system font every Apple
          device already uses, so it must never block the first paint. -->
@@ -78,19 +78,9 @@
                  design - a slot is a slot, not a date. -->
             <div class="program-panel" id="program-panel"></div>
 
-            <!-- What the week still owes. The day selector below is a menu of
-                 ways to pay it down, not a queue that decides for you. -->
-            <div class="weekly-volume-panel" id="weekly-volume-panel"></div>
-
             <!-- What to do today, regenerated from today's facts rather than
                  assigned in advance, so there is nothing to fall behind on. -->
             <div class="today-panel" id="today-panel"></div>
-
-            <!-- Fifteen hours a week of coaching is training whether or not it
-                 happened on a rack - and so is an incline walk or a bike ride.
-                 Two taps to log any of it; it feeds the week panel above, the
-                 calorie target, and the suggestion's rest decision. -->
-            <div class="fencing-panel" id="fencing-panel"></div>
 
             <!-- Only unscheduled sessions (Tournament Circuit, a generated
                  session) appear here. The scheduled day pills are gone: the
@@ -152,6 +142,15 @@
                 </div>
             </div>
 
+            <div id="exercises-container">
+                <!-- Exercises will be populated here -->
+            </div>
+
+            <!-- Optional one-tap ratings, out of the way: the workout tab
+                 is about the workout. -->
+            <details class="ratings-panel">
+                <summary class="ratings-summary">Session ratings <span class="ratings-optional">optional</span></summary>
+                <div class="ratings-body">
             <div class="intensity-inputs">
                 <h4 style="color: var(--color-accent-primary); margin-bottom: 1rem;">How are you feeling?</h4>
                 <div class="intensity-row">
@@ -176,23 +175,6 @@
                     </div>
                     <span style="color: var(--color-text-secondary); font-size: 0.8rem;">Forced → Eager</span>
                 </div>
-            </div>
-
-            <div class="intelligence-panel">
-                <div class="intelligence-header">
-                    <div class="ai-icon">AI</div>
-                    <h3>Workout Intelligence</h3>
-                </div>
-                <div class="suggestions-grid" id="suggestions-container">
-                    <div class="suggestion-card">
-                        <div class="suggestion-type">Loading...</div>
-                        <div class="suggestion-text">Loading AI suggestions...</div>
-                    </div>
-                </div>
-            </div>
-
-            <div id="exercises-container">
-                <!-- Exercises will be populated here -->
             </div>
 
             <div class="intensity-inputs">
@@ -221,11 +203,25 @@
                 </div>
             </div>
 
+                </div>
+            </details>
+
             <p id="session-save-note"
                 style="text-align:center; color: var(--color-text-secondary); font-size: 0.875rem; margin: 0 0 0.5rem;">
                 Your sets save as you go. Leave and come back any time; only tap below when the session is finished.
             </p>
             <button class="btn-complete" id="complete-workout-btn">Complete Session</button>
+
+            <!-- Quick activity log: fencing, walks, bike. Feeds the calorie
+                 target and recovery without being in the way of the workout. -->
+            <div class="fencing-panel" id="fencing-panel" style="margin-top: 1.25rem;"></div>
+
+            <!-- The set-distribution detail, deliberately last: it is the
+                 bookkeeping behind the plan, not the plan. -->
+            <details class="week-details" open>
+                <summary class="week-details-summary">Weekly set distribution</summary>
+                <div class="weekly-volume-panel" id="weekly-volume-panel"></div>
+            </details>
 
             <!-- PRE-BED ROUTINE -->
             <details class="routine-panel routine-evening">
@@ -591,6 +587,19 @@
 
         <!-- ANALYTICS TAB -->
         <div id="analytics-content" class="tab-content">
+            <div class="intelligence-panel">
+                <div class="intelligence-header">
+                    <div class="ai-icon">AI</div>
+                    <h3>Workout Intelligence</h3>
+                </div>
+                <div class="suggestions-grid" id="suggestions-container">
+                    <div class="suggestion-card">
+                        <div class="suggestion-type">Loading...</div>
+                        <div class="suggestion-text">Loading AI suggestions...</div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Row 1: Headline numbers -->
             <div class="analytics-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
                 <div class="analytics-card">
@@ -1236,7 +1245,7 @@
         </div>
     </div>
 
-    <script type="module" src="src/js/app.js?v=88"></script>
+    <script type="module" src="src/js/app.js?v=89"></script>
 </body>
 
 </html>
