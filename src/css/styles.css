@@ -550,6 +550,18 @@
             color: var(--color-accent-primary);
         }
 
+        /* The effort prescription: the most important line on the card. */
+        .today-effort {
+            font-size: 0.8125rem;
+            font-weight: 600;
+            line-height: 1.45;
+            color: var(--color-accent-primary);
+            background: rgba(168, 181, 160, 0.12);
+            border-radius: var(--radius-md);
+            padding: 0.5rem 0.625rem;
+            margin-bottom: 0.625rem;
+        }
+
         .today-fatigue {
             font-size: 0.8125rem;
             line-height: 1.4;

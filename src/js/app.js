@@ -238,7 +238,7 @@ async function saveWorkoutToFirebase(workoutData) {
 // lets the programs and workouts queries run concurrently at startup.
 // Shown in Settings -> Data health and bumped with the ?v= cache-buster in
 // index.html, so "which code is this phone actually running" is answerable.
-const APP_VERSION = '92';
+const APP_VERSION = '93';
 
 let rawWorkouts = [];
 
@@ -5148,6 +5148,17 @@ function generateSession(minutes, locationKey = 'full') {
     } else if (capacity !== null && budget < timeBudget) {
         fatigueNote = `Sized to your current capacity: ${budget} sets - your best recent session plus ${CAPACITY_STEP}. Finish it and the next one grows.`;
     }
+
+    // How hard, stated explicitly - without this the default becomes failure
+    // on everything, which costs double the fatigue for barely more stimulus.
+    // Volume only counts if it is completed, and it is only completed if the
+    // effort is priced right.
+    let effortNote;
+    if ((capacity !== null && budget < timeBudget) || effort < 1) {
+        effortNote = 'Effort: 2-3 reps in reserve on EVERY set. Nothing to failure while rebuilding - finishing all the sets IS the win today.';
+    } else {
+        effortNote = 'Effort: 2 reps in reserve; the last set of an exercise may go to 1. Failure is a tool, not a default.';
+    }
     const pool = getExercisePool();
     const freq = getExerciseFrequency();
 
@@ -5354,6 +5365,7 @@ function generateSession(minutes, locationKey = 'full') {
         rest: false,
         reason: '',
         fatigueNote,
+        effortNote,
         coachNotes: coachNotes.slice(0, 2)
     };
 }
@@ -5506,6 +5518,7 @@ window.suggestPlaceFor = function (locationKey) {
             totalSets: suggestedSession.totalSets,
             groups: suggestedSession.groups,
             fatigueNote: suggestedSession.fatigueNote || '',
+            effortNote: suggestedSession.effortNote || '',
             coachNotes: suggestedSession.coachNotes || [],
             started: false
         };
@@ -5679,6 +5692,9 @@ function renderTodayPanel() {
                     </div>
                     ${completed ? '<div class="today-status done">&#10003; ' + escapeHtml(status) + '</div>'
                         : (generatedToday.started ? '<div class="today-status">' + escapeHtml(status) + '</div>' : '')}
+                    ${generatedToday.effortNote && !completed
+                        ? `<div class="today-effort">${escapeHtml(generatedToday.effortNote)}</div>`
+                        : ''}
                     <ul class="today-plan-list">`;
         generatedToday.exercises.forEach(e => {
             const reps = e.reps ? ` &times; ${escapeHtml(e.reps)}` : '';
