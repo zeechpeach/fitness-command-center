@@ -46,37 +46,31 @@ function installedV1(startDate) {
     upgraded: (window.__writes || []).filter(w =>
       w.op === 'updateDoc' && w.collection === 'programs').map(w => ({
         id: w.id, planVersion: w.data.planVersion,
-        startDate: w.data.plan && w.data.plan.startDate,
+        mode: w.data.plan && w.data.plan.mode,
         quads: w.data.weeklyTargets && w.data.weeklyTargets.Quads,
-        slots: w.data.plan && w.data.plan.sessions.map(s => s.name)
+        shoulders: w.data.weeklyTargets && w.data.weeklyTargets.Shoulders,
+        workoutKeys: Object.keys(w.data.workouts || {}),
+        excluded: w.data.excludedExercises || []
       })),
     panel: document.getElementById('program-panel').innerText.replace(/\s+/g, ' ').trim(),
     pills: [...document.querySelectorAll('#workout-day-selector .day-btn')]
       .map(b => b.innerText.replace(/\s+/g, ' ').trim())
   }));
   console.log('upgrade write: ' + JSON.stringify(state.upgraded));
-  console.log('panel: ' + state.panel.slice(0, 140));
+  console.log('panel: ' + state.panel.slice(0, 120));
 
-  F('the installed copy is upgraded in place', state.upgraded.length === 1
-    && state.upgraded[0].id === 'prog-recomp-v1' && state.upgraded[0].planVersion === 3,
-    JSON.stringify(state.upgraded));
-  // v3 explicitly restarts: the leg days made it a new program, so it begins
-  // as one - week 1, stamped to the current week.
-  const expectStart = await page.evaluate(() => {
-    const d = new Date();
-    d.setDate(d.getDate() - d.getDay());
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-  });
-  F('v3 restarts the clock at week 1 of the current week',
-    state.upgraded[0].startDate === expectStart && /Week 1 of 8/.test(state.panel),
-    JSON.stringify({ wrote: state.upgraded[0].startDate, expected: expectStart, panel: state.panel.slice(0, 40) }));
-  F('leg targets are raised', state.upgraded[0].quads === 10, JSON.stringify(state.upgraded[0]));
-  F('both new leg days are in the plan',
-    state.upgraded[0].slots.includes('Legs A (Quads)') && state.upgraded[0].slots.includes('Legs B (Posterior)'),
-    JSON.stringify(state.upgraded[0].slots));
-  F('the new leg sessions render as pills',
-    state.pills.some(p => /Legs A \(Quads\)/.test(p)) && state.pills.some(p => /Home: Legs B/.test(p)),
-    JSON.stringify(state.pills));
+  F('the installed copy upgrades in place to adaptive mode', state.upgraded.length === 1
+    && state.upgraded[0].id === 'prog-recomp-v1' && state.upgraded[0].planVersion === 4
+    && state.upgraded[0].mode === 'adaptive', JSON.stringify(state.upgraded));
+  F('the panel becomes a show-up counter', /Show up · \d\/6 this week/.test(state.panel), state.panel.slice(0, 80));
+  F('named sessions are retired - only the Test Day remains',
+    state.upgraded[0].workoutKeys.length === 1 && /Test Day/.test(state.upgraded[0].workoutKeys[0]),
+    JSON.stringify(state.upgraded[0].workoutKeys));
+  F('aesthetics targets land - shoulders 16, quads 8',
+    state.upgraded[0].shoulders === 16 && state.upgraded[0].quads === 8, JSON.stringify(state.upgraded[0]));
+  F('the injury exclusions ride along',
+    state.upgraded[0].excluded.includes('Back Squat') && state.upgraded[0].excluded.includes('Overhead Press'),
+    JSON.stringify(state.upgraded[0].excluded));
   F('no page errors', errors.length === 0, JSON.stringify(errors.map(e => e.message)));
   await browser.close();
   finish(fails);

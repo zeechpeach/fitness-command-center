@@ -238,7 +238,7 @@ async function saveWorkoutToFirebase(workoutData) {
 // lets the programs and workouts queries run concurrently at startup.
 // Shown in Settings -> Data health and bumped with the ?v= cache-buster in
 // index.html, so "which code is this phone actually running" is answerable.
-const APP_VERSION = '90';
+const APP_VERSION = '91';
 
 let rawWorkouts = [];
 
@@ -3928,8 +3928,13 @@ function getLibraryByGroup() {
 function usableOptionsFor(group, pool, locationKey) {
     const seen = new Set();
     const options = [];
+    // Injury exclusions live on the program and are enforced here, so the
+    // generator can never suggest a barbell squat to a back that said no.
+    const excluded = new Set(((activeProgram && activeProgram.excludedExercises) || [])
+        .map(normalizeLabel));
     const add = (entry) => {
         const key = normalizeLabel(entry.name);
+        if (excluded.has(key)) return;
         if (seen.has(key) || !availableAt(entry.name, locationKey)) return;
         seen.add(key);
         options.push({ name: entry.name, reps: entry.reps || '',
@@ -4306,6 +4311,54 @@ function getFencingSetsThisWeek() {
     return fencingSetsByGroup(getWeekStartDate(today), today);
 }
 
+// ---------------------------------------------------------------------------
+// Readiness: the trainer's eye. Yesterday's two-tap ratings and the length of
+// the current training streak size today's session. An exhausted rating is a
+// client saying "that was too much" - the plan listens instead of repeating it.
+// ---------------------------------------------------------------------------
+function readinessFactor() {
+    const yesterday = addDaysToDateString(getTodayDateString(), -1);
+    const yWorkouts = allWorkouts.filter(w => w.date === yesterday && !isNonTrainingLabel(w.day));
+
+    let factor = 1;
+    let note = '';
+
+    for (const w of yWorkouts) {
+        const i = w.intensity || {};
+        const fatigue = parseInt(i.fatigue, 10);          // 1 exhausted .. 5 energized
+        const satisfaction = parseInt(i.satisfaction, 10); // 1 poor .. 5 crushed it
+        if (Number.isFinite(fatigue) && fatigue <= 2) {
+            factor = Math.min(factor, Number.isFinite(satisfaction) && satisfaction <= 2 ? 0.7 : 0.8);
+            note = 'Yesterday read exhausted, so today is trimmed - consistency beats heroics.';
+        }
+    }
+
+    // Six straight training days earns a lighter seventh whatever the ratings say.
+    let streak = 0;
+    let d = yesterday;
+    for (let guard = 0; guard < 10; guard++) {
+        if (!allWorkouts.some(w => w.date === d && !isNonTrainingLabel(w.day))) break;
+        streak++;
+        d = addDaysToDateString(d, -1);
+    }
+    if (streak >= 5) {
+        factor = Math.min(factor, 0.85);
+        if (!note) note = `${streak} days in a row - today runs a little lighter.`;
+    }
+
+    return { factor: Math.max(0.6, factor), note };
+}
+
+// Distinct days trained this week, for the adaptive show-up counter.
+function getSessionsThisWeek() {
+    const weekStart = getWeekStartDate();
+    const today = getTodayDateString();
+    const days = new Set(allWorkouts
+        .filter(w => w.date >= weekStart && w.date <= today && !isNonTrainingLabel(w.day))
+        .map(w => w.date));
+    return days.size;
+}
+
 // Whole-body tiredness, separate from any one muscle. A tournament Saturday
 // does not make your chest sore, but it does mean Sunday is not the day for a
 // full session. Yesterday counts half: you have slept since.
@@ -4496,7 +4549,7 @@ const RECOMP_PROGRAM_NAME = '8-Week Recomp (Shoulders & Abs First)';
 // Bumped when the built-in program's content changes; an installed copy with
 // an older version is upgraded in place on load, keeping its start date and
 // all logged history.
-const RECOMP_PLAN_VERSION = 3;
+const RECOMP_PLAN_VERSION = 4;
 
 function buildRecompProgram() {
     const w = (name, sets, reps, extra = {}) => ({ name, sets, reps, ...extra });
@@ -4504,119 +4557,30 @@ function buildRecompProgram() {
         name: RECOMP_PROGRAM_NAME,
         active: true,
         planVersion: RECOMP_PLAN_VERSION,
-        schedule: {},   // nothing is date-assigned; the plan panel tracks the week
-        // v2: real leg days. With fencing reduced, legs train like everything
-        // else - the old "fencing already loads them" discount is gone.
+        schedule: {},
+        // v4: ADAPTIVE. The fixed sessions are retired - a 60-minute session
+        // design was failing a life that has 30-45 minute windows, and the
+        // owner asked for a trainer, not a spreadsheet. The generator builds
+        // each day's session fresh; this program carries only the targets,
+        // the injury exclusions, and the Test Day benchmark.
+        //
+        // Targets are aesthetics-weighted for a 6-day week of short sessions:
+        // delts, chest, lats, abs and arms carry the look; legs stay honest
+        // without dominating recovery.
         weeklyTargets: {
-            Shoulders: 16, Core: 12, Chest: 10, Back: 12, Biceps: 8, Triceps: 8,
-            Quads: 10, Hamstrings: 8, Glutes: 8, Calves: 6
+            Shoulders: 16, Chest: 14, Back: 14, Core: 12, Biceps: 10, Triceps: 10,
+            Quads: 8, Hamstrings: 6, Glutes: 6, Calves: 6
         },
+        // The injury rules, enforced at generation: no barbell squats, no
+        // barbell hinges, no standing barbell pressing. The dumbbell RDL and
+        // seated pressing stay available.
+        excludedExercises: ['Back Squat', 'Front Squat', 'Romanian Deadlift',
+                            'Good Morning', 'Overhead Press'],
         plan: {
-            weeks: 8,
-            // startDate is stamped at install time to the current week's Sunday.
-            startDate: null,
-            // v3: no weekdays. The week owes these five sessions in this
-            // order - upper, lower, upper, upper, lower - which keeps 48h+
-            // between the two shoulder days even on consecutive training
-            // days. Do the next one whenever a window opens.
-            sessions: [
-                { name: 'Shoulders · Abs · Biceps (A)', home: 'Home: Shoulders · Abs · Biceps (A)' },
-                { name: 'Legs B (Posterior)', home: 'Home: Legs B (Posterior)' },
-                { name: 'Chest · Back', home: 'Home: Chest · Back' },
-                { name: 'Shoulders · Abs · Triceps (B)', home: 'Home: Shoulders · Abs · Triceps (B)' },
-                { name: 'Legs A (Quads)', home: 'Home: Legs A (Quads)' }
-            ],
-            testSession: 'Test Day (Week 1 & 8)'
+            mode: 'adaptive',
+            weeklySessions: 6
         },
         workouts: {
-            'Shoulders · Abs · Biceps (A)': [
-                w('Seated Dumbbell Shoulder Press', 3, '6-10',
-                  { notes: 'MAIN LIFT. Seated, back supported - never standing barbell. Weeks 3-4 add a 4th set.' }),
-                w('Dumbbell Lateral Raise', 3, '12-15'),
-                w('Rear Delt Fly', 3, '12-15'),
-                w('Ab Wheel Rollout', 3, '8-12', { trackingType: 'reps', notes: 'From knees. Brace hard, no lower-back sag.' }),
-                w('Pallof Press', 3, '10-12', { notes: 'Per side. Anti-rotation - slow.' }),
-                w('Hanging Knee Raise', 3, '8-12', { trackingType: 'reps', notes: 'Knees bent, controlled - no straight-leg raises.' }),
-                w('Dumbbell Curl', 3, '10-12', { notes: 'Superset with an ab movement to stay inside the hour.' }),
-                w('Hammer Curl', 2, '10-12')
-            ],
-            'Chest · Back': [
-                w('Incline Dumbbell Press', 3, '6-10', { notes: 'MAIN LIFT. Weeks 3-4 add a 4th set.' }),
-                w('Weighted Pull-Up', 3, '5-8', { notes: 'MAIN LIFT. Weeks 3-4 add a 4th set. Bodyweight only if reps fall under 5.' }),
-                w('Weighted Dip', 3, '6-10', { notes: 'Superset-friendly with rows (A1/A2).' }),
-                w('Chest-Supported Row', 3, '8-12', { notes: 'Chest supported keeps the spine unloaded.' }),
-                w('Cable Fly', 3, '12-15'),
-                w('Lat Pulldown', 3, '10-12')
-            ],
-            'Shoulders · Abs · Triceps (B)': [
-                w('Arnold Shoulder Press', 3, '8-12',
-                  { notes: 'MAIN LIFT. Seated, back supported. Weeks 3-4 add a 4th set.' }),
-                w('Cable Lateral Raise', 3, '12-15'),
-                w('Face Pull', 3, '15-20', { notes: 'Rear delts and rotator cuff - fencing shoulder insurance.' }),
-                w('Cable Crunch', 3, '10-15', { notes: 'Kneeling on a pad. Flex the spine under control - this loading is fine; compression is not.' }),
-                w('Side Plank', 3, '20-30s', { trackingType: 'time', notes: 'Per side.' }),
-                w('Dead Bug', 3, '10-12', { trackingType: 'reps', notes: 'Per side, slow, lower back pressed down.' }),
-                w('Overhead Cable Triceps Extension', 3, '10-12'),
-                w('Triceps Pushdown', 2, '12-15')
-            ],
-            'Legs A (Quads)': [
-                w('Heel-Elevated Goblet Squat', 4, '8-12',
-                  { notes: 'MAIN LIFT. Pain-free hip depth ONLY - heels elevated keeps the torso upright and the spine happy. Weeks 3-4 add a 5th set. At the full gym: Leg Press or Hack Squat works here too.' }),
-                w('Bulgarian Split Squat', 3, '8-10', { notes: 'Per side. Shallow if the hip complains - range you own, not range you rent.' }),
-                w('Barbell Hip Thrust', 3, '8-12', { notes: 'Pain-free hip range. Shoulders on the bench, chin tucked.' }),
-                w('Standing Calf Raise', 4, '12-15', { notes: 'Pause at the bottom stretch.' }),
-                w('Pallof Press', 2, '10-12', { notes: 'Per side - the spine stays braced, never loaded.' })
-            ],
-            'Legs B (Posterior)': [
-                w('Dumbbell Romanian Deadlift', 4, '10-12',
-                  { notes: 'MAIN LIFT. MODERATE load only, perfect hinge, soft knees - the hamstrings stretch, the back never rounds. Any back complaint: swap to Cable Back Extension. Weeks 3-4 add a 5th set.' }),
-                w('Cable Back Extension', 3, '12-15', { notes: 'The Nippard-style hinge without spinal compression.' }),
-                w('Dumbbell Step-Up', 3, '8-10', { notes: 'Per side. Box height within pain-free hip range.' }),
-                w('Walking Lunge', 3, '10-12', { trackingType: 'weight_reps', notes: 'Per side. Skip if the hip is cranky; add a 4th step-up set instead.' }),
-                w('Single-Leg Calf Raise', 3, '12-15', { trackingType: 'reps' })
-            ],
-            'Home: Shoulders · Abs · Biceps (A)': [
-                w('Pike Push-Up', 3, '8-12', { trackingType: 'reps', notes: 'Shoulder-press pattern. Elevate the feet to progress.' }),
-                w('Wall Handstand Hold', 3, '30-45s', { trackingType: 'time', notes: 'Belly to wall if comfortable.' }),
-                w('Prone Rear Delt Swimmers', 3, '12-15', { trackingType: 'reps' }),
-                w('Hanging Knee Raise', 3, '8-12', { trackingType: 'reps', notes: 'On the pull-up bar. Knees bent.' }),
-                w('Dead Bug', 3, '10-12', { trackingType: 'reps' }),
-                w('Side Plank', 3, '20-30s', { trackingType: 'time', notes: 'Per side.' }),
-                w('Chin-Up', 3, '6-10', { trackingType: 'reps', notes: 'Underhand - the biceps slot.' })
-            ],
-            'Home: Chest · Back': [
-                w('Push-Up', 4, '12-20', { trackingType: 'reps', notes: 'MAIN. Two reps shy of failure per the week\'s RIR.' }),
-                w('Pull-Up', 4, '5-8', { trackingType: 'reps', notes: 'MAIN.' }),
-                w('Deficit Push-Up', 3, '8-12', { trackingType: 'reps', notes: 'Hands on books/steps for range.' }),
-                w('Inverted Row', 3, '8-12', { trackingType: 'reps', notes: 'Under a sturdy table, or rings if available.' }),
-                w('Diamond Push-Up', 2, '8-12', { trackingType: 'reps' }),
-                w('Scapular Pull-Up', 2, '8-10', { trackingType: 'reps' })
-            ],
-            'Home: Shoulders · Abs · Triceps (B)': [
-                w('Feet-Elevated Pike Push-Up', 3, '6-10', { trackingType: 'reps', notes: 'MAIN. Feet on the bench.' }),
-                w('Wall Handstand Hold', 3, '30-45s', { trackingType: 'time' }),
-                w('Prone Rear Delt Swimmers', 3, '12-15', { trackingType: 'reps' }),
-                w('Hollow Body Hold', 3, '20-30s', { trackingType: 'time' }),
-                w('Dead Bug', 3, '10-12', { trackingType: 'reps' }),
-                w('Hanging Knee Raise', 3, '8-12', { trackingType: 'reps' }),
-                w('Diamond Push-Up', 3, '8-12', { trackingType: 'reps', notes: 'The triceps slot.' })
-            ],
-            'Home: Legs A (Quads)': [
-                w('Heel-Elevated Goblet Squat', 4, '8-12',
-                  { notes: 'MAIN. The 50lb dumbbell goblet-style, heels on a book. Pain-free depth only.' }),
-                w('Bulgarian Split Squat', 3, '8-10', { notes: 'Per side, rear foot on the bench, dumbbells in hand.' }),
-                w('Single-Leg Glute Bridge', 3, '10-12', { trackingType: 'reps' }),
-                w('Single-Leg Calf Raise', 4, '12-15', { trackingType: 'reps' }),
-                w('Dead Bug', 2, '10-12', { trackingType: 'reps' })
-            ],
-            'Home: Legs B (Posterior)': [
-                w('Dumbbell Romanian Deadlift', 4, '10-12',
-                  { notes: 'MAIN. Both 25s or the 50 - moderate, perfect hinge. The Vitruvian works here too.' }),
-                w('Reverse Lunge', 3, '10-12', { trackingType: 'reps', notes: 'Per side, dumbbells optional.' }),
-                w('Dumbbell Step-Up', 3, '8-10', { notes: 'Per side, onto the bench.' }),
-                w('Single-Leg Glute Bridge', 3, '12-15', { trackingType: 'reps' }),
-                w('Single-Leg Calf Raise', 3, '15-20', { trackingType: 'reps' })
-            ],
             'Test Day (Week 1 & 8)': [
                 w('Max Pull-Up Test', 1, 'max', { trackingType: 'reps', notes: 'One all-out set after a real warm-up. Record every clean rep.' }),
                 w('Max Push-Up Test', 1, 'max', { trackingType: 'reps', notes: 'One all-out set. Chest to fist-height, full lockout.' }),
@@ -4763,6 +4727,36 @@ function getDuePlanSession() {
 function renderProgramPanel() {
     const container = document.getElementById('program-panel');
     if (!container) return;
+
+    // Adaptive mode: no named sessions, no week-of-8. The contract is "show
+    // up N times a week"; the generator decides what each visit holds.
+    if (activeProgram && activeProgram.plan && activeProgram.plan.mode === 'adaptive') {
+        const target = activeProgram.plan.weeklySessions || 6;
+        const done = getSessionsThisWeek();
+        const readiness = readinessFactor();
+        const stalled = getStalledExerciseNames();
+
+        let status;
+        if (done >= target) status = 'Week made. Anything more is a bonus - or take the rest you earned.';
+        else if (readiness.note) status = readiness.note;
+        else status = 'Fresh. Pick a time below and the session builds itself.';
+
+        let html = `
+            <div class="plan-head">
+                <div>
+                    <div class="plan-title">Show up &middot; ${done}/${target} this week</div>
+                    <div class="plan-note">${escapeHtml(status)}</div>
+                </div>
+                <div class="plan-count">${done}<span>of ${target}</span></div>
+            </div>`;
+        if (stalled.length) {
+            html += `<div class="plan-foot">Stalled: ${stalled.slice(0, 2).map(escapeHtml).join(', ')} -
+                the next session that trains ${stalled.length === 1 ? 'it swaps the movement' : 'them swaps the movements'} automatically.</div>`;
+        }
+        container.innerHTML = html;
+        return;
+    }
+
     const week = getPlanWeek();
     if (!activeProgram || !activeProgram.plan || !week) {
         container.innerHTML = '';
@@ -4809,6 +4803,7 @@ async function maybeUpgradeRecompProgram() {
     const upgradingFrom = activeProgram.planVersion || 1;
     activeProgram.workouts = fresh.workouts;
     activeProgram.weeklyTargets = fresh.weeklyTargets;
+    activeProgram.excludedExercises = fresh.excludedExercises || [];
     activeProgram.planVersion = RECOMP_PLAN_VERSION;
     // v3 restarts the clock at week 1, by explicit request: the leg days made
     // it effectively a new program, so it begins as one. Later upgrades keep
@@ -4821,11 +4816,12 @@ async function maybeUpgradeRecompProgram() {
         await updateDoc(doc(db, 'programs', activeProgram.id), {
             workouts: activeProgram.workouts,
             weeklyTargets: activeProgram.weeklyTargets,
+            excludedExercises: activeProgram.excludedExercises,
             planVersion: activeProgram.planVersion,
             plan: activeProgram.plan
         });
         refreshStartupCache();
-        showToast('Program updated: day-free weeks, restarted at week 1.', 'success');
+        showToast('Program updated: adaptive mode. Pick a time; the session builds itself.', 'success');
     } catch (e) {
         console.error('Program upgrade failed, will retry next load:', e);
         activeProgram.planVersion = (activeProgram.planVersion || 2) - 1;
@@ -4889,7 +4885,7 @@ const MINUTES_PER_SET = 2.7;
 // Short sessions run as antagonist-paired supersets: while one muscle rests,
 // the other works, which the research prices at roughly 40% less time for
 // nearly identical performance. A paired set therefore costs less clock.
-const SUPERSET_MAX_MINUTES = 30;
+const SUPERSET_MAX_MINUTES = 45;
 const SUPERSET_MINUTES_PER_SET = 2.0;
 
 // Pairing quality: two exercises can share a superset when they do not
@@ -5111,10 +5107,15 @@ function generateSession(minutes, locationKey = 'full') {
     // rather than dropping groups, so what is left is a real short session
     // instead of a truncated long one.
     const fatigue = fencingFatigueFactor();
-    const budget = Math.max(2, Math.round(setsForMinutes(minutes) * fatigue.factor));
-    const fatigueNote = fatigue.factor < 1
-        ? `Trimmed for ${fatigue.note} - ${formatFencingHours(fatigue.load)} of fencing load behind you.`
-        : '';
+    const readiness = readinessFactor();
+    const effort = Math.min(fatigue.factor, readiness.factor);
+    const budget = Math.max(2, Math.round(setsForMinutes(minutes) * effort));
+    let fatigueNote = '';
+    if (fatigue.factor <= readiness.factor && fatigue.factor < 1) {
+        fatigueNote = `Trimmed for ${fatigue.note} - ${formatFencingHours(fatigue.load)} of fencing load behind you.`;
+    } else if (readiness.factor < 1) {
+        fatigueNote = readiness.note;
+    }
     const pool = getExercisePool();
     const freq = getExerciseFrequency();
 
@@ -5200,7 +5201,9 @@ function generateSession(minutes, locationKey = 'full') {
 
     const exercises = exercisesPrefix.slice();
     const recentNames = getRecentExerciseNames();
+    const stalledNames = new Set(getStalledExerciseNames().map(normalizeLabel));
     const axialSpent = axialLiftTrainedRecently();
+    const coachNotes = [];
 
     chosen.forEach(entry => {
         let options = usableOptionsFor(entry.group, pool, locationKey).slice();
@@ -5219,10 +5222,24 @@ function generateSession(minutes, locationKey = 'full') {
             const aRecent = recentNames.has(normalizeLabel(a.name)) ? 1 : 0;
             const bRecent = recentNames.has(normalizeLabel(b.name)) ? 1 : 0;
             if (aRecent !== bRecent) return aRecent - bRecent;
+            // A stalled lift drops behind a fresh one: three sessions without
+            // progress means the movement needs a break, not more grinding.
+            const aStalled = stalledNames.has(normalizeLabel(a.name)) ? 1 : 0;
+            const bStalled = stalledNames.has(normalizeLabel(b.name)) ? 1 : 0;
+            if (aStalled !== bStalled) return aStalled - bStalled;
             // Familiarity as the tiebreak: progressive overload wants the
             // lifts you actually have history on.
             return (freq[normalizeLabel(b.name)] || 0) - (freq[normalizeLabel(a.name)] || 0);
         });
+
+        // Say WHY a usual pick is missing, or how to attack it if unavoidable.
+        const topStalled = options.length && stalledNames.has(normalizeLabel(options[0].name));
+        const skippedStalled = options.find(o => stalledNames.has(normalizeLabel(o.name)));
+        if (topStalled) {
+            coachNotes.push(`${options[0].name} has stalled 3 sessions - change the stimulus today: drop ~15% and run 12-15s.`);
+        } else if (skippedStalled && options.indexOf(skippedStalled) > 0) {
+            coachNotes.push(`${skippedStalled.name} is stalled, so today swaps in ${options[0].name} for a new stimulus.`);
+        }
 
         // One movement up to 4 sets, two beyond that, so a big allocation is
         // split rather than becoming six sets of the same thing.
@@ -5304,7 +5321,8 @@ function generateSession(minutes, locationKey = 'full') {
         exercises,
         rest: false,
         reason: '',
-        fatigueNote
+        fatigueNote,
+        coachNotes: coachNotes.slice(0, 2)
     };
 }
 
@@ -5456,6 +5474,7 @@ window.suggestPlaceFor = function (locationKey) {
             totalSets: suggestedSession.totalSets,
             groups: suggestedSession.groups,
             fatigueNote: suggestedSession.fatigueNote || '',
+            coachNotes: suggestedSession.coachNotes || [],
             started: false
         };
         writeGeneratedToday(generatedToday);
@@ -5517,6 +5536,48 @@ window.startSuggestedSession = function () {
     renderTodayPanel();
     showToast(`${label} loaded. Log it like any other session.`, 'success');
 };
+
+// A lift that has not moved in three straight appearances is stalled: same
+// top weight, no extra reps at it, no extra volume. Keyed to the exercise
+// NAME across every session label, so generated sessions count. Stalled
+// movements get swapped for a fresh stimulus rather than ground into.
+function getStalledExerciseNames() {
+    const byName = {};
+    allWorkouts.slice().sort((a, b) => workoutRecency(b) - workoutRecency(a)).forEach(w => {
+        if (isNonTrainingLabel(w.day)) return;
+        Object.values(w.exercises || {}).forEach(ex => {
+            if (!ex || !ex.exercise) return;
+            if ((ex.trackingType || guessTrackingType(ex.exercise)) !== 'weight_reps') return;
+            const sets = (ex.sets || []).filter(isWorkingSet);
+            if (sets.length < 2) return;
+            const key = normalizeLabel(ex.substitution || ex.exercise);
+            if (!byName[key]) byName[key] = [];
+            if (byName[key].length >= 3) return;
+            const topWeight = Math.max(...sets.map(x => parseFloat(x.weight) || 0));
+            const repsAtTop = Math.max(...sets.filter(x => (parseFloat(x.weight) || 0) === topWeight)
+                .map(x => parseInt(x.reps, 10) || 0));
+            const volume = sets.reduce((sum, x) =>
+                sum + (parseFloat(x.weight) || 0) * (parseInt(x.reps, 10) || 0), 0);
+            byName[key].push({ date: w.date, topWeight, repsAtTop, volume, name: ex.substitution || ex.exercise });
+        });
+    });
+
+    const stalled = [];
+    Object.values(byName).forEach(instances => {
+        if (instances.length < 3) return;
+        const [newest, mid, oldest] = instances;
+        // Stale data is not a stall - only recent grinding counts.
+        if (daysBetween(newest.date, getTodayDateString()) > 21) return;
+        const improved = (a, b) =>
+            a.topWeight > b.topWeight ||
+            (a.topWeight === b.topWeight && a.repsAtTop > b.repsAtTop) ||
+            a.volume > b.volume * 1.03;
+        if (!improved(newest, mid) && !improved(newest, oldest) && !improved(mid, oldest)) {
+            stalled.push(newest.name);
+        }
+    });
+    return stalled;
+}
 
 // Big multi-joint lifts come first in a session, isolation after them, core
 // and holds last. The generator once ordered purely by urgency, which put
@@ -5597,6 +5658,8 @@ function renderTodayPanel() {
                     ${generatedToday.fatigueNote
                         ? `<div class="today-fatigue">${escapeHtml(generatedToday.fatigueNote)}</div>`
                         : ''}
+                    ${(generatedToday.coachNotes || []).map(n =>
+                        `<div class="today-status">${escapeHtml(n)}</div>`).join('')}
                     ${!generatedToday.started && !completed
                         ? '<button type="button" class="today-start" data-start="1">Start this</button>'
                         : ''}
@@ -7212,8 +7275,13 @@ function getMealPlanDayType(dateStr) {
     const activeThatDay = fencingEntriesBetween(dateStr, dateStr).length > 0;
     if (trainedThatDay || activeThatDay) return 'training';
 
-    if (dateStr === getTodayDateString() && getPlanWeek() && getDuePlanSession()) {
-        return 'training';
+    if (dateStr === getTodayDateString()) {
+        if (getPlanWeek() && getDuePlanSession()) return 'training';
+        const plan = activeProgram && activeProgram.plan;
+        if (plan && plan.mode === 'adaptive'
+            && getSessionsThisWeek() < (plan.weeklySessions || 6)) {
+            return 'training';
+        }
     }
     return 'rest';
 }

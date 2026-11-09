@@ -60,6 +60,23 @@ the AI suggestion cards live on the Analytics tab.
   weekly plan is an assignment you can fail; a session count is something you
   can plan around.
 
+### The adaptive trainer
+The built-in program is adaptive: no named sessions, no week-of-8 grid. The
+contract is "show up six times a week", and the generator builds each 30-45
+minute visit fresh - supersetted, from aesthetics-weighted targets, with the
+injury exclusions enforced at generation (no barbell squats, barbell hinges
+or standing barbell pressing, ever). Two feedback loops make it a trainer
+rather than a spreadsheet:
+
+- **Readiness**: a session rated exhausted yesterday trims today's budget,
+  and five-plus straight training days earn a lighter day - each with the
+  reason stated on the session card.
+- **Stalls**: a lift that has not moved in three straight appearances gets
+  swapped for a fresh movement automatically ("X is stalled, so today swaps
+  in Y"), or, when it is the only option, comes with a rep-zone change
+  instead. Progression is per-exercise double progression, not a calendar
+  wave.
+
 ### Plan programs
 A program can carry an 8-week plan: a weekly session checklist (gym or
 bodyweight-home version ticks the same slot), the current week's prescription

@@ -113,7 +113,8 @@ async function boot(opts = {}) {
     });
   }, { seed, ls, indexEnforcement });
 
-  page.on('pageerror', e => errors.push({ type: 'pageerror', message: e.message }));
+  page.on('pageerror', e => errors.push({ type: 'pageerror',
+    message: e.message + ((e.stack || '').split('\n')[1] ? ' @' + (e.stack || '').split('\n')[1].trim() : '') }));
   page.on('console', m => {
     consoleLogs.push({ type: m.type(), text: m.text() });
     if (m.type() === 'error') errors.push({ type: 'console.error', message: m.text() });
