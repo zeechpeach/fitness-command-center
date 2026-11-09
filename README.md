@@ -71,6 +71,11 @@ rather than a spreadsheet:
 - **Readiness**: a session rated exhausted yesterday trims today's budget,
   and five-plus straight training days earn a lighter day - each with the
   reason stated on the session card.
+- **Effort is prescribed, not assumed**: every session card states its RIR
+  target. Rebuilding or trimmed days ban failure outright (2-3 in reserve on
+  every set - finishing all the sets is the win); normal days run 2 in
+  reserve with the last set of an exercise allowed to reach 1. Failure is a
+  tool, not a default.
 - **Work capacity**: a session is capped at the biggest session actually
   completed in the last 7 days plus two sets, so a comeback is never sized
   by the clock - finish today's and tomorrow's grows. Tiny drop-ins do not

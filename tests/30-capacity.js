@@ -48,6 +48,9 @@ const build = (page, minutes) => page.evaluate(m => {
       s.sets === 12, String(s.sets));
     F('it explains the sizing and the deal', /Sized to your current capacity: 12 sets/.test(s.text)
       && /Finish it and the next one grows/.test(s.text), s.text.slice(0, 260));
+    F('a rebuilding session bans failure explicitly',
+      /2-3 reps in reserve on EVERY set/.test(s.text) && /Nothing to failure while rebuilding/.test(s.text),
+      s.text.slice(0, 320));
     F('no page errors', errors.length === 0, JSON.stringify(errors.map(e => e.message)));
     await browser.close();
   }
@@ -87,6 +90,9 @@ const build = (page, minutes) => page.evaluate(m => {
     const f = await build(fresh.page, 45);
     console.log(`no history at all: ${f.sets} sets (clock-ruled)`);
     F('with no recent history the clock still rules', f.sets >= 15, String(f.sets));
+    F('a normal session still prices effort - RIR 2, failure as a tool',
+      /2 reps in reserve/.test(f.text) && /Failure is a tool, not a default/.test(f.text),
+      f.text.slice(0, 300));
     await fresh.browser.close();
   }
 
