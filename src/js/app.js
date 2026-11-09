@@ -238,7 +238,7 @@ async function saveWorkoutToFirebase(workoutData) {
 // lets the programs and workouts queries run concurrently at startup.
 // Shown in Settings -> Data health and bumped with the ?v= cache-buster in
 // index.html, so "which code is this phone actually running" is answerable.
-const APP_VERSION = '91';
+const APP_VERSION = '92';
 
 let rawWorkouts = [];
 
@@ -4349,6 +4349,32 @@ function readinessFactor() {
     return { factor: Math.max(0.6, factor), note };
 }
 
+// ---------------------------------------------------------------------------
+// Work capacity: sessions are sized from what was recently COMPLETED, not
+// from the clock. The time budget says what fits in 45 minutes for a
+// conditioned lifter; a comeback is not that. The cap is the biggest real
+// session of the last 7 days plus two sets - beat yourself by a little,
+// every time, until the clock becomes the limit again.
+// ---------------------------------------------------------------------------
+const CAPACITY_WINDOW_DAYS = 7;
+const CAPACITY_MIN_REAL_SESSION = 6;   // a 3-set drop-in does not define capacity
+const CAPACITY_STEP = 2;               // grow by this many sets per session
+const CAPACITY_FLOOR = 6;
+
+function recentCapacitySets() {
+    const today = getTodayDateString();
+    const from = addDaysToDateString(today, -CAPACITY_WINDOW_DAYS);
+    let best = null;
+    allWorkouts.forEach(w => {
+        if (!w || w.date < from || w.date >= today) return;
+        if (isNonTrainingLabel(w.day)) return;
+        const sets = Object.values(w.exercises || {}).reduce((sum, ex) =>
+            sum + ((ex && ex.sets) || []).filter(isWorkingSet).length, 0);
+        if (sets >= CAPACITY_MIN_REAL_SESSION && (best === null || sets > best)) best = sets;
+    });
+    return best === null ? null : best + CAPACITY_STEP;
+}
+
 // Distinct days trained this week, for the adaptive show-up counter.
 function getSessionsThisWeek() {
     const weekStart = getWeekStartDate();
@@ -5109,12 +5135,18 @@ function generateSession(minutes, locationKey = 'full') {
     const fatigue = fencingFatigueFactor();
     const readiness = readinessFactor();
     const effort = Math.min(fatigue.factor, readiness.factor);
-    const budget = Math.max(2, Math.round(setsForMinutes(minutes) * effort));
+    const timeBudget = Math.max(2, Math.round(setsForMinutes(minutes) * effort));
+    const capacity = recentCapacitySets();
+    const budget = capacity !== null
+        ? Math.max(CAPACITY_FLOOR, Math.min(timeBudget, capacity))
+        : timeBudget;
     let fatigueNote = '';
     if (fatigue.factor <= readiness.factor && fatigue.factor < 1) {
         fatigueNote = `Trimmed for ${fatigue.note} - ${formatFencingHours(fatigue.load)} of fencing load behind you.`;
     } else if (readiness.factor < 1) {
         fatigueNote = readiness.note;
+    } else if (capacity !== null && budget < timeBudget) {
+        fatigueNote = `Sized to your current capacity: ${budget} sets - your best recent session plus ${CAPACITY_STEP}. Finish it and the next one grows.`;
     }
     const pool = getExercisePool();
     const freq = getExerciseFrequency();
@@ -5306,7 +5338,7 @@ function generateSession(minutes, locationKey = 'full') {
             exercises[i].superset = tag + '1';
             exercises[i + 1].superset = tag + '2';
             const note = (a, b) =>
-                `Superset ${a.superset} with ${b.name}: alternate sets, minimal rest between the pair, ~60s after.`;
+                `Superset ${a.superset} with ${b.name}: alternate sets. Rest as needed between pairs - the pairing saves time, it is not a race.`;
             exercises[i].notes = [exercises[i].notes, note(exercises[i], exercises[i + 1])].filter(Boolean).join(' ');
             exercises[i + 1].notes = [exercises[i + 1].notes, note(exercises[i + 1], exercises[i])].filter(Boolean).join(' ');
             i++;   // skip the partner we just placed

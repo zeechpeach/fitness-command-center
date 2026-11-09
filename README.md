@@ -71,6 +71,10 @@ rather than a spreadsheet:
 - **Readiness**: a session rated exhausted yesterday trims today's budget,
   and five-plus straight training days earn a lighter day - each with the
   reason stated on the session card.
+- **Work capacity**: a session is capped at the biggest session actually
+  completed in the last 7 days plus two sets, so a comeback is never sized
+  by the clock - finish today's and tomorrow's grows. Tiny drop-ins do not
+  define capacity, and with no recent history the time budget rules.
 - **Stalls**: a lift that has not moved in three straight appearances gets
   swapped for a fresh movement automatically ("X is stalled, so today swaps
   in Y"), or, when it is the only option, comes with a rep-zone change
