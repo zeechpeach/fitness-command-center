@@ -1,18 +1,49 @@
 // Journey: an appointment cuts a session short. The logged part counts, the
 // rest rolls forward as a "Finish" session, and completing that ticks the
 // original slot - no volume silently lost.
-const { boot, ok, finish } = require('./harness/drive');
-const { realProgram } = require('./harness/seed');
+const { boot, ok, dayStr, finish } = require('./harness/drive');
+
+// Plan-mode programs (fixed sessions with a weekly checklist) still exist as
+// a feature; the built-in recomp program is adaptive now, so this journey
+// seeds a small custom plan program directly.
+function planProgram() {
+  return {
+    id: 'prog-plan', name: 'Custom Plan', active: true,
+    createdAt: '2026-10-12T08:00:00.000Z', activatedAt: '2026-10-12T08:00:00.000Z',
+    schedule: {},
+    plan: {
+      weeks: 8, startDate: dayStr(-new Date().getDay()),
+      sessions: [
+        { name: 'Upper Day', home: 'Home: Shoulders · Abs · Biceps (A)' }
+      ],
+      testSession: null
+    },
+    workouts: {
+      'Upper Day': [
+        { name: 'Seated Dumbbell Shoulder Press', sets: 3, reps: '6-10' },
+        { name: 'Dumbbell Lateral Raise', sets: 3, reps: '12-15' }
+      ],
+      'Home: Shoulders · Abs · Biceps (A)': [
+        { name: 'Pike Push-Up', sets: 3, reps: '8-12', trackingType: 'reps' },
+        { name: 'Wall Handstand Hold', sets: 3, reps: '30-45s', trackingType: 'time' },
+        { name: 'Prone Rear Delt Swimmers', sets: 3, reps: '12-15', trackingType: 'reps' },
+        { name: 'Hanging Knee Raise', sets: 3, reps: '8-12', trackingType: 'reps' },
+        { name: 'Dead Bug', sets: 3, reps: '10-12', trackingType: 'reps' },
+        { name: 'Side Plank', sets: 3, reps: '20-30s', trackingType: 'time' },
+        { name: 'Chin-Up', sets: 3, reps: '6-10', trackingType: 'reps' }
+      ]
+    },
+    exerciseVariations: {}
+  };
+}
 
 (async () => {
   let fails = 0;
   const F = (n, c, d) => { if (!ok(n, c, d)) fails++; };
 
   const { browser, page, errors } = await boot({
-    seed: { programs: [realProgram()], workouts: [] }
+    seed: { programs: [planProgram()], workouts: [] }
   });
-  await page.waitForTimeout(600);
-  await page.evaluate(() => { window.__confirmAnswer = true; window.installRecompProgram(); });
   await page.waitForTimeout(1200);
 
   // ---------- 1. Start the Monday session, log ONLY the first exercise ----------
@@ -72,7 +103,7 @@ const { realProgram } = require('./harness/seed');
   }));
   console.log('\nafter finishing: ' + JSON.stringify(after.doneRows));
   F('completing the finish session ticks the ORIGINAL slot',
-    after.doneRows.some(n => n.startsWith('Shoulders · Abs · Biceps (A)')), JSON.stringify(after.doneRows));
+    after.doneRows.some(n => n.startsWith('Upper Day')), JSON.stringify(after.doneRows));
 
   F('no page errors', errors.length === 0, JSON.stringify(errors.map(e => e.message)));
   await browser.close();
