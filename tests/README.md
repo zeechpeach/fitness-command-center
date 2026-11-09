@@ -54,6 +54,7 @@ Playwright will not find on its own, point at it with `PW_CHROMIUM=/path/to/chro
 | `27-carryover.js` | A cut-short session shows its true fraction instead of ticking the slot; the leftovers become a Finish session holding exactly what remains, and completing it ticks the original slot |
 | `28-program-upgrade.js` | An installed v1 program upgrades in place on load: new leg sessions and targets, same start date (still week 2), same document, no reinstall |
 | `29-adaptive-coach.js` | An exhausted rating yesterday trims today's session with the reason stated; a lift stalled three sessions is swapped out with a coach note |
+| `30-capacity.js` | Sessions are capped at the best recently completed session plus two sets; the ask climbs with completion; tiny drop-ins do not define capacity; no history means the clock rules |
 | `sweep-inline-handlers.js` | Every inline `onclick`/`oninput` in the app resolves to a function that actually exists |
 | `sweep-dead-code.js` | No unreferenced functions, handlers or variables; no `getElementById` pointing at an element that is not there |
 | `sweep-unused-css.js` | No CSS rules for classes nothing uses |
