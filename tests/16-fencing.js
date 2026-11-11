@@ -48,8 +48,8 @@ const setsIn = s => s.exercises.reduce((sum, e) => sum + parseInt(e.meta), 0);
       };
     });
     console.log('fencing panel: ' + JSON.stringify(initial));
-    F('the panel offers fencing kinds and deliberate cardio',
-      initial.kinds.join(',') === 'Coaching,Training / lesson,Tournament,Incline walk,Bike',
+    F('the panel offers fencing kinds, deliberate cardio and the Cindy AMRAP',
+      initial.kinds.join(',') === 'Coaching,Training / lesson,Tournament,Incline walk,Bike,Cindy AMRAP',
       JSON.stringify(initial.kinds));
     F('hours stay hidden until a kind is picked', initial.hoursShown === 0, String(initial.hoursShown));
     F('it shows the week total', /this week/i.test(initial.text), initial.text.slice(0, 80));
