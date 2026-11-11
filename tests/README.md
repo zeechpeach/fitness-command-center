@@ -55,6 +55,7 @@ Playwright will not find on its own, point at it with `PW_CHROMIUM=/path/to/chro
 | `28-program-upgrade.js` | An installed v1 program upgrades in place on load: new leg sessions and targets, same start date (still week 2), same document, no reinstall |
 | `29-adaptive-coach.js` | An exhausted rating yesterday trims today's session with the reason stated; a lift stalled three sessions is swapped out with a coach note |
 | `30-capacity.js` | Sessions are capped at the best recently completed session plus two sets; the ask climbs with completion; tiny drop-ins do not define capacity; no history means the clock rules |
+| `31-cindy.js` | Cindy logs in two taps with capped hard-set credit and a same-day replace; a home session can open with it (the lifts fill around it, never on top); a short window makes it the whole session; the home Vitruvian never gets face pulls, pulldowns or pushdowns while low-pulley cable work stays |
 | `sweep-inline-handlers.js` | Every inline `onclick`/`oninput` in the app resolves to a function that actually exists |
 | `sweep-dead-code.js` | No unreferenced functions, handlers or variables; no `getElementById` pointing at an element that is not there |
 | `sweep-unused-css.js` | No CSS rules for classes nothing uses |

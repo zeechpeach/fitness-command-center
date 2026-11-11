@@ -130,6 +130,12 @@ let the generator prescribe squats the morning after a night on the strip.
   the next day toward upper body rather than toward nothing.
 - A long day shrinks the whole session rather than dropping exercises from it,
   and the panel says why it was trimmed.
+- **Cindy lives here too**: the 20-minute AMRAP of 5 pull-ups, 10 push-ups and
+  15 squats, logged in two taps - the chip, then the rounds. It saves as a real
+  workout (calendar, showing up, recovery, calories all see it), but the credit
+  is honest: roughly every 3 rounds counts as one hard set per movement, capped
+  at 5 - sixty submaximal circuit reps are not twelve hard sets. The rounds
+  themselves are the score the app remembers and asks you to beat.
 
 ### Today's suggestion
 Tap how long you have - 15, 30, 45 or 60 minutes - then where you are, and the
@@ -156,7 +162,10 @@ one fact that changes day to day.
   a bike, a treadmill and a Vitruvian, which covers cable-style loading. No
   barbell, no rack, no incline bench, no machines. Home is also the only
   place with a floor clean enough to touch, so floor work - push-ups,
-  handstands, planks, anything lying down - is suggested at home only.
+  handstands, planks, anything lying down - is suggested at home only. The
+  Vitruvian anchors at the floor, so low-pulley cable work (lateral raises,
+  curls, rows, flys, Pallof) is offered at home while anything that needs a
+  high pulley - face pulls, pulldowns, pushdowns - stays at the gyms.
 
 When the program's own exercises for a muscle all need kit today's location
 does not have, built-in fallbacks stand in, so a session is never blank and
@@ -194,6 +203,12 @@ never impossible.
   or fewer days left in the week, a 45+ minute session leads with a 10x10 at
   ~60% - a light German-volume scheme, deliberately gated to late week so a
   catch-up tool never becomes the default.
+- **A home session can open with Cindy**: one tap turns the 20-minute AMRAP
+  into Block 1, the generator plans the lifted part around it (never more
+  rows, presses or squats on top of twenty minutes of them), and at 30 minutes
+  or less Cindy simply IS the session. The rounds are logged with the Cindy
+  button afterwards - volume is credited from what actually happened, not from
+  the plan.
 
 ### Sessions
 - Custom programs of any length, built in Settings or pasted in as JSON

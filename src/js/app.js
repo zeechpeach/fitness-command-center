@@ -238,7 +238,7 @@ async function saveWorkoutToFirebase(workoutData) {
 // lets the programs and workouts queries run concurrently at startup.
 // Shown in Settings -> Data health and bumped with the ?v= cache-buster in
 // index.html, so "which code is this phone actually running" is answerable.
-const APP_VERSION = '93';
+const APP_VERSION = '94';
 
 let rawWorkouts = [];
 
@@ -478,6 +478,12 @@ function getDailyActivityCalories() {
     allWorkouts.forEach(workout => {
         if (!workout || workout.date < from || workout.date > today) return;
         if (isNonTrainingLabel(workout.day)) return;
+        // A Cindy AMRAP burns like 20 minutes of continuous circuit work, not
+        // like its credited hard-set count - price it by the actual rounds.
+        if (workout.cindy && workout.cindy.rounds) {
+            total += workout.cindy.rounds * CINDY_CALS_PER_ROUND;
+            return;
+        }
         Object.values(workout.exercises || {}).forEach(exercise => {
             total += ((exercise && exercise.sets) || []).filter(isWorkingSet).length * CALS_PER_HARD_SET;
         });
@@ -3805,9 +3811,20 @@ function classifyEquipment(exerciseName) {
     return best;
 }
 
+// The home "cable" is a Vitruvian, and a Vitruvian anchors at the FLOOR.
+// Low-anchor work sets up fine - curls, lateral raises, rows, flys, Pallof,
+// back extensions - but anything that pulls from a pulley at or above head
+// height has nothing to hang from. Owner-verified both ways: face pulls do
+// not work at home, cable lateral raises do.
+const HOME_NO_HIGH_PULLEY = ['face pull', 'pulldown', 'pushdown'];
+
 function availableAt(exerciseName, locationKey) {
     const location = LOCATIONS[locationKey];
     if (!location) return true;
+    if (locationKey === 'home') {
+        const name = normalizeLabel(exerciseName);
+        if (HOME_NO_HIGH_PULLEY.some(token => name.includes(token))) return false;
+    }
     return location.has.includes(classifyEquipment(exerciseName));
 }
 
@@ -4251,6 +4268,56 @@ const FENCING_KINDS = {
     Bike:       { weight: 0.15, label: 'Bike',         calsPerHour: 400 }
 };
 
+// ---------------------------------------------------------------------------
+// Cindy: a 20-minute AMRAP of 5 pull-ups, 10 push-ups, 15 bodyweight squats.
+// It needs only a pull-up bar and a clean floor, which makes it the perfect
+// home session - alone, or as the opening block of a longer one.
+//
+// It is logged as a real workout (it shows on the calendar, counts as showing
+// up, and feeds recovery), but circuit rounds are not straight hypertrophy
+// sets: twelve rounds of five pull-ups is sixty submaximal reps under
+// metabolic fatigue, not twelve hard sets. Every ~3 rounds counts as one hard
+// set per movement, capped - the same "quiet the bar, never fill it" honesty
+// fencing credit uses. The actual rounds are stored on the document, so the
+// score itself is what progresses week to week.
+// ---------------------------------------------------------------------------
+
+const CINDY = {
+    label: 'Cindy (20-min AMRAP)',
+    minutes: 20,
+    movements: [
+        { name: 'Pull-Up',          repsPerRound: 5,  trackingType: 'reps' },
+        { name: 'Push-Up',          repsPerRound: 10, trackingType: 'reps' },
+        { name: 'Bodyweight Squat', repsPerRound: 15, trackingType: 'reps' }
+    ]
+};
+const CINDY_ROUNDS_PER_SET = 3;       // ~3 rounds = 1 hard-set equivalent per movement
+const CINDY_MAX_CREDITED_SETS = 5;    // per movement, however big the score
+const CINDY_CALS_PER_ROUND = 15;      // ~30 reps of bodyweight work per round
+// The muscles Cindy's movements own. A session that opens with Cindy does not
+// also prescribe rows, presses and squats on top of it.
+const CINDY_COVERED_GROUPS = ['Back', 'Chest', 'Quads'];
+
+function cindyCreditedSets(rounds) {
+    return Math.max(1, Math.min(CINDY_MAX_CREDITED_SETS,
+        Math.round(rounds / CINDY_ROUNDS_PER_SET)));
+}
+
+function cindyWorkoutToday() {
+    const today = getTodayDateString();
+    return allWorkouts.find(w => w && w.date === today && w.cindy && w.cindy.rounds) || null;
+}
+
+// The best previous score, for the "beat it" nudge and the panel.
+function bestCindyBefore(date) {
+    let best = null;
+    allWorkouts.forEach(w => {
+        if (!w || !w.cindy || !w.cindy.rounds || w.date >= date) return;
+        if (!best || w.cindy.rounds > best.cindy.rounds) best = w;
+    });
+    return best;
+}
+
 // One hour of fencing is worth roughly this many hard sets to the legs before
 // the kind weighting. Three hours of coaching lands near 2.7 quad-equivalent
 // sets, so three coaching nights a week covers most of a maintenance dose.
@@ -4475,16 +4542,111 @@ window.removeFencing = async function (id) {
     }
 };
 
+// ---- Cindy logging ----------------------------------------------------------
+
+// Saved as a real workout document, through the same self-healing path as a
+// normal session: local backup first, then a save that cannot hang forever.
+window.logCindy = async function (rounds) {
+    rounds = Math.round(Number(rounds));
+    if (!Number.isFinite(rounds) || rounds <= 0) return;
+
+    const today = getTodayDateString();
+    const credited = cindyCreditedSets(rounds);
+    const exercises = {};
+    CINDY.movements.forEach((m, i) => {
+        exercises[i] = {
+            exercise: m.name,
+            trackingType: m.trackingType,
+            sets: Array.from({ length: credited }, () => ({ reps: String(m.repsPerRound), notes: '' })),
+            notes: `Cindy: ${rounds} rounds (${rounds * m.repsPerRound} total reps) in ${CINDY.minutes} min, credited as ${credited} hard sets`
+        };
+    });
+    const workoutData = {
+        date: today,
+        day: CINDY.label,
+        cindy: { rounds, minutes: CINDY.minutes },
+        exercises,
+        programId: activeProgram ? activeProgram.id : null
+    };
+
+    const existing = cindyWorkoutToday();
+    if (existing && !confirm(`Cindy is already logged today (${existing.cindy.rounds} rounds). Replace it with ${rounds} rounds?`)) return;
+
+    // Local backup first, so the score survives even if everything else fails.
+    try {
+        const localHistory = JSON.parse(localStorage.getItem('fitnessData') || '{}');
+        localHistory[CINDY.label + '-' + today + '-' + Date.now()] = workoutData;
+        localStorage.setItem('fitnessData', JSON.stringify(localHistory));
+    } catch (e) { console.warn('Local backup failed:', e); }
+
+    // The "beat it" verdict compares against history BEFORE this save lands.
+    const prevBest = bestCindyBefore(today);
+    let verdict;
+    if (!prevBest) verdict = `Cindy: ${rounds} rounds logged. That is the baseline - the only job now is to beat it.`;
+    else if (rounds > prevBest.cindy.rounds) verdict = `Cindy: ${rounds} rounds - a new best (was ${prevBest.cindy.rounds}).`;
+    else verdict = `Cindy: ${rounds} rounds logged. Best is ${prevBest.cindy.rounds} - it will come back around.`;
+
+    cindyPicked = false;
+
+    const savePromise = existing && existing.id
+        ? updateDoc(doc(db, 'workouts', existing.id), workoutData)
+        : saveWorkoutToFirebase(workoutData);
+    const timedOut = Symbol('timeout');
+    const outcome = await Promise.race([
+        savePromise.then(() => 'saved').catch(err => { console.error(err); return 'failed'; }),
+        new Promise(resolve => setTimeout(() => resolve(timedOut), 4000))
+    ]);
+
+    if (outcome === 'failed') {
+        showToast('Could not save. The score is backed up on this device - try again in a moment.', 'error');
+        renderFencingPanel();
+        return;
+    }
+
+    if (outcome === timedOut) {
+        // Show it locally now; the write syncs when signal returns.
+        if (existing) { existing.cindy = workoutData.cindy; existing.exercises = workoutData.exercises; }
+        else allWorkouts.unshift(workoutData);
+        showToast(`${verdict} Saved on this device - it will sync when you have signal.`, 'info');
+        savePromise
+            .then(() => loadWorkoutsFromFirebase().then(() => { refreshStartupCache(); updateAnalytics(); }))
+            .catch(err => console.error('Background sync failed:', err));
+    } else {
+        showToast(verdict, 'success');
+        try {
+            await loadWorkoutsFromFirebase();
+            refreshStartupCache();
+        } catch (e) { console.error('Reload after save failed:', e); }
+    }
+
+    renderFencingPanel();
+    renderWeeklyVolume();
+    renderTodayPanel();
+    updateNutritionCalories();
+    updateAnalytics();
+};
+
 // ---- Panel -----------------------------------------------------------------
 
 // Hours offered as chips rather than typed. Every real answer is on this list,
 // and a number pad on a phone is three taps and a dismissed keyboard.
 const FENCING_HOUR_CHIPS = [0.5, 1, 1.5, 2, 3, 4, 6, 8, 12];
 
+// Rounds offered the same way. The realistic scoring range, single taps.
+const CINDY_ROUND_CHIPS = [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 20];
+
 let fencingKind = null;     // null until a kind is picked, then hours show
+let cindyPicked = false;    // the Cindy chip is picked, so rounds show
 
 window.pickFencingKind = function (kind) {
     fencingKind = fencingKind === kind ? null : kind;
+    cindyPicked = false;
+    renderFencingPanel();
+};
+
+window.pickCindy = function () {
+    cindyPicked = !cindyPicked;
+    if (cindyPicked) fencingKind = null;
     renderFencingPanel();
 };
 
@@ -4516,12 +4678,19 @@ function renderFencingPanel() {
         html += '</div>';
     }
 
+    const cindyToday = cindyWorkoutToday();
+    if (cindyToday) {
+        html += `<div class="fencing-today"><span class="fencing-entry">Cindy: ${
+            cindyToday.cindy.rounds} rounds today</span></div>`;
+    }
+
     html += '<div class="fencing-kinds">';
     Object.keys(FENCING_KINDS).forEach(kind => {
         const active = fencingKind === kind ? ' active' : '';
         html += `<button type="button" class="fencing-kind${active}" data-kind="${kind}">${
             escapeHtml(FENCING_KINDS[kind].label)}</button>`;
     });
+    html += `<button type="button" class="fencing-kind${cindyPicked ? ' active' : ''}" data-cindy="1">Cindy AMRAP</button>`;
     html += '</div>';
 
     if (fencingKind) {
@@ -4532,13 +4701,29 @@ function renderFencingPanel() {
         html += '</div>';
     }
 
+    if (cindyPicked) {
+        const best = bestCindyBefore(addDaysToDateString(today, 1));
+        html += `<div class="cindy-scheme">20 min, as many rounds as possible: 5 pull-ups &middot; 10 push-ups &middot; 15 squats per round.${
+            best ? ` Best so far: ${best.cindy.rounds} rounds.` : ''} How many rounds?</div>`;
+        html += '<div class="fencing-hour-chips">';
+        CINDY_ROUND_CHIPS.forEach(r => {
+            html += `<button type="button" class="fencing-hour" data-rounds="${r}">${r}</button>`;
+        });
+        html += '</div>';
+    }
+
     container.innerHTML = html;
 
     container.querySelectorAll('[data-kind]').forEach(btn => {
         btn.addEventListener('click', () => pickFencingKind(btn.getAttribute('data-kind')));
     });
+    const cindyBtn = container.querySelector('[data-cindy]');
+    if (cindyBtn) cindyBtn.addEventListener('click', () => pickCindy());
     container.querySelectorAll('[data-hours]').forEach(btn => {
         btn.addEventListener('click', () => logFencing(fencingKind, Number(btn.getAttribute('data-hours'))));
+    });
+    container.querySelectorAll('[data-rounds]').forEach(btn => {
+        btn.addEventListener('click', () => logCindy(Number(btn.getAttribute('data-rounds'))));
     });
     container.querySelectorAll('[data-remove]').forEach(btn => {
         btn.addEventListener('click', () => removeFencing(btn.getAttribute('data-remove')));
@@ -5127,7 +5312,13 @@ function lastSessionLeadExercise() {
 }
 
 // Returns { minutes, totalSets, groups, exercises, rest, reason, fatigueNote }
-function generateSession(minutes, locationKey = 'full') {
+function generateSession(minutes, locationKey = 'full', opts = {}) {
+    // A Cindy block claims its 20 minutes and its three muscle groups up
+    // front; the rest of the session is planned around it. Home only - it
+    // needs the pull-up bar and the one floor clean enough for push-ups.
+    const wantCindy = !!opts.cindy && locationKey === 'home';
+    const liftMinutes = wantCindy ? Math.max(0, minutes - CINDY.minutes) : minutes;
+
     // A twelve-hour tournament Saturday does not make any one muscle sore, but
     // it does mean Sunday is not a full session. Scale the whole budget down
     // rather than dropping groups, so what is left is a real short session
@@ -5135,7 +5326,7 @@ function generateSession(minutes, locationKey = 'full') {
     const fatigue = fencingFatigueFactor();
     const readiness = readinessFactor();
     const effort = Math.min(fatigue.factor, readiness.factor);
-    const timeBudget = Math.max(2, Math.round(setsForMinutes(minutes) * effort));
+    const timeBudget = Math.max(2, Math.round(setsForMinutes(liftMinutes) * effort));
     const capacity = recentCapacitySets();
     const budget = capacity !== null
         ? Math.max(CAPACITY_FLOOR, Math.min(timeBudget, capacity))
@@ -5162,12 +5353,30 @@ function generateSession(minutes, locationKey = 'full') {
     const pool = getExercisePool();
     const freq = getExerciseFrequency();
 
-    const candidates = getWeeklyDebt()
+    let candidates = getWeeklyDebt()
         .filter(row => row.debt > 0 && usableOptionsFor(row.group, pool, locationKey).length > 0)
         .map(row => ({ ...row, recovery: recoveryFactor(row.group) }))
         .map(row => ({ ...row, score: row.urgency * row.recovery }))
         .filter(row => row.score > 0)
         .sort((a, b) => b.score - a.score);
+
+    // Cindy owns back, chest and quads for the day. The lifted part of the
+    // session fills around it - shoulders, arms, core, posterior chain - never
+    // more rows and presses on top of 20 minutes of them.
+    if (wantCindy) {
+        candidates = candidates.filter(row => !CINDY_COVERED_GROUPS.includes(row.group));
+    }
+
+    // Not enough time after the Cindy block for lifting worth setting up for,
+    // or nothing else is owed: the session IS Cindy.
+    if (wantCindy && (liftMinutes < 12 || candidates.length === 0)) {
+        return {
+            minutes, totalSets: 0, groups: [], exercises: [], cindy: true,
+            rest: false, reason: '', fatigueNote,
+            effortNote: 'Effort: pace the AMRAP. Break sets BEFORE failure - steady rounds from minute one beat a sprint that dies at minute six.',
+            coachNotes: []
+        };
+    }
 
     if (candidates.length === 0) {
         const anyDebt = getWeeklyDebt().some(r => r.debt > 0);
@@ -5198,7 +5407,7 @@ function generateSession(minutes, locationKey = 'full') {
     const vdCandidate = candidates[0];
     // "Essentially untouched": nothing credited all week, direct or secondary,
     // for a group whose target is big enough to justify ten sets at once.
-    if (minutes >= VOLUME_DAY_MIN_MINUTES
+    if (liftMinutes >= VOLUME_DAY_MIN_MINUTES
         && getDaysLeftInWeek() <= VOLUME_DAY_MAX_DAYS_LEFT
         && vdCandidate && vdCandidate.done === 0 && vdCandidate.fencing === 0
         && vdCandidate.target >= VOLUME_DAY_DEBT_THRESHOLD
@@ -5330,7 +5539,7 @@ function generateSession(minutes, locationKey = 'full') {
     // Short session: pair non-competing exercises into supersets, partner
     // adjacent, labelled A1/A2, B1/B2... The pairing is what makes the
     // tighter time budget honest.
-    if (minutes <= SUPERSET_MAX_MINUTES && exercises.length > 1) {
+    if (liftMinutes <= SUPERSET_MAX_MINUTES && exercises.length > 1) {
         let pairIndex = 0;
         for (let i = 0; i < exercises.length; i++) {
             if (exercises[i].superset) continue;
@@ -5362,6 +5571,7 @@ function generateSession(minutes, locationKey = 'full') {
         totalSets,
         groups: (volumeDayGroup ? [volumeDayGroup] : []).concat(chosen.map(c => c.group)),
         exercises,
+        cindy: wantCindy,
         rest: false,
         reason: '',
         fatigueNote,
@@ -5487,9 +5697,13 @@ function restoreGeneratedSession() {
 }
 
 // A workout saved today under the generated session's name means it was
-// completed - used for the panel's status line.
+// completed - used for the panel's status line. A Cindy-only session has no
+// lifted part to log, so the Cindy score itself is its completion.
 function generatedSessionLoggedToday() {
     if (!generatedToday) return false;
+    if (generatedToday.cindy && !(generatedToday.exercises || []).length) {
+        return !!cindyWorkoutToday();
+    }
     const today = getTodayDateString();
     return allWorkouts.some(w =>
         w.date === today && normalizeLabel(w.day) === normalizeLabel(generatedToday.label));
@@ -5502,10 +5716,10 @@ window.suggestSessionFor = function (minutes) {
     renderTodayPanel();
 };
 
-window.suggestPlaceFor = function (locationKey) {
+window.suggestPlaceFor = function (locationKey, cindy = false) {
     if (!LOCATIONS[locationKey] || suggestedMinutes === null) return;
     suggestedLocation = locationKey;
-    suggestedSession = generateSession(suggestedMinutes, locationKey);
+    suggestedSession = generateSession(suggestedMinutes, locationKey, { cindy });
     // A real session persists for the day; a rest verdict does not need to -
     // it re-derives instantly and correctly on every look.
     if (!suggestedSession.rest) {
@@ -5517,6 +5731,7 @@ window.suggestPlaceFor = function (locationKey) {
             exercises: suggestedSession.exercises,
             totalSets: suggestedSession.totalSets,
             groups: suggestedSession.groups,
+            cindy: !!suggestedSession.cindy,
             fatigueNote: suggestedSession.fatigueNote || '',
             effortNote: suggestedSession.effortNote || '',
             coachNotes: suggestedSession.coachNotes || [],
@@ -5525,6 +5740,16 @@ window.suggestPlaceFor = function (locationKey) {
         writeGeneratedToday(generatedToday);
     }
     renderTodayPanel();
+};
+
+// "Add Cindy to this": rebuilds today's un-started home session around a
+// 20-minute Cindy opener (or takes the block back out). The actual rounds
+// are logged with the Cindy button - that is what credits the volume.
+window.toggleCindyBlock = function () {
+    if (!generatedToday || generatedToday.started) return;
+    if (generatedToday.location !== 'home') return;
+    suggestedMinutes = generatedToday.minutes;
+    window.suggestPlaceFor(generatedToday.location, !generatedToday.cindy);
 };
 
 // "Suggest something else": scraps today's generation and returns to the
@@ -5645,6 +5870,11 @@ function suggestedSessionName(session) {
     const groups = [...new Set(session.groups)];
     const head = groups.slice(0, 2).join(' & ');
     const more = groups.length > 2 ? ` +${groups.length - 2}` : '';
+    if (session.cindy) {
+        return groups.length
+            ? `Cindy + ${head}${more} - ${session.minutes} min`
+            : `Cindy - ${session.minutes} min`;
+    }
     return `${head}${more} - ${session.minutes} min`;
 }
 
@@ -5684,18 +5914,27 @@ function renderTodayPanel() {
             : (generatedToday.started
                 ? 'Started. Its pill below reopens it any time today.'
                 : '');
+        const metaSets = generatedToday.cindy
+            ? (generatedToday.totalSets ? `Cindy + ${generatedToday.totalSets} sets` : 'Cindy only')
+            : `${generatedToday.totalSets} sets`;
         html += `<div class="today-plan">
                     <div class="today-plan-head">
                         <span class="today-plan-name">${escapeHtml(generatedToday.label)}</span>
-                        <span class="today-plan-meta">${generatedToday.totalSets} sets &middot; ${
+                        <span class="today-plan-meta">${metaSets} &middot; ${
                             escapeHtml((LOCATIONS[generatedToday.location] || {}).label || '')}</span>
                     </div>
                     ${completed ? '<div class="today-status done">&#10003; ' + escapeHtml(status) + '</div>'
                         : (generatedToday.started ? '<div class="today-status">' + escapeHtml(status) + '</div>' : '')}
                     ${generatedToday.effortNote && !completed
                         ? `<div class="today-effort">${escapeHtml(generatedToday.effortNote)}</div>`
-                        : ''}
-                    <ul class="today-plan-list">`;
+                        : ''}`;
+        if (generatedToday.cindy) {
+            const cindyDone = cindyWorkoutToday();
+            html += cindyDone
+                ? `<div class="today-status done">&#10003; Cindy done: ${cindyDone.cindy.rounds} rounds.</div>`
+                : `<div class="today-cindy"><strong>Block 1 &middot; Cindy, 20-min AMRAP:</strong> 5 pull-ups &middot; 10 push-ups &middot; 15 squats, as many rounds as you can in 20 minutes. Break sets before failure - steady rounds beat a fast start that dies. When the clock stops, log your rounds with the Cindy button in the Activity panel; that is what credits the volume.</div>`;
+        }
+        html += `<ul class="today-plan-list">`;
         generatedToday.exercises.forEach(e => {
             const reps = e.reps ? ` &times; ${escapeHtml(e.reps)}` : '';
             const tag = e.superset ? `<span class="today-ss">${escapeHtml(e.superset)}</span> ` : '';
@@ -5708,8 +5947,13 @@ function renderTodayPanel() {
                         : ''}
                     ${(generatedToday.coachNotes || []).map(n =>
                         `<div class="today-status">${escapeHtml(n)}</div>`).join('')}
-                    ${!generatedToday.started && !completed
+                    ${!generatedToday.started && !completed && generatedToday.exercises.length
                         ? '<button type="button" class="today-start" data-start="1">Start this</button>'
+                        : ''}
+                    ${!generatedToday.started && !completed && generatedToday.location === 'home'
+                        ? `<button type="button" class="today-back" data-cindytoggle="1">${generatedToday.cindy
+                            ? 'Take the Cindy block back out'
+                            : 'Open with Cindy (20-min AMRAP) instead'}</button>`
                         : ''}
                     <button type="button" class="today-back" data-dismiss="1">Scrap it and suggest something else</button>
                  </div>`;
@@ -5832,6 +6076,8 @@ function renderTodayPanel() {
     if (planFree) planFree.addEventListener('click', () => usePlanFreeform());
     const startBtn = container.querySelector('[data-start]');
     if (startBtn) startBtn.addEventListener('click', () => startSuggestedSession());
+    const cindyToggle = container.querySelector('[data-cindytoggle]');
+    if (cindyToggle) cindyToggle.addEventListener('click', () => toggleCindyBlock());
     const backBtn = container.querySelector('[data-dismiss]');
     if (backBtn) backBtn.addEventListener('click', () => dismissSuggestion());
 }
