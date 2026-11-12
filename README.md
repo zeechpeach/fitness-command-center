@@ -136,6 +136,13 @@ let the generator prescribe squats the morning after a night on the strip.
   is honest: roughly every 3 rounds counts as one hard set per movement, capped
   at 5 - sixty submaximal circuit reps are not twelve hard sets. The rounds
   themselves are the score the app remembers and asks you to beat.
+- **Rest days log too.** A planned rest day is a decision, and decisions go on
+  the record: the Rest chip puts it on the calendar, the streak runs through
+  it, and the discipline score leaves it out of the denominator - of the days
+  you intended to train, how often did you show up. Only declared rest gets
+  this treatment (an undeclared blank day still breaks the streak), the weekly
+  show-up counter is untouched so the 6-a-week contract stays honest, and a
+  day you actually trained refuses a rest log outright.
 
 ### Today's suggestion
 Tap how long you have - 15, 30, 45 or 60 minutes - then where you are, and the

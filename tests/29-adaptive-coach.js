@@ -57,12 +57,19 @@ const build = (page, minutes) => page.evaluate(m => {
   // ---------- 2. Three stalled sessions swap the movement, with the reason ----------
   {
     // Incline DB Press ground out at 95x8 three times, 6-16 days back (outside
-    // the 4-day variation window, inside the 21-day stall window).
+    // the 4-day variation window, inside the 21-day stall window). The token
+    // fly session two days ago keeps chest from reading "essentially
+    // untouched": without it, late in the week (3 or fewer days left) the
+    // catch-up volume day fires first and leads with the most familiar chest
+    // movement regardless of stalls - defensible coaching (10x10 at ~60% IS a
+    // changed stimulus), but it made this test fail every Thursday to
+    // Saturday. The stall swap is what is under test here.
     const { browser, page, errors } = await boot({
       seed: { programs: [realProgram()], workouts: [
         session('s1', -16, [['Incline Dumbbell Press', 3, 95, 8]]),
         session('s2', -11, [['Incline Dumbbell Press', 3, 95, 8]]),
-        session('s3', -6,  [['Incline Dumbbell Press', 3, 95, 8]])
+        session('s3', -6,  [['Incline Dumbbell Press', 3, 95, 8]]),
+        session('s0', -2,  [['Cable Fly', 2, 25, 12]])
       ] }
     });
     await page.waitForTimeout(700);

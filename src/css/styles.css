@@ -3853,6 +3853,18 @@
             font-weight: 600;
         }
 
+        /* A logged rest day: quiet, deliberate, on the record. */
+        .calendar-day.restday {
+            background: rgba(168, 181, 160, 0.08);
+            border: 1px dashed var(--color-border);
+        }
+
+        .calendar-day.restday .calendar-day-label,
+        .calendar-day-label.Rest {
+            color: var(--color-text-secondary);
+            font-weight: 600;
+        }
+
         /* Desktop sidebar styles (768px and above) */
         @media (min-width: 769px) {
             .nutrition-layout-container {

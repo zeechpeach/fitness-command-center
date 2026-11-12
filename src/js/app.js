@@ -238,7 +238,7 @@ async function saveWorkoutToFirebase(workoutData) {
 // lets the programs and workouts queries run concurrently at startup.
 // Shown in Settings -> Data health and bumped with the ?v= cache-buster in
 // index.html, so "which code is this phone actually running" is answerable.
-const APP_VERSION = '94';
+const APP_VERSION = '95';
 
 let rawWorkouts = [];
 
@@ -2379,8 +2379,21 @@ function addDaysToDateString(dateStr, days) {
     return d.toISOString().split('T')[0];
 }
 
+// Prefer the training session when a date holds both a real workout and a
+// non-training record (a logged rest day), so "what happened that day" is
+// always the work, never the note beside it.
 function getWorkoutForDate(dateString) {
-    return allWorkouts.find(w => w.date === dateString);
+    const matches = allWorkouts.filter(w => w.date === dateString);
+    return matches.find(w => !isNonTrainingLabel(w.day)) || matches[0];
+}
+
+// A deliberately logged rest day: a decision on the record, not a blank. The
+// streak runs through it and the discipline score leaves it out - but only
+// the show-up counter stays untouched, so the weekly contract keeps you
+// honest.
+function isDateRestDay(dateStr) {
+    return allWorkouts.some(w => w && w.date === dateStr
+        && (w.restDay === true || (w.day && isRestSlot(w.day))));
 }
 
 // ---------------------------------------------------------------------------
@@ -2398,8 +2411,7 @@ function getWorkoutForDate(dateString) {
 // still happening.
 // ---------------------------------------------------------------------------
 function isActiveDay(dateStr) {
-    const workout = getWorkoutForDate(dateStr);
-    if (workout && !isNonTrainingLabel(workout.day)) return true;
+    if (allWorkouts.some(w => w.date === dateStr && !isNonTrainingLabel(w.day))) return true;
     return fencingEntriesBetween(dateStr, dateStr).length > 0;
 }
 
@@ -2416,8 +2428,8 @@ function calculateAdherence() {
             available++;
             continue;
         }
-        // Absences you declared do not count against you.
-        if (isDateSickDay(dateStr) || isDateInTravelMode(dateStr)) continue;
+        // Absences and rest you declared do not count against you.
+        if (isDateSickDay(dateStr) || isDateInTravelMode(dateStr) || isDateRestDay(dateStr)) continue;
         // Today has not been earned or lost yet.
         if (dateStr === today) continue;
         available++;
@@ -2438,8 +2450,9 @@ function calculateWorkoutStreak() {
     for (let guard = 0; guard < 365; guard++) {
         if (isActiveDay(dateStr)) {
             streak++;
-        } else if (isDateSickDay(dateStr) || isDateInTravelMode(dateStr)) {
-            // transparent: neither counts nor breaks
+        } else if (isDateSickDay(dateStr) || isDateInTravelMode(dateStr) || isDateRestDay(dateStr)) {
+            // transparent: neither counts nor breaks - a planned rest day is
+            // part of the program, not a lapse
         } else if (dateStr === today) {
             // today is still in play
         } else {
@@ -4626,6 +4639,107 @@ window.logCindy = async function (rounds) {
     updateAnalytics();
 };
 
+// ---- Rest day logging --------------------------------------------------------
+
+// A planned rest day is a decision, and decisions go on the record. It saves
+// as a workout document with no exercises and the 'Rest Day' label, which
+// every tally already knows to skip - so it shows on the calendar, keeps the
+// streak alive, and leaves the discipline score's denominator, while the
+// weekly show-up counter stays untouched.
+window.logRestDay = async function () {
+    const today = getTodayDateString();
+    if (isDateRestDay(today)) {
+        showToast('Today is already logged as a rest day.', 'info');
+        restPicked = false;
+        renderFencingPanel();
+        return;
+    }
+    if (isActiveDay(today)) {
+        showToast('You already trained today - that beats rest. Nothing logged.', 'warn');
+        restPicked = false;
+        renderFencingPanel();
+        return;
+    }
+
+    const workoutData = {
+        date: today,
+        day: 'Rest Day',
+        restDay: true,
+        exercises: {},
+        programId: activeProgram ? activeProgram.id : null
+    };
+
+    // Local backup first - the same self-healing path every save uses.
+    try {
+        const localHistory = JSON.parse(localStorage.getItem('fitnessData') || '{}');
+        localHistory['Rest Day-' + today + '-' + Date.now()] = workoutData;
+        localStorage.setItem('fitnessData', JSON.stringify(localHistory));
+    } catch (e) { console.warn('Local backup failed:', e); }
+
+    restPicked = false;
+
+    const savePromise = saveWorkoutToFirebase(workoutData);
+    const timedOut = Symbol('timeout');
+    const outcome = await Promise.race([
+        savePromise.then(() => 'saved').catch(err => { console.error(err); return 'failed'; }),
+        new Promise(resolve => setTimeout(() => resolve(timedOut), 4000))
+    ]);
+
+    if (outcome === 'failed') {
+        showToast('Could not save. It is backed up on this device - try again in a moment.', 'error');
+        renderFencingPanel();
+        return;
+    }
+
+    if (outcome === timedOut) {
+        allWorkouts.unshift(workoutData);
+        showToast('Rest day logged on this device - it will sync when you have signal.', 'info');
+        savePromise
+            .then(() => loadWorkoutsFromFirebase().then(() => { refreshStartupCache(); updateAnalytics(); }))
+            .catch(err => console.error('Background sync failed:', err));
+    } else {
+        showToast('Rest day logged. The streak runs through it.', 'success');
+        try {
+            await loadWorkoutsFromFirebase();
+            refreshStartupCache();
+        } catch (e) { console.error('Reload after save failed:', e); }
+    }
+
+    renderFencingPanel();
+    renderTodayPanel();
+    updateAnalytics();
+};
+
+window.removeRestDay = async function () {
+    const today = getTodayDateString();
+    const entry = allWorkouts.find(w => w.date === today && w.restDay === true);
+    if (!entry) return;
+    if (!confirm('Remove today\'s rest day from the record?')) return;
+
+    // Purge the local backup too, or the next boot would resurrect it.
+    try {
+        const localHistory = JSON.parse(localStorage.getItem('fitnessData') || '{}');
+        Object.keys(localHistory).forEach(key => {
+            const d = localHistory[key];
+            if (d && d.restDay === true && d.date === today) delete localHistory[key];
+        });
+        localStorage.setItem('fitnessData', JSON.stringify(localHistory));
+    } catch (e) { }
+
+    try {
+        if (entry.id) await deleteDoc(doc(db, 'workouts', entry.id));
+        await loadWorkoutsFromFirebase();
+        refreshStartupCache();
+    } catch (e) {
+        console.error('Error removing rest day:', e);
+        showToast('Could not remove that.', 'error');
+        return;
+    }
+    renderFencingPanel();
+    renderTodayPanel();
+    updateAnalytics();
+};
+
 // ---- Panel -----------------------------------------------------------------
 
 // Hours offered as chips rather than typed. Every real answer is on this list,
@@ -4637,16 +4751,24 @@ const CINDY_ROUND_CHIPS = [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 20]
 
 let fencingKind = null;     // null until a kind is picked, then hours show
 let cindyPicked = false;    // the Cindy chip is picked, so rounds show
+let restPicked = false;     // the Rest chip is picked, so the confirm shows
 
 window.pickFencingKind = function (kind) {
     fencingKind = fencingKind === kind ? null : kind;
     cindyPicked = false;
+    restPicked = false;
     renderFencingPanel();
 };
 
 window.pickCindy = function () {
     cindyPicked = !cindyPicked;
-    if (cindyPicked) fencingKind = null;
+    if (cindyPicked) { fencingKind = null; restPicked = false; }
+    renderFencingPanel();
+};
+
+window.pickRest = function () {
+    restPicked = !restPicked;
+    if (restPicked) { fencingKind = null; cindyPicked = false; }
     renderFencingPanel();
 };
 
@@ -4684,6 +4806,12 @@ function renderFencingPanel() {
             cindyToday.cindy.rounds} rounds today</span></div>`;
     }
 
+    if (isDateRestDay(today)) {
+        html += `<div class="fencing-today"><span class="fencing-entry">Rest day logged
+            <button type="button" class="fencing-remove" data-restremove="1" aria-label="Remove">&times;</button>
+        </span></div>`;
+    }
+
     html += '<div class="fencing-kinds">';
     Object.keys(FENCING_KINDS).forEach(kind => {
         const active = fencingKind === kind ? ' active' : '';
@@ -4691,7 +4819,13 @@ function renderFencingPanel() {
             escapeHtml(FENCING_KINDS[kind].label)}</button>`;
     });
     html += `<button type="button" class="fencing-kind${cindyPicked ? ' active' : ''}" data-cindy="1">Cindy AMRAP</button>`;
+    html += `<button type="button" class="fencing-kind${restPicked ? ' active' : ''}" data-rest="1">Rest day</button>`;
     html += '</div>';
+
+    if (restPicked) {
+        html += `<div class="cindy-scheme">A planned rest day goes on the record: the calendar shows it, the streak runs through it, and the discipline score leaves it out. The weekly show-up count stays as it is.</div>
+                 <div class="fencing-hour-chips"><button type="button" class="fencing-hour" data-restlog="1">Log today as rest</button></div>`;
+    }
 
     if (fencingKind) {
         html += '<div class="fencing-hour-chips">';
@@ -4719,6 +4853,12 @@ function renderFencingPanel() {
     });
     const cindyBtn = container.querySelector('[data-cindy]');
     if (cindyBtn) cindyBtn.addEventListener('click', () => pickCindy());
+    const restBtn = container.querySelector('[data-rest]');
+    if (restBtn) restBtn.addEventListener('click', () => pickRest());
+    const restLog = container.querySelector('[data-restlog]');
+    if (restLog) restLog.addEventListener('click', () => logRestDay());
+    const restRemove = container.querySelector('[data-restremove]');
+    if (restRemove) restRemove.addEventListener('click', () => removeRestDay());
     container.querySelectorAll('[data-hours]').forEach(btn => {
         btn.addEventListener('click', () => logFencing(fencingKind, Number(btn.getAttribute('data-hours'))));
     });
@@ -6028,6 +6168,9 @@ function renderTodayPanel() {
             html += `<div class="today-status done">&#10003; Logged today:
                         ${escapeHtml(w.day)} &middot; ${sets} set${sets === 1 ? '' : 's'}</div>`;
         });
+        if (isDateRestDay(today)) {
+            html += `<div class="today-status done">&#10003; Rest day logged. The streak runs through it.</div>`;
+        }
         if (getPlanWeek() && !getDuePlanSession()) {
             html += `<div class="today-status done">&#10003; Plan on track - nothing owed today. Anything below is a bonus.</div>`;
         }
@@ -6519,7 +6662,7 @@ function renderCalendar() {
         let displayLabel = '';
         let labelClass = '';
 
-        if (actualWorkout && actualWorkout.day) {
+        if (actualWorkout && actualWorkout.day && !isNonTrainingLabel(actualWorkout.day)) {
             classes.push('has-workout');
             displayLabel = actualWorkout.day;
             labelClass = actualWorkout.day;
@@ -6530,6 +6673,10 @@ function renderCalendar() {
             const allCardio = fenced.every(e => e.kind === 'Walk' || e.kind === 'Bike');
             displayLabel = `${allCardio ? 'Cardio' : 'Fencing'} ${formatFencingHours(hours)}`;
             labelClass = 'Fencing';
+        } else if (isDateRestDay(dateStr)) {
+            classes.push('restday');
+            displayLabel = 'Rest';
+            labelClass = 'Rest';
         } else if (isDateSickDay(dateStr)) {
             classes.push('sick');
             displayLabel = 'Sick Day';
@@ -6579,6 +6726,22 @@ window.selectCalendarDay = function (dateStr) {
     const container = document.getElementById('selected-day-workout');
     const content = document.getElementById('selected-day-content');
     const title = document.getElementById('selected-day-title');
+
+    if (workout && workout.restDay) {
+        title.textContent = `Rest Day - ${formatDateString(dateStr)}`;
+        let restHtml = `<p style="color: var(--color-text-secondary);">A planned rest day. The streak runs through it and the discipline score leaves it out.</p>`;
+        if (workout.id) {
+            restHtml += `<div style="margin-top: 1rem;">
+                <button type="button" class="btn btn-danger-outline"
+                        onclick="deleteLoggedWorkout('${escapeJsArg(workout.id)}', '${escapeJsArg(dateStr)}')">
+                    Remove this rest day
+                </button>
+            </div>`;
+        }
+        content.innerHTML = restHtml;
+        container.style.display = 'block';
+        return;
+    }
 
     if (workout) {
         title.textContent = `${workout.day} Workout - ${formatDateString(dateStr)}`;
