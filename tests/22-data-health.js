@@ -39,8 +39,8 @@ async function readHealth(page) {
     F('the app version is shown', /^\d+$/.test(h['App version'] || ''), JSON.stringify(h));
     F('signed-in reads yes', h['Signed in'] === 'Yes', JSON.stringify(h));
     F('workout count is live', h['Workouts on this device'] === '1', JSON.stringify(h));
-    F("today's generated-name session reads as saved",
-      /Saved \(Chest & Back - 45 min\)/.test(h["Today's session"] || ''), JSON.stringify(h));
+    F("today's generated-name session reads as saved, with its sets",
+      /Chest & Back - 45 min - \d+ set/.test(h['Saved today'] || ''), JSON.stringify(h));
     F('no unsynced backups', h['Unsynced device backups'] === '0', JSON.stringify(h));
     F('one program, one active', h['Programs / marked active'] === '1 / 1', JSON.stringify(h));
     F('no page errors', errors.length === 0, JSON.stringify(errors.map(e => e.message)));
@@ -66,7 +66,7 @@ async function readHealth(page) {
     console.log('after failed save: ' + JSON.stringify(h));
     F('the stranded session shows as an unsynced backup', h['Unsynced device backups'] === '1',
       JSON.stringify(h));
-    F("today's session honestly reads not saved", h["Today's session"] === 'Not saved yet',
+    F("today's session honestly reads not saved", h['Saved today'] === 'Nothing saved yet',
       JSON.stringify(h));
 
     // connection returns; the user taps Sync now instead of waiting for a reload
@@ -83,7 +83,7 @@ async function readHealth(page) {
     });
     console.log('after Sync now: ' + JSON.stringify(h));
     F('Sync now delivers the backup', h['Unsynced device backups'] === '0', JSON.stringify(h));
-    F("today's session now reads saved", /^Saved/.test(h["Today's session"] || ''), JSON.stringify(h));
+    F("today's session now reads saved", /Chest & Back - 30 min/.test(h['Saved today'] || ''), JSON.stringify(h));
 
     const unexpected = errors.filter(e => !/simulated write failure/.test(e.message));
     F('no page errors beyond the simulated outage', unexpected.length === 0,

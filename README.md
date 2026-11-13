@@ -304,11 +304,23 @@ Firestore collections:
 Export everything as JSON from Settings.
 
 **Settings -> Data health** shows what the device actually has, live: app
-version, sign-in state, how many workouts loaded, whether today's session is
-saved, and any session stranded in the on-device backup - with a Sync now
+version, sign-in state, how many workouts loaded, everything saved for today
+listed by name (sessions with their set counts, a Cindy score with its rounds,
+a rest day), today's logged activity hours, the week's show-up count against
+its target, and any session stranded in the on-device backup - with a Sync now
 button that loads, reconciles and re-renders on the spot. Asset URLs carry a
 version query that is bumped on every release, so a phone cannot quietly run
 last week's code.
+
+**Every way of logging refreshes every panel.** A completed session, a Cindy
+score, a rest day, fencing hours, a deletion - each funnels through one
+refresh path that redraws the show-up counter, the week bars, the today card,
+the streak, the calendar, the calorie target and Data health together, so the
+screen can never disagree with the data. (It used to: logging Cindy updated
+the volume bars but left the show-up counter stale until a reload, and an
+empty logger form answered "enter at least one set first" even when today's
+training was already saved another way - that refusal now names exactly what
+IS on the books for the day.)
 
 ### Security rules
 

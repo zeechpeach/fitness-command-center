@@ -57,6 +57,7 @@ Playwright will not find on its own, point at it with `PW_CHROMIUM=/path/to/chro
 | `30-capacity.js` | Sessions are capped at the best recently completed session plus two sets; the ask climbs with completion; tiny drop-ins do not define capacity; no history means the clock rules |
 | `31-cindy.js` | Cindy logs in two taps with capped hard-set credit and a same-day replace; a home session can open with it (the lifts fill around it, never on top); a short window makes it the whole session; the home Vitruvian never gets face pulls, pulldowns or pushdowns while low-pulley cable work stays |
 | `32-rest-day.js` | A planned rest day logs in two taps and shows on the calendar; the streak runs through it and the discipline score leaves it out; a trained day refuses a rest log; removal deletes the document and its local backup |
+| `33-live-refresh.js` | Logging anything, any way, updates every panel immediately: a Cindy score ticks the show-up counter with no reload, fencing hours extend the streak and paint the calendar, Data health lists today's saves by name, the empty-form Complete button names what is already saved, and a logged rest day is not a "session" in analytics |
 | `sweep-inline-handlers.js` | Every inline `onclick`/`oninput` in the app resolves to a function that actually exists |
 | `sweep-dead-code.js` | No unreferenced functions, handlers or variables; no `getElementById` pointing at an element that is not there |
 | `sweep-unused-css.js` | No CSS rules for classes nothing uses |
