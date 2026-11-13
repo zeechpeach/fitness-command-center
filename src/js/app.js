@@ -238,7 +238,7 @@ async function saveWorkoutToFirebase(workoutData) {
 // lets the programs and workouts queries run concurrently at startup.
 // Shown in Settings -> Data health and bumped with the ?v= cache-buster in
 // index.html, so "which code is this phone actually running" is answerable.
-const APP_VERSION = '95';
+const APP_VERSION = '96';
 
 let rawWorkouts = [];
 
@@ -1018,7 +1018,6 @@ function renderDataHealth() {
     const newest = allWorkouts.length
         ? allWorkouts.slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''))[0].date
         : null;
-    const todaysWorkout = allWorkouts.find(w => w.date === today);
     const unsynced = countUnsyncedBackups();
     const activeCount = programs.filter(p => p.active).length;
 
@@ -1028,14 +1027,35 @@ function renderDataHealth() {
             <span class="health-value">${value}</span>
          </div>`;
 
+    // Everything saved for TODAY, listed one by one - "did my workout save"
+    // should never need a developer console to answer.
+    const todayDocs = allWorkouts.filter(w => w.date === today);
+    const todayLine = todayDocs.length
+        ? todayDocs.map(w => {
+            if (w.cindy && w.cindy.rounds) return `Cindy - ${w.cindy.rounds} rounds`;
+            if (w.restDay || isRestSlot(w.day)) return 'Rest day';
+            const sets = Object.values(w.exercises || {}).reduce((sum, ex) =>
+                sum + ((ex && ex.sets) || []).filter(isWorkingSet).length, 0);
+            return `${escapeHtml(w.day)} - ${sets} set${sets === 1 ? '' : 's'}`;
+        }).join('<br>')
+        : 'Nothing saved yet';
+    const todayFencing = fencingEntriesBetween(today, today);
+    const fencingLine = todayFencing.length
+        ? todayFencing.map(e => `${formatFencingHours(e.hours)} ${
+            escapeHtml((FENCING_KINDS[e.kind] || { label: e.kind }).label.toLowerCase())}`).join('<br>')
+        : 'none';
+    const weeklyTarget = activeProgram && activeProgram.plan && activeProgram.plan.mode === 'adaptive'
+        ? ` of ${activeProgram.plan.weeklySessions || 6}`
+        : '';
+
     container.innerHTML =
         row('App version', APP_VERSION) +
         row('Signed in', currentUser ? 'Yes' : 'NO - nothing can load or save', currentUser ? '' : 'bad') +
         row('Workouts on this device', String(allWorkouts.length), allWorkouts.length ? '' : 'bad') +
         row('Most recent session', newest || 'none') +
-        row("Today's session", todaysWorkout
-            ? `Saved (${escapeHtml(todaysWorkout.day)})`
-            : 'Not saved yet', todaysWorkout ? 'good' : '') +
+        row('Saved today', todayLine, todayDocs.length ? 'good' : '') +
+        row('Activity today', fencingLine, todayFencing.length ? 'good' : '') +
+        row('Show up this week', `${getSessionsThisWeek()}${weeklyTarget} days`) +
         row('Unsynced device backups', String(unsynced), unsynced ? 'bad' : '') +
         row('Programs / marked active', `${programs.length} / ${activeCount}`,
             activeCount > 1 ? 'bad' : '') +
@@ -3672,12 +3692,14 @@ function updateAnalytics() {
     populateComparisonSelector();
 }
 
-// Sessions actually logged in a real date window, excluding rest days.
+// Sessions actually logged in a real date window. The old filter only knew
+// the literal label 'rest', so a logged 'Rest Day', travel or sick record
+// counted as a training session in the stat.
 function countSessionsInLastDays(days) {
     const today = getTodayDateString();
     const from = addDaysToDateString(today, -(days - 1));
     return allWorkouts.filter(w =>
-        w.date >= from && w.date <= today && normalizeLabel(w.day) !== 'rest'
+        w.date >= from && w.date <= today && !isNonTrainingLabel(w.day)
     ).length;
 }
 
@@ -4496,9 +4518,6 @@ async function loadFencingData() {
 }
 
 function refreshAfterFencingChange() {
-    renderFencingPanel();
-    renderWeeklyVolume();
-    updateNutritionCalories();   // the activity component just changed
     // A logged session changes what today should be, so any suggestion already
     // on screen is stale the moment fencing is added.
     // A persisted session is a plan the user may be mid-way through - fencing
@@ -4507,7 +4526,10 @@ function refreshAfterFencingChange() {
     if (!generatedToday && suggestedMinutes !== null && suggestedLocation !== null) {
         suggestedSession = generateSession(suggestedMinutes, suggestedLocation);
     }
-    renderTodayPanel();
+    // Fencing moves more than the activity panel: it makes the day active
+    // (streak, calendar, discipline), trims tomorrow's budget, and feeds the
+    // calorie target - so it takes the same full refresh as everything else.
+    refreshAfterDataChange();
 }
 
 window.logFencing = async function (kind, hours) {
@@ -4632,11 +4654,7 @@ window.logCindy = async function (rounds) {
         } catch (e) { console.error('Reload after save failed:', e); }
     }
 
-    renderFencingPanel();
-    renderWeeklyVolume();
-    renderTodayPanel();
-    updateNutritionCalories();
-    updateAnalytics();
+    refreshAfterDataChange();
 };
 
 // ---- Rest day logging --------------------------------------------------------
@@ -4705,9 +4723,7 @@ window.logRestDay = async function () {
         } catch (e) { console.error('Reload after save failed:', e); }
     }
 
-    renderFencingPanel();
-    renderTodayPanel();
-    updateAnalytics();
+    refreshAfterDataChange();
 };
 
 window.removeRestDay = async function () {
@@ -4735,9 +4751,7 @@ window.removeRestDay = async function () {
         showToast('Could not remove that.', 'error');
         return;
     }
-    renderFencingPanel();
-    renderTodayPanel();
-    updateAnalytics();
+    refreshAfterDataChange();
 };
 
 // ---- Panel -----------------------------------------------------------------
@@ -6842,8 +6856,7 @@ window.deleteLoggedWorkout = async function (workoutId, dateString) {
         await deleteDoc(doc(db, "workouts", workoutId));
         await loadWorkoutsFromFirebase();
         refreshStartupCache();
-        renderCalendar();
-        renderWorkoutDaySelector();
+        refreshAfterDataChange();
         initializeWorkout();
         // Was 'selected-day-detail', which is not an element that exists, so
         // the guard silently did nothing and the panel stayed open showing the
@@ -9877,6 +9890,25 @@ function showTab(tabName) {
 
 }
 
+// ---------------------------------------------------------------------------
+// The one refresh path for a changed training record.
+//
+// Every way of logging - a completed session, a Cindy score, a rest day,
+// fencing hours, a deletion - used to hand-pick which panels to redraw, and
+// each picked a different subset. Logging Cindy updated the volume bars but
+// left "Show up - 2/6" stale; completing a session never touched the streak,
+// the calendar or Data health. Nothing was lost, but the screen said
+// otherwise, which in this app is the same crime. Now every mutation funnels
+// through here and no panel can disagree with the data.
+// ---------------------------------------------------------------------------
+function refreshAfterDataChange() {
+    renderWorkoutDaySelector();   // program panel, week bars, today card, activity panel, pills
+    updateNutritionCalories();    // the activity component of the calorie target
+    updateAnalytics();            // streak, weekly sets, maxes, focus areas
+    renderCalendar();             // the record itself, plus the discipline score
+    renderDataHealth();           // "is it saved" stays answerable live
+}
+
 // Render dynamic workout day selector based on active program schedule
 function renderWorkoutDaySelector() {
     // The week panel sits directly above the pills and is driven by the same
@@ -10679,8 +10711,21 @@ async function completeWorkout() {
 
     // An all-blank logger used to save happily, so an accidental tap created a
     // phantom session that counted toward the streak and the discipline score.
+    // And when today's training was logged ANOTHER way (the Cindy button, a
+    // fencing entry), "enter at least one set first" read as "your workout did
+    // not save" - so the refusal now says what the record actually holds.
     if (!currentWorkoutHasData()) {
-        showToast('Nothing logged yet. Enter at least one set first.', 'warn');
+        const todayDocs = allWorkouts.filter(w =>
+            w.date === selectedDate && !isNonTrainingLabel(w.day));
+        if (todayDocs.length) {
+            const parts = todayDocs.map(w => w.cindy && w.cindy.rounds
+                ? `Cindy, ${w.cindy.rounds} rounds`
+                : w.day);
+            showToast(`This form is empty, but nothing is missing: already saved for ${
+                selectedDate === today ? 'today' : selectedDate}: ${parts.join(' + ')}. The week counts it.`, 'info');
+        } else {
+            showToast('Nothing logged yet. Enter at least one set first.', 'warn');
+        }
         return;
     }
 
@@ -10775,7 +10820,7 @@ async function completeWorkout() {
     // currentDay stays where it is: the session just completed re-hydrates
     // into the form, so more sets added tonight join it instead of starting
     // over on whatever a queue would have owed.
-    renderWorkoutDaySelector();
+    refreshAfterDataChange();
     initializeWorkout();
     updateSuggestions();
 
