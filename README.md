@@ -227,6 +227,39 @@ never impossible.
 - Delete a mis-logged session from the calendar
 
 ### Nutrition
+- **Fast logging** - one text box at the top of the tab. Type (or dictate with
+  the phone keyboard's mic) "3 hard-boiled eggs and 16 oz fairlife milk with 1
+  scoop whey" and plain code splits it, reads the amounts and units, matches
+  each piece against the saved-foods library, and converts portions against
+  each food's own serving ("3 eggs" is ONE serving of "Eggs (3)"; "8 oz" of
+  the 16 oz milk is half). A preview shows every food, amount and the totals
+  before one tap logs it all as a single meal. Anything unmatched is flagged -
+  never silently dropped - and flows into the lookup or the manual form. No
+  model parses or computes anything.
+- **New-food lookup** - the create-food sheet searches USDA FoodData Central,
+  which covers generic foods (USDA data) and branded products (the actual
+  label). Results show the numbers, the serving and the source; "Use" fills
+  the form and the save carries the source and FDC id. Nothing is saved
+  without the confirm tap, hand-typed foods are marked `manual`, and a model
+  never supplies nutrition numbers from memory. Needs a free api.data.gov
+  key, pasted once in Settings; without it the lookup explains itself and
+  manual entry still works.
+- **Daily targets, one source of truth.** The Body tab's setup takes the goal
+  type (cutting / recomp / bulking / maintaining) and suggests a training-day
+  and rest-day pair of calorie + macro targets from the 7-day average weight
+  and logged activity - every number hand-editable, saved on the goals
+  record, and the owner's edits always win. The target card, the meal plan
+  header and the what's-left card all read the same numbers; the day type
+  comes from evidence (logged session or activity = training day), and
+  tournament days add 450 kcal on top of training automatically.
+- **"What's left looks like"** - under the target card, the remaining
+  calories and protein divide across how many meals are left (1/2/3, one
+  tap), snap to the nearest size tier (300/400/500/650/800 kcal), and render
+  as two or three example plates from a fixed 30-plate reference list - the
+  owner's own saved foods and combos first where they fit, protein-forward
+  when protein is behind. Pure arithmetic, labeled a ballpark, never a recipe
+  generator. Within 100 kcal of target it says the day is done; over target
+  it says so without drama.
 - **The meal plan** leads the tab: exactly what to eat and when, keyed to the
   day type (training, rest, tournament - switchable per date). The type is
   read from evidence, never the weekday: a date with a logged session or

@@ -582,6 +582,273 @@
             margin: 0.5rem 0 0.25rem;
         }
 
+        /* ---- Fast logging: the sentence box and its preview ---- */
+        .fastlog-card {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            padding: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .fastlog-row {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .fastlog-input {
+            flex: 1;
+            min-width: 0;
+            padding: 0.75rem;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            background: var(--color-bg);
+            color: var(--color-text-primary);
+            font-size: 0.9375rem;
+        }
+
+        .fastlog-btn { white-space: nowrap; }
+
+        .fastlog-rows { margin-top: 0.75rem; }
+
+        .fastlog-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.4rem 0;
+            border-bottom: 1px solid var(--color-border);
+            font-size: 0.875rem;
+        }
+
+        .fastlog-item.missing { color: var(--color-text-secondary); }
+
+        .fastlog-name { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+
+        .fastlog-servings {
+            width: 3.5rem;
+            padding: 0.25rem;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-sm);
+            background: var(--color-bg);
+            color: var(--color-text-primary);
+            text-align: center;
+        }
+
+        .fastlog-macros { white-space: nowrap; color: var(--color-text-secondary); }
+
+        .fastlog-missing-label {
+            font-size: 0.75rem;
+            color: var(--color-warning);
+            white-space: nowrap;
+        }
+
+        .fastlog-mini {
+            padding: 0.25rem 0.625rem;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-full);
+            background: var(--color-bg);
+            color: var(--color-accent-primary);
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .fastlog-note {
+            font-size: 0.75rem;
+            color: var(--color-warning);
+            padding: 0.125rem 0 0.25rem;
+        }
+
+        .fastlog-foot {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.5rem;
+            margin-top: 0.625rem;
+        }
+
+        .fastlog-totals { font-weight: 600; font-size: 0.875rem; }
+
+        /* ---- Food lookup results inside the create-food sheet ---- */
+        .lookup-row { display: flex; gap: 0.5rem; }
+
+        .lookup-result {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .lookup-main { flex: 1; min-width: 0; }
+
+        .lookup-name { font-size: 0.875rem; font-weight: 600; overflow-wrap: anywhere; }
+
+        .lookup-sub { font-size: 0.75rem; color: var(--color-text-secondary); }
+
+        .lookup-source-badge {
+            display: inline-block;
+            margin-left: 0.375rem;
+            padding: 0.05rem 0.375rem;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-full);
+            color: var(--color-accent-primary);
+            font-weight: 600;
+        }
+
+        .lookup-note {
+            font-size: 0.8125rem;
+            line-height: 1.5;
+            color: var(--color-text-secondary);
+            padding: 0.5rem 0;
+        }
+
+        .lookup-source {
+            font-size: 0.8125rem;
+            font-weight: 600;
+            color: var(--color-accent-primary);
+            background: rgba(168, 181, 160, 0.12);
+            border-radius: var(--radius-md);
+            padding: 0.5rem 0.625rem;
+            margin-top: 0.5rem;
+        }
+
+        /* ---- The targets editor on the Body tab ---- */
+        .targets-editor { margin: 1rem 0 0.5rem; }
+
+        .targets-hint {
+            font-size: 0.8125rem;
+            color: var(--color-text-secondary);
+            line-height: 1.5;
+        }
+
+        .targets-head { font-weight: 600; margin-bottom: 0.5rem; }
+
+        .targets-unsaved { color: var(--color-warning); font-size: 0.8125rem; font-weight: 600; }
+
+        .targets-grid {
+            display: grid;
+            grid-template-columns: 4.5rem repeat(4, minmax(0, 1fr));
+            gap: 0.375rem;
+            align-items: center;
+        }
+
+        .targets-colhead, .targets-rowhead {
+            font-size: 0.75rem;
+            color: var(--color-text-secondary);
+            text-align: center;
+        }
+
+        .targets-rowhead { text-align: left; font-weight: 600; color: var(--color-text-primary); }
+
+        .targets-input {
+            width: 100%;
+            min-width: 0;
+            padding: 0.4rem 0.25rem;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-sm);
+            background: var(--color-bg);
+            color: var(--color-text-primary);
+            text-align: center;
+            font-size: 0.875rem;
+        }
+
+        .targets-note {
+            font-size: 0.75rem;
+            color: var(--color-text-secondary);
+            line-height: 1.5;
+            margin: 0.5rem 0;
+        }
+
+        .targets-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+        /* ---- "What's left looks like" ---- */
+        .whatsleft-card {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            padding: 0.875rem;
+            margin-top: 1rem;
+        }
+
+        .whatsleft-head {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .whatsleft-title { font-weight: 600; }
+
+        .whatsleft-numbers { font-size: 0.8125rem; color: var(--color-accent-primary); font-weight: 600; }
+
+        .whatsleft-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.375rem;
+            flex-wrap: wrap;
+            margin: 0.625rem 0;
+            font-size: 0.8125rem;
+            color: var(--color-text-secondary);
+        }
+
+        .whatsleft-chip {
+            min-width: 2rem;
+            padding: 0.25rem 0.5rem;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-full);
+            background: var(--color-bg);
+            color: var(--color-text-primary);
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .whatsleft-chip.active {
+            border-color: var(--color-accent-primary);
+            color: var(--color-accent-primary);
+        }
+
+        .whatsleft-per { margin-left: auto; font-weight: 600; }
+
+        .whatsleft-plate {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 0.5rem;
+            padding: 0.375rem 0;
+            border-bottom: 1px solid var(--color-border);
+            font-size: 0.875rem;
+        }
+
+        .whatsleft-plate-name { overflow-wrap: anywhere; }
+
+        .whatsleft-plate-macros { white-space: nowrap; color: var(--color-text-secondary); }
+
+        .whatsleft-yours {
+            display: inline-block;
+            padding: 0 0.375rem;
+            border: 1px solid var(--color-accent-primary);
+            border-radius: var(--radius-full);
+            color: var(--color-accent-primary);
+            font-size: 0.6875rem;
+            font-weight: 600;
+        }
+
+        .whatsleft-note, .whatsleft-foot {
+            font-size: 0.8125rem;
+            color: var(--color-text-secondary);
+            line-height: 1.5;
+            margin-top: 0.5rem;
+        }
+
+        .settings-hint {
+            font-size: 0.8125rem;
+            color: var(--color-text-secondary);
+            line-height: 1.5;
+            margin-bottom: 0.625rem;
+        }
+
         .today-fatigue {
             font-size: 0.8125rem;
             line-height: 1.4;
