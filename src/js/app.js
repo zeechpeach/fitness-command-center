@@ -238,7 +238,7 @@ async function saveWorkoutToFirebase(workoutData) {
 // lets the programs and workouts queries run concurrently at startup.
 // Shown in Settings -> Data health and bumped with the ?v= cache-buster in
 // index.html, so "which code is this phone actually running" is answerable.
-const APP_VERSION = '96';
+const APP_VERSION = '97';
 
 let rawWorkouts = [];
 
@@ -502,6 +502,8 @@ function calculateTargetCalories(weight, bodyGoal) {
     switch (bodyGoal) {
         case 'cutting':
             return maintenance - 500;
+        case 'recomp':
+            return maintenance - 300;
         case 'bulking':
             return maintenance + 250;
         case 'maintaining':
@@ -633,12 +635,22 @@ function checkIfOnTrack(movingAverage, targetWeight, currentWeight, bodyGoal) {
         if (trend > 0.2) return { isOnTrack: true, message: `On Track (up ${magnitude} lbs)` };
         if (trend < -0.2) return { isOnTrack: false, message: `Off Track (down ${magnitude} lbs)` };
         return { isOnTrack: false, message: 'Holding steady, not yet trending up' };
+    } else if (bodyGoal === 'recomp') {
+        // Recomp is judged in the mirror and on the tape; on the scale, steady
+        // or slowly down both count as working.
+        if (trend < -0.2) return { isOnTrack: true, message: `On Track (down ${magnitude} lbs, slowly is right)` };
+        if (trend <= 0.2) return { isOnTrack: true, message: 'On Track (weight steady - recomp shows in the measurements, not the scale)' };
+        return { isOnTrack: false, message: `Off Track (up ${magnitude} lbs)` };
     }
 
     return { isOnTrack: false, message: 'Unable to determine progress' };
 }
 
 function updateBodyGoalDisplay() {
+    renderTargetsEditor();
+    // Settings: show the stored lookup key once the goals doc has loaded.
+    const fdcInput = document.getElementById('fdc-key-input');
+    if (fdcInput && !fdcInput.value) fdcInput.value = getFdcKey();
     if (!bodyGoalData || !bodyGoalData.bodyGoal) {
         document.getElementById('goal-display-container').style.display = 'none';
         return;
@@ -703,7 +715,7 @@ function updateBodyGoalDisplay() {
 // never scaled to the user's actual bodyweight. For a recomp, protein is the
 // number that decides whether it works.
 // ---------------------------------------------------------------------------
-const PROTEIN_PER_LB = { cutting: 1.0, maintaining: 0.9, bulking: 0.8 };
+const PROTEIN_PER_LB = { cutting: 1.0, recomp: 1.0, maintaining: 0.9, bulking: 0.8 };
 
 function calculateProteinTarget(bodyWeight, bodyGoal) {
     const w = parseFloat(bodyWeight);
@@ -711,6 +723,181 @@ function calculateProteinTarget(bodyWeight, bodyGoal) {
     const perLb = PROTEIN_PER_LB[bodyGoal] || 0.9;
     return Math.round(w * perLb);
 }
+
+// ---------------------------------------------------------------------------
+// Daily targets: ONE source of truth for "how much should I eat today".
+//
+// There used to be two target systems that never spoke: the computed calorie
+// target (weight x 13 + logged activity, minus the cut) and the meal plan's
+// hard-coded 2100/1850. Now a single pair of editable targets - training day
+// and rest day - lives on the bodyGoals document, suggested from real numbers
+// (7-day average weight, logged activity) but always the owner's to override.
+// Every panel that mentions calories reads getDailyTargets(). The day type
+// comes from evidence (a logged session or activity = training day), the same
+// rule the meal plan already uses. Tournament days ride on top of training.
+// All arithmetic is code; nothing here is estimated by a model.
+// ---------------------------------------------------------------------------
+
+const GOAL_ADJUSTMENTS = {               // kcal vs maintenance: training / rest
+    cutting:     { training: -400, rest: -600 },
+    recomp:      { training: -200, rest: -400 },
+    maintaining: { training:    0, rest: -150 },
+    bulking:     { training:  300, rest:  100 }
+};
+const TOURNAMENT_CALORIE_BONUS = 450;    // a 12-hour day on the strip vs a normal training day
+const FAT_G_PER_LB = 0.35;               // hormonal floor; carbs take whatever is left
+
+function targetsWeightBasis() {
+    const avg = calculate7DayMovingAverage(weightData);
+    return (Number.isFinite(avg) && avg > 0) ? avg : getLatestWeight();
+}
+
+function macroSetFor(weight, goal, calories) {
+    const protein = Math.round(weight * (PROTEIN_PER_LB[goal] || 0.9));
+    const fats = Math.round(weight * FAT_G_PER_LB);
+    const carbs = Math.max(0, Math.round((calories - protein * 4 - fats * 9) / 4));
+    return { calories: Math.round(calories), protein, carbs, fats };
+}
+
+function computeSuggestedTargets(weight, goal) {
+    if (!weight || !GOAL_ADJUSTMENTS[goal]) return null;
+    const maintenance = Math.round(weight * BASELINE_CALS_PER_LB) + getDailyActivityCalories();
+    return {
+        training: macroSetFor(weight, goal, maintenance + GOAL_ADJUSTMENTS[goal].training),
+        rest: macroSetFor(weight, goal, maintenance + GOAL_ADJUSTMENTS[goal].rest),
+        basis: { weight: Math.round(weight * 10) / 10, maintenance }
+    };
+}
+
+function getSavedTargets() {
+    const t = bodyGoalData && bodyGoalData.targets;
+    if (!t || !t.training || !t.rest) return null;
+    if (!(parseFloat(t.training.calories) > 0) || !(parseFloat(t.rest.calories) > 0)) return null;
+    return t;
+}
+
+// What today (or any date) should total, with the day type that decided it.
+function getDailyTargets(dateStr) {
+    const dayType = getMealPlanDayType(dateStr);
+    const bonus = dayType === 'tournament' ? TOURNAMENT_CALORIE_BONUS : 0;
+
+    const saved = getSavedTargets();
+    if (saved) {
+        const base = dayType === 'rest' ? saved.rest : saved.training;
+        return {
+            dayType,
+            calories: Math.round(parseFloat(base.calories) || 0) + bonus,
+            protein: Math.round(parseFloat(base.protein) || 0),
+            carbs: Number.isFinite(parseFloat(base.carbs)) ? Math.round(parseFloat(base.carbs)) : null,
+            fats: Number.isFinite(parseFloat(base.fats)) ? Math.round(parseFloat(base.fats)) : null,
+            source: 'setup'
+        };
+    }
+
+    // Legacy: no targets saved yet - the old computed single target still works,
+    // so nothing breaks before the setup screen has been used.
+    if (!bodyGoalData || !bodyGoalData.bodyGoal) return null;
+    const weight = targetsWeightBasis();
+    if (!weight) return null;
+    return {
+        dayType,
+        calories: calculateTargetCalories(weight, bodyGoalData.bodyGoal) + bonus,
+        protein: calculateProteinTarget(weight, bodyGoalData.bodyGoal) || 0,
+        carbs: null,
+        fats: null,
+        source: 'legacy'
+    };
+}
+
+const DAY_TYPE_LABELS = { training: 'Training day', rest: 'Rest day', tournament: 'Tournament day' };
+
+// ---- The setup editor on the Body tab ---------------------------------------
+
+function renderTargetsEditor() {
+    const container = document.getElementById('macro-targets-editor');
+    if (!container) return;
+
+    const goal = bodyGoalData && bodyGoalData.bodyGoal;
+    if (!goal) {
+        container.innerHTML = '<div class="targets-hint">Pick a goal type above, and your daily calorie and macro targets can be set up here.</div>';
+        return;
+    }
+    const weight = targetsWeightBasis();
+    const suggested = weight ? computeSuggestedTargets(weight, goal) : null;
+    const saved = getSavedTargets();
+    const t = saved || (suggested && { training: suggested.training, rest: suggested.rest });
+    if (!t) {
+        container.innerHTML = '<div class="targets-hint">Log a weigh-in on this tab and targets can be suggested from your real numbers.</div>';
+        return;
+    }
+
+    const cell = (day, field) =>
+        `<input type="number" inputmode="numeric" class="targets-input" id="target-${day}-${field}"
+                value="${Math.round(parseFloat(t[day] && t[day][field]) || 0)}" aria-label="${day} ${field}">`;
+    container.innerHTML = `
+        <div class="targets-head">Daily targets${saved ? '' : ' <span class="targets-unsaved">(suggested - not saved yet)</span>'}</div>
+        <div class="targets-grid">
+            <div class="targets-corner"></div><div class="targets-colhead">kcal</div><div class="targets-colhead">protein</div><div class="targets-colhead">carbs</div><div class="targets-colhead">fat</div>
+            <div class="targets-rowhead">Training</div>${cell('training', 'calories')}${cell('training', 'protein')}${cell('training', 'carbs')}${cell('training', 'fats')}
+            <div class="targets-rowhead">Rest</div>${cell('rest', 'calories')}${cell('rest', 'protein')}${cell('rest', 'carbs')}${cell('rest', 'fats')}
+        </div>
+        <div class="targets-note">${suggested
+            ? `Suggested from ${suggested.basis.weight} lb and your logged activity (maintenance &asymp; ${suggested.basis.maintenance} kcal). `
+            : ''}Tournament days add ${TOURNAMENT_CALORIE_BONUS} kcal on top of training automatically. Edit anything - your numbers win.</div>
+        <div class="targets-actions">
+            <button type="button" class="btn" onclick="suggestMacroTargets()">Re-suggest from my numbers</button>
+            <button type="button" class="btn btn-primary" onclick="saveMacroTargets()">Save targets</button>
+        </div>`;
+}
+
+window.suggestMacroTargets = function () {
+    const goal = bodyGoalData && bodyGoalData.bodyGoal;
+    const weight = targetsWeightBasis();
+    const suggested = goal && weight ? computeSuggestedTargets(weight, goal) : null;
+    if (!suggested) { showToast('Pick a goal and log a weigh-in first.', 'warn'); return; }
+    ['training', 'rest'].forEach(day => {
+        ['calories', 'protein', 'carbs', 'fats'].forEach(field => {
+            const el = document.getElementById(`target-${day}-${field}`);
+            if (el) el.value = suggested[day][field];
+        });
+    });
+    showToast('Suggested numbers filled in. Save to make them the targets.', 'info');
+};
+
+window.saveMacroTargets = async function () {
+    if (!bodyGoalData || !bodyGoalData.id) {
+        showToast('Set your goal type, target weight and start date first - then save targets.', 'warn');
+        return;
+    }
+    const read = (day) => {
+        const get = (field) => parseFloat((document.getElementById(`target-${day}-${field}`) || {}).value);
+        return {
+            calories: Math.round(get('calories') || 0),
+            protein: Math.round(get('protein') || 0),
+            carbs: Math.round(Number.isFinite(get('carbs')) ? get('carbs') : 0),
+            fats: Math.round(Number.isFinite(get('fats')) ? get('fats') : 0)
+        };
+    };
+    const targets = { training: read('training'), rest: read('rest'), savedAt: new Date().toISOString() };
+    if (!(targets.training.calories > 0) || !(targets.rest.calories > 0) ||
+        !(targets.training.protein > 0) || !(targets.rest.protein > 0)) {
+        showToast('Calories and protein need real numbers on both day types.', 'warn');
+        return;
+    }
+    try {
+        await updateDoc(doc(db, 'bodyGoals', bodyGoalData.id), { targets });
+        bodyGoalData.targets = targets;
+        window.bodyGoalData = bodyGoalData;
+        showToast(`Targets saved: ${targets.training.calories} kcal training / ${targets.rest.calories} kcal rest.`, 'success');
+    } catch (e) {
+        console.error('Could not save targets:', e);
+        showToast('Could not save the targets. Check your connection.', 'error');
+        return;
+    }
+    renderTargetsEditor();
+    updateNutritionCalories();
+    renderNutritionPlanPanel();
+};
 
 // Averages protein and calories on days a session was logged against days it
 // was not. Moved here from the deleted Insights tab, which was the only card on
@@ -791,48 +978,51 @@ function updateNutritionCalories() {
     // no matter how much food was logged.
     updateNutritionComparison();
 
-    if (!bodyGoalData || !bodyGoalData.bodyGoal) {
+    // One source of truth: the saved training/rest targets when set up, the
+    // legacy computed target until then. Either way the number shown is the
+    // number every other panel uses.
+    const dailyTargets = getDailyTargets(currentNutritionDate);
+    if (!dailyTargets) {
         document.getElementById('calorie-target-card').style.display = 'none';
-        return;
-    }
-
-    // The target follows the 7-day average rather than a single weigh-in, so a
-    // 3 lb water swing stops moving the daily calorie goal by ~44 kcal.
-    const averageWeight = calculate7DayMovingAverage(weightData);
-    const currentWeight = Number.isFinite(averageWeight) && averageWeight > 0
-        ? averageWeight
-        : getLatestWeight();
-
-    if (!currentWeight) {
-        document.getElementById('calorie-target-card').style.display = 'none';
+        renderWhatsLeft();
         return;
     }
 
     document.getElementById('calorie-target-card').style.display = 'block';
 
-    const maintenanceCalories = calculateMaintenanceCalories(currentWeight);
-    const targetCalories = calculateTargetCalories(currentWeight, bodyGoalData.bodyGoal);
+    // The target follows the 7-day average rather than a single weigh-in, so a
+    // 3 lb water swing stops moving the daily calorie goal by ~44 kcal.
+    const currentWeight = targetsWeightBasis();
+    const maintenanceCalories = currentWeight ? calculateMaintenanceCalories(currentWeight) : null;
+    const targetCalories = dailyTargets.calories;
 
-    document.getElementById('maintenance-calories').textContent = maintenanceCalories;
+    document.getElementById('maintenance-calories').textContent =
+        maintenanceCalories !== null ? maintenanceCalories : '--';
     document.getElementById('target-calories').textContent = targetCalories;
 
-    // Update label based on goal
+    // Label carries the goal AND which day type decided today's number.
     const labelMap = {
-        'cutting': 'Cutting Goal',
-        'bulking': 'Bulking Goal',
-        'maintaining': 'Maintaining Goal'
+        'cutting': 'Cutting', 'recomp': 'Recomp', 'bulking': 'Bulking', 'maintaining': 'Maintaining'
     };
     document.getElementById('target-calories-label').textContent =
-        labelMap[bodyGoalData.bodyGoal] || 'Your Goal';
+        `${labelMap[bodyGoalData.bodyGoal] || 'Goal'} · ${DAY_TYPE_LABELS[dailyTargets.dayType] || ''}`;
 
     // Say where the number comes from. A target that visibly moves with logged
     // activity would otherwise look broken.
     const notice = document.getElementById('calorie-update-notice');
     if (notice) {
         const activity = getDailyActivityCalories();
-        notice.textContent = activity > 0
-            ? `Follows your 7-day average weight, plus ${activity} kcal/day from logged training and fencing`
-            : 'Follows your 7-day average weight. Log training and fencing to raise it with your real week.';
+        if (dailyTargets.source === 'setup') {
+            notice.textContent = `${DAY_TYPE_LABELS[dailyTargets.dayType]} target from your setup.`
+                + (maintenanceCalories !== null
+                    ? ` Your logged week puts maintenance near ${maintenanceCalories} kcal - adjust targets on the Body tab if that changes.`
+                    : '');
+        } else {
+            notice.textContent = (activity > 0
+                ? `Follows your 7-day average weight, plus ${activity} kcal/day from logged training and fencing.`
+                : 'Follows your 7-day average weight. Log training and fencing to raise it with your real week.')
+                + ' Save editable training/rest targets on the Body tab.';
+        }
     }
 
     // Calculate remaining calories
@@ -842,7 +1032,7 @@ function updateNutritionCalories() {
     const remaining = Math.round(targetCalories - totalCalories);
     document.getElementById('calories-remaining').textContent = remaining;
 
-    const proteinTarget = calculateProteinTarget(currentWeight, bodyGoalData.bodyGoal);
+    const proteinTarget = dailyTargets.protein;
     const proteinTargetEl = document.getElementById('protein-target');
     const proteinLeftEl = document.getElementById('protein-remaining');
     if (proteinTargetEl && proteinLeftEl) {
@@ -854,6 +1044,8 @@ function updateNutritionCalories() {
             proteinLeftEl.textContent = '--';
         }
     }
+
+    renderWhatsLeft();
 
     // Update remaining color
     const remainingElement = document.getElementById('calories-remaining');
@@ -7760,6 +7952,9 @@ window.setMealPlanDayType = function (dayType) {
     if (!MEAL_PLAN[dayType]) return;
     try { localStorage.setItem('fcc:daytype:' + currentNutritionDate, dayType); } catch (e) { }
     renderNutritionPlanPanel();
+    // The day type decides the target, so the target card and the what's-left
+    // card have to move with the chip.
+    updateNutritionCalories();
 };
 
 function mealTotals(meal) {
@@ -7802,11 +7997,17 @@ function renderNutritionPlanPanel() {
         .filter(n => n.date === currentNutritionDate && n.planMeal)
         .map(n => n.planMeal));
 
+    // The header numbers come from the one target source, not the template's
+    // hard-coded figures, so this panel can never disagree with the target card.
+    const dt = getDailyTargets(currentNutritionDate);
+    const headCalories = dt ? dt.calories : plan.target.calories;
+    const headProtein = dt ? dt.protein : plan.target.protein;
+
     let html = `
         <div class="mealplan-head">
             <div>
                 <div class="mealplan-title">${escapeHtml(plan.label)}</div>
-                <div class="mealplan-target">${plan.target.calories} kcal &middot; ${plan.target.protein}g protein</div>
+                <div class="mealplan-target">${headCalories} kcal &middot; ${headProtein}g protein</div>
             </div>
             <div class="mealplan-chips">`;
     Object.keys(MEAL_PLAN).forEach(key => {
@@ -7863,23 +8064,27 @@ async function logItemToDiary(item, servings, mealType) {
     collapsedMeals[`${entry.mealType}-${currentNutritionDate}`] = false;
 
     // Remember how much was logged, so next time defaults to it rather than 1.
-    if (item.id) {
-        const saved = savedFoods.find(f => f.id === item.id);
-        if (saved) {
-            saved.lastUsed = new Date().toISOString();
-            saved.useCount = (saved.useCount || 0) + 1;
-            saved.lastQuantity = parseFloat(servings) || 1;
-            updateDoc(doc(db, "savedFoods", saved.id), {
-                lastUsed: saved.lastUsed,
-                useCount: saved.useCount,
-                lastQuantity: saved.lastQuantity
-            }).catch(err => console.error('Could not update food usage:', err));
-        }
-    }
+    bumpFoodUsage(item, servings);
 
     renderMeals();
     renderSavedFoods();
     return entry;
+}
+
+// Shared by every path that logs a library food - the portion sheet, the
+// quick-add strip, and the fast-log sentence - so usage stats never drift.
+function bumpFoodUsage(item, servings) {
+    if (!item || !item.id) return;
+    const saved = savedFoods.find(f => f.id === item.id);
+    if (!saved) return;
+    saved.lastUsed = new Date().toISOString();
+    saved.useCount = (saved.useCount || 0) + 1;
+    saved.lastQuantity = parseFloat(servings) || 1;
+    updateDoc(doc(db, "savedFoods", saved.id), {
+        lastUsed: saved.lastUsed,
+        useCount: saved.useCount,
+        lastQuantity: saved.lastQuantity
+    }).catch(err => console.error('Could not update food usage:', err));
 }
 
 // ---- Quick add -------------------------------------------------------------
@@ -7949,6 +8154,528 @@ window.quickAddFood = async function (foodId) {
         showToast('Could not add that. Try again in a moment.', 'error');
     }
 };
+
+// ---------------------------------------------------------------------------
+// Fast logging: one sentence in, one logged meal out.
+//
+// "3 hard-boiled eggs and a shake with 16 oz fairlife milk and 1 scoop whey"
+// splits into segments, each segment gives up its amount and unit, and the
+// remaining words are matched against the saved-foods library. Everything is
+// plain code - splitting, matching, portion math - no model guesses a number
+// anywhere. What does not match is flagged, never silently dropped, and flows
+// into the lookup or the manual form. The preview is the contract: nothing is
+// logged until the totals are on screen and the button is pressed.
+// ---------------------------------------------------------------------------
+
+const FASTLOG_NUMBER_WORDS = {
+    one: 1, two: 2, three: 3, four: 4, five: 5,
+    six: 6, seven: 7, eight: 8, nine: 9, ten: 10, half: 0.5
+};
+const FASTLOG_UNIT_CANON = {
+    oz: 'oz', ounce: 'oz', ounces: 'oz',
+    g: 'g', gram: 'g', grams: 'g',
+    cup: 'cup', cups: 'cup',
+    scoop: 'scoop', scoops: 'scoop',
+    tbsp: 'tbsp', tsp: 'tsp',
+    slice: 'slice', slices: 'slice',
+    serving: 'serving', servings: 'serving',
+    lb: 'lb', lbs: 'lb',
+    tin: 'tin', tins: 'tin', can: 'can', cans: 'can',
+    bar: 'bar', bars: 'bar', bottle: 'bottle', bottles: 'bottle'
+};
+// Words that describe a food without identifying it. "hard-boiled eggs" has to
+// find "Eggs (3)"; "optimum" is what the label says where the library says ON.
+const FASTLOG_DESCRIPTORS = new Set([
+    'hard', 'boiled', 'hardboiled', 'scrambled', 'fried', 'grilled', 'cooked',
+    'raw', 'fresh', 'frozen', 'large', 'small', 'big', 'plain', 'cold', 'hot',
+    'of', 'the', 'some', 'my', 'nutrition', 'brand', 'shake'
+]);
+const FASTLOG_ALIASES = { optimum: 'on' };
+
+function splitFoodSentence(text) {
+    return String(text || '').toLowerCase()
+        .replace(/&/g, ' and ')
+        .split(/,|\band\b|\bplus\b|\bwith\b|\n/)
+        .map(s => s.trim())
+        .filter(Boolean);
+}
+
+function parseFoodSegment(segment) {
+    const tokens = segment.split(/\s+/).filter(Boolean);
+    let qty = null;
+    let unit = null;
+    let i = 0;
+    while (i < tokens.length) {
+        const tk = tokens[i].replace(/[(),]/g, '');
+        if (qty === null && /^\d+(\.\d+)?$/.test(tk)) { qty = parseFloat(tk); i++; continue; }
+        if (qty === null && /^\d+\/\d+$/.test(tk)) {
+            const [a, b] = tk.split('/');
+            qty = parseFloat(a) / parseFloat(b); i++; continue;
+        }
+        if (qty === null && FASTLOG_NUMBER_WORDS[tk] !== undefined) { qty = FASTLOG_NUMBER_WORDS[tk]; i++; continue; }
+        if (qty === null && (tk === 'a' || tk === 'an')) { qty = 1; i++; continue; }
+        if (unit === null && qty !== null && FASTLOG_UNIT_CANON[tk]) { unit = FASTLOG_UNIT_CANON[tk]; i++; continue; }
+        break;
+    }
+    const nameTokens = tokens.slice(i)
+        .join(' ').split(/[\s\-]+/)
+        .map(t => t.replace(/[^a-z0-9%]/g, ''))
+        .filter(t => t && !FASTLOG_DESCRIPTORS.has(t))
+        .map(t => FASTLOG_ALIASES[t] || t);
+    return { text: segment, qty: qty === null ? 1 : qty, unit, nameTokens };
+}
+
+function fastLogSingular(t) {
+    return t.length > 3 && t.endsWith('s') ? t.slice(0, -1) : t;
+}
+
+// Every word you said has to appear in the food's name (so "eggs" never
+// matches "Eggs Benedict Bagel" by accident in reverse); among candidates the
+// tightest name wins, then the one you actually use most.
+function matchSavedFood(nameTokens) {
+    if (!nameTokens.length) return null;
+    const queries = nameTokens.map(fastLogSingular);
+    let best = null;
+    savedFoods.forEach(food => {
+        const foodTokens = normalizeLabel(food.name)
+            .replace(/[()%,.]/g, ' ')
+            .split(/[\s\-]+/).filter(Boolean).map(fastLogSingular);
+        let hits = 0;
+        queries.forEach(q => {
+            if (foodTokens.some(ft => ft === q
+                || (q.length > 2 && ft.startsWith(q))
+                || (ft.length > 2 && q.startsWith(ft)))) hits++;
+        });
+        if (hits < queries.length) return;
+        const score = hits / foodTokens.length;
+        const usage = food.useCount || 0;
+        if (!best || score > best.score || (score === best.score && usage > best.usage)) {
+            best = { food, score, usage };
+        }
+    });
+    return best && best.food;
+}
+
+// How many servings "16 oz" or "3" means for THIS food, read from the
+// serving its own name declares - "Fairlife 2% Milk (16 oz)", "Eggs (3)" -
+// falling back to the stored baseline serving.
+function servingsForMatch(food, qty, unit) {
+    let size = null;
+    let sizeUnit = null;
+    const m = String(food.name).match(/\((\d+(?:\.\d+)?)\s*([a-z]*)\)/i);
+    if (m) {
+        size = parseFloat(m[1]);
+        sizeUnit = FASTLOG_UNIT_CANON[(m[2] || '').toLowerCase()] || ((m[2] || '') === '' ? null : m[2].toLowerCase());
+    } else if (parseFloat(food.baselineServingSize) > 0) {
+        size = parseFloat(food.baselineServingSize);
+        sizeUnit = FASTLOG_UNIT_CANON[String(food.baselineServingUnit || '').toLowerCase()] || null;
+    }
+    if (size > 0) {
+        if (unit && sizeUnit && unit === sizeUnit) return { servings: qty / size, note: '' };
+        if (!unit && !sizeUnit) return { servings: qty / size, note: '' };
+        if (unit && sizeUnit && unit !== sizeUnit) {
+            return { servings: 1, note: `logged as 1 serving - its serving is ${size} ${sizeUnit || ''}, you said ${qty} ${unit}` };
+        }
+    }
+    return { servings: qty, note: '' };
+}
+
+function itemTotals(food) {
+    return isCombo(food)
+        ? comboTotals(food.components)
+        : { calories: parseFloat(food.calories) || 0, protein: parseFloat(food.protein) || 0 };
+}
+
+let fastLogRows = [];
+
+window.runFastLogPreview = function () {
+    const input = document.getElementById('fastlog-input');
+    const raw = input ? input.value.trim() : '';
+    if (!raw) { fastLogRows = []; renderFastLogPreview(); return; }
+    fastLogRows = splitFoodSentence(raw).map(segment => {
+        const parsed = parseFoodSegment(segment);
+        if (!parsed.nameTokens.length) return null;
+        const food = matchSavedFood(parsed.nameTokens);
+        if (!food) return { text: segment, food: null, lookupName: parsed.nameTokens.join(' ') };
+        const fit = servingsForMatch(food, parsed.qty, parsed.unit);
+        return { text: segment, food, servings: Math.round(fit.servings * 100) / 100, note: fit.note };
+    }).filter(Boolean);
+    renderFastLogPreview();
+};
+
+function renderFastLogPreview() {
+    const container = document.getElementById('fastlog-preview');
+    if (!container) return;
+    if (!fastLogRows.length) { container.innerHTML = ''; return; }
+
+    let totals = { calories: 0, protein: 0 };
+    let html = '<div class="fastlog-rows">';
+    fastLogRows.forEach((row, i) => {
+        if (row.food) {
+            const per = itemTotals(row.food);
+            const cals = Math.round(per.calories * row.servings);
+            const prot = Math.round(per.protein * row.servings);
+            totals.calories += cals;
+            totals.protein += prot;
+            html += `<div class="fastlog-item">
+                        <span class="fastlog-name">${escapeHtml(row.food.name)}</span>
+                        <span class="fastlog-amt">
+                            <input type="number" inputmode="decimal" step="any" class="fastlog-servings"
+                                   value="${row.servings}" aria-label="Servings"
+                                   oninput="fastLogServings(${i}, this.value)"> &times;
+                        </span>
+                        <span class="fastlog-macros">${cals} kcal &middot; ${prot}g</span>
+                        <button type="button" class="fencing-remove" aria-label="Remove" onclick="fastLogRemove(${i})">&times;</button>
+                     </div>`;
+            if (row.note) html += `<div class="fastlog-note">${escapeHtml(row.note)}</div>`;
+        } else {
+            html += `<div class="fastlog-item missing">
+                        <span class="fastlog-name">${escapeHtml(row.text)}</span>
+                        <span class="fastlog-missing-label">not in your library</span>
+                        <button type="button" class="fastlog-mini" onclick="fastLogToManual(${i})">Add it</button>
+                        <button type="button" class="fencing-remove" aria-label="Remove" onclick="fastLogRemove(${i})">&times;</button>
+                     </div>`;
+        }
+    });
+    html += '</div>';
+    const matched = fastLogRows.filter(r => r.food).length;
+    html += `<div class="fastlog-foot">
+                <span class="fastlog-totals">${Math.round(totals.calories)} kcal &middot; ${Math.round(totals.protein)}g protein</span>
+                <button type="button" class="btn btn-primary fastlog-log" ${matched ? '' : 'disabled'}
+                        onclick="logFastLog()">Log ${matched} food${matched === 1 ? '' : 's'}</button>
+             </div>`;
+    container.innerHTML = html;
+}
+
+window.fastLogServings = function (i, value) {
+    const row = fastLogRows[i];
+    if (!row || !row.food) return;
+    row.servings = Math.max(0, parseFloat(value) || 0);
+    // Re-render only the totals line cheaply by re-rendering the preview;
+    // keep focus by deferring until blur is unnecessary at this scale.
+    const active = document.activeElement;
+    const keepIndex = i;
+    renderFastLogPreview();
+    const inputs = document.querySelectorAll('.fastlog-servings');
+    if (active && inputs[fastLogRows.slice(0, keepIndex).filter(r => r.food).length]) {
+        const el = inputs[fastLogRows.slice(0, keepIndex).filter(r => r.food).length];
+        el.focus();
+    }
+};
+
+window.fastLogRemove = function (i) {
+    fastLogRows.splice(i, 1);
+    renderFastLogPreview();
+};
+
+window.fastLogToManual = function (i) {
+    const row = fastLogRows[i];
+    if (!row) return;
+    showCreateFoodModal(row.lookupName || row.text);
+};
+
+window.logFastLog = async function () {
+    const rows = fastLogRows.filter(r => r.food && r.servings > 0);
+    if (!rows.length) { showToast('Nothing matched to log yet.', 'warn'); return; }
+    const skipped = fastLogRows.filter(r => !r.food).length;
+
+    const input = document.getElementById('fastlog-input');
+    const entry = {
+        date: currentNutritionDate,
+        mealType: defaultMealTypeForNow(),
+        time: getCurrentTimeString(),
+        fastLog: input ? input.value.trim() : '',
+        foods: rows.flatMap(r => foodsForLogEntry(r.food, r.servings))
+    };
+    try {
+        const docRef = await addDoc(collection(db, 'nutrition'), entry);
+        nutritionData.unshift({ id: docRef.id, ...entry });
+        collapsedMeals[`${entry.mealType}-${currentNutritionDate}`] = false;
+        rows.forEach(r => bumpFoodUsage(r.food, r.servings));
+        fastLogRows = [];
+        if (input) input.value = '';
+        renderFastLogPreview();
+        renderMeals();
+        updateNutritionSummary();
+        renderSavedFoods();
+        renderQuickAdd();
+        showToast(`${rows.length} food${rows.length === 1 ? '' : 's'} logged to ${entry.mealType}.`
+            + (skipped ? ` ${skipped} unmatched item${skipped === 1 ? '' : 's'} skipped.` : ''), 'success');
+    } catch (e) {
+        console.error('Fast log failed:', e);
+        showToast('Could not save that. Check your connection.', 'error');
+    }
+};
+
+// ---------------------------------------------------------------------------
+// Food lookup: real numbers from a real source, confirmed before saving.
+//
+// USDA FoodData Central covers both halves of the problem - generic foods
+// (USDA lab data) and branded products (the actual label). The search needs a
+// free api.data.gov key, pasted once in Settings; without it the lookup
+// explains itself and the manual form still works. A model never supplies
+// nutrition numbers from memory: every value here comes out of the API
+// response, the source rides along on the saved food, and nothing is saved
+// until the confirm tap.
+// ---------------------------------------------------------------------------
+
+const FDC_KEY_STORAGE = 'fcc:fdckey';
+
+function getFdcKey() {
+    let key = '';
+    try { key = localStorage.getItem(FDC_KEY_STORAGE) || ''; } catch (e) { }
+    if (!key && bodyGoalData && bodyGoalData.fdcApiKey) key = bodyGoalData.fdcApiKey;
+    return key.trim();
+}
+
+window.saveFdcKey = async function () {
+    const inputEl = document.getElementById('fdc-key-input');
+    const key = inputEl ? inputEl.value.trim() : '';
+    try { localStorage.setItem(FDC_KEY_STORAGE, key); } catch (e) { }
+    // Stored on the goals document too, so other devices pick it up.
+    if (bodyGoalData && bodyGoalData.id) {
+        try {
+            await updateDoc(doc(db, 'bodyGoals', bodyGoalData.id), { fdcApiKey: key });
+            bodyGoalData.fdcApiKey = key;
+        } catch (e) { console.error('Could not sync lookup key:', e); }
+    }
+    showToast(key ? 'Lookup key saved. Food search is live.' : 'Lookup key cleared.', key ? 'success' : 'info');
+};
+
+function round1(v) {
+    const n = parseFloat(v);
+    return Number.isFinite(n) ? Math.round(n * 10) / 10 : 0;
+}
+
+function fdcNutrient(list, ids) {
+    const hit = (list || []).find(n => ids.includes(n.nutrientId));
+    return hit ? parseFloat(hit.value) || 0 : 0;
+}
+
+// One search result, reduced to the numbers the app stores - computed in
+// code from the API's per-100g values and the label's serving size.
+function normalizeFdcFood(f) {
+    if (!f || !f.description) return null;
+    const per100 = {
+        calories: fdcNutrient(f.foodNutrients, [1008, 2047, 2048]),
+        protein: fdcNutrient(f.foodNutrients, [1003]),
+        carbs: fdcNutrient(f.foodNutrients, [1005]),
+        fats: fdcNutrient(f.foodNutrients, [1004])
+    };
+    if (!per100.calories && !per100.protein && !per100.carbs && !per100.fats) return null;
+
+    let servingSize = 100;
+    let servingUnit = 'g';
+    let scale = 1;
+    if (f.dataType === 'Branded' && parseFloat(f.servingSize) > 0
+        && /^(g|grm|ml|mlt)$/i.test(String(f.servingSizeUnit || ''))) {
+        servingSize = parseFloat(f.servingSize);
+        servingUnit = /ml/i.test(f.servingSizeUnit) ? 'ml' : 'g';
+        scale = servingSize / 100;
+    }
+    const brand = (f.brandName || f.brandOwner || '').trim();
+    const titleCase = String(f.description).toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+    return {
+        name: brand ? `${titleCase} (${brand})` : titleCase,
+        servingSize,
+        servingUnit,
+        calories: Math.round(per100.calories * scale),
+        protein: round1(per100.protein * scale),
+        carbs: round1(per100.carbs * scale),
+        fats: round1(per100.fats * scale),
+        source: f.dataType === 'Branded'
+            ? `Product label${brand ? ' - ' + brand : ''}`
+            : 'USDA FoodData Central',
+        fdcId: f.fdcId
+    };
+}
+
+let lookupResults = [];
+let pendingLookupSource = null;
+
+window.runFoodLookup = async function () {
+    const out = document.getElementById('create-food-lookup-results');
+    if (!out) return;
+    const queryEl = document.getElementById('create-food-lookup-input');
+    const q = queryEl ? queryEl.value.trim() : '';
+    const key = getFdcKey();
+    if (!key) {
+        out.innerHTML = '<div class="lookup-note">Lookup needs a free USDA FoodData Central key: get one in two minutes at api.data.gov/signup, paste it in Settings, and search works. Until then, type the label numbers by hand below - that still saves fine.</div>';
+        return;
+    }
+    if (!q) return;
+    out.innerHTML = '<div class="lookup-note">Searching USDA FoodData Central&hellip;</div>';
+    try {
+        const resp = await fetch('https://api.nal.usda.gov/fdc/v1/foods/search?api_key='
+            + encodeURIComponent(key) + '&pageSize=8&query=' + encodeURIComponent(q));
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        const data = await resp.json();
+        lookupResults = (data.foods || []).map(normalizeFdcFood).filter(Boolean);
+        if (!lookupResults.length) {
+            out.innerHTML = '<div class="lookup-note">No match found. Try fewer words, or enter the label numbers by hand below.</div>';
+            return;
+        }
+        out.innerHTML = lookupResults.map((r, i) => `
+            <div class="lookup-result">
+                <div class="lookup-main">
+                    <div class="lookup-name">${escapeHtml(r.name)}</div>
+                    <div class="lookup-sub">per ${r.servingSize} ${escapeHtml(r.servingUnit)}:
+                        ${r.calories} kcal &middot; ${r.protein}P &middot; ${r.carbs}C &middot; ${r.fats}F
+                        <span class="lookup-source-badge">${escapeHtml(r.source)}</span></div>
+                </div>
+                <button type="button" class="fastlog-mini" onclick="useLookupResult(${i})">Use</button>
+            </div>`).join('');
+    } catch (e) {
+        console.error('Food lookup failed:', e);
+        out.innerHTML = '<div class="lookup-note">Lookup failed (' + escapeHtml(e.message)
+            + '). Check the key in Settings, or enter the numbers by hand below.</div>';
+    }
+};
+
+window.useLookupResult = function (i) {
+    const r = lookupResults[i];
+    if (!r) return;
+    document.getElementById('create-food-name').value = r.name;
+    document.getElementById('create-food-calories').value = r.calories;
+    document.getElementById('create-food-protein').value = r.protein;
+    document.getElementById('create-food-carbs').value = r.carbs;
+    document.getElementById('create-food-fats').value = r.fats;
+    document.getElementById('create-food-serving-size').value = r.servingSize;
+    const unitSelect = document.getElementById('create-food-serving-unit');
+    if (unitSelect && [...unitSelect.options].some(o => o.value === r.servingUnit)) {
+        unitSelect.value = r.servingUnit;
+    }
+    pendingLookupSource = { source: r.source, fdcId: r.fdcId, retrievedAt: new Date().toISOString() };
+    const badge = document.getElementById('create-food-source-badge');
+    if (badge) {
+        badge.style.display = 'block';
+        badge.textContent = `Numbers from: ${r.source}. Tap Add Food to confirm and save.`;
+    }
+    const out = document.getElementById('create-food-lookup-results');
+    if (out) out.innerHTML = '';
+};
+
+// ---------------------------------------------------------------------------
+// "What is left looks like": the remaining number, made visible.
+//
+// 743 kcal remaining tells you nothing at 7pm. Divided across the meals you
+// still have, snapped to the nearest size tier, and shown as two or three
+// real plates - your own saved foods first where they fit - it becomes a
+// decision you can make in the kitchen. A fixed reference list, arithmetic in
+// code, and a ballpark by design: it paints the size, it does not plan menus.
+// ---------------------------------------------------------------------------
+
+const PLATE_TIERS = [300, 400, 500, 650, 800];
+const PLATE_LIBRARY = [
+    { tier: 300, name: '3 hard-boiled eggs + an apple', calories: 305, protein: 19 },
+    { tier: 300, name: 'Greek yogurt (8 oz) + berries', calories: 280, protein: 24 },
+    { tier: 300, name: 'Tin of sardines + 5 crackers', calories: 300, protein: 24 },
+    { tier: 300, name: 'Shake: 12 oz milk + 1 scoop whey', calories: 300, protein: 42 },
+    { tier: 300, name: 'Cottage cheese (1 cup) + pineapple', calories: 290, protein: 28 },
+    { tier: 300, name: 'Turkey roll-ups (4) + carrots + hummus', calories: 310, protein: 26 },
+    { tier: 400, name: 'Turkey sandwich', calories: 380, protein: 28 },
+    { tier: 400, name: 'Yogurt bowl: Greek yogurt + granola + banana', calories: 400, protein: 27 },
+    { tier: 400, name: 'Chicken breast (5 oz) + big salad + vinaigrette', calories: 390, protein: 42 },
+    { tier: 400, name: '3-egg omelet + 1 toast + fruit', calories: 410, protein: 24 },
+    { tier: 400, name: 'Tuna pouch + microwave rice cup + cucumber', calories: 400, protein: 32 },
+    { tier: 400, name: 'Protein oatmeal: oats + whey + berries', calories: 390, protein: 34 },
+    { tier: 500, name: 'Chicken (6 oz) + rice (1 cup) + vegetables', calories: 520, protein: 55 },
+    { tier: 500, name: 'Turkey sandwich + Greek yogurt cup', calories: 530, protein: 51 },
+    { tier: 500, name: 'Salmon (5 oz) + potatoes (1 cup) + greens', calories: 500, protein: 36 },
+    { tier: 500, name: 'Burrito bowl: chicken, rice, beans, salsa (no cheese)', calories: 510, protein: 42 },
+    { tier: 500, name: 'Pasta (1.5 cups) + ground turkey marinara', calories: 520, protein: 35 },
+    { tier: 500, name: 'Big shake: 16 oz milk + whey + banana + 1 tbsp PB', calories: 560, protein: 52 },
+    { tier: 650, name: 'Chicken (8 oz) + rice (1.5 cups) + veg + olive oil', calories: 660, protein: 68 },
+    { tier: 650, name: 'Burrito: chicken, rice, beans, cheese', calories: 650, protein: 40 },
+    { tier: 650, name: 'Steak (6 oz) + baked potato + salad', calories: 640, protein: 45 },
+    { tier: 650, name: 'Turkey sandwich + a full shake', calories: 680, protein: 62 },
+    { tier: 650, name: 'Salmon (6 oz) + rice (1.5 cups) + half avocado', calories: 670, protein: 42 },
+    { tier: 650, name: 'Chicken stir-fry + noodles (2 cups)', calories: 640, protein: 44 },
+    { tier: 800, name: 'Chicken (8 oz) + rice (2 cups) + veg + 1 tbsp oil', calories: 800, protein: 70 },
+    { tier: 800, name: 'Burger + side salad + fruit', calories: 780, protein: 38 },
+    { tier: 800, name: 'Full burrito bowl: double chicken, rice, beans, cheese', calories: 820, protein: 65 },
+    { tier: 800, name: 'Pasta (2 cups) + meat sauce + parmesan', calories: 790, protein: 45 },
+    { tier: 800, name: 'Steak (8 oz) + potatoes + veg + butter', calories: 810, protein: 55 },
+    { tier: 800, name: 'Breakfast plate: 4 eggs + 3 pancakes + fruit', calories: 800, protein: 35 }
+];
+const PLATE_FIT_TOLERANCE = 0.18;   // a saved food within ±18% of the meal size "fits"
+
+function mealsLeftFor(dateStr) {
+    try {
+        const v = parseInt(localStorage.getItem('fcc:mealsleft:' + dateStr), 10);
+        if (v === 1 || v === 2 || v === 3) return v;
+    } catch (e) { }
+    return 2;
+}
+
+window.setMealsLeft = function (n) {
+    try { localStorage.setItem('fcc:mealsleft:' + currentNutritionDate, String(n)); } catch (e) { }
+    renderWhatsLeft();
+};
+
+function renderWhatsLeft() {
+    const container = document.getElementById('whats-left-card');
+    if (!container) return;
+    const dt = getDailyTargets(currentNutritionDate);
+    if (!dt) { container.style.display = 'none'; return; }
+    container.style.display = 'block';
+
+    const remaining = Math.round(dt.calories - calculateTotalCalories());
+    const proteinLeft = Math.max(0, Math.round((dt.protein || 0) - getTodaysProtein()));
+    const head = `<div class="whatsleft-head">
+            <span class="whatsleft-title">What's left looks like</span>
+            <span class="whatsleft-numbers">${remaining} kcal &middot; ${proteinLeft}g protein left</span>
+        </div>`;
+
+    if (remaining < -100) {
+        container.innerHTML = head + `<div class="whatsleft-note">Over today's target by ${Math.abs(remaining)} kcal. It happens - tomorrow is a clean slate, and the week is what matters.</div>`;
+        return;
+    }
+    if (remaining <= 100) {
+        container.innerHTML = head + `<div class="whatsleft-note">The day is essentially done.${proteinLeft > 15 ? ` If anything, a light protein top-up covers the last ${proteinLeft}g.` : ' Nothing else needed.'}</div>`;
+        return;
+    }
+
+    const meals = mealsLeftFor(currentNutritionDate);
+    const perMeal = Math.round(remaining / meals);
+    const perProtein = Math.ceil(proteinLeft / meals);
+    const tier = PLATE_TIERS.reduce((best, t) =>
+        Math.abs(t - perMeal) < Math.abs(best - perMeal) ? t : best, PLATE_TIERS[0]);
+
+    // Your own foods and combos that fit this meal size come first.
+    const savedFits = savedFoods
+        .map(f => {
+            const per = itemTotals(f);
+            return { name: f.name, calories: Math.round(per.calories), protein: Math.round(per.protein),
+                     yours: true, useCount: f.useCount || 0 };
+        })
+        .filter(x => x.calories > 0 && Math.abs(x.calories - perMeal) <= perMeal * PLATE_FIT_TOLERANCE)
+        .sort((a, b) => (b.protein - a.protein) || (b.useCount - a.useCount));
+
+    const plates = PLATE_LIBRARY
+        .filter(p => p.tier === tier)
+        .sort((a, b) => perProtein > 25 ? b.protein - a.protein : Math.abs(a.calories - perMeal) - Math.abs(b.calories - perMeal));
+
+    const picks = [...savedFits.slice(0, 2), ...plates].slice(0, 3);
+
+    const chips = [1, 2, 3].map(n =>
+        `<button type="button" class="whatsleft-chip${n === meals ? ' active' : ''}"
+                 onclick="setMealsLeft(${n})">${n}</button>`).join('');
+
+    container.innerHTML = head + `
+        <div class="whatsleft-controls">
+            <span class="whatsleft-label">Meals left today:</span>${chips}
+            <span class="whatsleft-per">&asymp; ${perMeal} kcal &middot; ${perProtein}g protein each</span>
+        </div>
+        <div class="whatsleft-plates">
+            ${picks.map(p => `
+                <div class="whatsleft-plate">
+                    <span class="whatsleft-plate-name">${escapeHtml(p.name)}${p.yours ? ' <span class="whatsleft-yours">yours</span>' : ''}</span>
+                    <span class="whatsleft-plate-macros">${p.calories} kcal &middot; ${p.protein}g</span>
+                </div>`).join('')}
+        </div>
+        <div class="whatsleft-foot">A ballpark picture of the size, not a menu.</div>`;
+}
 
 // ---- Combo builder ---------------------------------------------------------
 // Built from foods already in the library rather than by re-entering macros,
@@ -8513,12 +9240,23 @@ window.addNewFood = function () {
     showCreateFoodModal();
 };
 
-window.showCreateFoodModal = function () {
+window.showCreateFoodModal = function (prefillName = '') {
     const modal = document.getElementById('create-food-modal');
     const backdrop = document.getElementById('create-food-backdrop');
 
+    // Reset the lookup state - stale sourced numbers must never leak into a
+    // different food.
+    pendingLookupSource = null;
+    lookupResults = [];
+    const lookupInput = document.getElementById('create-food-lookup-input');
+    if (lookupInput) lookupInput.value = typeof prefillName === 'string' ? prefillName : '';
+    const lookupOut = document.getElementById('create-food-lookup-results');
+    if (lookupOut) lookupOut.innerHTML = '';
+    const badge = document.getElementById('create-food-source-badge');
+    if (badge) { badge.style.display = 'none'; badge.textContent = ''; }
+
     // Reset all fields
-    document.getElementById('create-food-name').value = '';
+    document.getElementById('create-food-name').value = typeof prefillName === 'string' ? prefillName : '';
     document.getElementById('create-food-calories').value = '';
     document.getElementById('create-food-protein').value = '';
     document.getElementById('create-food-carbs').value = '';
@@ -8576,6 +9314,11 @@ window.confirmCreateFood = async function () {
         calories: calories,
         servingSize: servingSize,
         servingUnit: servingUnit.toLowerCase(),
+        // Provenance: where these numbers came from. 'manual' means typed by
+        // hand; a lookup fill carries its source and FDC id. A model never
+        // supplies numbers, so there is no third kind.
+        source: pendingLookupSource ? pendingLookupSource.source : 'manual',
+        fdcId: pendingLookupSource ? pendingLookupSource.fdcId : null,
         portionInputPreference: 'measured',
         // NEW: Baseline serving for proportional calculations
         baselineServingSize: servingSize,
@@ -9903,7 +10646,8 @@ function showTab(tabName) {
 // ---------------------------------------------------------------------------
 function refreshAfterDataChange() {
     renderWorkoutDaySelector();   // program panel, week bars, today card, activity panel, pills
-    updateNutritionCalories();    // the activity component of the calorie target
+    updateNutritionCalories();    // the target card and the what's-left card
+    renderNutritionPlanPanel();   // the day type can flip when a session or activity lands
     updateAnalytics();            // streak, weekly sets, maxes, focus areas
     renderCalendar();             // the record itself, plus the discipline score
     renderDataHealth();           // "is it saved" stays answerable live

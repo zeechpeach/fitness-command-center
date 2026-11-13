@@ -18,7 +18,7 @@
     <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js" crossorigin>
     <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js" crossorigin>
 
-    <link rel="stylesheet" href="src/css/styles.css?v=96">
+    <link rel="stylesheet" href="src/css/styles.css?v=97">
 
     <!-- Inter is third in the font stack, behind the system font every Apple
          device already uses, so it must never block the first paint. -->
@@ -402,6 +402,20 @@
                          the day type. Big fuel before evening fencing, light
                          protein after - the late-night-feast pattern ends in
                          structure, not willpower. -->
+                    <!-- Fast log: one sentence, parsed in code, previewed, then
+                         logged as one meal. The phone keyboard's mic makes it
+                         dictation for free. -->
+                    <div class="fastlog-card">
+                        <div class="fastlog-row">
+                            <input type="text" id="fastlog-input" class="fastlog-input"
+                                   placeholder='Say it like a sentence: "3 eggs and 16 oz fairlife milk"'
+                                   onkeydown="if(event.key==='Enter'){event.preventDefault();runFastLogPreview();}">
+                            <button type="button" class="btn btn-primary fastlog-btn"
+                                    onclick="runFastLogPreview()">Preview</button>
+                        </div>
+                        <div id="fastlog-preview"></div>
+                    </div>
+
                     <div id="nutrition-plan-panel" class="nutrition-plan-panel"></div>
 
                     <div id="quick-add-strip" class="quick-add-strip"></div>
@@ -475,6 +489,9 @@
                         </div>
                     </div>
 
+                    <!-- What the remaining number LOOKS like, per meal left -->
+                    <div id="whats-left-card" class="whatsleft-card" style="display: none;"></div>
+
                     <div class="analytics-card" style="margin-top: 1rem;">
                         <h3 class="analytics-title">Training Days vs Rest Days</h3>
                         <div style="color: var(--color-text-secondary); font-size: 0.9rem;">
@@ -538,6 +555,7 @@
                         <select id="body-goal-select" class="goal-select" onchange="saveBodyGoal()">
                             <option value="">Select Goal</option>
                             <option value="cutting">Cutting (Lose Weight)</option>
+                            <option value="recomp">Body Recomposition</option>
                             <option value="bulking">Bulking (Gain Weight)</option>
                             <option value="maintaining">Maintaining (Stay Current)</option>
                         </select>
@@ -552,6 +570,11 @@
                         <input type="date" id="goal-start-date-input" class="goal-input" onchange="saveBodyGoal()">
                     </div>
                 </div>
+
+                <!-- Editable training/rest day calorie + macro targets: the
+                     one source of truth every nutrition panel reads -->
+                <div id="macro-targets-editor" class="targets-editor"></div>
+
                 <div id="goal-display-container" style="display: none;">
                     <div class="goal-display">
                         <div class="goal-display-row">
@@ -933,6 +956,22 @@
             <h3 class="bottom-sheet-title">Create New Food</h3>
         </div>
         <div class="bottom-sheet-content">
+            <!-- Lookup first: real numbers from USDA / the product label,
+                 confirmed with a tap. Manual entry below stays the fallback. -->
+            <div class="portion-input-section">
+                <label style="display: block; margin-bottom: 0.5rem; color: var(--color-text-secondary);">Look it
+                    up (brands + generic foods)</label>
+                <div class="lookup-row">
+                    <input type="text" id="create-food-lookup-input" class="measured-input-group input"
+                        style="flex: 1; padding: 0.75rem; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface);"
+                        placeholder="e.g., fairlife 2% milk"
+                        onkeydown="if(event.key==='Enter'){event.preventDefault();runFoodLookup();}">
+                    <button type="button" class="btn" onclick="runFoodLookup()">Look up</button>
+                </div>
+                <div id="create-food-lookup-results"></div>
+                <div id="create-food-source-badge" class="lookup-source" style="display: none;"></div>
+            </div>
+
             <div class="portion-input-section">
                 <label style="display: block; margin-bottom: 0.5rem; color: var(--color-text-secondary);">Food
                     Name</label>
@@ -1129,6 +1168,16 @@
                 <button class="btn" onclick="runDataHealthSync()" id="data-health-sync"
                     style="width: 100%; margin-top: 0.75rem;">Sync now</button>
             </div>
+
+            <div class="settings-section">
+                <h3 class="settings-section-title">Food lookup</h3>
+                <p class="settings-hint">New-food lookup pulls real label and USDA numbers. It needs a free
+                    key: sign up at api.data.gov/signup (two minutes), paste the key here once.</p>
+                <input type="text" id="fdc-key-input" class="goal-input" style="width: 100%;"
+                    placeholder="Paste your free api.data.gov key" autocomplete="off">
+                <button class="btn" onclick="saveFdcKey()" style="width: 100%; margin-top: 0.75rem;">Save
+                    lookup key</button>
+            </div>
         </div>
     </div>
 
@@ -1245,7 +1294,7 @@
         </div>
     </div>
 
-    <script type="module" src="src/js/app.js?v=96"></script>
+    <script type="module" src="src/js/app.js?v=97"></script>
 </body>
 
 </html>
