@@ -3931,7 +3931,8 @@ const MUSCLE_GROUP_PATTERNS = [
                                    'tibialis raise', 'tibialis'] },
     { group: 'Core',       match: ['hollow body hold', 'hollow hold', 'hollow', 'ab wheel', 'dead bug',
                                    'pallof press', 'pallof', 'side plank', 'plank', 'l-sit', 'l sit',
-                                   'hanging leg raise', 'leg raise', 'crunch'] }
+                                   'hanging leg raise', 'leg raise', 'hanging knee raise', 'knee raise',
+                                   'crunch'] }
 ];
 
 // Longest match wins. A first-match-wins loop classified "Cable Lateral Raise"
@@ -5860,20 +5861,24 @@ function generateSession(minutes, locationKey = 'full', opts = {}) {
         });
     });
 
-    // Compounds first, isolation after, core last. The volume-day lead stays
-    // pinned at the front - it is the day's entire point. The sort is stable,
-    // so within a class the urgency ordering above still holds.
+    // Compounds first, isolation after, core last, and within each of those,
+    // big muscles before the small ones that assist them (sessionOrderKey).
+    // The volume-day lead stays pinned at the front - it is the day's entire
+    // point. The sort is stable, so among equals the urgency ordering above
+    // still holds.
     const pinned = exercises.slice(0, exercisesPrefix.length);
     const rest = exercises.slice(exercisesPrefix.length)
-        .sort((a, b) => movementOrder(a.name) - movementOrder(b.name));
+        .sort((a, b) => sessionOrderKey(a.name) - sessionOrderKey(b.name));
 
     // Order rotation: whatever leads gets the day's best output, so the
     // movement that led LAST session does not lead again when another
-    // compound is available to take the front.
+    // compound of the same rank is available to take the front. Same rank
+    // only: rotating a shoulder press ahead of a chest press would undo the
+    // sequencing above.
     if (!pinned.length && rest.length > 1) {
         const lastLead = lastSessionLeadExercise();
         if (lastLead && normalizeLabel(rest[0].name) === lastLead
-            && movementOrder(rest[1].name) === movementOrder(rest[0].name)) {
+            && sessionOrderKey(rest[1].name) === sessionOrderKey(rest[0].name)) {
             const [repeatLead] = rest.splice(0, 1);
             rest.splice(1, 0, repeatLead);
         }
@@ -6204,10 +6209,40 @@ const COMPOUND_TOKENS = ['squat', 'deadlift', 'press', 'row', 'pull-up', 'pullup
     'chin-up', 'chinup', 'pulldown', 'dip', 'thrust', 'lunge', 'step-up', 'step up',
     'good morning', 'rdl', 'push-up', 'pushup', 'push up'];
 
+// Straight-arm work isolates the lats (the elbow never bends), so it is
+// isolation despite the 'pulldown' in its name.
+const ISOLATION_OVERRIDE_TOKENS = ['straight-arm', 'straight arm'];
+
 function movementOrder(name) {
     if (classifyMuscleGroup(name) === 'Core') return 2;
     const n = normalizeLabel(name);
+    if (ISOLATION_OVERRIDE_TOKENS.some(token => n.includes(token))) return 1;
     return COMPOUND_TOKENS.some(token => n.includes(token)) ? 0 : 1;
+}
+
+// Within each class, larger muscles go before the smaller ones that assist
+// them. Every chest press also loads the front delts and triceps, so a
+// shoulder press placed first sends the incline press and the dips in with
+// their helpers already tired: the chest gets a weaker stimulus, and the
+// shoulders get nothing they would not have had anyway. Urgency used to break
+// these ties, so whenever shoulders were the most-owed group (often, with the
+// highest weekly target) Seated Dumbbell Shoulder Press led the day ahead of
+// Incline Press and Weighted Dip. Same logic one level down: arms after
+// shoulders, since presses and pulls already work them. Heavy spinal lifts
+// lead their class: they need the freshest body and the most focus.
+const MUSCLE_SIZE_RANK = {
+    Quads: 0, Hamstrings: 0, Glutes: 0, Back: 0, Chest: 0,
+    Shoulders: 1,
+    Biceps: 2, Triceps: 2, Calves: 2
+};
+
+function sessionOrderKey(name) {
+    const cls = movementOrder(name);
+    if (cls === 2) return 20;
+    const rank = MUSCLE_SIZE_RANK[classifyMuscleGroup(name)];
+    const size = rank === undefined ? 0 : rank;
+    if (cls === 1) return 10 + size;
+    return size * 2 + (isAxialLift(name) ? 0 : 1);
 }
 
 // Named for what it trains, not for a slot in a plan. "Back & Quads - 30 min"
